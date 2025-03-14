@@ -82,10 +82,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (provider: 'google') => {
     try {
+      // Get the current URL's origin (minus any path)
+      const origin = window.location.origin;
+      const redirectUrl = `${origin}/auth/callback`;
+      
+      console.log(`Using redirect URL: ${redirectUrl}`);
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: 'https://preview--academic-help-hub.lovable.app/auth/callback',
+          redirectTo: redirectUrl,
         },
       });
 
