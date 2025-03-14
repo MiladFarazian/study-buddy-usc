@@ -9,7 +9,7 @@ import {
   Upload,
   FileType, 
   FileImage, 
-  FilePdf 
+  File 
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -21,7 +21,7 @@ const resources = [
     type: "pdf",
     size: "2.4 MB",
     date: "May 2, 2024",
-    icon: FilePdf
+    icon: File
   },
   {
     id: "2",
@@ -39,7 +39,7 @@ const resources = [
     type: "pdf",
     size: "3.7 MB",
     date: "Apr 25, 2024",
-    icon: FilePdf
+    icon: File
   },
   {
     id: "4",
@@ -48,7 +48,7 @@ const resources = [
     type: "pdf",
     size: "0.9 MB",
     date: "Apr 20, 2024",
-    icon: FilePdf
+    icon: File
   },
   {
     id: "5",

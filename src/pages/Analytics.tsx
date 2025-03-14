@@ -1,7 +1,8 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AreaChart, BarChart } from "@/components/ui/chart";
+import { ChartContainer } from "@/components/ui/chart";
+import { Area, AreaChart, Bar, BarChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 
 const Analytics = () => {
   const sessionData = [
@@ -161,13 +162,15 @@ const Analytics = () => {
             <CardDescription>Total tutoring sessions over time</CardDescription>
           </CardHeader>
           <CardContent>
-            <AreaChart 
-              data={sessionData}
-              index="name"
-              categories={["Sessions"]}
-              colors={["#990000"]}
-              className="aspect-[4/3]"
-            />
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={sessionData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Area type="monotone" dataKey="Sessions" stroke="#990000" fill="#990000" fillOpacity={0.6} />
+              </AreaChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
 
@@ -177,13 +180,15 @@ const Analytics = () => {
             <CardDescription>Most frequently tutored subjects</CardDescription>
           </CardHeader>
           <CardContent>
-            <BarChart 
-              data={popularCoursesData}
-              index="name"
-              categories={["Sessions"]}
-              colors={["#FFCC00"]}
-              className="aspect-[4/3]"
-            />
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={popularCoursesData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="Sessions" fill="#FFCC00" />
+              </BarChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
