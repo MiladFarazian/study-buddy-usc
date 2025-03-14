@@ -37,7 +37,7 @@ const TutorCard = ({ tutor }: TutorCardProps) => {
       <CardContent className="p-6">
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16 border-2 border-usc-gold">
+            <Avatar className="h-16 w-16">
               <AvatarImage src={tutor.imageUrl} alt={tutor.name} />
               <AvatarFallback className="bg-usc-cardinal text-white">
                 {getInitials(tutor.name)}
@@ -70,20 +70,20 @@ const TutorCard = ({ tutor }: TutorCardProps) => {
                 <Badge
                   key={subject.code}
                   variant="outline"
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-800"
+                  className="bg-red-50 hover:bg-red-100 text-usc-cardinal border-red-100"
                 >
                   {subject.code}
                 </Badge>
               ))}
               {tutor.subjects.length > 3 && (
-                <Badge variant="outline" className="bg-gray-100 hover:bg-gray-200 text-gray-800">
+                <Badge variant="outline" className="bg-red-50 hover:bg-red-100 text-usc-cardinal border-red-100">
                   +{tutor.subjects.length - 3} more
                 </Badge>
               )}
             </div>
           </div>
           
-          <Button className="w-full mt-2 bg-usc-cardinal hover:bg-usc-cardinal-dark">
+          <Button className="w-full mt-2 bg-usc-cardinal hover:bg-usc-cardinal-dark text-white">
             View Profile
           </Button>
         </div>

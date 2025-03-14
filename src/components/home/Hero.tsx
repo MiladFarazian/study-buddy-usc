@@ -13,10 +13,10 @@ const Hero = () => {
         peer-to-peer tutoring platform.
       </p>
       <div className="flex flex-col sm:flex-row gap-4">
-        <Button asChild size="lg" className="bg-white text-usc-cardinal hover:bg-gray-100">
+        <Button asChild size="lg" className="bg-white text-usc-cardinal hover:bg-gray-100 border-none">
           <Link to="/tutors">Find a Tutor</Link>
         </Button>
-        <Button asChild size="lg" variant="outline" className="text-white border-white hover:bg-usc-cardinal-dark">
+        <Button asChild size="lg" className="bg-white text-usc-cardinal hover:bg-gray-100 border-none">
           <Link to="/courses">Browse Courses</Link>
         </Button>
       </div>

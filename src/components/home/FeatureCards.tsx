@@ -9,32 +9,32 @@ const features = [
     description: "Browse all USC courses",
     icon: BookOpen,
     path: "/courses",
-    color: "bg-pink-50",
-    iconColor: "text-pink-500"
+    color: "bg-red-50",
+    iconColor: "text-usc-cardinal"
   },
   {
     title: "Tutors",
     description: "Find qualified tutors",
     icon: Users,
     path: "/tutors",
-    color: "bg-purple-50",
-    iconColor: "text-purple-500"
+    color: "bg-red-50",
+    iconColor: "text-usc-cardinal"
   },
   {
     title: "Schedule",
     description: "Book tutoring sessions",
     icon: Calendar,
     path: "/schedule",
-    color: "bg-blue-50",
-    iconColor: "text-blue-500"
+    color: "bg-red-50",
+    iconColor: "text-usc-cardinal"
   },
   {
     title: "Resources",
     description: "Access study materials",
     icon: FileText,
     path: "/resources",
-    color: "bg-orange-50",
-    iconColor: "text-orange-500"
+    color: "bg-red-50",
+    iconColor: "text-usc-cardinal"
   }
 ];
 

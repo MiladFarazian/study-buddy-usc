@@ -53,8 +53,8 @@ const Sidebar = () => {
   const location = useLocation();
   
   return (
-    <div className="min-h-screen w-64 bg-usc-cardinal text-white border-r border-usc-cardinal-dark">
-      <div className="p-4 border-b border-usc-cardinal-dark">
+    <div className="min-h-screen w-64 bg-white text-usc-cardinal border-r border-gray-200">
+      <div className="p-4 border-b border-gray-200">
         <Link to="/" className="flex items-center gap-2">
           <span className="text-xl font-bold">Study<span className="text-usc-gold">Buddy</span></span>
         </Link>
@@ -68,8 +68,8 @@ const Sidebar = () => {
               key={item.path}
               to={item.path}
               className={cn(
-                "flex items-center gap-3 p-3 rounded-md transition-colors hover:bg-usc-cardinal-dark/50",
-                isActive && "bg-usc-cardinal-dark text-usc-gold"
+                "flex items-center gap-3 p-3 rounded-md transition-colors hover:bg-gray-100",
+                isActive ? "bg-gray-100 text-usc-cardinal font-medium" : "text-usc-cardinal"
               )}
             >
               <item.icon size={20} />
