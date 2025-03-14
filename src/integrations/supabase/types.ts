@@ -9,7 +9,229 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      courses: {
+        Row: {
+          code: string
+          created_at: string
+          department: string
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          department: string
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          department?: string
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          availability: Json | null
+          avatar_url: string | null
+          average_rating: number | null
+          bio: string | null
+          created_at: string
+          first_name: string | null
+          graduation_year: string | null
+          hourly_rate: number | null
+          id: string
+          last_name: string | null
+          major: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          subjects: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          availability?: Json | null
+          avatar_url?: string | null
+          average_rating?: number | null
+          bio?: string | null
+          created_at?: string
+          first_name?: string | null
+          graduation_year?: string | null
+          hourly_rate?: number | null
+          id: string
+          last_name?: string | null
+          major?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          subjects?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          availability?: Json | null
+          avatar_url?: string | null
+          average_rating?: number | null
+          bio?: string | null
+          created_at?: string
+          first_name?: string | null
+          graduation_year?: string | null
+          hourly_rate?: number | null
+          id?: string
+          last_name?: string | null
+          major?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          subjects?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          reviewer_id: string
+          tutor_id: string
+          updated_at: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          reviewer_id: string
+          tutor_id: string
+          updated_at?: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          reviewer_id?: string
+          tutor_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sessions: {
+        Row: {
+          course_id: string | null
+          created_at: string
+          end_time: string
+          id: string
+          location: string | null
+          notes: string | null
+          start_time: string
+          status: string
+          student_id: string
+          tutor_id: string
+          updated_at: string
+        }
+        Insert: {
+          course_id?: string | null
+          created_at?: string
+          end_time: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          start_time: string
+          status?: string
+          student_id: string
+          tutor_id: string
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string | null
+          created_at?: string
+          end_time?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          start_time?: string
+          status?: string
+          student_id?: string
+          tutor_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tutor_courses: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          tutor_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          tutor_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          tutor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tutor_courses_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +240,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      user_role: "student" | "tutor"
     }
     CompositeTypes: {
       [_ in never]: never

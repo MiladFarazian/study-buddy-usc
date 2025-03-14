@@ -10,47 +10,64 @@ import {
   Users 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const sidebarItems = [
-  {
-    title: "Dashboard",
-    icon: LayoutDashboard,
-    path: "/"
-  },
-  {
-    title: "Courses",
-    icon: BookOpen,
-    path: "/courses"
-  },
-  {
-    title: "Tutors",
-    icon: Users,
-    path: "/tutors"
-  },
-  {
-    title: "Schedule",
-    icon: Calendar,
-    path: "/schedule"
-  },
-  {
-    title: "Resources",
-    icon: FileText,
-    path: "/resources"
-  },
-  {
-    title: "Analytics",
-    icon: BarChart,
-    path: "/analytics"
-  },
-  {
-    title: "Settings",
-    icon: Settings,
-    path: "/settings"
-  }
-];
+import { useAuth } from "@/contexts/AuthContext";
 
 const Sidebar = () => {
   const location = useLocation();
+  const { isStudent, isTutor, user } = useAuth();
+  
+  const sidebarItems = [
+    {
+      title: "Dashboard",
+      icon: LayoutDashboard,
+      path: "/",
+      showWhen: true // Always show
+    },
+    {
+      title: "Courses",
+      icon: BookOpen,
+      path: "/courses",
+      showWhen: true // Always show
+    },
+    {
+      title: "Tutors",
+      icon: Users,
+      path: "/tutors",
+      showWhen: isStudent || !user // Show for students or unauthenticated
+    },
+    {
+      title: "My Students",
+      icon: Users,
+      path: "/students",
+      showWhen: isTutor // Only for tutors
+    },
+    {
+      title: "Schedule",
+      icon: Calendar,
+      path: "/schedule",
+      showWhen: !!user // Only for authenticated users
+    },
+    {
+      title: "Resources",
+      icon: FileText,
+      path: "/resources",
+      showWhen: !!user // Only for authenticated users
+    },
+    {
+      title: "Analytics",
+      icon: BarChart,
+      path: "/analytics",
+      showWhen: !!user // Only for authenticated users
+    },
+    {
+      title: "Settings",
+      icon: Settings,
+      path: "/settings",
+      showWhen: !!user // Only for authenticated users
+    }
+  ];
+
+  const filteredItems = sidebarItems.filter(item => item.showWhen);
   
   return (
     <div className="min-h-screen w-64 bg-white text-usc-cardinal border-r border-gray-200">
@@ -60,7 +77,7 @@ const Sidebar = () => {
         </Link>
       </div>
       <nav className="p-4 space-y-2">
-        {sidebarItems.map((item) => {
+        {filteredItems.map((item) => {
           const isActive = location.pathname === item.path;
           
           return (
