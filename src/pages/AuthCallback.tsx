@@ -1,37 +1,88 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 const AuthCallback = () => {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // This handles the OAuth callback
+    const handleAuthCallback = async () => {
+      try {
+        // Get the current URL hash
+        const hashParams = window.location.hash;
+        
+        if (!hashParams) {
+          setError("No authentication data found in URL");
+          setIsLoading(false);
+          return;
+        }
+
+        console.log("Processing authentication callback...");
+        
+        // The Supabase client will automatically handle the hash processing
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Auth callback error:", error.message);
+          setError(error.message);
+          toast({
+            title: "Authentication error",
+            description: error.message,
+            variant: "destructive",
+          });
+        } else if (data?.session) {
+          console.log("Successfully authenticated");
+          toast({
+            title: "Success",
+            description: "You are now signed in",
+          });
+          
+          // Navigate to home page or redirect URL
+          navigate("/", { replace: true });
+        }
+      } catch (err) {
+        console.error("Unexpected error during auth callback:", err);
+        setError("An unexpected error occurred during authentication");
+        toast({
+          title: "Authentication error",
+          description: "An unexpected error occurred",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    handleAuthCallback();
+
+    // Set up auth state listener
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      // Once the auth state changes (which happens after the hash is processed)
+      console.log("Auth state change:", event);
+      
       if (event === 'SIGNED_IN' && session) {
         navigate('/', { replace: true });
       }
     });
-
-    // Process the hash if present
-    const hashParams = window.location.hash;
-    if (hashParams) {
-      // The supabase client will automatically handle the hash with detectSessionInUrl
-      console.log("Processing auth callback...");
-    }
 
     return () => {
       authListener?.subscription.unsubscribe();
     };
   }, [navigate]);
 
+  if (!isLoading && error) {
+    return <Navigate to="/login" replace />;
+  }
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen">
-      <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal" />
-      <span className="mt-4">Completing authentication...</span>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50">
+      <Loader2 className="h-12 w-12 animate-spin text-usc-cardinal mb-4" />
+      <h2 className="text-xl font-semibold mb-2">Completing Authentication</h2>
+      <p className="text-gray-600">Please wait while we verify your identity...</p>
     </div>
   );
 };
