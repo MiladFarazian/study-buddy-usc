@@ -1,7 +1,6 @@
-
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Session, User } from "@supabase/supabase-js";
+import { Session, User, Provider } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
@@ -13,6 +12,8 @@ type AuthContextType = {
   user: User | null;
   profile: Profile | null;
   signIn: (provider: 'google') => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   loading: boolean;
   isStudent: boolean;
@@ -82,7 +83,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (provider: 'google') => {
     try {
-      // Get the current URL's origin for dynamic redirect
       const origin = window.location.origin;
       const redirectUrl = `${origin}/auth/callback`;
       
@@ -109,6 +109,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: "An unexpected error occurred",
         variant: "destructive",
       });
+    }
+  };
+
+  const signInWithEmail = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        toast({
+          title: "Sign In Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+      
+      return { error };
+    } catch (error) {
+      console.error('Email sign in error:', error);
+      toast({
+        title: "Sign In Failed",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+      return { error: error as Error };
+    }
+  };
+
+  const signUp = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        }
+      });
+
+      if (error) {
+        toast({
+          title: "Registration Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+      
+      return { error };
+    } catch (error) {
+      console.error('Sign up error:', error);
+      toast({
+        title: "Registration Failed",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+      return { error: error as Error };
     }
   };
 
@@ -145,6 +202,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     profile,
     signIn,
+    signInWithEmail,
+    signUp,
     signOut,
     loading,
     isStudent,
