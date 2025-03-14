@@ -82,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (provider: 'google') => {
     try {
-      // Get the current URL's origin (minus any path)
+      // Get the current URL's origin for dynamic redirect
       const origin = window.location.origin;
       const redirectUrl = `${origin}/auth/callback`;
       
