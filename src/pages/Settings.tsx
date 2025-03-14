@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -9,8 +10,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { Database } from "@/integrations/supabase/types";
+
+type ProfileUpdateDto = Database['public']['Tables']['profiles']['Update'];
+type UserRole = Database['public']['Enums']['user_role'];
 
 const Settings = () => {
   const { user, profile, isStudent, isTutor } = useAuth();
@@ -22,7 +26,7 @@ const Settings = () => {
     major: "",
     graduation_year: "",
     bio: "",
-    role: "",
+    role: "student" as UserRole,
     hourly_rate: "",
     subjects: [] as string[],
   });
@@ -50,15 +54,17 @@ const Settings = () => {
     }));
   };
 
-  const handleRoleChange = async (role: string) => {
+  const handleRoleChange = async (role: UserRole) => {
     if (!user) return;
     
     try {
       setLoading(true);
       
+      const updateData: ProfileUpdateDto = { role };
+      
       const { error } = await supabase
         .from('profiles')
-        .update({ role })
+        .update(updateData)
         .eq('id', user.id);
 
       if (error) throw error;
@@ -89,17 +95,22 @@ const Settings = () => {
     try {
       setLoading(true);
       
+      const updateData: ProfileUpdateDto = {
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        major: formData.major,
+        graduation_year: formData.graduation_year,
+        bio: formData.bio,
+        updated_at: new Date().toISOString(),
+      };
+      
+      if (formData.role === 'tutor' && formData.hourly_rate) {
+        updateData.hourly_rate = parseFloat(formData.hourly_rate);
+      }
+
       const { error } = await supabase
         .from('profiles')
-        .update({
-          first_name: formData.first_name,
-          last_name: formData.last_name,
-          major: formData.major,
-          graduation_year: formData.graduation_year,
-          bio: formData.bio,
-          hourly_rate: formData.role === 'tutor' ? parseFloat(formData.hourly_rate) : null,
-          updated_at: new Date(),
-        })
+        .update(updateData)
         .eq('id', user.id);
 
       if (error) throw error;

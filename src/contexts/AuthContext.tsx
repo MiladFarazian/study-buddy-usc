@@ -3,21 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { Database } from "@/integrations/supabase/types";
 
-type Profile = {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  avatar_url: string | null;
-  major: string | null;
-  graduation_year: string | null;
-  bio: string | null;
-  role: "student" | "tutor";
-  hourly_rate: number | null;
-  subjects: string[] | null;
-  availability: any | null;
-  average_rating: number | null;
-};
+type Profile = Database['public']['Tables']['profiles']['Row'];
 
 type AuthContextType = {
   session: Session | null;
@@ -72,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching profile:', error);
@@ -81,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           description: "Failed to load your profile. Please try again.",
           variant: "destructive",
         });
-      } else {
+      } else if (data) {
         setProfile(data as Profile);
       }
     } catch (error) {
