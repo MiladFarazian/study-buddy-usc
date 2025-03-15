@@ -36,7 +36,22 @@ export function useCourses(filterOptions: CourseFilterOptions) {
         
         if (data) {
           console.log(`Found ${data.length} courses for term ${filterOptions.term}`);
-          setCourses(data as Course[]);
+          // Convert the database response to the Course type
+          const typedCourses: Course[] = data.map(item => ({
+            id: item.id,
+            code: item.code,
+            name: item.name,
+            department: item.department,
+            description: item.description,
+            term_code: item.term_code || '',
+            instructor: item.instructor || '',
+            units: item.units || '',
+            days: item.days || '',
+            time: item.time || '',
+            location: item.location || '',
+            session_type: item.session_type || '',
+          }));
+          setCourses(typedCourses);
         } else {
           setCourses([]);
         }

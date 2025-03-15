@@ -13,26 +13,47 @@ export type Database = {
         Row: {
           code: string
           created_at: string
+          days: string | null
           department: string
           description: string | null
           id: string
+          instructor: string | null
+          location: string | null
           name: string
+          session_type: string | null
+          term_code: string | null
+          time: string | null
+          units: string | null
         }
         Insert: {
           code: string
           created_at?: string
+          days?: string | null
           department: string
           description?: string | null
           id?: string
+          instructor?: string | null
+          location?: string | null
           name: string
+          session_type?: string | null
+          term_code?: string | null
+          time?: string | null
+          units?: string | null
         }
         Update: {
           code?: string
           created_at?: string
+          days?: string | null
           department?: string
           description?: string | null
           id?: string
+          instructor?: string | null
+          location?: string | null
           name?: string
+          session_type?: string | null
+          term_code?: string | null
+          time?: string | null
+          units?: string | null
         }
         Relationships: []
       }
@@ -261,7 +282,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_column_exists: {
+        Args: {
+          table_name: string
+          column_name: string
+        }
+        Returns: boolean
+      }
+      execute_sql: {
+        Args: {
+          sql: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       user_role: "student" | "tutor"
