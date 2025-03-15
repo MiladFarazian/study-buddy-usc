@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { Course } from "@/integrations/supabase/types-extension";
@@ -22,36 +22,46 @@ const Courses = () => {
     selectedDepartment
   );
 
+  // Create a fetchCourses function that avoids type issues
+  const fetchCourses = useCallback(async (termCode: string) => {
+    if (!termCode) return;
+    
+    try {
+      setLoading(true);
+      
+      // Fetch data with a more direct approach
+      const result = await supabase
+        .from("courses")
+        .select("*")
+        .eq("term_code", termCode);
+      
+      if (result.error) {
+        console.error("Error fetching courses:", result.error);
+        return;
+      }
+      
+      // Process data safely without complex type handling
+      if (result.data) {
+        // Simplify the type handling by forcing the type here
+        const courseData = result.data as unknown as Course[];
+        setCourses(courseData);
+      } else {
+        setCourses([]);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      setCourses([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+  
   // Fetch courses when the selected term changes
   useEffect(() => {
-    const fetchCourses = async () => {
-      if (!selectedTerm) return;
-      
-      try {
-        setLoading(true);
-        
-        // Use explicit typing to avoid deep type inference
-        const { data, error } = await supabase
-          .from("courses")
-          .select("*")
-          .eq("term_code", selectedTerm);
-        
-        if (error) {
-          console.error("Error fetching courses:", error);
-          return;
-        }
-        
-        // Explicitly cast to Course[] to avoid excessive type instantiation
-        setCourses(data as Course[]);
-      } catch (error) {
-        console.error("Error:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchCourses();
-  }, [selectedTerm]);
+    if (selectedTerm) {
+      fetchCourses(selectedTerm);
+    }
+  }, [selectedTerm, fetchCourses]);
   
   // Handle search input change
   const handleSearchChange = (query: string) => {
@@ -72,22 +82,7 @@ const Courses = () => {
   const handleImportComplete = () => {
     // Refresh courses list
     if (selectedTerm) {
-      const fetchUpdatedCourses = async () => {
-        const { data, error } = await supabase
-          .from("courses")
-          .select("*")
-          .eq("term_code", selectedTerm);
-        
-        if (error) {
-          console.error("Error refreshing courses:", error);
-          return;
-        }
-        
-        // Explicitly cast to Course[] to avoid excessive type instantiation
-        setCourses(data as Course[]);
-      };
-      
-      fetchUpdatedCourses();
+      fetchCourses(selectedTerm);
     }
   };
   

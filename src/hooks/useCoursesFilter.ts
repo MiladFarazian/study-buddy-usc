@@ -7,34 +7,48 @@ export function useCoursesFilter(
   searchQuery: string, 
   selectedDepartment: string
 ) {
-  // Use proper type annotation to avoid deep inference
+  // Use explicit type annotation for state
   const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
   
-  // Memoize departments to avoid unnecessary recalculations and type depth issues
+  // Use a simplified department extraction approach
   const departments = useMemo(() => {
-    const uniqueDepartments = [...new Set(courses.map(course => course.department))];
-    return uniqueDepartments.sort();
+    if (!courses.length) return [];
+    
+    // Extract unique departments with a simpler approach
+    const deptSet = new Set<string>();
+    courses.forEach(course => {
+      if (course.department) {
+        deptSet.add(course.department);
+      }
+    });
+    
+    return Array.from(deptSet).sort();
   }, [courses]);
   
   // Filter courses based on search query and selected department
   useEffect(() => {
-    let filtered = [...courses];
+    if (!courses.length) {
+      setFilteredCourses([]);
+      return;
+    }
+    
+    let result = courses;
     
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
+      result = result.filter(
         course =>
-          course.code.toLowerCase().includes(query) ||
-          course.name.toLowerCase().includes(query) ||
+          (course.code && course.code.toLowerCase().includes(query)) ||
+          (course.name && course.name.toLowerCase().includes(query)) ||
           (course.description && course.description.toLowerCase().includes(query))
       );
     }
     
-    if (selectedDepartment !== "all") {
-      filtered = filtered.filter(course => course.department === selectedDepartment);
+    if (selectedDepartment && selectedDepartment !== "all") {
+      result = result.filter(course => course.department === selectedDepartment);
     }
     
-    setFilteredCourses(filtered);
+    setFilteredCourses(result);
   }, [courses, searchQuery, selectedDepartment]);
   
   return { filteredCourses, departments };
