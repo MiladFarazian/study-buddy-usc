@@ -196,6 +196,30 @@ export type Database = {
           },
         ]
       }
+      terms: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          is_current: boolean | null
+          name: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          is_current?: boolean | null
+          name: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          is_current?: boolean | null
+          name?: string
+        }
+        Relationships: []
+      }
       tutor_courses: {
         Row: {
           course_id: string

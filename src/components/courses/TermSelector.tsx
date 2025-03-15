@@ -17,9 +17,12 @@ const TermSelector = ({ selectedTerm, onTermChange }: TermSelectorProps) => {
     const fetchTerms = async () => {
       try {
         setLoading(true);
-        // Use a direct RPC call to get terms
-        // Explicitly type the return data to avoid "never" type errors
-        const { data, error } = await supabase.functions.invoke<Term[]>('query_terms');
+        
+        // Fetch terms directly from the database instead of using the function
+        const { data, error } = await supabase
+          .from('terms')
+          .select('*')
+          .order('code', { ascending: false });
         
         if (error) {
           console.error('Error fetching terms:', error);
@@ -28,7 +31,7 @@ const TermSelector = ({ selectedTerm, onTermChange }: TermSelectorProps) => {
 
         // If data is available, set it
         if (data) {
-          setTerms(data);
+          setTerms(data as Term[]);
           
           // If no term is selected, select the current term
           if (!selectedTerm && data.length > 0) {
