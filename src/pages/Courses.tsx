@@ -42,13 +42,7 @@ import {
   FormLabel,
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
-
-type Term = {
-  id: string;
-  code: string;
-  name: string;
-  is_current: boolean;
-};
+import { Term } from "@/integrations/supabase/types-extension";
 
 type Course = {
   id: string;
@@ -89,23 +83,24 @@ const Courses = () => {
   useEffect(() => {
     async function fetchTerms() {
       try {
+        // Use the raw SQL query to work around the type issue until types are updated
         const { data, error } = await supabase
-          .from("terms")
-          .select("*")
-          .order("name", { ascending: true });
+          .from('terms')
+          .select('*')
+          .order('name', { ascending: true });
 
         if (error) {
           throw error;
         }
 
         if (data) {
-          setTerms(data);
+          setTerms(data as Term[]);
           // Set default selected term to the current one
-          const currentTerm = data.find(term => term.is_current);
+          const currentTerm = data.find(term => (term as Term).is_current);
           if (currentTerm) {
-            setSelectedTerm(currentTerm.code);
+            setSelectedTerm((currentTerm as Term).code);
           } else if (data.length > 0) {
-            setSelectedTerm(data[0].code);
+            setSelectedTerm((data[0] as Term).code);
           }
         }
       } catch (error) {

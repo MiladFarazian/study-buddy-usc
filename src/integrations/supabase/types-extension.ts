@@ -25,3 +25,12 @@ export type TutorCourseUpdate = Database["public"]["Tables"]["tutor_courses"]["U
 export type Session = Database["public"]["Tables"]["sessions"]["Row"];
 export type SessionInsert = Database["public"]["Tables"]["sessions"]["Insert"];
 export type SessionUpdate = Database["public"]["Tables"]["sessions"]["Update"];
+
+// Define the Term type (manually since it's not in the auto-generated types yet)
+export type Term = {
+  id: string;
+  code: string;
+  name: string;
+  is_current: boolean;
+  created_at?: string;
+};
