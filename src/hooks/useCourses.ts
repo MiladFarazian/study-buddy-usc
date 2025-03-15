@@ -23,14 +23,23 @@ export function useCourses(filterOptions: CourseFilterOptions) {
       setError(null);
       
       try {
+        console.log(`Fetching courses for term: ${filterOptions.term}`);
         const { data, error } = await supabase
           .from("courses")
           .select("*")
           .eq("term_code", filterOptions.term);
           
-        if (error) throw error;
+        if (error) {
+          console.error("Database error:", error);
+          throw error;
+        }
         
-        setCourses(data as Course[]);
+        if (data) {
+          console.log(`Found ${data.length} courses for term ${filterOptions.term}`);
+          setCourses(data as Course[]);
+        } else {
+          setCourses([]);
+        }
       } catch (err) {
         console.error("Error fetching courses:", err);
         setError(err instanceof Error ? err.message : "An error occurred");
@@ -66,6 +75,7 @@ export function useCourses(filterOptions: CourseFilterOptions) {
         course => 
           (course.code && course.code.toLowerCase().includes(query)) ||
           (course.name && course.name.toLowerCase().includes(query)) ||
+          (course.instructor && course.instructor.toLowerCase().includes(query)) ||
           (course.description && course.description.toLowerCase().includes(query))
       );
     }

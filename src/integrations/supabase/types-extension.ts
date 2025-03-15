@@ -13,13 +13,13 @@ export type ReviewUpdate = Database["public"]["Tables"]["reviews"]["Update"];
 
 // Define the Course type
 export type Course = Database["public"]["Tables"]["courses"]["Row"] & {
-  term_code?: string;
-  instructor?: string;
-  session_type?: string;
-  units?: string;
-  days?: string;
-  time?: string;
-  location?: string;
+  term_code: string;
+  instructor: string;
+  session_type: string;
+  units: string;
+  days: string;
+  time: string;
+  location: string;
 };
 export type CourseInsert = Database["public"]["Tables"]["courses"]["Insert"];
 export type CourseUpdate = Database["public"]["Tables"]["courses"]["Update"];
@@ -34,7 +34,7 @@ export type Session = Database["public"]["Tables"]["sessions"]["Row"];
 export type SessionInsert = Database["public"]["Tables"]["sessions"]["Insert"];
 export type SessionUpdate = Database["public"]["Tables"]["sessions"]["Update"];
 
-// Define the Term type (manually since it's not in the auto-generated types yet)
+// Define the Term type
 export type Term = {
   id: string;
   code: string;

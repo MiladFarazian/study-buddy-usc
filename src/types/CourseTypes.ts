@@ -5,13 +5,13 @@ export interface Course {
   name: string;
   department: string;
   description: string | null;
-  term_code?: string;
-  instructor?: string;
-  units?: string;
-  days?: string;
-  time?: string;
-  location?: string;
-  session_type?: string;
+  term_code: string;
+  instructor: string;
+  units: string;
+  days: string;
+  time: string;
+  location: string;
+  session_type: string;
 }
 
 export interface Term {

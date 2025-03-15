@@ -30,7 +30,7 @@ const TermSelector = ({ selectedTerm, onTermChange }: TermSelectorProps) => {
         <SelectContent>
           {terms.map((term) => (
             <SelectItem key={term.id} value={term.code}>
-              {term.name}
+              {term.name} {term.is_current && "(Current)"}
             </SelectItem>
           ))}
         </SelectContent>
