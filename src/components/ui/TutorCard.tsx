@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Star } from "lucide-react";
+import { Star, DollarSign } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Tutor } from "@/types/tutor";
 
@@ -17,6 +17,40 @@ const TutorCard = ({ tutor }: TutorCardProps) => {
       .split(" ")
       .map((n) => n[0])
       .join("");
+  };
+
+  // Generate star rating display
+  const renderStars = (rating: number) => {
+    const stars = [];
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    
+    // Add full stars
+    for (let i = 0; i < fullStars; i++) {
+      stars.push(
+        <Star key={`full-${i}`} className="h-4 w-4 fill-usc-gold text-usc-gold" />
+      );
+    }
+    
+    // Add half star if needed
+    if (hasHalfStar) {
+      stars.push(
+        <span key="half" className="relative">
+          <Star className="h-4 w-4 text-usc-gold" />
+          <Star className="absolute top-0 left-0 h-4 w-4 fill-usc-gold text-usc-gold overflow-hidden" style={{ clipPath: 'inset(0 50% 0 0)' }} />
+        </span>
+      );
+    }
+    
+    // Add empty stars
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+    for (let i = 0; i < emptyStars; i++) {
+      stars.push(
+        <Star key={`empty-${i}`} className="h-4 w-4 text-gray-300" />
+      );
+    }
+    
+    return stars;
   };
 
   return (
@@ -37,16 +71,21 @@ const TutorCard = ({ tutor }: TutorCardProps) => {
           </div>
           
           <div className="grid grid-cols-2 gap-4 py-2">
-            <div>
-              <p className="text-sm text-gray-500">Rating:</p>
-              <div className="flex items-center mt-1">
-                <Star className="h-4 w-4 fill-usc-gold text-usc-gold" />
-                <span className="ml-1 font-medium">{tutor.rating.toFixed(1)}/5.0</span>
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <p className="text-sm text-gray-500 mb-1">Rating</p>
+              <div className="flex items-center">
+                <div className="flex mr-2">
+                  {renderStars(tutor.rating)}
+                </div>
+                <span className="font-medium text-sm">{tutor.rating.toFixed(1)}</span>
               </div>
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Rate:</p>
-              <p className="font-medium">${tutor.hourlyRate}/hour</p>
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <p className="text-sm text-gray-500 mb-1">Hourly Rate</p>
+              <div className="flex items-center">
+                <DollarSign className="h-4 w-4 text-green-600 mr-1" />
+                <span className="font-medium">${tutor.hourlyRate}</span>
+              </div>
             </div>
           </div>
           

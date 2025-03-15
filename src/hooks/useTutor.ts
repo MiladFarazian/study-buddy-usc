@@ -1,125 +1,102 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Tutor, Subject, Review } from "@/types/tutor";
-import { useToast } from "@/hooks/use-toast";
+import { Tutor, Review } from "@/types/tutor";
 
-export function useTutor(tutorId: string) {
+export const useTutor = (tutorId: string | undefined) => {
   const [tutor, setTutor] = useState<Tutor | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchTutor() {
+    const fetchTutor = async () => {
       if (!tutorId) {
         setLoading(false);
         return;
       }
 
+      setLoading(true);
+      setError(null);
+
       try {
-        setLoading(true);
-        
-        // Fetch tutor profile
-        const { data: tutorData, error: tutorError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', tutorId)
-          .eq('role', 'tutor')
-          .maybeSingle();
-        
-        if (tutorError) {
-          throw tutorError;
+        // Fetch the tutor profile
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", tutorId)
+          .eq("role", "tutor")
+          .single();
+
+        if (profileError) {
+          throw profileError;
         }
-        
-        if (tutorData) {
-          // Map subjects array to Subject objects
-          const subjects: Subject[] = (tutorData.subjects || []).map((code: string) => ({
+
+        if (!profileData) {
+          throw new Error("Tutor not found");
+        }
+
+        // Map the database profile to our Tutor type
+        const tutorData: Tutor = {
+          id: profileData.id,
+          name: `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim(),
+          firstName: profileData.first_name || '',
+          lastName: profileData.last_name || '',
+          field: profileData.major || '',
+          rating: profileData.average_rating || 0,
+          hourlyRate: profileData.hourly_rate || 0,
+          subjects: (profileData.subjects || []).map((code: string) => ({
             code,
-            name: getSubjectName(code)
-          }));
-          
-          setTutor({
-            id: tutorData.id,
-            name: `${tutorData.first_name || ''} ${tutorData.last_name || ''}`.trim(),
-            firstName: tutorData.first_name || '',
-            lastName: tutorData.last_name || '',
-            field: tutorData.major || '',
-            rating: tutorData.average_rating || 4.5,
-            hourlyRate: tutorData.hourly_rate || 25,
-            subjects: subjects,
-            imageUrl: tutorData.avatar_url || getDefaultAvatar(),
-            bio: tutorData.bio || '',
-            graduationYear: tutorData.graduation_year || ''
-          });
-          
-          // Fetch reviews for this tutor
-          const { data: reviewsData, error: reviewsError } = await supabase
-            .from('reviews')
-            .select('*, profiles:reviewer_id(first_name, last_name)')
-            .eq('tutor_id', tutorId);
-          
-          if (reviewsError) {
-            console.error('Error fetching reviews:', reviewsError);
-          } else if (reviewsData) {
-            const mappedReviews: Review[] = reviewsData.map(review => ({
-              id: review.id,
-              reviewerId: review.reviewer_id,
-              reviewerName: review.profiles 
-                ? `${review.profiles.first_name || ''} ${review.profiles.last_name || ''}`.trim() 
-                : 'Anonymous',
-              tutorId: review.tutor_id,
-              rating: review.rating,
-              comment: review.comment || '',
-              createdAt: review.created_at
-            }));
-            
-            setReviews(mappedReviews);
-          }
-        } else {
-          toast({
-            title: "Tutor not found",
-            description: "The requested tutor profile could not be found",
-            variant: "destructive",
-          });
+            name: code
+          })),
+          imageUrl: profileData.avatar_url || '',
+          bio: profileData.bio || '',
+          graduationYear: profileData.graduation_year || ''
+        };
+
+        setTutor(tutorData);
+
+        // Fetch reviews for this tutor
+        const { data: reviewsData, error: reviewsError } = await supabase
+          .from("reviews")
+          .select(`
+            *,
+            reviewer:reviewer_id (
+              first_name,
+              last_name
+            )
+          `)
+          .eq("tutor_id", tutorId)
+          .order("created_at", { ascending: false });
+
+        if (reviewsError) {
+          throw reviewsError;
         }
-      } catch (error) {
-        console.error('Error fetching tutor:', error);
-        toast({
-          title: "Failed to load tutor profile",
-          description: "Please try again later",
-          variant: "destructive",
-        });
+
+        // Map the reviews data
+        const mappedReviews: Review[] = reviewsData.map((review: any) => ({
+          id: review.id,
+          reviewerId: review.reviewer_id,
+          reviewerName: review.reviewer ? 
+            `${review.reviewer.first_name || ''} ${review.reviewer.last_name || ''}`.trim() : 
+            'Anonymous Student',
+          tutorId: review.tutor_id,
+          rating: review.rating,
+          comment: review.comment,
+          createdAt: review.created_at
+        }));
+
+        setReviews(mappedReviews);
+      } catch (err) {
+        console.error("Error fetching tutor:", err);
+        setError(err instanceof Error ? err.message : "Failed to fetch tutor");
       } finally {
         setLoading(false);
       }
-    }
-    
+    };
+
     fetchTutor();
-  }, [tutorId, toast]);
-  
-  return { tutor, reviews, loading };
-}
+  }, [tutorId]);
 
-// Helper function to get a subject name from its code
-function getSubjectName(code: string): string {
-  // Simple mapping for common subjects
-  const subjectMap: Record<string, string> = {
-    'CSCI 103': 'Introduction to Programming',
-    'CSCI 104': 'Data Structures and Object-Oriented Design',
-    'CSCI 170': 'Discrete Methods in Computer Science',
-    'MATH 125': 'Calculus I',
-    'MATH 126': 'Calculus II',
-    'PHYS 151': 'Fundamentals of Physics I',
-    // Add more mappings as needed
-  };
-  
-  return subjectMap[code] || code;
-}
-
-// Generate a default avatar URL if none is provided
-function getDefaultAvatar(): string {
-  const index = Math.floor(Math.random() * 10) + 1;
-  const gender = Math.random() > 0.5 ? 'men' : 'women';
-  return `https://randomuser.me/api/portraits/${gender}/${index}.jpg`;
-}
+  return { tutor, reviews, loading, error };
+};
