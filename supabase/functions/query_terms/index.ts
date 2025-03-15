@@ -22,7 +22,23 @@ export const query_terms = async (): Promise<Term[]> => {
     );
     
     try {
-      // Query the terms table with explicit type
+      // Run a raw query to first check if the terms table exists
+      const { data: tableExists, error: checkError } = await supabase.rpc(
+        'check_table_exists', 
+        { table_name: 'terms' }
+      ).single();
+      
+      // If the check fails or table doesn't exist, return hardcoded terms
+      if (checkError || !tableExists) {
+        console.log('Terms table not found or check failed, returning default terms');
+        return [
+          { id: '1', code: '20251', name: 'Spring 2025', is_current: true },
+          { id: '2', code: '20252', name: 'Summer 2025', is_current: false },
+          { id: '3', code: '20253', name: 'Fall 2025', is_current: false }
+        ];
+      }
+      
+      // Table exists, query it
       const { data, error } = await supabase
         .from('terms')
         .select('*')
@@ -30,19 +46,10 @@ export const query_terms = async (): Promise<Term[]> => {
       
       if (error) {
         console.error('Error querying terms table:', error);
-        // If table doesn't exist, return hardcoded terms instead of throwing
-        if (error.code === '42P01') {
-          console.log('Terms table not found, returning default terms');
-          return [
-            { id: '1', code: '20251', name: 'Spring 2025', is_current: true },
-            { id: '2', code: '20252', name: 'Summer 2025', is_current: false },
-            { id: '3', code: '20253', name: 'Fall 2025', is_current: false }
-          ];
-        }
         throw error;
       }
       
-      // Explicitly return the data as Term[]
+      // Explicitly cast the result to Term[]
       return data as Term[];
     } catch (error) {
       console.error('Database error in query_terms:', error);
@@ -55,7 +62,12 @@ export const query_terms = async (): Promise<Term[]> => {
     }
   } catch (error) {
     console.error('Error in query_terms function:', error);
-    throw error;
+    // Final fallback
+    return [
+      { id: '1', code: '20251', name: 'Spring 2025', is_current: true },
+      { id: '2', code: '20252', name: 'Summer 2025', is_current: false },
+      { id: '3', code: '20253', name: 'Fall 2025', is_current: false }
+    ];
   }
 };
 

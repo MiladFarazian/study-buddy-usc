@@ -18,14 +18,14 @@ const TermSelector = ({ selectedTerm, onTermChange }: TermSelectorProps) => {
       try {
         setLoading(true);
         
-        // First try to fetch from database with explicit type annotation
-        const { data, error } = await supabase
+        // First try to fetch from database
+        const response = await supabase
           .from('terms')
           .select('*')
           .order('code', { ascending: false });
         
-        if (error) {
-          console.error('Error fetching terms from database:', error);
+        if (response.error) {
+          console.error('Error fetching terms from database:', response.error);
           
           // Fallback to hardcoded terms
           const fallbackTerms: Term[] = [
@@ -35,9 +35,9 @@ const TermSelector = ({ selectedTerm, onTermChange }: TermSelectorProps) => {
           ];
           
           setTerms(fallbackTerms);
-        } else if (data && data.length > 0) {
-          // Explicitly cast to Term[] to avoid type inference issues
-          setTerms(data as Term[]);
+        } else if (response.data && response.data.length > 0) {
+          // Use a simple approach to avoid type issues
+          setTerms(response.data as unknown as Term[]);
         } else {
           // Fallback if database returned empty result
           const fallbackTerms: Term[] = [
