@@ -30,17 +30,18 @@ const Courses = () => {
       try {
         setLoading(true);
         
-        const { data, error } = await supabase
+        // Explicitly define the expected return type to avoid deep type instantiation
+        const response = await supabase
           .from("courses")
           .select("*")
           .eq("term_code", selectedTerm);
         
-        if (error) {
-          console.error("Error fetching courses:", error);
+        if (response.error) {
+          console.error("Error fetching courses:", response.error);
           return;
         }
         
-        setCourses(data || []);
+        setCourses(response.data || []);
       } catch (error) {
         console.error("Error:", error);
       } finally {
@@ -70,18 +71,22 @@ const Courses = () => {
   const handleImportComplete = () => {
     // Refresh courses list
     if (selectedTerm) {
-      supabase
-        .from("courses")
-        .select("*")
-        .eq("term_code", selectedTerm)
-        .then(({ data, error }) => {
-          if (error) {
-            console.error("Error refreshing courses:", error);
-            return;
-          }
-          
-          setCourses(data || []);
-        });
+      // Use a more direct approach to avoid type issues
+      const fetchUpdatedCourses = async () => {
+        const { data, error } = await supabase
+          .from("courses")
+          .select("*")
+          .eq("term_code", selectedTerm);
+        
+        if (error) {
+          console.error("Error refreshing courses:", error);
+          return;
+        }
+        
+        setCourses(data || []);
+      };
+      
+      fetchUpdatedCourses();
     }
   };
   
