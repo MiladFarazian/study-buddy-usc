@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,19 +30,19 @@ const Courses = () => {
       try {
         setLoading(true);
         
-        // Use a simpler approach to avoid type instantiation issues
-        const response = await supabase
+        // Define a simpler approach to avoid type issues
+        let { data, error } = await supabase
           .from("courses")
           .select("*")
           .eq("term_code", selectedTerm);
         
-        if (response.error) {
-          console.error("Error fetching courses:", response.error);
+        if (error) {
+          console.error("Error fetching courses:", error);
           return;
         }
         
-        // Explicitly type as Course[] without deep inference
-        setCourses(response.data as unknown as Course[]);
+        // Use a direct type assertion approach
+        setCourses(data as Course[]);
       } catch (error) {
         console.error("Error:", error);
       } finally {
@@ -72,18 +73,18 @@ const Courses = () => {
     // Refresh courses list
     if (selectedTerm) {
       const fetchUpdatedCourses = async () => {
-        const response = await supabase
+        let { data, error } = await supabase
           .from("courses")
           .select("*")
           .eq("term_code", selectedTerm);
         
-        if (response.error) {
-          console.error("Error refreshing courses:", response.error);
+        if (error) {
+          console.error("Error refreshing courses:", error);
           return;
         }
         
-        // Explicitly type as Course[] without deep inference
-        setCourses(response.data as unknown as Course[]);
+        // Use direct type assertion approach
+        setCourses(data as Course[]);
       };
       
       fetchUpdatedCourses();
