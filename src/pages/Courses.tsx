@@ -30,19 +30,22 @@ const Courses = () => {
       try {
         setLoading(true);
         
-        // Use a more direct approach with explicit type casting to avoid deep type instantiation
-        const { data, error } = await supabase
+        // Create a more simplified approach without complex type instantiation
+        const query = supabase
           .from("courses")
           .select("*")
           .eq("term_code", selectedTerm);
+        
+        const { data, error } = await query;
         
         if (error) {
           console.error("Error fetching courses:", error);
           return;
         }
         
-        // Explicitly cast the data to Course[] to avoid type instantiation issues
-        setCourses(data as Course[] || []);
+        // Cast the response to the correct type to avoid deep instantiation
+        const coursesList = (data || []) as unknown as Course[];
+        setCourses(coursesList);
       } catch (error) {
         console.error("Error:", error);
       } finally {
@@ -72,20 +75,23 @@ const Courses = () => {
   const handleImportComplete = () => {
     // Refresh courses list
     if (selectedTerm) {
-      // Use a more direct approach to avoid type issues
+      // Use a simplified approach to avoid type issues
       const fetchUpdatedCourses = async () => {
-        const { data, error } = await supabase
+        const query = supabase
           .from("courses")
           .select("*")
           .eq("term_code", selectedTerm);
+        
+        const { data, error } = await query;
         
         if (error) {
           console.error("Error refreshing courses:", error);
           return;
         }
         
-        // Explicitly cast the data to Course[] to avoid type instantiation issues
-        setCourses(data as Course[] || []);
+        // Cast the response to the correct type to avoid deep instantiation
+        const coursesList = (data || []) as unknown as Course[];
+        setCourses(coursesList);
       };
       
       fetchUpdatedCourses();
