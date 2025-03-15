@@ -30,22 +30,19 @@ const Courses = () => {
       try {
         setLoading(true);
         
-        // Create a more simplified approach without complex type instantiation
-        const query = supabase
+        const { data, error } = await supabase
           .from("courses")
           .select("*")
           .eq("term_code", selectedTerm);
-        
-        const { data, error } = await query;
         
         if (error) {
           console.error("Error fetching courses:", error);
           return;
         }
         
-        // Cast the response to the correct type to avoid deep instantiation
-        const coursesList = (data || []) as unknown as Course[];
-        setCourses(coursesList);
+        if (data) {
+          setCourses(data as Course[]);
+        }
       } catch (error) {
         console.error("Error:", error);
       } finally {
@@ -75,23 +72,20 @@ const Courses = () => {
   const handleImportComplete = () => {
     // Refresh courses list
     if (selectedTerm) {
-      // Use a simplified approach to avoid type issues
       const fetchUpdatedCourses = async () => {
-        const query = supabase
+        const { data, error } = await supabase
           .from("courses")
           .select("*")
           .eq("term_code", selectedTerm);
-        
-        const { data, error } = await query;
         
         if (error) {
           console.error("Error refreshing courses:", error);
           return;
         }
         
-        // Cast the response to the correct type to avoid deep instantiation
-        const coursesList = (data || []) as unknown as Course[];
-        setCourses(coursesList);
+        if (data) {
+          setCourses(data as Course[]);
+        }
       };
       
       fetchUpdatedCourses();

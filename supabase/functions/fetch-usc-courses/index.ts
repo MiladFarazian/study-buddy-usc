@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import { parse as parseCSV } from "https://deno.land/std@0.177.0/encoding/csv.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -31,75 +32,78 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Define the USC class scraper function
+    // Define the USC class scraper function that uses CSV files
     async function scrapeUSCClasses(termCode: string) {
       console.log(`Starting to scrape USC classes for term ${termCode}`);
       
-      // List of departments to scrape (simplified for example)
-      const departments = [
-        'csci', 'math', 'buad', 'econ', 'engr', 'psyc', 'comm', 'bisc'
+      // List of USC schools to fetch CSVs from
+      const schools = [
+        'dornsife', 'marshall', 'viterbi', 'iovine-young', 'cinematic-arts',
+        'price', 'annenberg', 'architecture', 'dramatic-arts', 'music',
+        'roski', 'dent', 'chan', 'pharmacy', 'keck', 'law', 'leonard-davis',
+        'thornton', 'rossier', 'bovard', 'independent-health'
       ];
       
       const allCourses = [];
       
-      for (const dept of departments) {
+      for (const school of schools) {
         try {
-          console.log(`Processing department: ${dept}`);
+          console.log(`Processing school: ${school}`);
           
-          // Construct the URL for the department page
-          const deptUrl = `https://classes.usc.edu/term-${termCode}/classes/${dept}`;
+          // Construct the URL for the CSV file
+          const csvUrl = `https://classes.usc.edu/term-${termCode}/${school}/csv/`;
           
-          // Fetch the department page
-          const response = await fetch(deptUrl);
+          console.log(`Fetching CSV from: ${csvUrl}`);
+          // Fetch the CSV file
+          const response = await fetch(csvUrl);
           
           if (!response.ok) {
-            console.log(`Failed to fetch ${dept}: ${response.status}`);
+            console.log(`Failed to fetch CSV for ${school}: ${response.status}`);
             continue;
           }
           
-          const html = await response.text();
+          // Parse the CSV data
+          const csvText = await response.text();
+          const rows = await parseCSV(csvText, { skipFirstRow: true });
           
-          // Basic parsing of the HTML to extract course info
-          // In a production environment, use a proper HTML parser
-          const courseBlocks = html.split('<div class="course-id">');
+          console.log(`Found ${rows.length} courses for ${school}`);
           
-          // Skip the first element as it doesn't contain a course
-          for (let i = 1; i < courseBlocks.length; i++) {
-            const block = courseBlocks[i];
+          // Process each row in the CSV
+          for (const row of rows) {
+            // CSV format: number,title,units,type,days,time,location,instructor
+            if (row.length < 8) continue; // Ensure we have enough columns
             
-            // Extract course code
-            const codeMatch = block.match(/([\w-]+)\s+<span/);
-            const code = codeMatch ? `${dept.toUpperCase()} ${codeMatch[1]}` : '';
+            const [courseCode, name, units, type, days, time, location, instructor] = row;
             
-            // Extract course name
-            const nameMatch = block.match(/<h3 class="course-title">(.*?)<\/h3>/);
-            const name = nameMatch ? nameMatch[1].trim() : '';
+            // Skip if no valid course code
+            if (!courseCode) continue;
             
-            // Extract course description
-            const descMatch = block.match(/<div class="catalogue-description">(.*?)<\/div>/s);
-            let description = descMatch ? descMatch[1].trim() : '';
+            // Extract department code (e.g., CSCI from CSCI-102)
+            const department = courseCode.split('-')[0].trim();
             
-            // Clean up HTML tags from description
-            description = description.replace(/<[^>]*>/g, '');
+            // Remove duplicate spaces and trim
+            const cleanName = name.replace(/\s+/g, ' ').trim();
             
-            if (code && name) {
-              allCourses.push({
-                code,
-                name,
-                description,
-                department: dept.toUpperCase(),
-                term_code: termCode
-              });
-            }
+            allCourses.push({
+              code: courseCode,
+              name: cleanName,
+              department,
+              description: null, // CSV doesn't include descriptions
+              term_code: termCode,
+              instructor,
+              units,
+              session_type: type,
+              days,
+              time,
+              location
+            });
           }
           
-          console.log(`Extracted ${allCourses.length} courses from ${dept}`);
-          
           // Add a delay to avoid overwhelming the server
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 500));
           
         } catch (err) {
-          console.error(`Error processing ${dept}:`, err);
+          console.error(`Error processing ${school}:`, err);
         }
       }
       
@@ -116,34 +120,50 @@ serve(async (req) => {
       );
     }
     
+    console.log(`Found a total of ${courses.length} courses. Storing in database...`);
+    
     // Store courses in Supabase
+    let successCount = 0;
+    let errorCount = 0;
+    
     for (const course of courses) {
-      // Check if the course already exists
-      const { data: existingCourse } = await supabase
-        .from('courses')
-        .select('id')
-        .eq('code', course.code)
-        .eq('term_code', course.term_code)
-        .maybeSingle();
-      
-      if (existingCourse) {
-        // Update existing course
-        await supabase
+      try {
+        // Check if the course already exists
+        const { data: existingCourse } = await supabase
           .from('courses')
-          .update(course)
-          .eq('id', existingCourse.id);
-      } else {
-        // Insert new course
-        await supabase
-          .from('courses')
-          .insert(course);
+          .select('id')
+          .eq('code', course.code)
+          .eq('term_code', course.term_code)
+          .maybeSingle();
+        
+        if (existingCourse) {
+          // Update existing course
+          const { error } = await supabase
+            .from('courses')
+            .update(course)
+            .eq('id', existingCourse.id);
+            
+          if (!error) successCount++;
+          else errorCount++;
+        } else {
+          // Insert new course
+          const { error } = await supabase
+            .from('courses')
+            .insert(course);
+            
+          if (!error) successCount++;
+          else errorCount++;
+        }
+      } catch (error) {
+        console.error(`Error storing course ${course.code}:`, error);
+        errorCount++;
       }
     }
     
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Successfully imported ${courses.length} USC courses for term ${term}` 
+        message: `Successfully imported ${successCount} USC courses for term ${term}. Errors: ${errorCount}.` 
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
