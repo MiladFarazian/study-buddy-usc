@@ -20,25 +20,17 @@ const TermSelector = ({ selectedTerm, onTermChange }: TermSelectorProps) => {
         // Use a direct RPC call to get terms
         const { data, error } = await supabase
           .rpc('query_terms')
-          .then((response) => {
-            if (response.error) throw response.error;
-            return { data: response.data as Term[], error: null };
-          })
-          .catch((error) => {
-            console.error('Error executing query_terms RPC:', error);
-            return { data: [] as Term[], error };
-          });
-
+          
         if (error) {
           console.error('Error fetching terms:', error);
           return;
         }
 
-        setTerms(data);
+        setTerms(data as Term[]);
         
         // If no term is selected, select the current term
-        if (!selectedTerm && data.length > 0) {
-          const currentTerm = data.find(term => term.is_current);
+        if (!selectedTerm && data && data.length > 0) {
+          const currentTerm = data.find((term: Term) => term.is_current);
           if (currentTerm) {
             onTermChange(currentTerm.code);
           } else {

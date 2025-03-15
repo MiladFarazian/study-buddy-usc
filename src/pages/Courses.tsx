@@ -40,7 +40,7 @@ const Courses = () => {
           return;
         }
         
-        setCourses(data as Course[]);
+        setCourses(data || []);
       } catch (error) {
         console.error("Error:", error);
       } finally {
@@ -80,7 +80,7 @@ const Courses = () => {
             return;
           }
           
-          setCourses(data as Course[]);
+          setCourses(data || []);
         });
     }
   };
