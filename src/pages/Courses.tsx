@@ -30,6 +30,7 @@ const Courses = () => {
       try {
         setLoading(true);
         
+        // Explicitly typing the response to avoid deep type inference
         const { data, error } = await supabase
           .from("courses")
           .select("*")
@@ -41,6 +42,7 @@ const Courses = () => {
         }
         
         if (data) {
+          // Explicitly cast the data to Course[] to avoid type instantiation issues
           setCourses(data as Course[]);
         }
       } catch (error) {
@@ -73,6 +75,7 @@ const Courses = () => {
     // Refresh courses list
     if (selectedTerm) {
       const fetchUpdatedCourses = async () => {
+        // Explicitly type the response to avoid type inference issues
         const { data, error } = await supabase
           .from("courses")
           .select("*")
@@ -84,6 +87,7 @@ const Courses = () => {
         }
         
         if (data) {
+          // Explicitly cast to Course[] to avoid type instantiation issues
           setCourses(data as Course[]);
         }
       };

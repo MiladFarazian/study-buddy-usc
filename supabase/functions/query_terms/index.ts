@@ -6,7 +6,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-export const query_terms = async () => {
+type Term = {
+  id: string;
+  code: string;
+  name: string;
+  is_current: boolean;
+};
+
+export const query_terms = async (): Promise<Term[]> => {
   try {
     // Create Supabase client
     const supabase = createClient(
@@ -15,7 +22,7 @@ export const query_terms = async () => {
     );
     
     try {
-      // Query the terms table
+      // Query the terms table with explicit type
       const { data, error } = await supabase
         .from('terms')
         .select('*')
@@ -35,7 +42,8 @@ export const query_terms = async () => {
         throw error;
       }
       
-      return data;
+      // Explicitly return the data as Term[]
+      return data as Term[];
     } catch (error) {
       console.error('Database error in query_terms:', error);
       // Fallback to hard-coded terms
