@@ -13,6 +13,37 @@ type Term = {
   is_current: boolean;
 };
 
+// Helper function to check if a table exists
+async function checkTableExists(supabase: any, tableName: string): Promise<boolean> {
+  try {
+    // Test with a simple query
+    const { count, error } = await supabase
+      .from(tableName)
+      .select('*', { count: 'exact', head: true });
+    
+    return !error;
+  } catch (error) {
+    console.error(`Error checking if table ${tableName} exists:`, error);
+    return false;
+  }
+}
+
+// Helper function to check if a column exists
+async function checkColumnExists(supabase: any, tableName: string, columnName: string): Promise<boolean> {
+  try {
+    // This query will succeed if the column exists and fail if it doesn't
+    const { error } = await supabase
+      .from(tableName)
+      .select(columnName)
+      .limit(1);
+    
+    return !error;
+  } catch (error) {
+    console.error(`Error checking if column ${columnName} exists in ${tableName}:`, error);
+    return false;
+  }
+}
+
 export const query_terms = async (): Promise<Term[]> => {
   try {
     // Create Supabase client
@@ -21,24 +52,37 @@ export const query_terms = async (): Promise<Term[]> => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
     
-    try {
-      // Run a raw query to first check if the terms table exists
-      const { data: tableExists, error: checkError } = await supabase.rpc(
-        'check_table_exists', 
-        { table_name: 'terms' }
-      ).single();
-      
-      // If the check fails or table doesn't exist, return hardcoded terms
-      if (checkError || !tableExists) {
-        console.log('Terms table not found or check failed, returning default terms');
-        return [
-          { id: '1', code: '20251', name: 'Spring 2025', is_current: true },
-          { id: '2', code: '20252', name: 'Summer 2025', is_current: false },
-          { id: '3', code: '20253', name: 'Fall 2025', is_current: false }
-        ];
+    // Check if terms table exists
+    const termsTableExists = await checkTableExists(supabase, 'terms');
+    
+    // If terms table doesn't exist, return hardcoded terms
+    if (!termsTableExists) {
+      console.log('Terms table not found, returning default terms');
+      return [
+        { id: '1', code: '20251', name: 'Spring 2025', is_current: true },
+        { id: '2', code: '20252', name: 'Summer 2025', is_current: false },
+        { id: '3', code: '20253', name: 'Fall 2025', is_current: false }
+      ];
+    }
+    
+    // Check if is_current column exists in terms table
+    const isCurrentColumnExists = await checkColumnExists(supabase, 'terms', 'is_current');
+    
+    // Add is_current column if it doesn't exist
+    if (!isCurrentColumnExists) {
+      try {
+        console.log('Adding is_current column to terms table');
+        await supabase.rpc(
+          'execute_sql',
+          { sql: 'ALTER TABLE public.terms ADD COLUMN IF NOT EXISTS is_current BOOLEAN DEFAULT false' }
+        );
+      } catch (error) {
+        console.error('Error adding is_current column:', error);
       }
-      
-      // Table exists, query it
+    }
+    
+    // Query terms table
+    try {
       const { data, error } = await supabase
         .from('terms')
         .select('*')
@@ -49,7 +93,6 @@ export const query_terms = async (): Promise<Term[]> => {
         throw error;
       }
       
-      // Explicitly cast the result to Term[]
       return data as Term[];
     } catch (error) {
       console.error('Database error in query_terms:', error);

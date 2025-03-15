@@ -30,19 +30,19 @@ const Courses = () => {
       try {
         setLoading(true);
         
-        // Define a simpler approach to avoid type issues
-        let { data, error } = await supabase
+        // Use type assertion at the type level
+        const response = await supabase
           .from("courses")
           .select("*")
           .eq("term_code", selectedTerm);
         
-        if (error) {
-          console.error("Error fetching courses:", error);
+        if (response.error) {
+          console.error("Error fetching courses:", response.error);
           return;
         }
         
-        // Use a direct type assertion approach
-        setCourses(data as Course[]);
+        // Set courses with a simple type assertion to avoid deep type inference
+        setCourses(response.data || []);
       } catch (error) {
         console.error("Error:", error);
       } finally {
@@ -73,18 +73,18 @@ const Courses = () => {
     // Refresh courses list
     if (selectedTerm) {
       const fetchUpdatedCourses = async () => {
-        let { data, error } = await supabase
+        const response = await supabase
           .from("courses")
           .select("*")
           .eq("term_code", selectedTerm);
         
-        if (error) {
-          console.error("Error refreshing courses:", error);
+        if (response.error) {
+          console.error("Error refreshing courses:", response.error);
           return;
         }
         
-        // Use direct type assertion approach
-        setCourses(data as Course[]);
+        // Set courses with a simple type assertion to avoid deep type inference
+        setCourses(response.data || []);
       };
       
       fetchUpdatedCourses();

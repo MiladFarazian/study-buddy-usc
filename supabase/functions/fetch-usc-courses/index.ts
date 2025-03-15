@@ -31,6 +31,38 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
+    
+    // First check if the courses table has the term_code column
+    try {
+      const { data: hasTermCode, error: checkError } = await supabase.rpc(
+        'check_column_exists',
+        { 
+          table_name: 'courses',
+          column_name: 'term_code'
+        }
+      ).single();
+      
+      // If term_code column doesn't exist, add it
+      if (checkError || hasTermCode === false) {
+        console.log('Adding term_code column to courses table');
+        
+        // Add term_code column if it doesn't exist
+        const { error: alterError } = await supabase.rpc(
+          'execute_sql',
+          { 
+            sql: 'ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS term_code TEXT;'
+          }
+        );
+        
+        if (alterError) {
+          console.error('Error adding term_code column:', alterError);
+          // Continue anyway, the column might already exist
+        }
+      }
+    } catch (err) {
+      console.error('Error checking or adding term_code column:', err);
+      // Continue anyway, the operation might succeed
+    }
 
     // Define the USC class scraper function that uses CSV files
     async function scrapeUSCClasses(termCode: string) {

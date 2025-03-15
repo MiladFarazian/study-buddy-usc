@@ -1,17 +1,19 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Course } from "@/integrations/supabase/types-extension";
 
-export function useCoursesFilter(courses: Course[], searchQuery: string, selectedDepartment: string) {
+export function useCoursesFilter(
+  courses: Course[], 
+  searchQuery: string, 
+  selectedDepartment: string
+) {
   const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
   
-  // Extract unique departments from courses
-  const extractDepartments = (courses: Course[]): string[] => {
+  // Memoize departments to avoid unnecessary recalculations and type depth issues
+  const departments = useMemo(() => {
     const uniqueDepartments = [...new Set(courses.map(course => course.department))];
     return uniqueDepartments.sort();
-  };
-
-  const departments = extractDepartments(courses);
+  }, [courses]);
   
   // Filter courses based on search query and selected department
   useEffect(() => {
