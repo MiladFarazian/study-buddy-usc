@@ -4,21 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Star } from "lucide-react";
-
-interface Subject {
-  code: string;
-  name: string;
-}
-
-interface Tutor {
-  id: string;
-  name: string;
-  field: string;
-  rating: number;
-  hourlyRate: number;
-  subjects: Subject[];
-  imageUrl: string;
-}
+import { Link } from "react-router-dom";
+import { Tutor } from "@/types/tutor";
 
 interface TutorCardProps {
   tutor: Tutor;
@@ -54,7 +41,7 @@ const TutorCard = ({ tutor }: TutorCardProps) => {
               <p className="text-sm text-gray-500">Rating:</p>
               <div className="flex items-center mt-1">
                 <Star className="h-4 w-4 fill-usc-gold text-usc-gold" />
-                <span className="ml-1 font-medium">{tutor.rating}/5.0</span>
+                <span className="ml-1 font-medium">{tutor.rating.toFixed(1)}/5.0</span>
               </div>
             </div>
             <div>
@@ -83,8 +70,11 @@ const TutorCard = ({ tutor }: TutorCardProps) => {
             </div>
           </div>
           
-          <Button className="w-full mt-2 bg-usc-cardinal hover:bg-usc-cardinal-dark text-white">
-            View Profile
+          <Button 
+            className="w-full mt-2 bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
+            asChild
+          >
+            <Link to={`/tutors/${tutor.id}`}>View Profile</Link>
           </Button>
         </div>
       </CardContent>

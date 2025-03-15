@@ -2,50 +2,17 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import TutorCard from "@/components/ui/TutorCard";
-
-const featuredTutors = [
-  {
-    id: "1",
-    name: "Alex Johnson",
-    field: "Computer Science",
-    rating: 4.9,
-    hourlyRate: 25,
-    subjects: [
-      { code: "CSCI 103", name: "Introduction to Programming" },
-      { code: "CSCI 104", name: "Data Structures and Object-Oriented Design" },
-      { code: "CSCI 170", name: "Discrete Methods in Computer Science" }
-    ],
-    imageUrl: "https://randomuser.me/api/portraits/men/32.jpg"
-  },
-  {
-    id: "2",
-    name: "Sophia Martinez",
-    field: "Biochemistry",
-    rating: 4.8,
-    hourlyRate: 30,
-    subjects: [
-      { code: "CHEM 105A", name: "General Chemistry" },
-      { code: "CHEM 105B", name: "General Chemistry" },
-      { code: "CHEM 300", name: "Analytical Chemistry" }
-    ],
-    imageUrl: "https://randomuser.me/api/portraits/women/44.jpg"
-  },
-  {
-    id: "3",
-    name: "Marcus Williams",
-    field: "Economics",
-    rating: 4.7,
-    hourlyRate: 22,
-    subjects: [
-      { code: "ECON 203", name: "Principles of Microeconomics" },
-      { code: "ECON 205", name: "Principles of Macroeconomics" },
-      { code: "ECON 303", name: "Intermediate Microeconomic Theory" }
-    ],
-    imageUrl: "https://randomuser.me/api/portraits/men/75.jpg"
-  }
-];
+import { useTutors } from "@/hooks/useTutors";
+import { Loader2 } from "lucide-react";
 
 const FeaturedTutors = () => {
+  const { tutors, loading } = useTutors();
+  
+  // Show only the top 3 tutors based on rating
+  const featuredTutors = [...tutors]
+    .sort((a, b) => b.rating - a.rating)
+    .slice(0, 3);
+
   return (
     <div className="mt-12">
       <div className="flex items-center justify-between mb-6">
@@ -65,11 +32,19 @@ const FeaturedTutors = () => {
           </Link>
         </Button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {featuredTutors.map((tutor) => (
-          <TutorCard key={tutor.id} tutor={tutor} />
-        ))}
-      </div>
+
+      {loading ? (
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="h-6 w-6 animate-spin text-usc-cardinal" />
+          <span className="ml-2">Loading featured tutors...</span>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {featuredTutors.map((tutor) => (
+            <TutorCard key={tutor.id} tutor={tutor} />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
