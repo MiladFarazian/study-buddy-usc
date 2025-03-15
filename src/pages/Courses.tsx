@@ -30,18 +30,19 @@ const Courses = () => {
       try {
         setLoading(true);
         
-        // Explicitly define the expected return type to avoid deep type instantiation
-        const response = await supabase
+        // Use a more direct approach with explicit type casting to avoid deep type instantiation
+        const { data, error } = await supabase
           .from("courses")
           .select("*")
           .eq("term_code", selectedTerm);
         
-        if (response.error) {
-          console.error("Error fetching courses:", response.error);
+        if (error) {
+          console.error("Error fetching courses:", error);
           return;
         }
         
-        setCourses(response.data || []);
+        // Explicitly cast the data to Course[] to avoid type instantiation issues
+        setCourses(data as Course[] || []);
       } catch (error) {
         console.error("Error:", error);
       } finally {
@@ -83,7 +84,8 @@ const Courses = () => {
           return;
         }
         
-        setCourses(data || []);
+        // Explicitly cast the data to Course[] to avoid type instantiation issues
+        setCourses(data as Course[] || []);
       };
       
       fetchUpdatedCourses();
