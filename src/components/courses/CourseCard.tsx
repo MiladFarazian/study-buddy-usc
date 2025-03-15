@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Course } from "@/integrations/supabase/types-extension";
+import { Course } from "@/types/CourseTypes";
 
 interface CourseCardProps {
   course: Course;
@@ -9,8 +9,8 @@ interface CourseCardProps {
 
 const CourseCard = ({ course }: CourseCardProps) => {
   return (
-    <Card className="h-full">
-      <CardHeader className="pb-3">
+    <Card className="h-full hover:shadow-md transition-shadow">
+      <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <CardTitle className="text-lg font-bold">
             {course.code}
@@ -19,34 +19,44 @@ const CourseCard = ({ course }: CourseCardProps) => {
             {course.department}
           </Badge>
         </div>
-        <h3 className="text-md font-medium">{course.name}</h3>
+        <h3 className="font-medium mt-1">{course.name}</h3>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-gray-600 line-clamp-4">{course.description}</p>
-        
-        {course.instructor && (
-          <div className="mt-3 text-sm">
-            <span className="font-medium">Instructor:</span> {course.instructor}
-          </div>
+        {course.description && (
+          <p className="text-sm text-gray-600 line-clamp-3 mb-3">{course.description}</p>
         )}
         
-        {course.units && (
-          <div className="mt-1 text-sm">
-            <span className="font-medium">Units:</span> {course.units}
-          </div>
-        )}
-        
-        {(course.days || course.time) && (
-          <div className="mt-1 text-sm">
-            <span className="font-medium">Schedule:</span> {course.days} {course.time}
-          </div>
-        )}
-        
-        {course.location && (
-          <div className="mt-1 text-sm">
-            <span className="font-medium">Location:</span> {course.location}
-          </div>
-        )}
+        <div className="space-y-1 text-sm">
+          {course.instructor && (
+            <div className="flex">
+              <span className="font-medium w-24">Instructor:</span> 
+              <span className="text-gray-700">{course.instructor}</span>
+            </div>
+          )}
+          
+          {course.units && (
+            <div className="flex">
+              <span className="font-medium w-24">Units:</span> 
+              <span className="text-gray-700">{course.units}</span>
+            </div>
+          )}
+          
+          {(course.days || course.time) && (
+            <div className="flex">
+              <span className="font-medium w-24">Schedule:</span> 
+              <span className="text-gray-700">
+                {[course.days, course.time].filter(Boolean).join(' ')}
+              </span>
+            </div>
+          )}
+          
+          {course.location && (
+            <div className="flex">
+              <span className="font-medium w-24">Location:</span> 
+              <span className="text-gray-700">{course.location}</span>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
