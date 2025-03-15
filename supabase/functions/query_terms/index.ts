@@ -9,7 +9,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-export async function query_terms() {
+export const query_terms = async () => {
   try {
     // Create Supabase client
     const supabase = createClient(
@@ -32,4 +32,25 @@ export async function query_terms() {
     console.error('Error in query_terms function:', error);
     throw error;
   }
-}
+};
+
+// Handle HTTP requests
+Deno.serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const terms = await query_terms();
+    return new Response(JSON.stringify(terms), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 400,
+    });
+  }
+});
