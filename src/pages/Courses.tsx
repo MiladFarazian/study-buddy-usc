@@ -9,42 +9,44 @@ import CourseGridView from "@/components/courses/CourseGridView";
 import CourseListView from "@/components/courses/CourseListView";
 
 const Courses = () => {
+  // Initialize state with explicit type annotations
   const [courses, setCourses] = useState<Course[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("all");
   const [selectedTerm, setSelectedTerm] = useState("");
   const [loading, setLoading] = useState(true);
   
-  // Use the custom hook for filtering
+  // Use custom hook for filtering with our strictly-typed state
   const { filteredCourses, departments } = useCoursesFilter(
     courses,
     searchQuery,
     selectedDepartment
   );
 
-  // Create a fetchCourses function that avoids type issues
+  // Define a fetchCourses function to avoid type issues with inline async function
   const fetchCourses = useCallback(async (termCode: string) => {
     if (!termCode) return;
     
     try {
       setLoading(true);
       
-      // Fetch data with a more direct approach
-      const result = await supabase
+      // Fetch courses from Supabase
+      const { data, error } = await supabase
         .from("courses")
         .select("*")
         .eq("term_code", termCode);
       
-      if (result.error) {
-        console.error("Error fetching courses:", result.error);
+      if (error) {
+        console.error("Error fetching courses:", error);
+        setCourses([]);
         return;
       }
       
-      // Process data safely without complex type handling
-      if (result.data) {
-        // Simplify the type handling by forcing the type here
-        const courseData = result.data as unknown as Course[];
-        setCourses(courseData);
+      // Handle the response data safely
+      if (data && Array.isArray(data)) {
+        // Explicitly cast data to Course[] to avoid deep type inference
+        const coursesData = data as unknown as Course[];
+        setCourses(coursesData);
       } else {
         setCourses([]);
       }
@@ -63,24 +65,20 @@ const Courses = () => {
     }
   }, [selectedTerm, fetchCourses]);
   
-  // Handle search input change
+  // Event handlers
   const handleSearchChange = (query: string) => {
     setSearchQuery(query);
   };
   
-  // Handle department selection change
   const handleDepartmentChange = (department: string) => {
     setSelectedDepartment(department);
   };
   
-  // Handle term selection change
   const handleTermChange = (termCode: string) => {
     setSelectedTerm(termCode);
   };
   
-  // Handle course import completion
   const handleImportComplete = () => {
-    // Refresh courses list
     if (selectedTerm) {
       fetchCourses(selectedTerm);
     }

@@ -7,43 +7,51 @@ export function useCoursesFilter(
   searchQuery: string, 
   selectedDepartment: string
 ) {
-  // Use explicit type annotation for state
+  // Use explicit type annotation for state and default to empty array
   const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
   
-  // Use a simplified department extraction approach
+  // Simplify departments extraction with a more direct approach
   const departments = useMemo(() => {
-    if (!courses.length) return [];
+    // Early return for empty courses to avoid unnecessary processing
+    if (!courses || courses.length === 0) {
+      return [];
+    }
     
-    // Extract unique departments with a simpler approach
-    const deptSet = new Set<string>();
+    // Use a Set for unique departments
+    const uniqueDepartments = new Set<string>();
+    
+    // Safely extract departments with null/undefined checks
     courses.forEach(course => {
-      if (course.department) {
-        deptSet.add(course.department);
+      if (course && course.department) {
+        uniqueDepartments.add(course.department);
       }
     });
     
-    return Array.from(deptSet).sort();
+    // Convert Set to sorted array
+    return Array.from(uniqueDepartments).sort();
   }, [courses]);
   
-  // Filter courses based on search query and selected department
+  // Filter courses with explicit null checks
   useEffect(() => {
-    if (!courses.length) {
+    // Handle empty courses array
+    if (!courses || courses.length === 0) {
       setFilteredCourses([]);
       return;
     }
     
-    let result = courses;
+    let result = [...courses];
     
+    // Apply search filter if search query exists
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      result = result.filter(
-        course =>
-          (course.code && course.code.toLowerCase().includes(query)) ||
-          (course.name && course.name.toLowerCase().includes(query)) ||
-          (course.description && course.description.toLowerCase().includes(query))
+      result = result.filter(course => 
+        (course.code && course.code.toLowerCase().includes(query)) ||
+        (course.name && course.name.toLowerCase().includes(query)) ||
+        (course.description && course.description.toLowerCase().includes(query))
       );
     }
     
+    // Apply department filter if a specific department is selected
     if (selectedDepartment && selectedDepartment !== "all") {
       result = result.filter(course => course.department === selectedDepartment);
     }
