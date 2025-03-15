@@ -32,17 +32,21 @@ const ImportCoursesButton = ({ selectedTerm, onImportComplete }: ImportCoursesBu
         description: "This may take a few minutes...",
       });
 
+      console.log(`Starting USC course import for term ${selectedTerm}`);
       const { data, error } = await supabase.functions.invoke('fetch-usc-courses', {
         body: { term: selectedTerm },
       });
 
       if (error) {
+        console.error('Course import error:', error);
         throw error;
       }
 
+      console.log('Course import response:', data);
+      
       toast({
         title: "Success",
-        description: data.message || "Courses imported successfully",
+        description: data.message || `Successfully imported ${data.coursesProcessed || 'multiple'} courses`,
       });
       
       onImportComplete();
@@ -50,7 +54,7 @@ const ImportCoursesButton = ({ selectedTerm, onImportComplete }: ImportCoursesBu
       console.error('Error importing courses:', error);
       toast({
         title: "Import Failed",
-        description: error instanceof Error ? error.message : "Failed to import courses",
+        description: error instanceof Error ? error.message : "Failed to import courses. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -65,8 +69,17 @@ const ImportCoursesButton = ({ selectedTerm, onImportComplete }: ImportCoursesBu
       disabled={importing || !selectedTerm}
       className="flex items-center gap-2"
     >
-      <Download className="h-4 w-4" />
-      {importing ? "Importing..." : "Import USC Courses"}
+      {importing ? (
+        <>
+          <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2"></div>
+          Importing...
+        </>
+      ) : (
+        <>
+          <Download className="h-4 w-4" />
+          Import USC Courses
+        </>
+      )}
     </Button>
   );
 };
