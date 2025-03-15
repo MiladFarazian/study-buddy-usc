@@ -19,9 +19,19 @@ const TermSelector = ({ selectedTerm, onTermChange }: TermSelectorProps) => {
         setLoading(true);
         // Use a direct SQL query to get terms
         const { data, error } = await supabase
-          .from('terms')
-          .select('*')
-          .order('code', { ascending: false });
+          .rpc('query_terms')
+          .then(response => {
+            if (response.error) throw response.error;
+            return { data: response.data as Term[], error: null };
+          })
+          .catch(error => {
+            console.error('Error executing query_terms RPC:', error);
+            
+            // Fallback: Try a direct query to the terms table
+            return supabase.from('terms')
+              .select('*')
+              .order('code', { ascending: false });
+          });
 
         if (error) {
           console.error('Error fetching terms:', error);
@@ -33,11 +43,11 @@ const TermSelector = ({ selectedTerm, onTermChange }: TermSelectorProps) => {
         
         // If no term is selected, select the current term
         if (!selectedTerm && data.length > 0) {
-          const currentTerm = data.find(term => term.is_current);
+          const currentTerm = data.find(term => (term as any).is_current);
           if (currentTerm) {
-            onTermChange(currentTerm.code);
+            onTermChange((currentTerm as Term).code);
           } else {
-            onTermChange(data[0].code);
+            onTermChange((data[0] as Term).code);
           }
         }
       } catch (error) {

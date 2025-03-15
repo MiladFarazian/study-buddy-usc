@@ -12,7 +12,15 @@ export type ReviewInsert = Database["public"]["Tables"]["reviews"]["Insert"];
 export type ReviewUpdate = Database["public"]["Tables"]["reviews"]["Update"];
 
 // Define the Course type
-export type Course = Database["public"]["Tables"]["courses"]["Row"];
+export type Course = Database["public"]["Tables"]["courses"]["Row"] & {
+  term_code?: string;
+  instructor?: string;
+  session_type?: string;
+  units?: string;
+  days?: string;
+  time?: string;
+  location?: string;
+};
 export type CourseInsert = Database["public"]["Tables"]["courses"]["Insert"];
 export type CourseUpdate = Database["public"]["Tables"]["courses"]["Update"];
 
