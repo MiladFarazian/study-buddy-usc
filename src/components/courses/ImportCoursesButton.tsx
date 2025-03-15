@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -12,6 +12,7 @@ interface ImportCoursesButtonProps {
 
 const ImportCoursesButton = ({ selectedTerm, onImportComplete }: ImportCoursesButtonProps) => {
   const [importing, setImporting] = useState(false);
+  const [progress, setProgress] = useState<number | null>(null);
   const { toast } = useToast();
 
   const handleImportCourses = async () => {
@@ -26,6 +27,7 @@ const ImportCoursesButton = ({ selectedTerm, onImportComplete }: ImportCoursesBu
 
     try {
       setImporting(true);
+      setProgress(0);
       
       toast({
         title: "Importing Courses",
@@ -33,9 +35,21 @@ const ImportCoursesButton = ({ selectedTerm, onImportComplete }: ImportCoursesBu
       });
 
       console.log(`Starting USC course import for term ${selectedTerm}`);
+      
+      // Set up a progress indicator
+      const progressInterval = setInterval(() => {
+        setProgress((prev) => {
+          if (prev === null) return 5;
+          return Math.min(prev + 5, 95); // Increase up to 95%
+        });
+      }, 3000);
+      
       const { data, error } = await supabase.functions.invoke('fetch-usc-courses', {
         body: { term: selectedTerm },
       });
+
+      clearInterval(progressInterval);
+      setProgress(100);
 
       if (error) {
         console.error('Course import error:', error);
@@ -44,12 +58,20 @@ const ImportCoursesButton = ({ selectedTerm, onImportComplete }: ImportCoursesBu
 
       console.log('Course import response:', data);
       
-      toast({
-        title: "Success",
-        description: data.message || `Successfully imported ${data.coursesProcessed || 'multiple'} courses`,
-      });
-      
-      onImportComplete();
+      if (!data.success) {
+        toast({
+          title: "Import Notice",
+          description: data.message || "No courses were found for this term",
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: data.message || `Successfully imported ${data.coursesProcessed || 'multiple'} courses`,
+        });
+        
+        onImportComplete();
+      }
     } catch (error) {
       console.error('Error importing courses:', error);
       toast({
@@ -59,6 +81,7 @@ const ImportCoursesButton = ({ selectedTerm, onImportComplete }: ImportCoursesBu
       });
     } finally {
       setImporting(false);
+      setProgress(null);
     }
   };
 
@@ -72,7 +95,7 @@ const ImportCoursesButton = ({ selectedTerm, onImportComplete }: ImportCoursesBu
       {importing ? (
         <>
           <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2"></div>
-          Importing...
+          Importing... {progress !== null && `(${progress}%)`}
         </>
       ) : (
         <>

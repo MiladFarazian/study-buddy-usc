@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 import { parse as parseCSV } from "https://deno.land/std@0.177.0/encoding/csv.ts";
@@ -8,18 +7,46 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Define retry settings
+// Known departments at USC
+const knownDepartments = [
+  'csci', 'math', 'buad', 'econ', 'engr', 'psyc', 'comm', 'bisc',
+  'acct', 'ahis', 'amst', 'anth', 'astr', 'bioc', 'chem', 'clas',
+  'engl', 'fren', 'geog', 'germ', 'hist', 'ital', 'ling', 'phil',
+  'phys', 'poir', 'soci', 'span', 'art', 'arth', 'asc', 'baep',
+  'biol', 'bme', 'ce', 'cmgt', 'ctin', 'dsci', 'ealc', 'ee', 'fbe',
+  'geol', 'gero', 'hbio', 'iml', 'ir', 'itp', 'jour', 'law', 'lim',
+  'masc', 'mda', 'mech', 'mpw', 'mptx', 'ms', 'musc', 'naut', 'neur',
+  'nsci', 'ppe', 'phed', 'ppa', 'ppd', 'pte', 'ptx', 'rel', 'rus',
+  'swms', 'thtr', 'visi', 'writ'
+];
+
+// Add schools/colleges that might have specific pages
+const schools = [
+  'dornsife', 'marshall', 'viterbi', 'annenberg', 'cinematic-arts',
+  'price', 'architecture', 'dramatic-arts', 'roski', 'thornton',
+  'law', 'keck', 'pharmacy', 'chan', 'dent',
+  'davis', 'rossier', 'social-work', 'iovine-young', 'gero', 
+  'bovard', 'independent-health'
+];
+
+// Retry settings
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // milliseconds
 
-// Helper function to retry API requests
-async function fetchWithRetry(url: string, maxRetries = MAX_RETRIES): Promise<Response> {
+// Helper function to retry fetches
+async function fetchWithRetry(url: string, options = {}, maxRetries = MAX_RETRIES): Promise<Response> {
   let lastError;
   
   for (let i = 0; i < maxRetries; i++) {
     try {
       console.log(`Attempt ${i+1}: Fetching ${url}`);
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          ...options?.headers,
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      });
       
       // If successful, return the response
       if (response.ok) {
@@ -48,13 +75,17 @@ async function fetchWithRetry(url: string, maxRetries = MAX_RETRIES): Promise<Re
     }
   }
   
-  console.log(`All retries failed for ${url}`);
-  throw lastError;
+  throw lastError || new Error(`Failed to fetch ${url} after ${maxRetries} attempts`);
 }
 
 // Helper function to safely parse a CSV file
 async function safeParseCSV(text: string): Promise<any[]> {
   try {
+    if (!text || text.includes("Page not found") || text.includes("<html")) {
+      console.log("Invalid CSV content");
+      return [];
+    }
+    
     const result = await parseCSV(text, { skipFirstRow: true });
     return result || [];
   } catch (error) {
@@ -67,19 +98,44 @@ async function safeParseCSV(text: string): Promise<any[]> {
 async function fetchCourseDescription(courseCode: string, termCode: string): Promise<string | null> {
   try {
     const department = courseCode.split('-')[0].trim();
-    const url = `https://classes.usc.edu/term-${termCode}/${department.toLowerCase()}/course/${courseCode}/`;
+    const courseNumber = courseCode.split('-')[1]?.trim();
     
-    console.log(`Fetching description for ${courseCode} from ${url}`);
+    if (!department || !courseNumber) return null;
+    
+    const url = `https://classes.usc.edu/term-${termCode}/${department.toLowerCase()}/`;
+    
+    console.log(`Fetching course page for ${courseCode} from ${url}`);
     const response = await fetchWithRetry(url);
     if (!response.ok) {
-      console.log(`Failed to fetch description for ${courseCode}: ${response.status}`);
+      console.log(`Failed to fetch department page for ${courseCode}: ${response.status}`);
       return null;
     }
     
     const html = await response.text();
     
-    // Extract description using a simple regex pattern
-    const descriptionMatch = html.match(/<div class="catalogue-description">([\s\S]*?)<\/div>/);
+    // Look for links to the specific course
+    const courseRegex = new RegExp(`href="([^"]+${courseNumber}[^"]*)"`, 'i');
+    const courseMatch = html.match(courseRegex);
+    
+    if (!courseMatch || !courseMatch[1]) {
+      console.log(`Could not find course link for ${courseCode}`);
+      return null;
+    }
+    
+    const courseUrl = new URL(courseMatch[1], url).href;
+    console.log(`Found course URL: ${courseUrl}`);
+    
+    // Fetch the course detail page
+    const courseResponse = await fetchWithRetry(courseUrl);
+    if (!courseResponse.ok) {
+      console.log(`Failed to fetch course details for ${courseCode}: ${courseResponse.status}`);
+      return null;
+    }
+    
+    const courseHtml = await courseResponse.text();
+    
+    // Extract description using regex
+    const descriptionMatch = courseHtml.match(/<div class="catalogue-description">([\s\S]*?)<\/div>/);
     if (descriptionMatch && descriptionMatch[1]) {
       const cleanDescription = descriptionMatch[1]
         .replace(/<[^>]+>/g, '') // Remove HTML tags
@@ -97,13 +153,13 @@ async function fetchCourseDescription(courseCode: string, termCode: string): Pro
   }
 }
 
-// Main function to process a school and fetch its courses
-async function processSchool(school: string, term: string): Promise<any[]> {
+// Main function to process a department and fetch its courses
+async function processDepartment(dept: string, term: string): Promise<any[]> {
   try {
-    console.log(`Processing school: ${school} for term ${term}`);
+    console.log(`Processing department: ${dept} for term ${term}`);
     
     // Construct the URL for the CSV file
-    const csvUrl = `https://classes.usc.edu/term-${term}/${school}/csv/`;
+    const csvUrl = `https://classes.usc.edu/term-${term}/classes/${dept}/csv/`;
     
     console.log(`Fetching CSV from: ${csvUrl}`);
     
@@ -111,63 +167,55 @@ async function processSchool(school: string, term: string): Promise<any[]> {
     const response = await fetchWithRetry(csvUrl);
     
     if (!response.ok) {
-      console.log(`Failed to fetch CSV for ${school}: ${response.status}`);
+      console.log(`Failed to fetch CSV for ${dept}: ${response.status}`);
       return [];
     }
     
     // Parse the CSV data
     const csvText = await response.text();
-    
-    // Check if we got valid CSV content
-    if (!csvText || csvText.includes("Page not found") || csvText.includes("<html")) {
-      console.log(`No valid CSV content for ${school}`);
-      return [];
-    }
-    
     const rows = await safeParseCSV(csvText);
     
     if (!rows || rows.length === 0) {
-      console.log(`No valid data in CSV for ${school}`);
+      console.log(`No valid data in CSV for ${dept}`);
       return [];
     }
     
-    console.log(`Found ${rows.length} courses for ${school}`);
+    console.log(`Found ${rows.length} courses for ${dept}`);
     
     // Process each row in the CSV
-    const schoolCourses = [];
+    const deptCourses = [];
     
     for (const row of rows) {
       // CSV format: number,title,units,type,days,time,location,instructor
       if (row.length < 8) {
-        console.log(`Skipping incomplete row for ${school}:`, row);
+        console.log(`Skipping incomplete row for ${dept}:`, row);
         continue;
       }
       
-      const [courseCode, name, units, type, days, time, location, instructor] = row;
+      const [courseNumber, name, units, type, days, time, location, instructor] = row;
       
-      // Skip if no valid course code
-      if (!courseCode) {
-        console.log(`Skipping row with no course code for ${school}`);
+      // Skip if no valid course number
+      if (!courseNumber) {
+        console.log(`Skipping row with no course number for ${dept}`);
         continue;
       }
       
-      // Extract department code (e.g., CSCI from CSCI-102)
-      const department = courseCode.split('-')[0].trim();
+      // Format the course code (e.g., "CSCI-102")
+      const courseCode = `${dept.toUpperCase()}-${courseNumber}`;
       
       // Remove duplicate spaces and trim
       const cleanName = name.replace(/\s+/g, ' ').trim();
       
-      // Fetch course description if we don't have enough courses yet
-      // Limiting to avoid rate limiting and long processing times
+      // Fetch course description - limit to first 5 courses per department to avoid rate limiting
       let description = null;
-      if (schoolCourses.length < 20) { // Only fetch descriptions for first 20 courses per school
+      if (deptCourses.length < 5) { 
         description = await fetchCourseDescription(courseCode, term);
       }
       
       const course = {
         code: courseCode,
         name: cleanName,
-        department,
+        department: dept.toUpperCase(),
         description,
         term_code: term,
         instructor,
@@ -178,12 +226,118 @@ async function processSchool(school: string, term: string): Promise<any[]> {
         location
       };
       
-      schoolCourses.push(course);
+      deptCourses.push(course);
     }
     
-    return schoolCourses;
+    return deptCourses;
   } catch (err) {
-    console.error(`Error processing ${school}:`, err);
+    console.error(`Error processing ${dept}:`, err);
+    return [];
+  }
+}
+
+// Process a school and its departments
+async function processSchool(school: string, term: string): Promise<any[]> {
+  try {
+    console.log(`Processing school: ${school} for term ${term}`);
+    
+    // First, try to get the CSV directly for the school
+    const schoolCsvUrl = `https://classes.usc.edu/term-${term}/${school}/csv/`;
+    console.log(`Trying school CSV: ${schoolCsvUrl}`);
+    
+    const schoolCsvResponse = await fetchWithRetry(schoolCsvUrl, {}, 1); // Only try once
+    
+    if (schoolCsvResponse.ok) {
+      const csvText = await schoolCsvResponse.text();
+      
+      // Check if we got valid CSV content
+      if (!csvText.includes("Page not found") && !csvText.includes("<html")) {
+        const rows = await safeParseCSV(csvText);
+        
+        if (rows.length > 0) {
+          console.log(`Found ${rows.length} courses for ${school} directly`);
+          
+          // Process each row in the CSV similar to processDepartment
+          const schoolCourses = [];
+          
+          for (const row of rows) {
+            if (row.length < 8) continue;
+            
+            const [courseNumber, name, units, type, days, time, location, instructor] = row;
+            
+            if (!courseNumber) continue;
+            
+            // Extract department from the course number
+            const deptMatch = courseNumber.match(/^([A-Za-z]+)/);
+            const department = deptMatch ? deptMatch[1].toUpperCase() : school.toUpperCase();
+            
+            // Format the course code (use the original course number as it may already have the dept code)
+            const courseCode = courseNumber.includes('-') ? courseNumber : `${department}-${courseNumber}`;
+            
+            const cleanName = name.replace(/\s+/g, ' ').trim();
+            
+            // Only fetch descriptions for the first few courses
+            let description = null;
+            if (schoolCourses.length < 5) { 
+              description = await fetchCourseDescription(courseCode, term);
+            }
+            
+            const course = {
+              code: courseCode,
+              name: cleanName,
+              department,
+              description,
+              term_code: term,
+              instructor,
+              units,
+              session_type: type,
+              days,
+              time,
+              location
+            };
+            
+            schoolCourses.push(course);
+          }
+          
+          return schoolCourses;
+        }
+      }
+    }
+    
+    // If direct CSV approach failed, try to identify departments within this school
+    const schoolUrl = `https://classes.usc.edu/term-${term}/${school}/`;
+    console.log(`Fetching school page to find departments: ${schoolUrl}`);
+    
+    const schoolResponse = await fetchWithRetry(schoolUrl);
+    if (!schoolResponse.ok) {
+      console.log(`Failed to fetch school page for ${school}: ${schoolResponse.status}`);
+      return [];
+    }
+    
+    const html = await schoolResponse.text();
+    
+    // Find department links on the school page
+    const deptRegex = /<a[^>]+href="\/term-[^/]+\/([a-z0-9-]+)\/"[^>]*>([^<]+)<\/a>/gi;
+    const depts = new Set<string>();
+    let match;
+    
+    while ((match = deptRegex.exec(html)) !== null) {
+      const deptSlug = match[1];
+      if (deptSlug !== school && !deptSlug.includes('page')) {
+        depts.add(deptSlug);
+      }
+    }
+    
+    console.log(`Found ${depts.size} departments for ${school}`);
+    
+    // Process each department in parallel
+    const deptPromises = Array.from(depts).map(dept => processDepartment(dept, term));
+    const deptResults = await Promise.all(deptPromises);
+    
+    // Combine all department results
+    return deptResults.flat();
+  } catch (err) {
+    console.error(`Error processing school ${school}:`, err);
     return [];
   }
 }
@@ -212,37 +366,28 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
     
-    // Define USC schools with more complete list
-    // This is a more comprehensive list of USC schools and departments
-    const schools = [
-      // Core schools
-      'dornsife', 'marshall', 'viterbi', 'annenberg', 'cinematic-arts',
-      'price', 'architecture', 'dramatic-arts', 'roski', 'thornton',
-      // Professional schools
-      'law', 'keck', 'pharmacy', 'chan', 'dent',
-      // Additional schools and special programs
-      'davis', 'rossier', 'social-work', 'iovine-young', 'gero', 
-      'bovard', 'independent-health',
-      // Direct department codes that might be used in the URL
-      'acad', 'amst', 'anth', 'bisc', 'buad', 'chem', 'comm', 'csci', 
-      'dsci', 'econ', 'engl', 'engr', 'hist', 'ling', 'math', 'phil',
-      'phys', 'pols', 'psyc', 'soci'
-    ];
-    
-    // Process schools in parallel to improve speed
+    // Process known departments in parallel
     let allCourses: any[] = [];
-    const fetchPromises: Promise<any[]>[] = [];
+    const processPromises: Promise<any[]>[] = [];
     
-    // Process each school - use Promise.all to run in parallel
-    for (const school of schools) {
-      fetchPromises.push(processSchool(school, term));
+    // Process departments first - we'll do just a subset to keep things manageable
+    // Choose a limited set of popular departments to avoid overwhelming the function
+    const popularDepts = ['csci', 'buad', 'math', 'econ', 'psyc', 'comm', 'bisc'];
+    for (const dept of popularDepts) {
+      processPromises.push(processDepartment(dept, term));
     }
     
-    // Wait for all promises to resolve
-    const schoolResults = await Promise.all(fetchPromises);
+    // Then process some important schools
+    const popularSchools = ['dornsife', 'marshall', 'viterbi', 'annenberg', 'price'];
+    for (const school of popularSchools) {
+      processPromises.push(processSchool(school, term));
+    }
+    
+    // Wait for all promises to resolve with a timeout to prevent hanging
+    const results = await Promise.all(processPromises);
     
     // Combine all results
-    for (const courses of schoolResults) {
+    for (const courses of results) {
       allCourses = allCourses.concat(courses);
     }
     
@@ -272,7 +417,7 @@ serve(async (req) => {
     console.log(`Storing ${uniqueCourses.length} unique courses...`);
     
     // Process courses in batches to avoid request size limits
-    const BATCH_SIZE = 50; // Smaller batches to avoid issues
+    const BATCH_SIZE = 25; // Smaller batches to avoid issues
     let successCount = 0;
     let errorCount = 0;
     
