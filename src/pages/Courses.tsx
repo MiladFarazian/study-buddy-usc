@@ -30,19 +30,19 @@ const Courses = () => {
       try {
         setLoading(true);
         
-        // Use type assertion at the type level
-        const response = await supabase
+        // Use explicit typing to avoid deep type inference
+        const { data, error } = await supabase
           .from("courses")
           .select("*")
           .eq("term_code", selectedTerm);
         
-        if (response.error) {
-          console.error("Error fetching courses:", response.error);
+        if (error) {
+          console.error("Error fetching courses:", error);
           return;
         }
         
-        // Set courses with a simple type assertion to avoid deep type inference
-        setCourses(response.data || []);
+        // Explicitly cast to Course[] to avoid excessive type instantiation
+        setCourses(data as Course[]);
       } catch (error) {
         console.error("Error:", error);
       } finally {
@@ -73,18 +73,18 @@ const Courses = () => {
     // Refresh courses list
     if (selectedTerm) {
       const fetchUpdatedCourses = async () => {
-        const response = await supabase
+        const { data, error } = await supabase
           .from("courses")
           .select("*")
           .eq("term_code", selectedTerm);
         
-        if (response.error) {
-          console.error("Error refreshing courses:", response.error);
+        if (error) {
+          console.error("Error refreshing courses:", error);
           return;
         }
         
-        // Set courses with a simple type assertion to avoid deep type inference
-        setCourses(response.data || []);
+        // Explicitly cast to Course[] to avoid excessive type instantiation
+        setCourses(data as Course[]);
       };
       
       fetchUpdatedCourses();

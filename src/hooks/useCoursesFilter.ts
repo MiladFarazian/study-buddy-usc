@@ -7,6 +7,7 @@ export function useCoursesFilter(
   searchQuery: string, 
   selectedDepartment: string
 ) {
+  // Use proper type annotation to avoid deep inference
   const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
   
   // Memoize departments to avoid unnecessary recalculations and type depth issues
