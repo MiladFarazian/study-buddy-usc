@@ -99,7 +99,7 @@ async function safeParseCSV(text: string): Promise<any[]> {
 async function fetchDepartmentCSV(dept: string, term: string): Promise<string> {
   try {
     // First, access the department/school page
-    const pageUrl = `https://classes.usc.edu/term-${term}/${dept}/`;
+    const pageUrl = `https://classes.usc.edu/term-${term}/classes/${dept}/`;
     console.log(`Fetching department page: ${pageUrl}`);
     
     const pageResponse = await fetchWithRetry(pageUrl);
