@@ -24,36 +24,122 @@ export function useCourses(filterOptions: CourseFilterOptions) {
       
       try {
         console.log(`Fetching courses for term: ${filterOptions.term}`);
-        const { data, error } = await supabase
-          .from("courses")
-          .select("*")
-          .eq("term_code", filterOptions.term);
-          
-        if (error) {
-          console.error("Database error:", error);
-          throw error;
+        
+        // Get the corresponding term table
+        const { data: termTableData, error: termTableError } = await supabase.rpc(
+          'list_term_tables',
+          {}
+        );
+        
+        if (termTableError) {
+          console.error("Error getting term tables:", termTableError);
+          throw termTableError;
         }
         
-        if (data) {
-          console.log(`Found ${data.length} courses for term ${filterOptions.term}`);
-          // Convert the database response to the Course type
-          const typedCourses: Course[] = data.map(item => ({
-            id: item.id,
-            code: item.code,
-            name: item.name,
-            department: item.department,
-            description: item.description,
-            term_code: item.term_code || '',
-            instructor: item.instructor || '',
-            units: item.units || '',
-            days: item.days || '',
-            time: item.time || '',
-            location: item.location || '',
-            session_type: item.session_type || '',
-          }));
-          setCourses(typedCourses);
+        const termTable = termTableData?.find((t: any) => t.term_code === filterOptions.term);
+        
+        if (!termTable) {
+          // Fall back to the original courses table if no term-specific table exists
+          const { data, error } = await supabase
+            .from("courses")
+            .select("*")
+            .eq("term_code", filterOptions.term);
+            
+          if (error) {
+            console.error("Database error:", error);
+            throw error;
+          }
+          
+          if (data) {
+            console.log(`Found ${data.length} courses for term ${filterOptions.term} in main courses table`);
+            // Convert the database response to the Course type
+            const typedCourses: Course[] = data.map(item => ({
+              id: item.id,
+              code: item.code,
+              name: item.name,
+              department: item.department,
+              description: item.description,
+              term_code: item.term_code || '',
+              instructor: item.instructor || '',
+              units: item.units || '',
+              days: item.days || '',
+              time: item.time || '',
+              location: item.location || '',
+              session_type: item.session_type || '',
+              // Map to new fields for compatibility
+              course_number: item.code,
+              course_title: item.name
+            }));
+            setCourses(typedCourses);
+          } else {
+            setCourses([]);
+          }
         } else {
-          setCourses([]);
+          // Query from the term-specific table
+          console.log(`Using term-specific table: ${termTable.table_name}`);
+          
+          // Since we can't use a dynamic table name with .from(), use the SQL function
+          const { data, error } = await supabase.rpc(
+            'execute_sql',
+            { sql: `SELECT * FROM ${termTable.table_name}` }
+          ).then(() => supabase.from('_temp_result').select('*'));
+          
+          if (error) {
+            // If executing the RPC fails, try a direct query which requires different permissions
+            console.log("Using direct query as fallback method");
+            const result = await supabase.from(termTable.table_name.replace('terms.', '')).select('*');
+            
+            if (result.error) {
+              console.error("Database error with direct query:", result.error);
+              
+              // As a last resort, try a raw SQL query
+              console.log("Attempting raw SQL query as final fallback");
+              const rawResult = await supabase.rpc(
+                'execute_sql',
+                { sql: `SELECT * FROM ${termTable.table_name}` }
+              );
+              
+              if (rawResult.error) {
+                throw rawResult.error;
+              }
+              
+              // For raw queries, we don't always get data directly
+              console.log("Raw SQL query result:", rawResult);
+              setCourses([]);
+              return;
+            }
+            
+            const typedCourses: Course[] = result.data.map(item => ({
+              id: item.id,
+              course_number: item.course_number,
+              course_title: item.course_title,
+              department: item.department,
+              instructor: item.instructor,
+              // Map to old fields for compatibility
+              code: item.course_number,
+              name: item.course_title,
+              description: null
+            }));
+            
+            console.log(`Found ${typedCourses.length} courses in term-specific table`);
+            setCourses(typedCourses);
+          } else if (data) {
+            console.log(`Found ${data.length} courses in term-specific table via RPC`);
+            const typedCourses: Course[] = data.map(item => ({
+              id: item.id,
+              course_number: item.course_number,
+              course_title: item.course_title,
+              department: item.department,
+              instructor: item.instructor,
+              // Map to old fields for compatibility
+              code: item.course_number,
+              name: item.course_title,
+              description: null
+            }));
+            setCourses(typedCourses);
+          } else {
+            setCourses([]);
+          }
         }
       } catch (err) {
         console.error("Error fetching courses:", err);
@@ -88,6 +174,8 @@ export function useCourses(filterOptions: CourseFilterOptions) {
       const query = filterOptions.search.toLowerCase();
       result = result.filter(
         course => 
+          (course.course_number && course.course_number.toLowerCase().includes(query)) ||
+          (course.course_title && course.course_title.toLowerCase().includes(query)) ||
           (course.code && course.code.toLowerCase().includes(query)) ||
           (course.name && course.name.toLowerCase().includes(query)) ||
           (course.instructor && course.instructor.toLowerCase().includes(query)) ||

@@ -295,6 +295,13 @@ export type Database = {
         }
         Returns: undefined
       }
+      list_term_tables: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          term_code: string
+          table_name: string
+        }[]
+      }
     }
     Enums: {
       user_role: "student" | "tutor"

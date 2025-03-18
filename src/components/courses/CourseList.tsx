@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { SearchIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface CourseListProps {
   courses: Course[];
@@ -50,6 +51,7 @@ const CourseList = ({ courses, loading, selectedTerm, courseCount, onImportCours
         <TabsList>
           <TabsTrigger value="grid">Grid View</TabsTrigger>
           <TabsTrigger value="list">List View</TabsTrigger>
+          <TabsTrigger value="table">Table View</TabsTrigger>
         </TabsList>
         
         <div className="text-sm text-muted-foreground">
@@ -72,13 +74,15 @@ const CourseList = ({ courses, loading, selectedTerm, courseCount, onImportCours
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-2">
                 <div>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
-                    <h3 className="font-medium">{course.code}</h3>
-                    <span className="text-sm text-muted-foreground">{course.name}</span>
+                    <h3 className="font-medium">{course.course_number || course.code}</h3>
+                    <span className="text-sm text-muted-foreground">{course.course_title || course.name}</span>
                   </div>
                   
-                  <p className="text-sm text-gray-600 line-clamp-2 mb-2">
-                    {course.description || "No description available"}
-                  </p>
+                  {course.description && (
+                    <p className="text-sm text-gray-600 line-clamp-2 mb-2">
+                      {course.description}
+                    </p>
+                  )}
                   
                   <div className="text-xs text-gray-500">
                     {course.instructor && <span className="mr-3">Instructor: {course.instructor}</span>}
@@ -95,6 +99,31 @@ const CourseList = ({ courses, loading, selectedTerm, courseCount, onImportCours
               </div>
             </div>
           ))}
+        </div>
+      </TabsContent>
+      
+      <TabsContent value="table" className="mt-4">
+        <div className="border rounded-md overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Course Number</TableHead>
+                <TableHead>Course Title</TableHead>
+                <TableHead>Department</TableHead>
+                <TableHead>Instructor</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {courses.map((course) => (
+                <TableRow key={course.id}>
+                  <TableCell className="font-medium">{course.course_number || course.code}</TableCell>
+                  <TableCell>{course.course_title || course.name}</TableCell>
+                  <TableCell>{course.department}</TableCell>
+                  <TableCell>{course.instructor || "TBD"}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       </TabsContent>
     </Tabs>
