@@ -11,18 +11,49 @@ export type Review = Database["public"]["Tables"]["reviews"]["Row"];
 export type ReviewInsert = Database["public"]["Tables"]["reviews"]["Insert"];
 export type ReviewUpdate = Database["public"]["Tables"]["reviews"]["Update"];
 
-// Define the Course type
-export type Course = Database["public"]["Tables"]["courses"]["Row"] & {
+// Define a custom Course type (since the table structure may have changed)
+export type Course = {
+  id: string;
+  code: string;
+  name: string;
   term_code: string;
   instructor: string;
+  department: string;
+  description?: string | null;
   session_type: string;
   units: string;
   days: string;
   time: string;
   location: string;
 };
-export type CourseInsert = Database["public"]["Tables"]["courses"]["Insert"];
-export type CourseUpdate = Database["public"]["Tables"]["courses"]["Update"];
+export type CourseInsert = {
+  id?: string;
+  code: string;
+  name: string;
+  term_code: string;
+  instructor?: string;
+  department: string;
+  description?: string | null;
+  session_type?: string;
+  units?: string;
+  days?: string;
+  time?: string;
+  location?: string;
+};
+export type CourseUpdate = {
+  id?: string;
+  code?: string;
+  name?: string;
+  term_code?: string;
+  instructor?: string;
+  department?: string;
+  description?: string | null;
+  session_type?: string;
+  units?: string;
+  days?: string;
+  time?: string;
+  location?: string;
+};
 
 // Define the TutorCourse type
 export type TutorCourse = Database["public"]["Tables"]["tutor_courses"]["Row"];

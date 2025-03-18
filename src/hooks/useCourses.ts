@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Course, CourseFilterOptions, TermCourse } from "@/types/CourseTypes";
+import { Course, CourseFilterOptions, TermCourse, Fall2025Course } from "@/types/CourseTypes";
 
 export function useCourses(filterOptions: CourseFilterOptions) {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -43,12 +43,12 @@ export function useCourses(filterOptions: CourseFilterOptions) {
               console.log(`Found ${data.length} courses in Fall 2025 table`);
               
               // Convert to our standard Course type
-              const typedCourses: Course[] = data.map(item => ({
+              const typedCourses: Course[] = data.map((item: Fall2025Course) => ({
                 id: item.id || crypto.randomUUID(),
                 course_number: item['Course number'] || '',
                 course_title: item['Course title'] || '',
-                department: item.department || '',
-                instructor: item.Instructor || null,
+                department: item.department || 'Unknown',
+                instructor: item.Instructor,
                 // Set legacy fields for compatibility
                 code: item['Course number'] || '',
                 name: item['Course title'] || '',
@@ -66,11 +66,11 @@ export function useCourses(filterOptions: CourseFilterOptions) {
           
           // Fallback to edge function for Fall 2025
           try {
-            const response = await fetch(`${supabase.supabaseUrl}/functions/v1/query_term_courses`, {
+            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/query_term_courses`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${supabase.supabaseKey}`
+                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
               },
               body: JSON.stringify({ term_code: filterOptions.term })
             });
@@ -84,12 +84,12 @@ export function useCourses(filterOptions: CourseFilterOptions) {
             if (data && Array.isArray(data) && data.length > 0) {
               console.log(`Found ${data.length} courses via edge function for Fall 2025`);
               
-              const typedCourses: Course[] = data.map(item => ({
+              const typedCourses: Course[] = data.map((item: Fall2025Course) => ({
                 id: item.id || crypto.randomUUID(),
                 course_number: item['Course number'] || '',
                 course_title: item['Course title'] || '',
-                department: item.department || '',
-                instructor: item.Instructor || null,
+                department: item.department || 'Unknown',
+                instructor: item.Instructor,
                 // Set legacy fields for compatibility
                 code: item['Course number'] || '',
                 name: item['Course title'] || '',
@@ -120,49 +120,58 @@ export function useCourses(filterOptions: CourseFilterOptions) {
         const termTable = termTableData?.find((t: any) => t.term_code === filterOptions.term);
         
         if (!termTable) {
-          // Fall back to the original courses table if no term-specific table exists
-          const { data, error } = await supabase
-            .from("courses")
-            .select("*")
-            .eq("term_code", filterOptions.term);
+          // Fall back to querying for courses with matching term_code
+          try {
+            // This is a fallback for legacy data
+            const { data, error } = await supabase
+              .from('courses')
+              .select('*')
+              .eq('term_code', filterOptions.term)
+              .throwOnError();
             
-          if (error) {
-            console.error("Database error:", error);
-            throw error;
-          }
-          
-          if (data) {
-            console.log(`Found ${data.length} courses for term ${filterOptions.term} in main courses table`);
-            // Convert the database response to the Course type
-            const typedCourses: Course[] = data.map(item => ({
-              id: item.id,
-              course_number: item.code,
-              course_title: item.name,
-              department: item.department,
-              instructor: item.instructor || null,
-              description: item.description,
-              // Keep legacy fields for compatibility
-              code: item.code,
-              name: item.name,
-              term_code: item.term_code || '',
-              units: item.units || '',
-              days: item.days || '',
-              time: item.time || '',
-              location: item.location || '',
-              session_type: item.session_type || ''
-            }));
-            setCourses(typedCourses);
-          } else {
+            if (error) {
+              console.error("Database error:", error);
+              throw error;
+            }
+            
+            if (data) {
+              console.log(`Found ${data.length} courses for term ${filterOptions.term} in main courses table`);
+              
+              // Convert the database response to the Course type
+              const typedCourses: Course[] = data.map((item: any) => ({
+                id: item.id,
+                course_number: item.code,
+                course_title: item.name,
+                department: item.department,
+                instructor: item.instructor || null,
+                description: item.description,
+                // Keep legacy fields for compatibility
+                code: item.code,
+                name: item.name,
+                term_code: item.term_code || '',
+                units: item.units || '',
+                days: item.days || '',
+                time: item.time || '',
+                location: item.location || '',
+                session_type: item.session_type || ''
+              }));
+              
+              setCourses(typedCourses);
+            } else {
+              setCourses([]);
+            }
+          } catch (legacyError) {
+            console.error("Legacy query failed, no table found for this term:", legacyError);
             setCourses([]);
           }
         } else {
           // Query from the term-specific table via edge function
           try {
-            const response = await fetch(`${supabase.supabaseUrl}/functions/v1/query_term_courses`, {
+            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/query_term_courses`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${supabase.supabaseKey}`
+                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
               },
               body: JSON.stringify({ term_code: filterOptions.term })
             });
@@ -176,7 +185,7 @@ export function useCourses(filterOptions: CourseFilterOptions) {
             if (data && Array.isArray(data) && data.length > 0) {
               console.log(`Found ${data.length} courses via edge function`);
               
-              const typedCourses: Course[] = data.map((item: any) => ({
+              const typedCourses: Course[] = data.map((item: TermCourse) => ({
                 id: item.id || crypto.randomUUID(),
                 course_number: item.course_number || '',
                 course_title: item.course_title || '',
@@ -198,7 +207,7 @@ export function useCourses(filterOptions: CourseFilterOptions) {
             throw error;
           }
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error fetching courses:", err);
         setError(err instanceof Error ? err.message : "An error occurred");
         setCourses([]);

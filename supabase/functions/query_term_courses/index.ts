@@ -46,8 +46,19 @@ serve(async (req) => {
         throw error
       }
 
+      // Process the data to add missing fields for Fall 2025
+      const processedData = data.map((item: any) => {
+        return {
+          id: crypto.randomUUID(), // Generate a unique ID since it's missing
+          "Course number": item["Course number"],
+          "Course title": item["Course title"],
+          Instructor: item.Instructor,
+          department: item.department || 'Unknown' // Provide a default if missing
+        }
+      })
+
       return new Response(
-        JSON.stringify(data || []),
+        JSON.stringify(processedData || []),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
