@@ -1,5 +1,5 @@
 
-import { Course } from "@/integrations/supabase/types-extension";
+import { Course } from "@/types/CourseTypes";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -49,8 +49,8 @@ const CourseListView = ({
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-medium">{course.code}</h3>
-                <span className="text-sm text-muted-foreground">{course.name}</span>
+                <h3 className="font-medium">{course.course_number || course.code}</h3>
+                <span className="text-sm text-muted-foreground">{course.course_title || course.name}</span>
               </div>
               <p className="text-sm line-clamp-2">{course.description}</p>
             </div>

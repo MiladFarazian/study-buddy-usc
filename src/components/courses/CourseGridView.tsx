@@ -1,5 +1,5 @@
 
-import { Course } from "@/integrations/supabase/types-extension";
+import { Course } from "@/types/CourseTypes";
 import CourseCard from "./CourseCard";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";

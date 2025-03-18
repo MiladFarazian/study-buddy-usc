@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Course, CourseFilterOptions } from "@/types/CourseTypes";
+import { Course, CourseFilterOptions, TermCourse } from "@/types/CourseTypes";
 
 export function useCourses(filterOptions: CourseFilterOptions) {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -55,20 +54,20 @@ export function useCourses(filterOptions: CourseFilterOptions) {
             // Convert the database response to the Course type
             const typedCourses: Course[] = data.map(item => ({
               id: item.id,
+              course_number: item.code,
+              course_title: item.name,
+              department: item.department,
+              instructor: item.instructor || null,
+              description: item.description,
+              // Keep legacy fields for compatibility
               code: item.code,
               name: item.name,
-              department: item.department,
-              description: item.description,
               term_code: item.term_code || '',
-              instructor: item.instructor || '',
               units: item.units || '',
               days: item.days || '',
               time: item.time || '',
               location: item.location || '',
-              session_type: item.session_type || '',
-              // Map to new fields for compatibility
-              course_number: item.code,
-              course_title: item.name
+              session_type: item.session_type || ''
             }));
             setCourses(typedCourses);
           } else {
@@ -78,67 +77,55 @@ export function useCourses(filterOptions: CourseFilterOptions) {
           // Query from the term-specific table
           console.log(`Using term-specific table: ${termTable.table_name}`);
           
-          // Since we can't use a dynamic table name with .from(), use the SQL function
-          const { data, error } = await supabase.rpc(
-            'execute_sql',
-            { sql: `SELECT * FROM ${termTable.table_name}` }
-          ).then(() => supabase.from('_temp_result').select('*'));
-          
-          if (error) {
-            // If executing the RPC fails, try a direct query which requires different permissions
-            console.log("Using direct query as fallback method");
-            const result = await supabase.from(termTable.table_name.replace('terms.', '')).select('*');
-            
-            if (result.error) {
-              console.error("Database error with direct query:", result.error);
+          try {
+            // First approach: try a direct query with the table name
+            const { data, error } = await supabase
+              .from(termTable.table_name.replace('terms.', ''))
+              .select('*');
               
-              // As a last resort, try a raw SQL query
-              console.log("Attempting raw SQL query as final fallback");
-              const rawResult = await supabase.rpc(
+            if (error) {
+              console.error("Using direct query failed:", error);
+              throw error;
+            }
+            
+            if (data) {
+              console.log(`Found ${data.length} courses in term-specific table via direct query`);
+              const typedCourses: Course[] = data.map((item: TermCourse) => ({
+                id: item.id,
+                course_number: item.course_number,
+                course_title: item.course_title,
+                department: item.department,
+                instructor: item.instructor,
+                // Legacy fields for compatibility
+                code: item.course_number,
+                name: item.course_title,
+                description: null
+              }));
+              setCourses(typedCourses);
+            }
+          } catch (directQueryError) {
+            console.error("Error with direct query:", directQueryError);
+            
+            // Second approach: Try using RPC to execute SQL
+            try {
+              const { error: rpcError } = await supabase.rpc(
                 'execute_sql',
                 { sql: `SELECT * FROM ${termTable.table_name}` }
               );
               
-              if (rawResult.error) {
-                throw rawResult.error;
+              if (rpcError) {
+                console.error("RPC query failed:", rpcError);
+                throw rpcError;
               }
               
-              // For raw queries, we don't always get data directly
-              console.log("Raw SQL query result:", rawResult);
+              // Unfortunately, we can't access temporary results directly
+              // We'll need to fall back to no courses in this case
+              console.log("RPC executed but cannot retrieve results");
               setCourses([]);
-              return;
+            } catch (rpcQueryError) {
+              console.error("Error with RPC query:", rpcQueryError);
+              setCourses([]);
             }
-            
-            const typedCourses: Course[] = result.data.map(item => ({
-              id: item.id,
-              course_number: item.course_number,
-              course_title: item.course_title,
-              department: item.department,
-              instructor: item.instructor,
-              // Map to old fields for compatibility
-              code: item.course_number,
-              name: item.course_title,
-              description: null
-            }));
-            
-            console.log(`Found ${typedCourses.length} courses in term-specific table`);
-            setCourses(typedCourses);
-          } else if (data) {
-            console.log(`Found ${data.length} courses in term-specific table via RPC`);
-            const typedCourses: Course[] = data.map(item => ({
-              id: item.id,
-              course_number: item.course_number,
-              course_title: item.course_title,
-              department: item.department,
-              instructor: item.instructor,
-              // Map to old fields for compatibility
-              code: item.course_number,
-              name: item.course_title,
-              description: null
-            }));
-            setCourses(typedCourses);
-          } else {
-            setCourses([]);
           }
         }
       } catch (err) {
