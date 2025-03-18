@@ -9,51 +9,21 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      courses: {
+      "courses-20253": {
         Row: {
-          code: string
-          created_at: string
-          days: string | null
-          department: string
-          description: string | null
-          id: string
-          instructor: string | null
-          location: string | null
-          name: string
-          session_type: string | null
-          term_code: string | null
-          time: string | null
-          units: string | null
+          "Course number": string | null
+          "Course title": string | null
+          Instructor: string | null
         }
         Insert: {
-          code: string
-          created_at?: string
-          days?: string | null
-          department: string
-          description?: string | null
-          id?: string
-          instructor?: string | null
-          location?: string | null
-          name: string
-          session_type?: string | null
-          term_code?: string | null
-          time?: string | null
-          units?: string | null
+          "Course number"?: string | null
+          "Course title"?: string | null
+          Instructor?: string | null
         }
         Update: {
-          code?: string
-          created_at?: string
-          days?: string | null
-          department?: string
-          description?: string | null
-          id?: string
-          instructor?: string | null
-          location?: string | null
-          name?: string
-          session_type?: string | null
-          term_code?: string | null
-          time?: string | null
-          units?: string | null
+          "Course number"?: string | null
+          "Course title"?: string | null
+          Instructor?: string | null
         }
         Relationships: []
       }
@@ -195,13 +165,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sessions_course_id_fkey"
-            columns: ["course_id"]
-            isOneToOne: false
-            referencedRelation: "courses"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "sessions_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
@@ -261,13 +224,6 @@ export type Database = {
           tutor_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "tutor_courses_course_id_fkey"
-            columns: ["course_id"]
-            isOneToOne: false
-            referencedRelation: "courses"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "tutor_courses_tutor_id_fkey"
             columns: ["tutor_id"]

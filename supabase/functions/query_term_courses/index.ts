@@ -33,7 +33,26 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     )
 
-    // First get the term table mapping
+    // Special case for Fall 2025 term (code 20253)
+    if (term_code === '20253') {
+      console.log('Fetching courses from Fall 2025 table: courses-20253')
+      
+      const { data, error } = await supabaseAdmin
+        .from('courses-20253')
+        .select('*')
+      
+      if (error) {
+        console.error('Error fetching courses:', error)
+        throw error
+      }
+
+      return new Response(
+        JSON.stringify(data || []),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // For other terms, follow the original logic
     const { data: termTables, error: termTablesError } = await supabaseAdmin.rpc('list_term_tables')
     
     if (termTablesError) {
@@ -53,14 +72,14 @@ serve(async (req) => {
       )
     }
 
-    // Execute direct SQL query to fetch from the schema.table
+    // Execute SQL query to fetch from the schema.table
     const { data, error } = await supabaseAdmin.rpc(
-      'execute_sql',
-      { sql: `SELECT * FROM ${termTable.table_name}` }
+      'list_term_courses',
+      { term_table: termTable.table_name.split('.')[1] }
     )
     
     if (error) {
-      console.error('Error executing SQL:', error)
+      console.error('Error fetching courses:', error)
       throw error
     }
 

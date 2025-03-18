@@ -39,3 +39,12 @@ export interface TermCourse {
   department: string;
   created_at?: string;
 }
+
+// Interface for the Fall 2025 specific course format
+export interface Fall2025Course {
+  id?: string;
+  'Course number': string;
+  'Course title': string;
+  Instructor: string | null;
+  department?: string;
+}

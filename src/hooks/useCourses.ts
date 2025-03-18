@@ -24,6 +24,88 @@ export function useCourses(filterOptions: CourseFilterOptions) {
       try {
         console.log(`Fetching courses for term: ${filterOptions.term}`);
         
+        // Special handling for Fall 2025 (term code 20253)
+        if (filterOptions.term === '20253') {
+          console.log('Using Fall 2025 specific table: courses-20253');
+          
+          try {
+            // Query directly from the courses-20253 table
+            const { data, error } = await supabase
+              .from('courses-20253')
+              .select('*');
+              
+            if (error) {
+              console.error("Direct query failed:", error);
+              throw error;
+            }
+            
+            if (data && data.length > 0) {
+              console.log(`Found ${data.length} courses in Fall 2025 table`);
+              
+              // Convert to our standard Course type
+              const typedCourses: Course[] = data.map(item => ({
+                id: item.id || crypto.randomUUID(),
+                course_number: item['Course number'] || '',
+                course_title: item['Course title'] || '',
+                department: item.department || '',
+                instructor: item.Instructor || null,
+                // Set legacy fields for compatibility
+                code: item['Course number'] || '',
+                name: item['Course title'] || '',
+                description: null
+              }));
+              
+              setCourses(typedCourses);
+              setLoading(false);
+              return;
+            }
+          } catch (directQueryError) {
+            console.error("Direct table query failed:", directQueryError);
+            // Continue to fallback methods
+          }
+          
+          // Fallback to edge function for Fall 2025
+          try {
+            const response = await fetch(`${supabase.supabaseUrl}/functions/v1/query_term_courses`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${supabase.supabaseKey}`
+              },
+              body: JSON.stringify({ term_code: filterOptions.term })
+            });
+            
+            if (!response.ok) {
+              throw new Error(`Edge function returned ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data && Array.isArray(data) && data.length > 0) {
+              console.log(`Found ${data.length} courses via edge function for Fall 2025`);
+              
+              const typedCourses: Course[] = data.map(item => ({
+                id: item.id || crypto.randomUUID(),
+                course_number: item['Course number'] || '',
+                course_title: item['Course title'] || '',
+                department: item.department || '',
+                instructor: item.Instructor || null,
+                // Set legacy fields for compatibility
+                code: item['Course number'] || '',
+                name: item['Course title'] || '',
+                description: null
+              }));
+              
+              setCourses(typedCourses);
+              setLoading(false);
+              return;
+            }
+          } catch (edgeFunctionError) {
+            console.error("Edge function query failed:", edgeFunctionError);
+            // Continue to general term table handling
+          }
+        }
+        
         // Get the corresponding term table
         const { data: termTableData, error: termTableError } = await supabase.rpc(
           'list_term_tables',
@@ -74,102 +156,46 @@ export function useCourses(filterOptions: CourseFilterOptions) {
             setCourses([]);
           }
         } else {
-          // Query from the term-specific table
-          console.log(`Using term-specific table: ${termTable.table_name}`);
-          
+          // Query from the term-specific table via edge function
           try {
-            // Use raw SQL query for schema.table access
-            const { data, error } = await supabase.rpc(
-              'execute_sql',
-              { sql: `SELECT * FROM ${termTable.table_name}` }
-            );
+            const response = await fetch(`${supabase.supabaseUrl}/functions/v1/query_term_courses`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${supabase.supabaseKey}`
+              },
+              body: JSON.stringify({ term_code: filterOptions.term })
+            });
             
-            if (error) {
-              console.error("Using RPC query failed:", error);
-              throw error;
+            if (!response.ok) {
+              throw new Error(`Edge function returned ${response.status}`);
             }
             
-            if (data) {
-              // The data from execute_sql might be in _temp_result
-              const { data: tempData, error: tempError } = await supabase
-                .from('_temp_result')
-                .select('*');
-                
-              if (tempError) {
-                console.error("Failed to get temp results:", tempError);
-                throw tempError;
-              }
+            const data = await response.json();
+            
+            if (data && Array.isArray(data) && data.length > 0) {
+              console.log(`Found ${data.length} courses via edge function`);
               
-              if (tempData && tempData.length > 0) {
-                console.log(`Found ${tempData.length} courses in temp results`);
-                
-                // Cast the result to our expected type structure
-                const termCourses = tempData as unknown as TermCourse[];
-                
-                // Convert to our standard Course type
-                const typedCourses: Course[] = termCourses.map(item => ({
-                  id: item.id,
-                  course_number: item.course_number,
-                  course_title: item.course_title,
-                  department: item.department || '',
-                  instructor: item.instructor,
-                  // Set legacy fields for compatibility
-                  code: item.course_number,
-                  name: item.course_title,
-                  description: null
-                }));
-                
-                setCourses(typedCourses);
-              } else {
-                setCourses([]);
-              }
+              const typedCourses: Course[] = data.map((item: any) => ({
+                id: item.id || crypto.randomUUID(),
+                course_number: item.course_number || '',
+                course_title: item.course_title || '',
+                department: item.department || '',
+                instructor: item.instructor || null,
+                // Set legacy fields for compatibility
+                code: item.course_number,
+                name: item.course_title,
+                description: null
+              }));
+              
+              setCourses(typedCourses);
             } else {
               setCourses([]);
             }
-          } catch (queryError) {
-            console.error("Error with database query:", queryError);
-            
-            // Try direct SQL query via Postgres function
-            try {
-              // Use REST API call to directly query the term table
-              const tableName = termTable.table_name.split('.')[1];
-              const { data, error } = await fetch(
-                `${process.env.SUPABASE_URL}/rest/v1/rpc/list_term_courses?term_table=${tableName}`,
-                {
-                  method: 'GET',
-                  headers: {
-                    'apikey': `${process.env.SUPABASE_ANON_KEY}`,
-                    'Content-Type': 'application/json'
-                  }
-                }
-              ).then(res => res.json());
-              
-              if (error) {
-                console.error("REST API query failed:", error);
-                throw error;
-              }
-              
-              if (data && Array.isArray(data)) {
-                const typedCourses: Course[] = data.map((item: any) => ({
-                  id: item.id,
-                  course_number: item.course_number,
-                  course_title: item.course_title,
-                  department: item.department || '',
-                  instructor: item.instructor,
-                  // Set legacy fields for compatibility
-                  code: item.course_number,
-                  name: item.course_title,
-                  description: null
-                }));
-                
-                setCourses(typedCourses);
-              } else {
-                setCourses([]);
-              }
-            } catch (restError) {
-              console.error("All query methods failed:", restError);
-              setCourses([]);
-            }
+          } catch (error) {
+            console.error("Edge function query failed:", error);
+            setCourses([]);
+            throw error;
           }
         }
       } catch (err) {
