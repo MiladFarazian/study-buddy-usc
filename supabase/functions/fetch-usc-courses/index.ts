@@ -152,7 +152,7 @@ async function fetchCourseDescription(courseCode: string, termCode: string): Pro
     
     if (!department || !courseNumber) return null;
     
-    const url = `https://classes.usc.edu/term-${termCode}/${department.toLowerCase()}/`;
+    const url = `https://classes.usc.edu/term-${termCode}/classes/${department.toLowerCase()}/`;
     
     console.log(`Fetching course page for ${courseCode} from ${url}`);
     const response = await fetchWithRetry(url);
