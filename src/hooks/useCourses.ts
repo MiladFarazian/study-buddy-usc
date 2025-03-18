@@ -78,52 +78,96 @@ export function useCourses(filterOptions: CourseFilterOptions) {
           console.log(`Using term-specific table: ${termTable.table_name}`);
           
           try {
-            // First approach: try a direct query with the table name
-            const { data, error } = await supabase
-              .from(termTable.table_name.replace('terms.', ''))
-              .select('*');
-              
+            // Use raw SQL query for schema.table access
+            const { data, error } = await supabase.rpc(
+              'execute_sql',
+              { sql: `SELECT * FROM ${termTable.table_name}` }
+            );
+            
             if (error) {
-              console.error("Using direct query failed:", error);
+              console.error("Using RPC query failed:", error);
               throw error;
             }
             
             if (data) {
-              console.log(`Found ${data.length} courses in term-specific table via direct query`);
-              const typedCourses: Course[] = data.map((item: TermCourse) => ({
-                id: item.id,
-                course_number: item.course_number,
-                course_title: item.course_title,
-                department: item.department,
-                instructor: item.instructor,
-                // Legacy fields for compatibility
-                code: item.course_number,
-                name: item.course_title,
-                description: null
-              }));
-              setCourses(typedCourses);
-            }
-          } catch (directQueryError) {
-            console.error("Error with direct query:", directQueryError);
-            
-            // Second approach: Try using RPC to execute SQL
-            try {
-              const { error: rpcError } = await supabase.rpc(
-                'execute_sql',
-                { sql: `SELECT * FROM ${termTable.table_name}` }
-              );
-              
-              if (rpcError) {
-                console.error("RPC query failed:", rpcError);
-                throw rpcError;
+              // The data from execute_sql might be in _temp_result
+              const { data: tempData, error: tempError } = await supabase
+                .from('_temp_result')
+                .select('*');
+                
+              if (tempError) {
+                console.error("Failed to get temp results:", tempError);
+                throw tempError;
               }
               
-              // Unfortunately, we can't access temporary results directly
-              // We'll need to fall back to no courses in this case
-              console.log("RPC executed but cannot retrieve results");
+              if (tempData && tempData.length > 0) {
+                console.log(`Found ${tempData.length} courses in temp results`);
+                
+                // Cast the result to our expected type structure
+                const termCourses = tempData as unknown as TermCourse[];
+                
+                // Convert to our standard Course type
+                const typedCourses: Course[] = termCourses.map(item => ({
+                  id: item.id,
+                  course_number: item.course_number,
+                  course_title: item.course_title,
+                  department: item.department || '',
+                  instructor: item.instructor,
+                  // Set legacy fields for compatibility
+                  code: item.course_number,
+                  name: item.course_title,
+                  description: null
+                }));
+                
+                setCourses(typedCourses);
+              } else {
+                setCourses([]);
+              }
+            } else {
               setCourses([]);
-            } catch (rpcQueryError) {
-              console.error("Error with RPC query:", rpcQueryError);
+            }
+          } catch (queryError) {
+            console.error("Error with database query:", queryError);
+            
+            // Try direct SQL query via Postgres function
+            try {
+              // Use REST API call to directly query the term table
+              const tableName = termTable.table_name.split('.')[1];
+              const { data, error } = await fetch(
+                `${process.env.SUPABASE_URL}/rest/v1/rpc/list_term_courses?term_table=${tableName}`,
+                {
+                  method: 'GET',
+                  headers: {
+                    'apikey': `${process.env.SUPABASE_ANON_KEY}`,
+                    'Content-Type': 'application/json'
+                  }
+                }
+              ).then(res => res.json());
+              
+              if (error) {
+                console.error("REST API query failed:", error);
+                throw error;
+              }
+              
+              if (data && Array.isArray(data)) {
+                const typedCourses: Course[] = data.map((item: any) => ({
+                  id: item.id,
+                  course_number: item.course_number,
+                  course_title: item.course_title,
+                  department: item.department || '',
+                  instructor: item.instructor,
+                  // Set legacy fields for compatibility
+                  code: item.course_number,
+                  name: item.course_title,
+                  description: null
+                }));
+                
+                setCourses(typedCourses);
+              } else {
+                setCourses([]);
+              }
+            } catch (restError) {
+              console.error("All query methods failed:", restError);
               setCourses([]);
             }
           }
