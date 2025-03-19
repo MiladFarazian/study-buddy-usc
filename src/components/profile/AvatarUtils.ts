@@ -12,20 +12,11 @@ export const uploadAvatar = async (
   
   try {
     setUploadingAvatar(true);
+    console.log("Starting avatar upload for user:", user.id);
     
     // Create a unique file name with the user ID as the folder
     const fileExt = avatarFile.name.split('.').pop() || "jpg";
     const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-    
-    // First check if the bucket exists, if not, this will fail gracefully
-    const { data: buckets } = await supabase.storage.listBuckets();
-    const bucketExists = buckets.some(bucket => bucket.name === 'profile-pictures');
-    
-    if (!bucketExists) {
-      console.error('The profile-pictures bucket does not exist');
-      onError(new Error('Storage bucket not configured'));
-      return null;
-    }
     
     // Upload the file to Storage
     const { error: uploadError, data } = await supabase.storage

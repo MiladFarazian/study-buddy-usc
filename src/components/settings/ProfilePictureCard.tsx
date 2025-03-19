@@ -54,6 +54,7 @@ export const ProfilePictureCard = ({
       // Show cropper instead of direct preview
       setCropperFile(file);
       setShowCropper(true);
+      console.log("File selected for cropping:", file.name);
     }
   };
 
@@ -63,11 +64,14 @@ export const ProfilePictureCard = ({
       type: "image/jpeg",
     });
     
+    console.log("Crop completed, file size:", file.size);
+    
     // Preview the cropped image
     const reader = new FileReader();
     reader.onload = (e) => {
       if (e.target?.result) {
         setAvatarUrl(e.target.result as string);
+        console.log("Profile picture preview set from crop");
       }
     };
     reader.readAsDataURL(croppedBlob);
@@ -78,7 +82,7 @@ export const ProfilePictureCard = ({
     
     toast({
       title: "Image cropped",
-      description: "Your profile picture has been cropped successfully",
+      description: "Your profile picture has been cropped successfully. Don't forget to save your profile to upload it.",
     });
   };
 
@@ -128,6 +132,8 @@ export const ProfilePictureCard = ({
       .join("")
       .toUpperCase();
   };
+
+  console.log("Rendering ProfilePictureCard with avatarUrl:", avatarUrl);
 
   return (
     <>

@@ -47,7 +47,28 @@ export const useProfilePage = (profile: Profile | null, user: any) => {
     try {
       setUploadingAvatar(true);
       
-      // Only remove from profile, not from storage (for now)
+      // Extract the file path from the URL
+      const fileUrl = new URL(profile.avatar_url);
+      const filePath = fileUrl.pathname.split('/').slice(2).join('/');
+      
+      // If we can identify the file in storage, try to delete it first
+      if (filePath && filePath.includes(user.id)) {
+        try {
+          const { error: deleteError } = await supabase.storage
+            .from('profile-pictures')
+            .remove([filePath]);
+            
+          if (deleteError) {
+            console.warn('Could not delete file from storage:', deleteError);
+            // Continue anyway to remove from profile
+          }
+        } catch (e) {
+          console.warn('Error attempting to delete file:', e);
+          // Continue with profile update even if storage delete fails
+        }
+      }
+      
+      // Update profile to remove avatar_url
       const { error } = await supabase
         .from('profiles')
         .update({ avatar_url: null })

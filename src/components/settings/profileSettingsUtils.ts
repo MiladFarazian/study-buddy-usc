@@ -2,6 +2,7 @@
 import { Database } from "@/integrations/supabase/types";
 import { Profile } from "@/integrations/supabase/types-extension";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadAvatar as uploadAvatarUtil } from "@/components/profile/AvatarUtils";
 
 type ProfileUpdateDto = Database['public']['Tables']['profiles']['Update'];
 type UserRole = Database['public']['Enums']['user_role'];
@@ -13,36 +14,15 @@ export const uploadAvatar = async (
 ) => {
   if (!user || !avatarFile) return null;
   
-  try {
-    setUploadingAvatar(true);
-    
-    // Create a unique file name with the user ID as the folder
-    const fileExt = avatarFile.name.split('.').pop() || "jpg";
-    const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-    
-    // Upload the file to Storage
-    const { error: uploadError, data } = await supabase.storage
-      .from('profile-pictures')
-      .upload(fileName, avatarFile, {
-        upsert: true,
-      });
-    
-    if (uploadError) {
-      throw uploadError;
+  return uploadAvatarUtil(
+    user, 
+    avatarFile, 
+    supabase, 
+    setUploadingAvatar, 
+    (error) => {
+      console.error('Error uploading avatar in settings:', error);
     }
-    
-    // Get the public URL
-    const { data: publicUrlData } = supabase.storage
-      .from('profile-pictures')
-      .getPublicUrl(fileName);
-    
-    return publicUrlData.publicUrl;
-  } catch (error) {
-    console.error('Error uploading avatar:', error);
-    return null;
-  } finally {
-    setUploadingAvatar(false);
-  }
+  );
 };
 
 export const updateUserProfile = async (
@@ -58,7 +38,7 @@ export const updateUserProfile = async (
     hourly_rate: string;
   },
   avatarFile: File | null,
-  newAvatarUrl: string | null,
+  currentAvatarUrl: string | null,
   setLoading: (value: boolean) => void,
   setUploadingAvatar: (value: boolean) => void,
 ) => {
@@ -68,13 +48,15 @@ export const updateUserProfile = async (
     setLoading(true);
     
     // First upload the avatar if there is one
-    let finalAvatarUrl = newAvatarUrl;
+    let finalAvatarUrl = currentAvatarUrl;
     if (avatarFile) {
+      console.log("Settings: Uploading avatar file", avatarFile.name);
       finalAvatarUrl = await uploadAvatar(user, avatarFile, setUploadingAvatar);
       if (!finalAvatarUrl) {
-        // If avatar upload failed, don't proceed with profile update
+        console.error("Failed to upload profile picture in settings");
         return { error: "Failed to upload profile picture" };
       }
+      console.log("Settings: Avatar uploaded successfully", finalAvatarUrl);
     }
     
     const updateData: ProfileUpdateDto = {
@@ -91,15 +73,21 @@ export const updateUserProfile = async (
       updateData.hourly_rate = parseFloat(formData.hourly_rate);
     }
 
+    console.log("Settings: Updating profile with data", updateData);
     const { error } = await supabase
       .from('profiles')
       .update(updateData)
       .eq('id', user.id);
 
-    if (error) return { error: error.message };
+    if (error) {
+      console.error("Settings: Error updating profile", error);
+      return { error: error.message };
+    }
 
+    console.log("Settings: Profile updated successfully");
     return { data: { ...profile, ...updateData }, error: null };
   } catch (error: any) {
+    console.error("Settings: Unexpected error updating profile", error);
     return { error: error.message || "An error occurred" };
   } finally {
     setLoading(false);
