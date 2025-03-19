@@ -14,9 +14,13 @@ serve(async (req) => {
   }
 
   try {
+    console.log('query_term_courses function called')
+    
     const { term_code, legacy } = await req.json()
+    console.log(`Requested term_code: ${term_code}, legacy: ${legacy}`)
     
     if (!term_code) {
+      console.error('Missing term_code parameter')
       return new Response(
         JSON.stringify({ error: 'Missing term_code parameter' }),
         { 
@@ -27,55 +31,46 @@ serve(async (req) => {
     }
 
     // Create a Supabase client with the Admin key
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+    
+    console.log(`Connecting to Supabase at URL: ${supabaseUrl}`)
+    
     const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      supabaseUrl,
+      supabaseKey,
       { auth: { persistSession: false } }
     )
 
-    // Special case for Fall 2025 term (code 20253)
-    if (term_code === '20253') {
-      console.log('Fetching courses from Fall 2025 table: courses-20253')
-      
+    // Special case for courses-XXXXX tables
+    const tableName = `courses-${term_code}`
+    console.log(`Checking direct courses table: ${tableName}`)
+    
+    try {
       const { data, error } = await supabaseAdmin
-        .from('courses-20253')
+        .from(tableName)
         .select('*')
       
       if (error) {
-        console.error('Error fetching courses:', error)
+        console.error(`Error querying ${tableName}:`, error)
         throw error
       }
 
-      // Process the data to add missing fields for Fall 2025
-      const processedData = data.map((item: any) => {
-        return {
-          id: item.id || crypto.randomUUID(), // Generate a unique ID since it's missing
-          "Course number": item["Course number"],
-          "Course title": item["Course title"],
-          Instructor: item.Instructor,
-          department: item.department || 'Unknown' // Provide a default if missing
-        }
-      })
-
-      return new Response(
-        JSON.stringify(processedData || []),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Legacy case for courses that don't have a term-specific table
-    if (legacy) {
-      console.log('Fetching legacy courses from legacy sources')
+      console.log(`Found ${data?.length || 0} courses in ${tableName}`)
       
-      // Try to get courses via RPC or other custom logic
-      // This is a placeholder for legacy data fetching
-      return new Response(
-        JSON.stringify([]), // Return empty array for now
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      if (data && data.length > 0) {
+        return new Response(
+          JSON.stringify(data),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    } catch (directQueryError) {
+      console.warn(`Could not query ${tableName} directly:`, directQueryError)
+      // Continue to legacy fallback if direct query fails
     }
 
-    // For other terms, follow the original logic
+    // Fallback to term tables RPC if direct query fails or returns no data
+    console.log('Trying term_tables RPC fallback')
     const { data: termTables, error: termTablesError } = await supabaseAdmin.rpc('list_term_tables')
     
     if (termTablesError) {
@@ -86,8 +81,9 @@ serve(async (req) => {
     const termTable = termTables?.find((t: any) => t.term_code === term_code)
     
     if (!termTable) {
+      console.warn(`Term table not found for term code: ${term_code}`)
       return new Response(
-        JSON.stringify({ error: 'Term table not found' }),
+        JSON.stringify({ error: 'Term table not found', term_code }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 404 
@@ -95,6 +91,8 @@ serve(async (req) => {
       )
     }
 
+    console.log(`Found term table: ${termTable.table_name}`)
+    
     // Execute SQL query to fetch from the schema.table
     const { data, error } = await supabaseAdmin.rpc(
       'list_term_courses',
@@ -102,10 +100,12 @@ serve(async (req) => {
     )
     
     if (error) {
-      console.error('Error fetching courses:', error)
+      console.error('Error fetching courses from RPC:', error)
       throw error
     }
 
+    console.log(`Returning ${data?.length || 0} courses from RPC`)
+    
     return new Response(
       JSON.stringify(data || []),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

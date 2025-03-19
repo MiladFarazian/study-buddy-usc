@@ -33,4 +33,9 @@ export interface TermCourse {
   "Course title": string;
   Instructor: string | null;
   department?: string;
+  units?: string | null;
+  days?: string | null;
+  time?: string | null;
+  location?: string | null;
+  description?: string | null;
 }

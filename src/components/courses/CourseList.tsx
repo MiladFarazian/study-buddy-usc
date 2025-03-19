@@ -13,7 +13,7 @@ interface CourseListProps {
   loading: boolean;
   selectedTerm: string;
   courseCount: number;
-  onImportCourses?: () => void; // Made optional
+  onImportCourses?: () => void; // Make this optional
 }
 
 const CourseList = ({ courses, loading, selectedTerm, courseCount, onImportCourses }: CourseListProps) => {
