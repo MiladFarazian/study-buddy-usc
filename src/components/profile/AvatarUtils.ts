@@ -1,11 +1,10 @@
 
-import { useToast } from "@/hooks/use-toast";
-
 export const uploadAvatar = async (
   user: any,
   avatarFile: File | null,
   supabase: any,
-  setUploadingAvatar: (value: boolean) => void
+  setUploadingAvatar: (value: boolean) => void,
+  onError: (error: any) => void
 ) => {
   if (!user || !avatarFile) return null;
   
@@ -35,13 +34,44 @@ export const uploadAvatar = async (
     return publicUrlData.publicUrl;
   } catch (error) {
     console.error('Error uploading avatar:', error);
-    const { toast } = useToast();
-    toast({
-      title: "Upload failed",
-      description: "Failed to upload profile picture. Please try again.",
-      variant: "destructive",
-    });
+    onError(error);
     return null;
+  } finally {
+    setUploadingAvatar(false);
+  }
+};
+
+export const removeAvatar = async (
+  user: any,
+  profile: any,
+  supabase: any,
+  setAvatarUrl: (url: string | null) => void,
+  setAvatarFile: (file: File | null) => void,
+  setUploadingAvatar: (value: boolean) => void,
+  onError: (error: any) => void,
+  onSuccess: () => void
+) => {
+  if (!user || !profile?.avatar_url) return;
+  
+  try {
+    setUploadingAvatar(true);
+    
+    const { error } = await supabase
+      .from('profiles')
+      .update({ avatar_url: null })
+      .eq('id', user.id);
+    
+    if (error) {
+      throw error;
+    }
+    
+    setAvatarUrl(null);
+    setAvatarFile(null);
+    
+    onSuccess();
+  } catch (error) {
+    console.error('Error removing avatar:', error);
+    onError(error);
   } finally {
     setUploadingAvatar(false);
   }

@@ -8,6 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Upload, X, Loader2 } from "lucide-react";
 import { ImageCropper } from "@/components/ui/image-cropper";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { removeAvatar } from "./AvatarUtils";
 
 interface ProfileAvatarProps {
   avatarUrl: string | null;
@@ -19,7 +21,7 @@ interface ProfileAvatarProps {
   lastName: string;
   isSubmitting: boolean;
   uploadingAvatar: boolean;
-  removeAvatar: () => Promise<void>;
+  setUploadingAvatar: (value: boolean) => void;
   userRole?: string;
   profile?: any;
 }
@@ -34,11 +36,12 @@ export const ProfileAvatar = ({
   lastName,
   isSubmitting,
   uploadingAvatar,
-  removeAvatar,
+  setUploadingAvatar,
   userRole,
   profile
 }: ProfileAvatarProps) => {
   const { toast } = useToast();
+  const { user, updateProfile } = useAuth();
   const [showCropper, setShowCropper] = useState(false);
   const [cropperFile, setCropperFile] = useState<File | null>(null);
 
@@ -90,6 +93,40 @@ export const ProfileAvatar = ({
     setCropperFile(null);
   };
 
+  const handleRemoveAvatar = async () => {
+    if (!user) return;
+    
+    await removeAvatar(
+      user,
+      profile,
+      supabase,
+      setAvatarUrl,
+      setAvatarFile,
+      setUploadingAvatar,
+      (error) => {
+        toast({
+          title: "Remove failed",
+          description: "Failed to remove profile picture. Please try again.",
+          variant: "destructive",
+        });
+      },
+      () => {
+        // Update local profile state
+        if (updateProfile && profile) {
+          updateProfile({
+            ...profile,
+            avatar_url: null,
+          });
+        }
+        
+        toast({
+          title: "Profile picture removed",
+          description: "Your profile picture has been removed",
+        });
+      }
+    );
+  };
+
   const getInitials = (name: string = userEmail || "") => {
     if (firstName && lastName) {
       return `${firstName[0]}${lastName[0]}`.toUpperCase();
@@ -137,7 +174,7 @@ export const ProfileAvatar = ({
                   <Button
                     variant="outline"
                     className="text-red-500 hover:text-red-600"
-                    onClick={removeAvatar}
+                    onClick={handleRemoveAvatar}
                     disabled={uploadingAvatar || isSubmitting}
                   >
                     <X className="mr-2 h-4 w-4" />

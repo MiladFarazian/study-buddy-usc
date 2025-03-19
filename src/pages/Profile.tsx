@@ -7,6 +7,8 @@ import { Loader2 } from "lucide-react";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { ProfileForm } from "@/components/profile/ProfileForm";
+import { uploadAvatar } from "@/components/profile/AvatarUtils";
+import { supabase } from "@/integrations/supabase/client";
 
 const Profile = () => {
   // Redirect to login if not authenticated
@@ -37,48 +39,6 @@ const Profile = () => {
     }
   }, [profile]);
 
-  const uploadAvatar = async () => {
-    if (!user || !avatarFile) return null;
-    
-    try {
-      setUploadingAvatar(true);
-      
-      const { supabase } = await import("@/integrations/supabase/client");
-      
-      // Create a unique file name with the user ID as the folder
-      const fileExt = avatarFile.name.split('.').pop() || "jpg";
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-      
-      // Upload the file to Storage
-      const { error: uploadError, data } = await supabase.storage
-        .from('profile-pictures')
-        .upload(fileName, avatarFile, {
-          upsert: true,
-        });
-      
-      if (uploadError) {
-        throw uploadError;
-      }
-      
-      // Get the public URL
-      const { data: publicUrlData } = supabase.storage
-        .from('profile-pictures')
-        .getPublicUrl(fileName);
-      
-      return publicUrlData.publicUrl;
-    } catch (error) {
-      console.error('Error uploading avatar:', error);
-      toast({
-        title: "Upload failed",
-        description: "Failed to upload profile picture. Please try again.",
-        variant: "destructive",
-      });
-      return null;
-    } finally {
-      setUploadingAvatar(false);
-    }
-  };
-
   const removeAvatar = async () => {
     if (!user || !profile?.avatar_url) return;
     
@@ -86,8 +46,6 @@ const Profile = () => {
       setUploadingAvatar(true);
       
       // Only remove from profile, not from storage
-      const { supabase } = await import("@/integrations/supabase/client");
-      
       const { error } = await supabase
         .from('profiles')
         .update({ avatar_url: null })
@@ -99,6 +57,14 @@ const Profile = () => {
       
       setAvatarUrl(null);
       setAvatarFile(null);
+      
+      // Update local profile state
+      if (updateProfile) {
+        updateProfile({
+          ...profile,
+          avatar_url: null,
+        });
+      }
       
       toast({
         title: "Profile picture removed",
@@ -134,10 +100,20 @@ const Profile = () => {
       // First upload the avatar if there is one
       let newAvatarUrl = profile?.avatar_url;
       if (avatarFile) {
-        newAvatarUrl = await uploadAvatar();
+        newAvatarUrl = await uploadAvatar(
+          user, 
+          avatarFile, 
+          supabase, 
+          setUploadingAvatar,
+          (error) => {
+            toast({
+              title: "Upload failed",
+              description: "Failed to upload profile picture. Please try again.",
+              variant: "destructive",
+            });
+          }
+        );
       }
-      
-      const { supabase } = await import("@/integrations/supabase/client");
       
       const { error } = await supabase
         .from('profiles')
@@ -214,6 +190,7 @@ const Profile = () => {
             lastName={lastName}
             isSubmitting={isSubmitting}
             uploadingAvatar={uploadingAvatar}
+            setUploadingAvatar={setUploadingAvatar}
             removeAvatar={removeAvatar}
             userRole={profile?.role}
             profile={profile}

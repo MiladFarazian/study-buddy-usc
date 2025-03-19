@@ -80,12 +80,17 @@ export function ImageCropper({ imageFile, onCropComplete, onCancel, isOpen }: Im
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
       // Draw the cropped image
+      const sourceX = (crop.x * scaleX * image.width) / 100;
+      const sourceY = (crop.y * scaleY * image.height) / 100;
+      const sourceWidth = (crop.width * scaleX * image.width) / 100;
+      const sourceHeight = (crop.height * scaleY * image.height) / 100;
+      
       ctx.drawImage(
         image,
-        (crop.x * image.width * scaleX) / 100,
-        (crop.y * image.height * scaleY) / 100,
-        (crop.width * image.width * scaleX) / 100,
-        (crop.height * image.height * scaleY) / 100,
+        sourceX,
+        sourceY,
+        sourceWidth,
+        sourceHeight,
         0,
         0,
         outputSize,
@@ -96,6 +101,8 @@ export function ImageCropper({ imageFile, onCropComplete, onCancel, isOpen }: Im
       canvas.toBlob((blob) => {
         if (blob) {
           onCropComplete(blob);
+        } else {
+          console.error("Failed to create blob from canvas");
         }
         setIsLoading(false);
       }, "image/jpeg", 0.95); // Higher quality to prevent dark images
@@ -130,6 +137,7 @@ export function ImageCropper({ imageFile, onCropComplete, onCancel, isOpen }: Im
                 alt="Upload to crop"
                 className="max-w-full max-h-[60vh]"
                 onLoad={onImageLoad}
+                crossOrigin="anonymous"
               />
             </ReactCrop>
           ) : (

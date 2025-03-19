@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -8,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Upload, X, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ImageCropper } from "@/components/ui/image-cropper";
+import { removeAvatar } from "@/components/profile/AvatarUtils";
 
 interface ProfilePictureCardProps {
   avatarUrl: string | null;
@@ -18,6 +20,7 @@ interface ProfilePictureCardProps {
   uploadingAvatar: boolean;
   firstName: string;
   userEmail?: string;
+  setUploadingAvatar?: (value: boolean) => void;
 }
 
 export const ProfilePictureCard = ({
@@ -29,6 +32,7 @@ export const ProfilePictureCard = ({
   uploadingAvatar,
   firstName,
   userEmail,
+  setUploadingAvatar = () => {},
 }: ProfilePictureCardProps) => {
   const { user, profile, updateProfile } = useAuth();
   const { toast } = useToast();
@@ -83,42 +87,38 @@ export const ProfilePictureCard = ({
     setCropperFile(null);
   };
 
-  const removeAvatar = async () => {
+  const handleRemoveAvatar = async () => {
     if (!user || !profile?.avatar_url) return;
     
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ avatar_url: null })
-        .eq('id', user.id);
-      
-      if (error) {
-        throw error;
-      }
-      
-      setAvatarUrl(null);
-      setAvatarFile(null);
-      
-      // Update local profile state
-      if (updateProfile) {
-        updateProfile({
-          ...profile,
-          avatar_url: null,
+    await removeAvatar(
+      user,
+      profile,
+      supabase,
+      setAvatarUrl,
+      setAvatarFile,
+      setUploadingAvatar,
+      (error) => {
+        toast({
+          title: "Remove failed",
+          description: "Failed to remove profile picture. Please try again.",
+          variant: "destructive",
+        });
+      },
+      () => {
+        // Update local profile state
+        if (updateProfile) {
+          updateProfile({
+            ...profile,
+            avatar_url: null,
+          });
+        }
+        
+        toast({
+          title: "Profile picture removed",
+          description: "Your profile picture has been removed",
         });
       }
-      
-      toast({
-        title: "Profile picture removed",
-        description: "Your profile picture has been removed",
-      });
-    } catch (error) {
-      console.error('Error removing avatar:', error);
-      toast({
-        title: "Remove failed",
-        description: "Failed to remove profile picture. Please try again.",
-        variant: "destructive",
-      });
-    }
+    );
   };
 
   const getInitials = (name: string) => {
@@ -174,7 +174,7 @@ export const ProfilePictureCard = ({
               <Button 
                 variant="outline" 
                 className="text-red-500 hover:text-red-600"
-                onClick={removeAvatar}
+                onClick={handleRemoveAvatar}
                 disabled={uploadingAvatar || loading}
               >
                 <X className="mr-2 h-4 w-4" />
