@@ -1,64 +1,70 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Tutor, Review } from "@/types/tutor";
+import { Tutor, Subject, Review } from "@/types/tutor";
 
-export const useTutor = (tutorId: string | undefined) => {
+export function useTutor(id: string) {
   const [tutor, setTutor] = useState<Tutor | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchTutor = async () => {
-      if (!tutorId) {
+      if (!id) {
         setLoading(false);
         return;
       }
 
       setLoading(true);
-      setError(null);
-
       try {
-        // Fetch the tutor profile
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", tutorId)
-          .eq("role", "tutor")
+        // Fetch tutor profile
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', id)
+          .eq('role', 'tutor')
           .single();
 
-        if (profileError) {
-          throw profileError;
+        if (error) {
+          throw error;
         }
 
-        if (!profileData) {
-          throw new Error("Tutor not found");
+        if (!profile) {
+          setTutor(null);
+          setLoading(false);
+          return;
         }
 
-        // Map the database profile to our Tutor type
-        const tutorData: Tutor = {
-          id: profileData.id,
-          name: `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim(),
-          firstName: profileData.first_name || '',
-          lastName: profileData.last_name || '',
-          field: profileData.major || '',
-          rating: profileData.average_rating || 0,
-          hourlyRate: profileData.hourly_rate || 0,
-          subjects: (profileData.subjects || []).map((code: string) => ({
-            code,
-            name: code
-          })),
-          imageUrl: profileData.avatar_url || '', // Use the profile's avatar_url directly
-          bio: profileData.bio || '',
-          graduationYear: profileData.graduation_year || ''
-        };
+        // Fetch tutor courses
+        const { data: tutorCourses, error: coursesError } = await supabase
+          .from('tutor_courses')
+          .select('*')
+          .eq('tutor_id', id);
 
-        setTutor(tutorData);
+        if (coursesError) {
+          console.error("Error fetching tutor courses:", coursesError);
+        }
 
-        // Fetch reviews for this tutor
+        // Convert to subjects format
+        const subjects: Subject[] = tutorCourses?.map(course => ({
+          code: course.course_number,
+          name: course.course_title || course.course_number
+        })) || [];
+
+        // If the profile has subjects array but no tutor_courses
+        if ((!subjects || subjects.length === 0) && profile.subjects && profile.subjects.length > 0) {
+          // Use subjects from profile
+          profile.subjects.forEach(courseCode => {
+            subjects.push({
+              code: courseCode,
+              name: courseCode
+            });
+          });
+        }
+
+        // Fetch reviews
         const { data: reviewsData, error: reviewsError } = await supabase
-          .from("reviews")
+          .from('reviews')
           .select(`
             *,
             reviewer:reviewer_id (
@@ -66,37 +72,51 @@ export const useTutor = (tutorId: string | undefined) => {
               last_name
             )
           `)
-          .eq("tutor_id", tutorId)
-          .order("created_at", { ascending: false });
+          .eq('tutor_id', id);
 
         if (reviewsError) {
-          throw reviewsError;
+          console.error("Error fetching reviews:", reviewsError);
         }
 
-        // Map the reviews data
-        const mappedReviews: Review[] = reviewsData.map((review: any) => ({
+        const formattedReviews: Review[] = reviewsData?.map(review => ({
           id: review.id,
           reviewerId: review.reviewer_id,
           reviewerName: review.reviewer ? 
             `${review.reviewer.first_name || ''} ${review.reviewer.last_name || ''}`.trim() : 
-            'Anonymous Student',
+            undefined,
           tutorId: review.tutor_id,
           rating: review.rating,
           comment: review.comment,
           createdAt: review.created_at
-        }));
+        })) || [];
 
-        setReviews(mappedReviews);
-      } catch (err) {
-        console.error("Error fetching tutor:", err);
-        setError(err instanceof Error ? err.message : "Failed to fetch tutor");
+        // Create tutor object
+        const tutorData: Tutor = {
+          id: profile.id,
+          name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
+          firstName: profile.first_name || '',
+          lastName: profile.last_name || '',
+          field: profile.major || 'USC Student',
+          rating: profile.average_rating || 4.5,
+          hourlyRate: profile.hourly_rate || 25,
+          subjects: subjects,
+          imageUrl: profile.avatar_url || '',
+          bio: profile.bio || '',
+          graduationYear: profile.graduation_year || ''
+        };
+
+        setTutor(tutorData);
+        setReviews(formattedReviews);
+      } catch (error) {
+        console.error("Error fetching tutor:", error);
+        setTutor(null);
       } finally {
         setLoading(false);
       }
     };
 
     fetchTutor();
-  }, [tutorId]);
+  }, [id]);
 
-  return { tutor, reviews, loading, error };
-};
+  return { tutor, reviews, loading };
+}

@@ -242,20 +242,26 @@ export type Database = {
       }
       tutor_courses: {
         Row: {
-          course_id: string
+          course_number: string
+          course_title: string | null
           created_at: string
+          department: string | null
           id: string
           tutor_id: string
         }
         Insert: {
-          course_id: string
+          course_number: string
+          course_title?: string | null
           created_at?: string
+          department?: string | null
           id?: string
           tutor_id: string
         }
         Update: {
-          course_id?: string
+          course_number?: string
+          course_title?: string | null
           created_at?: string
+          department?: string | null
           id?: string
           tutor_id?: string
         }

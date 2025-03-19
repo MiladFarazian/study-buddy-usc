@@ -2,125 +2,84 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Tutor, Subject } from "@/types/tutor";
-import { useToast } from "@/hooks/use-toast";
 
 export function useTutors() {
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
 
   useEffect(() => {
-    async function fetchTutors() {
+    const fetchTutors = async () => {
+      setLoading(true);
       try {
-        setLoading(true);
-        
-        // Fetch profiles with role = 'tutor'
-        const { data, error } = await supabase
+        // Fetch tutors
+        const { data: tutorProfiles, error } = await supabase
           .from('profiles')
           .select('*')
           .eq('role', 'tutor');
-        
+
         if (error) {
           throw error;
         }
-        
-        if (data) {
-          // Transform the data to match our Tutor interface
-          const mappedTutors: Tutor[] = data.map(tutor => {
-            // Map subjects array to Subject objects
-            const subjects: Subject[] = (tutor.subjects || []).map((code: string) => ({
-              code,
-              name: getSubjectName(code)
-            }));
-            
+
+        // Fetch tutor courses
+        const tutorsWithCourses = await Promise.all(
+          tutorProfiles.map(async (profile) => {
+            // Fetch tutor courses
+            const { data: tutorCourses, error: coursesError } = await supabase
+              .from('tutor_courses')
+              .select('*')
+              .eq('tutor_id', profile.id);
+
+            if (coursesError) {
+              console.error("Error fetching tutor courses:", coursesError);
+              return null;
+            }
+
+            // Convert to subjects format
+            const subjects: Subject[] = tutorCourses?.map(course => ({
+              code: course.course_number,
+              name: course.course_title || course.course_number
+            })) || [];
+
+            // If the profile has subjects array but no tutor_courses
+            if ((!subjects || subjects.length === 0) && profile.subjects && profile.subjects.length > 0) {
+              // Use subjects from profile
+              profile.subjects.forEach(courseCode => {
+                subjects.push({
+                  code: courseCode,
+                  name: courseCode
+                });
+              });
+            }
+
+            // Create tutor object
             return {
-              id: tutor.id,
-              name: `${tutor.first_name || ''} ${tutor.last_name || ''}`.trim(),
-              firstName: tutor.first_name || '',
-              lastName: tutor.last_name || '',
-              field: tutor.major || '',
-              rating: tutor.average_rating || 4.5,
-              hourlyRate: tutor.hourly_rate || 25,
+              id: profile.id,
+              name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
+              firstName: profile.first_name || '',
+              lastName: profile.last_name || '',
+              field: profile.major || 'USC Student',
+              rating: profile.average_rating || 4.5,
+              hourlyRate: profile.hourly_rate || 25,
               subjects: subjects,
-              imageUrl: tutor.avatar_url || '', // No more random avatars
-              bio: tutor.bio || '',
-              graduationYear: tutor.graduation_year || ''
+              imageUrl: profile.avatar_url || '',
+              bio: profile.bio || '',
+              graduationYear: profile.graduation_year || ''
             };
-          });
-          
-          setTutors(mappedTutors);
-        }
+          })
+        );
+
+        // Filter out null values and set tutors
+        setTutors(tutorsWithCourses.filter(Boolean) as Tutor[]);
       } catch (error) {
-        console.error('Error fetching tutors:', error);
-        toast({
-          title: "Failed to load tutors",
-          description: "Please try again later",
-          variant: "destructive",
-        });
-        
-        // Use fallback data if database query fails
-        setTutors(getFallbackTutors());
+        console.error("Error fetching tutors:", error);
       } finally {
         setLoading(false);
       }
-    }
-    
+    };
+
     fetchTutors();
-  }, [toast]);
-  
+  }, []);
+
   return { tutors, loading };
-}
-
-// Helper function to get a subject name from its code
-function getSubjectName(code: string): string {
-  // Simple mapping for common subjects
-  const subjectMap: Record<string, string> = {
-    'CSCI 103': 'Introduction to Programming',
-    'CSCI 104': 'Data Structures and Object-Oriented Design',
-    'CSCI 170': 'Discrete Methods in Computer Science',
-    'MATH 125': 'Calculus I',
-    'MATH 126': 'Calculus II',
-    'PHYS 151': 'Fundamentals of Physics I',
-    // Add more mappings as needed
-  };
-  
-  return subjectMap[code] || code;
-}
-
-// Fallback data if database query fails - no more random avatars
-function getFallbackTutors(): Tutor[] {
-  return [
-    {
-      id: "1",
-      name: "Alex Johnson",
-      firstName: "Alex",
-      lastName: "Johnson",
-      field: "Computer Science",
-      rating: 4.9,
-      hourlyRate: 25,
-      subjects: [
-        { code: "CSCI 103", name: "Introduction to Programming" },
-        { code: "CSCI 104", name: "Data Structures and Object-Oriented Design" },
-        { code: "CSCI 170", name: "Discrete Methods in Computer Science" }
-      ],
-      imageUrl: "", // Removed random avatar
-      bio: "I specialize in making complex CS concepts easy to understand with practical examples."
-    },
-    {
-      id: "2",
-      name: "Sophia Martinez",
-      firstName: "Sophia",
-      lastName: "Martinez",
-      field: "Biochemistry",
-      rating: 4.8,
-      hourlyRate: 30,
-      subjects: [
-        { code: "CHEM 105A", name: "General Chemistry" },
-        { code: "CHEM 105B", name: "General Chemistry" },
-        { code: "CHEM 300", name: "Analytical Chemistry" }
-      ],
-      imageUrl: "", // Removed random avatar
-      bio: "Patient tutor with a passion for helping students reach their full potential in chemistry."
-    }
-  ];
 }
