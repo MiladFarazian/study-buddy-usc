@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
-import { Loader2, Upload, X } from "lucide-react";
+import { Loader2, Upload, X, ArrowLeft } from "lucide-react";
 import { ImageCropper } from "@/components/ui/image-cropper";
 
 const Profile = () => {
@@ -259,7 +260,15 @@ const Profile = () => {
 
   return (
     <div className="container py-8">
-      <h1 className="text-3xl font-bold mb-6">Your Profile</h1>
+      <div className="flex items-center mb-6">
+        <Button variant="outline" asChild className="mr-4">
+          <Link to="/" className="flex items-center">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
+          </Link>
+        </Button>
+        <h1 className="text-3xl font-bold">Your Profile</h1>
+      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="md:col-span-1">

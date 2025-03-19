@@ -3,8 +3,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import ReactCrop, { type Crop, centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
 
 interface ImageCropperProps {
@@ -20,7 +19,7 @@ export function ImageCropper({ imageFile, onCropComplete, onCancel, isOpen }: Im
   const imgRef = useRef<HTMLImageElement>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load the image when the file changes - fixed from useState to useEffect
+  // Load the image when the file changes
   useEffect(() => {
     if (!imageFile) return;
 
@@ -29,7 +28,7 @@ export function ImageCropper({ imageFile, onCropComplete, onCancel, isOpen }: Im
       setImgSrc(reader.result?.toString() || "");
     });
     reader.readAsDataURL(imageFile);
-  }, [imageFile]); // Added proper dependency array
+  }, [imageFile]);
 
   // This function is called when the image is loaded
   const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -40,7 +39,7 @@ export function ImageCropper({ imageFile, onCropComplete, onCancel, isOpen }: Im
       makeAspectCrop(
         {
           unit: "%",
-          width: 90,
+          width: 80, // Slightly smaller initial crop area
         },
         1, // aspect ratio of 1:1 for profile pic
         width,
@@ -71,23 +70,22 @@ export function ImageCropper({ imageFile, onCropComplete, onCancel, isOpen }: Im
         throw new Error("No 2d context");
       }
       
-      // Set desired output size (max 400x400 for profile pics)
-      const maxSize = 400;
-      const cropWidth = (crop.width * image.width * scaleX) / 100;
-      const cropHeight = (crop.height * image.height * scaleY) / 100;
-      
-      // Maintain aspect ratio while resizing
-      const outputSize = Math.min(maxSize, Math.max(cropWidth, cropHeight));
+      // Set canvas size to 400x400 for profile pics
+      const outputSize = 400;
       canvas.width = outputSize;
       canvas.height = outputSize;
+      
+      // Fill with white background to prevent transparency issues that can appear black
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
       
       // Draw the cropped image
       ctx.drawImage(
         image,
         (crop.x * image.width * scaleX) / 100,
         (crop.y * image.height * scaleY) / 100,
-        cropWidth,
-        cropHeight,
+        (crop.width * image.width * scaleX) / 100,
+        (crop.height * image.height * scaleY) / 100,
         0,
         0,
         outputSize,
@@ -100,7 +98,7 @@ export function ImageCropper({ imageFile, onCropComplete, onCancel, isOpen }: Im
           onCropComplete(blob);
         }
         setIsLoading(false);
-      }, "image/jpeg", 0.9); // 0.9 quality
+      }, "image/jpeg", 0.95); // Higher quality to prevent dark images
     } catch (error) {
       console.error("Error cropping image:", error);
       setIsLoading(false);
@@ -112,6 +110,9 @@ export function ImageCropper({ imageFile, onCropComplete, onCancel, isOpen }: Im
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Crop Profile Picture</DialogTitle>
+          <DialogDescription>
+            Adjust the crop area to fit your profile picture perfectly.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="relative mt-4 overflow-hidden rounded-md">
