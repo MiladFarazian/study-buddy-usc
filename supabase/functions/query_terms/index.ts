@@ -33,11 +33,35 @@ serve(async (req) => {
       throw queryError;
     }
     
-    // If we already have terms in the database, return them
+    // If we already have terms in the database, update to ensure Spring 2025 is current
     if (existingTerms && existingTerms.length > 0) {
       console.log(`Found ${existingTerms.length} existing terms`);
+      
+      // Update all terms to set is_current to false
+      await supabase
+        .from('terms')
+        .update({ is_current: false })
+        .neq('id', '0'); // This will update all terms
+      
+      // Then set Spring 2025 as current
+      await supabase
+        .from('terms')
+        .update({ is_current: true })
+        .eq('code', '20251');
+      
+      // Query the updated terms
+      const { data: updatedTerms, error: updateError } = await supabase
+        .from('terms')
+        .select('*')
+        .order('code', { ascending: false });
+        
+      if (updateError) {
+        console.error('Error querying updated terms:', updateError);
+        throw updateError;
+      }
+      
       return new Response(
-        JSON.stringify(existingTerms),
+        JSON.stringify(updatedTerms || existingTerms),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -77,38 +101,10 @@ serve(async (req) => {
 });
 
 function generateDefaultTerms() {
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth() + 1; // 0-indexed to 1-indexed
-  
-  // Determine current term season based on month
-  let currentSeason;
-  if (currentMonth >= 1 && currentMonth <= 5) {
-    currentSeason = 1; // Spring (Jan-May)
-  } else if (currentMonth >= 6 && currentMonth <= 8) {
-    currentSeason = 2; // Summer (Jun-Aug)
-  } else {
-    currentSeason = 3; // Fall (Sep-Dec)
-  }
-  
-  // Generate terms for current year and next year
-  const terms = [];
-  const years = [currentYear, currentYear + 1];
-  
-  for (const year of years) {
-    for (let season = 1; season <= 3; season++) {
-      const isCurrent = (year === currentYear && season === currentSeason);
-      const termCode = `${year}${season}`;
-      const seasonName = season === 1 ? 'Spring' : season === 2 ? 'Summer' : 'Fall';
-      
-      terms.push({
-        code: termCode,
-        name: `${seasonName} ${year}`,
-        is_current: isCurrent
-      });
-    }
-  }
-  
-  // Sort by code in descending order (newest first)
-  return terms.sort((a, b) => b.code.localeCompare(a.code));
+  // Define default terms with Spring 2025 as current
+  return [
+    { code: '20251', name: 'Spring 2025', is_current: true },
+    { code: '20252', name: 'Summer 2025', is_current: false },
+    { code: '20253', name: 'Fall 2025', is_current: false }
+  ];
 }

@@ -27,6 +27,12 @@ export function useTerms() {
         
         if (data && data.length > 0) {
           termsList = data as Term[];
+          
+          // Ensure Spring 2025 is marked as current
+          termsList = termsList.map(term => ({
+            ...term,
+            is_current: term.code === '20251' // Spring 2025 code
+          }));
         } else {
           // Fallback terms if database is empty
           termsList = [
@@ -38,14 +44,8 @@ export function useTerms() {
         
         setTerms(termsList);
         
-        // Set current term
-        const current = termsList.find(term => term.is_current);
-        if (current) {
-          setCurrentTerm(current.code);
-        } else if (termsList.length > 0) {
-          // Default to the first term if no current term is marked
-          setCurrentTerm(termsList[0].code);
-        }
+        // Set Spring 2025 as current term
+        setCurrentTerm('20251');
       } catch (err) {
         console.error('Error fetching terms:', err);
         setError(err instanceof Error ? err.message : "Failed to load terms");
