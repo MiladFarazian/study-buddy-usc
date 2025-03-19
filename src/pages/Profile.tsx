@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -8,11 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
-import { Loader2 } from "lucide-react";
+import { Loader2, Upload, X } from "lucide-react";
 
 const Profile = () => {
   // Redirect to login if not authenticated
-  const { user, profile, loading } = useAuthRedirect("/profile", true);
+  const { user, profile, loading, updateProfile } = useAuthRedirect("/profile", true);
   const { toast } = useToast();
 
   const [firstName, setFirstName] = useState(profile?.first_name || "");
@@ -21,6 +21,127 @@ const Profile = () => {
   const [gradYear, setGradYear] = useState(profile?.graduation_year || "");
   const [bio, setBio] = useState(profile?.bio || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Profile picture states
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(profile?.avatar_url || null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+
+  // Update form state when profile data changes
+  useEffect(() => {
+    if (profile) {
+      setFirstName(profile.first_name || "");
+      setLastName(profile.last_name || "");
+      setMajor(profile.major || "");
+      setGradYear(profile.graduation_year || "");
+      setBio(profile.bio || "");
+      setAvatarUrl(profile.avatar_url || null);
+    }
+  }, [profile]);
+
+  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      if (file.size > 2 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please select an image less than 2MB",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Preview the selected image
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setAvatarUrl(event.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+      
+      setAvatarFile(file);
+    }
+  };
+
+  const uploadAvatar = async () => {
+    if (!user || !avatarFile) return null;
+    
+    try {
+      setUploadingAvatar(true);
+      
+      const { supabase } = await import("@/integrations/supabase/client");
+      
+      // Create a unique file name with the user ID as the folder
+      const fileExt = avatarFile.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      
+      // Upload the file to Storage
+      const { error: uploadError, data } = await supabase.storage
+        .from('profile-pictures')
+        .upload(fileName, avatarFile, {
+          upsert: true,
+        });
+      
+      if (uploadError) {
+        throw uploadError;
+      }
+      
+      // Get the public URL
+      const { data: publicUrlData } = supabase.storage
+        .from('profile-pictures')
+        .getPublicUrl(fileName);
+      
+      return publicUrlData.publicUrl;
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload profile picture. Please try again.",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const removeAvatar = async () => {
+    if (!user || !profile?.avatar_url) return;
+    
+    try {
+      setUploadingAvatar(true);
+      
+      // Only remove from profile, not from storage
+      const { supabase } = await import("@/integrations/supabase/client");
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update({ avatar_url: null })
+        .eq('id', user.id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      setAvatarUrl(null);
+      setAvatarFile(null);
+      
+      toast({
+        title: "Profile picture removed",
+        description: "Your profile picture has been removed",
+      });
+    } catch (error) {
+      console.error('Error removing avatar:', error);
+      toast({
+        title: "Remove failed",
+        description: "Failed to remove profile picture. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,6 +158,12 @@ const Profile = () => {
     setIsSubmitting(true);
     
     try {
+      // First upload the avatar if there is one
+      let newAvatarUrl = profile?.avatar_url;
+      if (avatarFile) {
+        newAvatarUrl = await uploadAvatar();
+      }
+      
       const { supabase } = await import("@/integrations/supabase/client");
       
       const { error } = await supabase
@@ -47,6 +174,7 @@ const Profile = () => {
           major,
           graduation_year: gradYear,
           bio,
+          avatar_url: newAvatarUrl,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id);
@@ -54,6 +182,21 @@ const Profile = () => {
       if (error) {
         throw error;
       }
+      
+      // Update local profile state through auth context
+      if (updateProfile) {
+        updateProfile({
+          ...profile,
+          first_name: firstName,
+          last_name: lastName,
+          major,
+          graduation_year: gradYear,
+          bio,
+          avatar_url: newAvatarUrl,
+        });
+      }
+      
+      setAvatarFile(null);
       
       toast({
         title: "Profile updated",
@@ -98,13 +241,52 @@ const Profile = () => {
           <Card>
             <CardContent className="pt-6">
               <div className="flex flex-col items-center">
-                <Avatar className="h-32 w-32 mb-4">
-                  <AvatarImage src={profile?.avatar_url || ""} alt={user.email || ""} />
-                  <AvatarFallback className="bg-usc-cardinal text-white text-xl">
-                    {getInitials(user.email || "")}
-                  </AvatarFallback>
-                </Avatar>
-                <h2 className="text-xl font-semibold">
+                <div className="relative">
+                  <Avatar className="h-32 w-32 mb-4">
+                    <AvatarImage src={avatarUrl || ""} alt={user.email || ""} />
+                    <AvatarFallback className="bg-usc-cardinal text-white text-xl">
+                      {getInitials(user.email || "")}
+                    </AvatarFallback>
+                  </Avatar>
+                  
+                  <div className="mt-4 flex flex-col gap-2">
+                    <div className="relative">
+                      <Input
+                        id="avatar-upload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarFileChange}
+                        className="hidden"
+                      />
+                      
+                      <Button
+                        asChild
+                        variant="outline"
+                        className="w-full"
+                        disabled={uploadingAvatar || isSubmitting}
+                      >
+                        <label htmlFor="avatar-upload" className="cursor-pointer flex items-center justify-center">
+                          <Upload className="mr-2 h-4 w-4" />
+                          {avatarFile ? "Change Image" : "Upload Image"}
+                        </label>
+                      </Button>
+                    </div>
+                    
+                    {avatarUrl && (
+                      <Button
+                        variant="outline"
+                        className="text-red-500 hover:text-red-600"
+                        onClick={removeAvatar}
+                        disabled={uploadingAvatar || isSubmitting}
+                      >
+                        <X className="mr-2 h-4 w-4" />
+                        Remove Photo
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                
+                <h2 className="text-xl font-semibold mt-4">
                   {firstName && lastName ? `${firstName} ${lastName}` : user.email}
                 </h2>
                 <p className="text-muted-foreground">{profile?.role || "Student"}</p>
@@ -206,9 +388,9 @@ const Profile = () => {
                 <Button
                   type="submit"
                   className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || uploadingAvatar}
                 >
-                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {(isSubmitting || uploadingAvatar) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Save Changes
                 </Button>
               </form>

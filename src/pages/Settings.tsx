@@ -12,12 +12,13 @@ import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
+import { Loader2, Upload, X } from "lucide-react";
 
 type ProfileUpdateDto = Database['public']['Tables']['profiles']['Update'];
 type UserRole = Database['public']['Enums']['user_role'];
 
 const Settings = () => {
-  const { user, profile, isStudent, isTutor } = useAuth();
+  const { user, profile, isStudent, isTutor, updateProfile } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -31,6 +32,11 @@ const Settings = () => {
     subjects: [] as string[],
   });
 
+  // Profile picture states
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+
   useEffect(() => {
     if (profile) {
       setFormData({
@@ -43,6 +49,7 @@ const Settings = () => {
         hourly_rate: profile.hourly_rate?.toString() || "",
         subjects: profile.subjects || [],
       });
+      setAvatarUrl(profile.avatar_url || null);
     }
   }, [profile]);
 
@@ -52,6 +59,114 @@ const Settings = () => {
       ...prev,
       [name]: value,
     }));
+  };
+
+  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      if (file.size > 2 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please select an image less than 2MB",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Preview the selected image
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setAvatarUrl(event.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+      
+      setAvatarFile(file);
+    }
+  };
+
+  const uploadAvatar = async () => {
+    if (!user || !avatarFile) return null;
+    
+    try {
+      setUploadingAvatar(true);
+      
+      // Create a unique file name with the user ID as the folder
+      const fileExt = avatarFile.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      
+      // Upload the file to Storage
+      const { error: uploadError, data } = await supabase.storage
+        .from('profile-pictures')
+        .upload(fileName, avatarFile, {
+          upsert: true,
+        });
+      
+      if (uploadError) {
+        throw uploadError;
+      }
+      
+      // Get the public URL
+      const { data: publicUrlData } = supabase.storage
+        .from('profile-pictures')
+        .getPublicUrl(fileName);
+      
+      return publicUrlData.publicUrl;
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload profile picture. Please try again.",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const removeAvatar = async () => {
+    if (!user || !profile?.avatar_url) return;
+    
+    try {
+      setUploadingAvatar(true);
+      
+      // Only remove from profile, not from storage
+      const { error } = await supabase
+        .from('profiles')
+        .update({ avatar_url: null })
+        .eq('id', user.id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      setAvatarUrl(null);
+      setAvatarFile(null);
+      
+      // Update local profile state
+      if (updateProfile) {
+        updateProfile({
+          ...profile,
+          avatar_url: null,
+        });
+      }
+      
+      toast({
+        title: "Profile picture removed",
+        description: "Your profile picture has been removed",
+      });
+    } catch (error) {
+      console.error('Error removing avatar:', error);
+      toast({
+        title: "Remove failed",
+        description: "Failed to remove profile picture. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   const handleRoleChange = async (role: UserRole) => {
@@ -95,12 +210,19 @@ const Settings = () => {
     try {
       setLoading(true);
       
+      // First upload the avatar if there is one
+      let newAvatarUrl = profile?.avatar_url;
+      if (avatarFile) {
+        newAvatarUrl = await uploadAvatar();
+      }
+      
       const updateData: ProfileUpdateDto = {
         first_name: formData.first_name,
         last_name: formData.last_name,
         major: formData.major,
         graduation_year: formData.graduation_year,
         bio: formData.bio,
+        avatar_url: newAvatarUrl,
         updated_at: new Date().toISOString(),
       };
       
@@ -114,6 +236,16 @@ const Settings = () => {
         .eq('id', user.id);
 
       if (error) throw error;
+
+      // Update local profile state
+      if (updateProfile) {
+        updateProfile({
+          ...profile,
+          ...updateData,
+        });
+      }
+      
+      setAvatarFile(null);
 
       toast({
         title: "Profile Updated",
@@ -275,9 +407,9 @@ const Settings = () => {
                 <Button 
                   className="bg-usc-cardinal hover:bg-usc-cardinal-dark"
                   onClick={handleProfileUpdate}
-                  disabled={loading}
+                  disabled={loading || uploadingAvatar}
                 >
-                  {loading ? "Saving..." : "Save Changes"}
+                  {(loading || uploadingAvatar) ? "Saving..." : "Save Changes"}
                 </Button>
               </CardContent>
             </Card>
@@ -292,17 +424,46 @@ const Settings = () => {
               <CardContent className="space-y-6">
                 <div className="flex justify-center">
                   <Avatar className="h-24 w-24">
-                    <AvatarImage src={profile?.avatar_url || ""} alt="Profile" />
+                    <AvatarImage src={avatarUrl || ""} alt="Profile" />
                     <AvatarFallback className="bg-usc-cardinal text-white text-xl">
                       {getInitials(formData.first_name || user?.email?.charAt(0) || "U")}
                     </AvatarFallback>
                   </Avatar>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Button variant="outline">Upload New Photo</Button>
-                  <Button variant="outline" className="text-red-500 hover:text-red-600">
-                    Remove Photo
-                  </Button>
+                  <div className="relative">
+                    <Input
+                      id="avatar-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarFileChange}
+                      className="hidden"
+                    />
+                    
+                    <Button
+                      asChild
+                      variant="outline"
+                      className="w-full"
+                      disabled={uploadingAvatar || loading}
+                    >
+                      <label htmlFor="avatar-upload" className="cursor-pointer flex items-center justify-center">
+                        <Upload className="mr-2 h-4 w-4" />
+                        {avatarFile ? "Change Image" : "Upload New Photo"}
+                      </label>
+                    </Button>
+                  </div>
+                  
+                  {(avatarUrl || profile?.avatar_url) && (
+                    <Button 
+                      variant="outline" 
+                      className="text-red-500 hover:text-red-600"
+                      onClick={removeAvatar}
+                      disabled={uploadingAvatar || loading}
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Remove Photo
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>

@@ -42,7 +42,7 @@ export function useTutors() {
               rating: tutor.average_rating || 4.5,
               hourlyRate: tutor.hourly_rate || 25,
               subjects: subjects,
-              imageUrl: tutor.avatar_url || getDefaultAvatar(),
+              imageUrl: tutor.avatar_url || '', // No more random avatars
               bio: tutor.bio || '',
               graduationYear: tutor.graduation_year || ''
             };
@@ -87,14 +87,7 @@ function getSubjectName(code: string): string {
   return subjectMap[code] || code;
 }
 
-// Generate a default avatar URL if none is provided
-function getDefaultAvatar(): string {
-  const index = Math.floor(Math.random() * 10) + 1;
-  const gender = Math.random() > 0.5 ? 'men' : 'women';
-  return `https://randomuser.me/api/portraits/${gender}/${index}.jpg`;
-}
-
-// Fallback data if database query fails
+// Fallback data if database query fails - no more random avatars
 function getFallbackTutors(): Tutor[] {
   return [
     {
@@ -110,7 +103,7 @@ function getFallbackTutors(): Tutor[] {
         { code: "CSCI 104", name: "Data Structures and Object-Oriented Design" },
         { code: "CSCI 170", name: "Discrete Methods in Computer Science" }
       ],
-      imageUrl: "https://randomuser.me/api/portraits/men/32.jpg",
+      imageUrl: "", // Removed random avatar
       bio: "I specialize in making complex CS concepts easy to understand with practical examples."
     },
     {
@@ -126,9 +119,8 @@ function getFallbackTutors(): Tutor[] {
         { code: "CHEM 105B", name: "General Chemistry" },
         { code: "CHEM 300", name: "Analytical Chemistry" }
       ],
-      imageUrl: "https://randomuser.me/api/portraits/women/44.jpg",
+      imageUrl: "", // Removed random avatar
       bio: "Patient tutor with a passion for helping students reach their full potential in chemistry."
-    },
-    // A few more fallback tutors would be defined here
+    }
   ];
 }

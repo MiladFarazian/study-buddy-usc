@@ -16,7 +16,7 @@ import { Link } from "react-router-dom";
 import { LogOut, Settings, User } from "lucide-react";
 
 const UserMenu = () => {
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
   if (!user) {
@@ -34,9 +34,19 @@ const UserMenu = () => {
     );
   }
 
-  const userInitials = user.email
-    ? user.email.substring(0, 2).toUpperCase()
-    : "US";
+  const getInitials = () => {
+    if (profile?.first_name && profile?.last_name) {
+      return `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase();
+    }
+    return user.email ? user.email.substring(0, 2).toUpperCase() : "US";
+  };
+
+  const getDisplayName = () => {
+    if (profile?.first_name && profile?.last_name) {
+      return `${profile.first_name} ${profile.last_name}`;
+    }
+    return user.email;
+  };
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
@@ -47,11 +57,11 @@ const UserMenu = () => {
         >
           <Avatar className="h-10 w-10">
             <AvatarImage 
-              src={user.user_metadata.avatar_url} 
+              src={profile?.avatar_url || ""} 
               alt={user.email || "User avatar"} 
             />
             <AvatarFallback className="bg-usc-cardinal text-white">
-              {userInitials}
+              {getInitials()}
             </AvatarFallback>
           </Avatar>
         </Button>
@@ -60,7 +70,7 @@ const UserMenu = () => {
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">
-              {user.user_metadata.full_name || user.email}
+              {getDisplayName()}
             </p>
             <p className="text-xs leading-none text-muted-foreground">
               {user.email}

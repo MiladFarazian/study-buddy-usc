@@ -18,6 +18,7 @@ type AuthContextType = {
   loading: boolean;
   isStudent: boolean;
   isTutor: boolean;
+  updateProfile: (updatedProfile: Partial<Profile>) => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -194,6 +195,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateProfile = (updatedProfile: Partial<Profile>) => {
+    if (profile) {
+      setProfile({
+        ...profile,
+        ...updatedProfile,
+      });
+    }
+  };
+
   const isStudent = profile?.role === 'student';
   const isTutor = profile?.role === 'tutor';
 
@@ -208,6 +218,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     isStudent,
     isTutor,
+    updateProfile,
   };
 
   if (loading) {

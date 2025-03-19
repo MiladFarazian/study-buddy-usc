@@ -49,7 +49,7 @@ export const useTutor = (tutorId: string | undefined) => {
             code,
             name: code
           })),
-          imageUrl: profileData.avatar_url || '',
+          imageUrl: profileData.avatar_url || '', // No more random avatars
           bio: profileData.bio || '',
           graduationYear: profileData.graduation_year || ''
         };
