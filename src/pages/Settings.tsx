@@ -4,6 +4,7 @@ import { ProfileSettings } from "@/components/settings/ProfileSettings";
 import { AccountSettings } from "@/components/settings/AccountSettings";
 import { NotificationSettings } from "@/components/settings/NotificationSettings";
 import { PrivacySettings } from "@/components/settings/PrivacySettings";
+import { CoursesSettings } from "@/components/settings/CoursesSettings";
 
 const Settings = () => {
   return (
@@ -17,6 +18,7 @@ const Settings = () => {
         <TabsList className="mb-8">
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="account">Account</TabsTrigger>
+          <TabsTrigger value="courses">Courses</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="privacy">Privacy</TabsTrigger>
         </TabsList>
@@ -27,6 +29,10 @@ const Settings = () => {
         
         <TabsContent value="account">
           <AccountSettings />
+        </TabsContent>
+        
+        <TabsContent value="courses">
+          <CoursesSettings />
         </TabsContent>
         
         <TabsContent value="notifications">

@@ -57,3 +57,51 @@ export async function addCourseToProfile(userId: string, course: Course) {
   
   return true;
 }
+
+export async function removeCourseFromProfile(userId: string, courseNumber: string) {
+  try {
+    // First check if the user is a tutor
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('role, subjects')
+      .eq('id', userId)
+      .single();
+      
+    if (!profileData) {
+      throw new Error("User profile not found");
+    }
+    
+    // Remove course from subjects array in profile
+    const subjects = profileData.subjects || [];
+    if (subjects.includes(courseNumber)) {
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ 
+          subjects: subjects.filter(subject => subject !== courseNumber) 
+        })
+        .eq('id', userId);
+        
+      if (updateError) {
+        throw updateError;
+      }
+    }
+    
+    // If user is a tutor, also remove from tutor_courses table
+    if (profileData.role === 'tutor') {
+      const { error: deleteError } = await supabase
+        .from('tutor_courses')
+        .delete()
+        .eq('tutor_id', userId)
+        .eq('course_number', courseNumber);
+        
+      if (deleteError) {
+        throw deleteError;
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error removing course:", error);
+    throw error;
+  }
+}
