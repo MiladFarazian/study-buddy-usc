@@ -6,15 +6,6 @@ export interface Course {
   instructor: string | null;
   department: string;
   description?: string | null;
-  // Legacy fields (for backward compatibility)
-  code?: string;
-  name?: string;
-  term_code?: string;
-  units?: string;
-  days?: string;
-  time?: string;
-  location?: string;
-  session_type?: string;
 }
 
 export interface Term {
@@ -30,21 +21,11 @@ export interface CourseFilterOptions {
   department: string;
 }
 
-// Interface for the term-specific tables
+// Common interface for all term-specific course tables
 export interface TermCourse {
-  id: string;
-  course_number: string;
-  course_title: string;
-  instructor: string | null;
-  department: string;
-  created_at?: string;
-}
-
-// Interface for the Fall 2025 specific course format
-export interface Fall2025Course {
-  "Course number": string | null;
-  "Course title": string | null;
+  id?: string;
+  "Course number": string;
+  "Course title": string;
   Instructor: string | null;
   department?: string;
-  id?: string;
 }

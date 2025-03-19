@@ -9,19 +9,55 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      "courses-20253": {
+      "courses-20251": {
         Row: {
-          "Course number": string | null
+          "Course number": string
           "Course title": string | null
           Instructor: string | null
         }
         Insert: {
-          "Course number"?: string | null
+          "Course number": string
           "Course title"?: string | null
           Instructor?: string | null
         }
         Update: {
-          "Course number"?: string | null
+          "Course number"?: string
+          "Course title"?: string | null
+          Instructor?: string | null
+        }
+        Relationships: []
+      }
+      "courses-20252": {
+        Row: {
+          "Course number": string
+          "Course title": string | null
+          Instructor: string | null
+        }
+        Insert: {
+          "Course number": string
+          "Course title"?: string | null
+          Instructor?: string | null
+        }
+        Update: {
+          "Course number"?: string
+          "Course title"?: string | null
+          Instructor?: string | null
+        }
+        Relationships: []
+      }
+      "courses-20253": {
+        Row: {
+          "Course number": string
+          "Course title": string | null
+          Instructor: string | null
+        }
+        Insert: {
+          "Course number": string
+          "Course title"?: string | null
+          Instructor?: string | null
+        }
+        Update: {
+          "Course number"?: string
           "Course title"?: string | null
           Instructor?: string | null
         }

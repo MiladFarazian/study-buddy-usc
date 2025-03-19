@@ -7,6 +7,7 @@ export function useTerms() {
   const [terms, setTerms] = useState<Term[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentTerm, setCurrentTerm] = useState<string>("");
 
   useEffect(() => {
     async function fetchTerms() {
@@ -14,20 +15,7 @@ export function useTerms() {
       setError(null);
       
       try {
-        // First try to fetch from the functions endpoint
-        try {
-          const { data: functionData, error: functionError } = await supabase.functions.invoke('query_terms');
-          
-          if (!functionError && functionData && functionData.length > 0) {
-            setTerms(functionData as Term[]);
-            setLoading(false);
-            return;
-          }
-        } catch (functionErr) {
-          console.log('Function endpoint unavailable, falling back to database query');
-        }
-        
-        // Fallback to direct database query
+        // Direct database query for terms
         const { data, error } = await supabase
           .from('terms')
           .select('*')
@@ -35,19 +23,28 @@ export function useTerms() {
         
         if (error) throw error;
         
+        let termsList: Term[];
+        
         if (data && data.length > 0) {
-          setTerms(data as Term[]);
+          termsList = data as Term[];
         } else {
-          // Fallback terms if empty result
-          const fallbackTerms: Term[] = [
-            { id: '1', code: '20231', name: 'Spring 2023', is_current: false },
-            { id: '2', code: '20232', name: 'Summer 2023', is_current: false },
-            { id: '3', code: '20233', name: 'Fall 2023', is_current: true },
-            { id: '4', code: '20241', name: 'Spring 2024', is_current: false },
-            { id: '5', code: '20242', name: 'Summer 2024', is_current: false },
-            { id: '6', code: '20243', name: 'Fall 2024', is_current: false }
+          // Fallback terms if database is empty
+          termsList = [
+            { id: '1', code: '20251', name: 'Spring 2025', is_current: true },
+            { id: '2', code: '20252', name: 'Summer 2025', is_current: false },
+            { id: '3', code: '20253', name: 'Fall 2025', is_current: false }
           ];
-          setTerms(fallbackTerms);
+        }
+        
+        setTerms(termsList);
+        
+        // Set current term
+        const current = termsList.find(term => term.is_current);
+        if (current) {
+          setCurrentTerm(current.code);
+        } else if (termsList.length > 0) {
+          // Default to the first term if no current term is marked
+          setCurrentTerm(termsList[0].code);
         }
       } catch (err) {
         console.error('Error fetching terms:', err);
@@ -55,14 +52,12 @@ export function useTerms() {
         
         // More comprehensive fallback terms if error
         const fallbackTerms: Term[] = [
-          { id: '1', code: '20231', name: 'Spring 2023', is_current: false },
-          { id: '2', code: '20232', name: 'Summer 2023', is_current: false },
-          { id: '3', code: '20233', name: 'Fall 2023', is_current: true },
-          { id: '4', code: '20241', name: 'Spring 2024', is_current: false },
-          { id: '5', code: '20242', name: 'Summer 2024', is_current: false },
-          { id: '6', code: '20243', name: 'Fall 2024', is_current: false }
+          { id: '1', code: '20251', name: 'Spring 2025', is_current: true },
+          { id: '2', code: '20252', name: 'Summer 2025', is_current: false },
+          { id: '3', code: '20253', name: 'Fall 2025', is_current: false }
         ];
         setTerms(fallbackTerms);
+        setCurrentTerm('20251'); // Default to Spring 2025
       } finally {
         setLoading(false);
       }
@@ -71,5 +66,5 @@ export function useTerms() {
     fetchTerms();
   }, []);
 
-  return { terms, loading, error };
+  return { terms, currentTerm, loading, error };
 }

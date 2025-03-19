@@ -7,6 +7,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { useTerms } from "@/hooks/useTerms";
+import { useEffect } from "react";
 
 interface TermSelectorProps {
   selectedTerm: string;
@@ -14,7 +15,14 @@ interface TermSelectorProps {
 }
 
 const TermSelector = ({ selectedTerm, onTermChange }: TermSelectorProps) => {
-  const { terms, loading } = useTerms();
+  const { terms, currentTerm, loading } = useTerms();
+
+  // Set the default term when component mounts
+  useEffect(() => {
+    if (currentTerm && !selectedTerm) {
+      onTermChange(currentTerm);
+    }
+  }, [currentTerm, selectedTerm, onTermChange]);
 
   return (
     <div className="flex items-center gap-2">

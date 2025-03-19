@@ -1,24 +1,18 @@
 
 import { Course } from "@/types/CourseTypes";
 import CourseCard from "./CourseCard";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface CourseGridViewProps {
   courses: Course[];
   loading: boolean;
   selectedTerm: string;
-  onImportComplete: () => void;
 }
 
 const CourseGridView = ({ 
   courses, 
   loading, 
-  selectedTerm, 
-  onImportComplete 
+  selectedTerm
 }: CourseGridViewProps) => {
-  const { user } = useAuth();
-
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -34,11 +28,6 @@ const CourseGridView = ({
         <p className="text-muted-foreground mb-4">
           {selectedTerm ? "Try adjusting your search or filters" : "Please select a term"}
         </p>
-        {user && selectedTerm && (
-          <Button onClick={() => onImportComplete()}>
-            Import USC Courses
-          </Button>
-        )}
       </div>
     );
   }

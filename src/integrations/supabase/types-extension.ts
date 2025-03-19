@@ -11,48 +11,14 @@ export type Review = Database["public"]["Tables"]["reviews"]["Row"];
 export type ReviewInsert = Database["public"]["Tables"]["reviews"]["Insert"];
 export type ReviewUpdate = Database["public"]["Tables"]["reviews"]["Update"];
 
-// Define a custom Course type (since the table structure has changed)
+// Define a custom Course type 
 export type Course = {
   id: string;
-  code: string;
-  name: string;
-  term_code: string;
-  instructor: string;
+  course_number: string;
+  course_title: string;
+  instructor: string | null;
   department: string;
   description?: string | null;
-  session_type: string;
-  units: string;
-  days: string;
-  time: string;
-  location: string;
-};
-export type CourseInsert = {
-  id?: string;
-  code: string;
-  name: string;
-  term_code: string;
-  instructor?: string;
-  department: string;
-  description?: string | null;
-  session_type?: string;
-  units?: string;
-  days?: string;
-  time?: string;
-  location?: string;
-};
-export type CourseUpdate = {
-  id?: string;
-  code?: string;
-  name?: string;
-  term_code?: string;
-  instructor?: string;
-  department?: string;
-  description?: string | null;
-  session_type?: string;
-  units?: string;
-  days?: string;
-  time?: string;
-  location?: string;
 };
 
 // Define the TutorCourse type
@@ -74,7 +40,7 @@ export type Term = {
   created_at?: string;
 };
 
-// Define the Fall2025 course type
+// Define the course term-specific tables
+export type Spring2025Course = Database["public"]["Tables"]["courses-20251"]["Row"];
+export type Summer2025Course = Database["public"]["Tables"]["courses-20252"]["Row"];
 export type Fall2025Course = Database["public"]["Tables"]["courses-20253"]["Row"];
-export type Fall2025CourseInsert = Database["public"]["Tables"]["courses-20253"]["Insert"];
-export type Fall2025CourseUpdate = Database["public"]["Tables"]["courses-20253"]["Update"];
