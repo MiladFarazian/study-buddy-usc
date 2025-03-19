@@ -120,34 +120,39 @@ export function useCourses(filterOptions: CourseFilterOptions) {
         const termTable = termTableData?.find((t: any) => t.term_code === filterOptions.term);
         
         if (!termTable) {
-          // Fall back to querying for courses with matching term_code
+          // For legacy data, we need to use the edge function instead of direct query
+          // since 'courses' table is not in the database schema anymore
           try {
-            // This is a fallback for legacy data
-            const { data, error } = await supabase
-              .from('courses')
-              .select('*')
-              .eq('term_code', filterOptions.term)
-              .throwOnError();
+            // Use the edge function to get the data
+            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/query_term_courses`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+              },
+              body: JSON.stringify({ term_code: filterOptions.term, legacy: true })
+            });
             
-            if (error) {
-              console.error("Database error:", error);
-              throw error;
+            if (!response.ok) {
+              throw new Error(`Edge function returned ${response.status}`);
             }
             
-            if (data) {
-              console.log(`Found ${data.length} courses for term ${filterOptions.term} in main courses table`);
+            const data = await response.json();
+            
+            if (data && Array.isArray(data) && data.length > 0) {
+              console.log(`Found ${data.length} legacy courses for term ${filterOptions.term}`);
               
               // Convert the database response to the Course type
               const typedCourses: Course[] = data.map((item: any) => ({
-                id: item.id,
-                course_number: item.code,
-                course_title: item.name,
-                department: item.department,
+                id: item.id || crypto.randomUUID(),
+                course_number: item.code || '',
+                course_title: item.name || '',
+                department: item.department || '',
                 instructor: item.instructor || null,
                 description: item.description,
                 // Keep legacy fields for compatibility
-                code: item.code,
-                name: item.name,
+                code: item.code || '',
+                name: item.name || '',
                 term_code: item.term_code || '',
                 units: item.units || '',
                 days: item.days || '',

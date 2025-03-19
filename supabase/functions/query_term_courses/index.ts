@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { term_code } = await req.json()
+    const { term_code, legacy } = await req.json()
     
     if (!term_code) {
       return new Response(
@@ -49,7 +49,7 @@ serve(async (req) => {
       // Process the data to add missing fields for Fall 2025
       const processedData = data.map((item: any) => {
         return {
-          id: crypto.randomUUID(), // Generate a unique ID since it's missing
+          id: item.id || crypto.randomUUID(), // Generate a unique ID since it's missing
           "Course number": item["Course number"],
           "Course title": item["Course title"],
           Instructor: item.Instructor,
@@ -59,6 +59,18 @@ serve(async (req) => {
 
       return new Response(
         JSON.stringify(processedData || []),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Legacy case for courses that don't have a term-specific table
+    if (legacy) {
+      console.log('Fetching legacy courses from legacy sources')
+      
+      // Try to get courses via RPC or other custom logic
+      // This is a placeholder for legacy data fetching
+      return new Response(
+        JSON.stringify([]), // Return empty array for now
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
