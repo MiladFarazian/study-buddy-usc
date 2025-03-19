@@ -1,4 +1,6 @@
 
+import { supabase } from "@/integrations/supabase/client";
+
 export const uploadAvatar = async (
   user: any,
   avatarFile: File | null,
@@ -15,14 +17,26 @@ export const uploadAvatar = async (
     const fileExt = avatarFile.name.split('.').pop() || "jpg";
     const fileName = `${user.id}/${Date.now()}.${fileExt}`;
     
+    // First check if the bucket exists, if not, this will fail gracefully
+    const { data: buckets } = await supabase.storage.listBuckets();
+    const bucketExists = buckets.some(bucket => bucket.name === 'profile-pictures');
+    
+    if (!bucketExists) {
+      console.error('The profile-pictures bucket does not exist');
+      onError(new Error('Storage bucket not configured'));
+      return null;
+    }
+    
     // Upload the file to Storage
     const { error: uploadError, data } = await supabase.storage
       .from('profile-pictures')
       .upload(fileName, avatarFile, {
         upsert: true,
+        contentType: avatarFile.type, // Set the correct content type
       });
     
     if (uploadError) {
+      console.error('Upload error:', uploadError);
       throw uploadError;
     }
     
@@ -31,6 +45,7 @@ export const uploadAvatar = async (
       .from('profile-pictures')
       .getPublicUrl(fileName);
     
+    console.log('Image uploaded successfully, public URL:', publicUrlData.publicUrl);
     return publicUrlData.publicUrl;
   } catch (error) {
     console.error('Error uploading avatar:', error);
@@ -56,6 +71,28 @@ export const removeAvatar = async (
   try {
     setUploadingAvatar(true);
     
+    // Extract the file path from the URL
+    const fileUrl = new URL(profile.avatar_url);
+    const filePath = fileUrl.pathname.split('/').slice(2).join('/');
+    
+    // If we can identify the file in storage, try to delete it first
+    if (filePath && filePath.includes(user.id)) {
+      try {
+        const { error: deleteError } = await supabase.storage
+          .from('profile-pictures')
+          .remove([filePath]);
+          
+        if (deleteError) {
+          console.warn('Could not delete file from storage:', deleteError);
+          // Continue anyway to remove from profile
+        }
+      } catch (e) {
+        console.warn('Error attempting to delete file:', e);
+        // Continue with profile update even if storage delete fails
+      }
+    }
+    
+    // Update profile to remove avatar_url
     const { error } = await supabase
       .from('profiles')
       .update({ avatar_url: null })

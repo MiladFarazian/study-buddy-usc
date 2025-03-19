@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { Profile } from "@/integrations/supabase/types-extension";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { uploadAvatar } from "@/components/profile/AvatarUtils";
 
 export const useProfilePage = (profile: Profile | null, user: any) => {
   const { toast } = useToast();
@@ -34,13 +35,19 @@ export const useProfilePage = (profile: Profile | null, user: any) => {
     }
   }, [profile]);
 
+  // Debug output
+  useEffect(() => {
+    console.log("Profile loaded:", profile);
+    console.log("Current avatar URL:", avatarUrl);
+  }, [profile, avatarUrl]);
+
   const removeAvatar = async () => {
     if (!user || !profile?.avatar_url) return;
     
     try {
       setUploadingAvatar(true);
       
-      // Only remove from profile, not from storage
+      // Only remove from profile, not from storage (for now)
       const { error } = await supabase
         .from('profiles')
         .update({ avatar_url: null })
@@ -82,17 +89,20 @@ export const useProfilePage = (profile: Profile | null, user: any) => {
     }
     
     setIsSubmitting(true);
+    console.log("Starting profile update...");
     
     try {
       // First upload the avatar if there is one
       let newAvatarUrl = profile?.avatar_url;
       if (avatarFile) {
+        console.log("Uploading avatar file:", avatarFile.name);
         newAvatarUrl = await uploadAvatar(
           user, 
           avatarFile, 
           supabase, 
           setUploadingAvatar,
           (error) => {
+            console.error("Avatar upload error:", error);
             toast({
               title: "Upload failed",
               description: "Failed to upload profile picture. Please try again.",
@@ -100,6 +110,8 @@ export const useProfilePage = (profile: Profile | null, user: any) => {
             });
           }
         );
+        
+        console.log("Avatar upload completed, new URL:", newAvatarUrl);
       }
       
       const { error } = await supabase
@@ -116,9 +128,11 @@ export const useProfilePage = (profile: Profile | null, user: any) => {
         .eq('id', user.id);
       
       if (error) {
+        console.error("Profile update error:", error);
         throw error;
       }
       
+      console.log("Profile updated successfully");
       setAvatarFile(null);
       
       toast({
@@ -159,5 +173,3 @@ export const useProfilePage = (profile: Profile | null, user: any) => {
     handleSubmit
   };
 };
-
-import { uploadAvatar } from "@/components/profile/AvatarUtils";

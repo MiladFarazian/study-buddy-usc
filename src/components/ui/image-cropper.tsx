@@ -70,7 +70,7 @@ export function ImageCropper({ imageFile, onCropComplete, onCancel, isOpen }: Im
         throw new Error("No 2d context");
       }
       
-      // Set canvas size to 400x400 for profile pics
+      // Set canvas size to 400x400 for profile pics (large enough for all uses)
       const outputSize = 400;
       canvas.width = outputSize;
       canvas.height = outputSize;
@@ -80,10 +80,11 @@ export function ImageCropper({ imageFile, onCropComplete, onCancel, isOpen }: Im
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
       // Draw the cropped image
-      const sourceX = (crop.x * scaleX * image.width) / 100;
-      const sourceY = (crop.y * scaleY * image.height) / 100;
-      const sourceWidth = (crop.width * scaleX * image.width) / 100;
-      const sourceHeight = (crop.height * scaleY * image.height) / 100;
+      const pixelRatio = window.devicePixelRatio;
+      const sourceX = crop.x * scaleX;
+      const sourceY = crop.y * scaleY;
+      const sourceWidth = crop.width * scaleX;
+      const sourceHeight = crop.height * scaleY;
       
       ctx.drawImage(
         image,
@@ -100,6 +101,7 @@ export function ImageCropper({ imageFile, onCropComplete, onCancel, isOpen }: Im
       // Convert to blob
       canvas.toBlob((blob) => {
         if (blob) {
+          console.log("Crop complete, blob size:", blob.size);
           onCropComplete(blob);
         } else {
           console.error("Failed to create blob from canvas");

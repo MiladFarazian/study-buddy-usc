@@ -7,9 +7,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, X, Loader2 } from "lucide-react";
 import { ImageCropper } from "@/components/ui/image-cropper";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { removeAvatar } from "./AvatarUtils";
 
 interface ProfileAvatarProps {
   avatarUrl: string | null;
@@ -22,7 +19,7 @@ interface ProfileAvatarProps {
   isSubmitting: boolean;
   uploadingAvatar: boolean;
   setUploadingAvatar: (value: boolean) => void;
-  removeAvatar: () => Promise<void>; // Add this prop to fix the build error
+  removeAvatar: () => Promise<void>;
   userRole?: string;
   profile?: any;
 }
@@ -38,12 +35,11 @@ export const ProfileAvatar = ({
   isSubmitting,
   uploadingAvatar,
   setUploadingAvatar,
-  removeAvatar, // Use the prop instead of the local function
+  removeAvatar,
   userRole,
   profile
 }: ProfileAvatarProps) => {
   const { toast } = useToast();
-  const { user } = useAuth(); // Removed updateProfile as it's not used in this component
   const [showCropper, setShowCropper] = useState(false);
   const [cropperFile, setCropperFile] = useState<File | null>(null);
 
@@ -62,6 +58,8 @@ export const ProfileAvatar = ({
       // Show cropper instead of direct preview
       setCropperFile(file);
       setShowCropper(true);
+      
+      console.log("File selected for cropping:", file.name);
     }
   };
 
@@ -71,11 +69,14 @@ export const ProfileAvatar = ({
       type: "image/jpeg",
     });
     
+    console.log("Crop completed, file size:", file.size);
+    
     // Preview the cropped image
     const reader = new FileReader();
     reader.onload = (e) => {
       if (e.target?.result) {
         setAvatarUrl(e.target.result as string);
+        console.log("Preview image set from crop");
       }
     };
     reader.readAsDataURL(croppedBlob);
@@ -86,7 +87,7 @@ export const ProfileAvatar = ({
     
     toast({
       title: "Image cropped",
-      description: "Your profile picture has been cropped successfully",
+      description: "Your profile picture has been cropped successfully. Don't forget to save your profile to upload it.",
     });
   };
 
@@ -102,6 +103,8 @@ export const ProfileAvatar = ({
     return name.substring(0, 2).toUpperCase();
   };
   
+  console.log("ProfileAvatar rendering with avatarUrl:", avatarUrl);
+  
   return (
     <>
       <Card>
@@ -109,7 +112,10 @@ export const ProfileAvatar = ({
           <div className="flex flex-col items-center">
             <div className="relative">
               <Avatar className="h-32 w-32 mb-4">
-                <AvatarImage src={avatarUrl || ""} alt={userEmail || ""} />
+                <AvatarImage 
+                  src={avatarUrl || ""} 
+                  alt={userEmail || ""}
+                />
                 <AvatarFallback className="bg-usc-cardinal text-white text-xl">
                   {getInitials(userEmail || "")}
                 </AvatarFallback>
@@ -163,7 +169,7 @@ export const ProfileAvatar = ({
                 <p className="font-medium">{userEmail}</p>
               </div>
               
-              {userRole === "tutor" && (
+              {userRole === "tutor" && profile && (
                 <>
                   <div className="p-3 border rounded-md mb-3">
                     <p className="text-sm text-muted-foreground">Rating</p>
