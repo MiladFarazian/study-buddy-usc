@@ -31,13 +31,14 @@ export const useTutorStudents = () => {
         setLoading(true);
         
         // Fetch tutor-student assignments and join with profile data
+        // Explicitly specify which profile we're referring to with profiles!student_id
         const { data, error } = await supabase
           .from('tutor_students')
           .select(`
             id,
             student_id,
             created_at,
-            student:student_id(
+            profiles!student_id(
               id,
               first_name,
               last_name,
@@ -54,13 +55,13 @@ export const useTutorStudents = () => {
         
         // Transform data into the Student type
         const mappedStudents: Student[] = data.map((item) => ({
-          id: item.student.id,
-          name: `${item.student.first_name || ''} ${item.student.last_name || ''}`.trim(),
-          firstName: item.student.first_name,
-          lastName: item.student.last_name,
-          major: item.student.major,
-          graduationYear: item.student.graduation_year,
-          avatarUrl: item.student.avatar_url,
+          id: item.profiles.id,
+          name: `${item.profiles.first_name || ''} ${item.profiles.last_name || ''}`.trim(),
+          firstName: item.profiles.first_name,
+          lastName: item.profiles.last_name,
+          major: item.profiles.major,
+          graduationYear: item.profiles.graduation_year,
+          avatarUrl: item.profiles.avatar_url,
           joined: item.created_at,
           sessions: 0, // Will be implemented later
         }));
