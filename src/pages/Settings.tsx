@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -240,6 +239,11 @@ const Settings = () => {
       let newAvatarUrl = profile?.avatar_url;
       if (avatarFile) {
         newAvatarUrl = await uploadAvatar();
+        if (!newAvatarUrl) {
+          // If avatar upload failed, don't proceed with profile update
+          setLoading(false);
+          return;
+        }
       }
       
       const updateData: ProfileUpdateDto = {
