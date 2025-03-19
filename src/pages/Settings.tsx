@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
 import { Loader2, Upload, X } from "lucide-react";
+import { ImageCropper } from "@/components/ui/image-cropper";
 
 type ProfileUpdateDto = Database['public']['Tables']['profiles']['Update'];
 type UserRole = Database['public']['Enums']['user_role'];
@@ -36,6 +37,8 @@ const Settings = () => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [showCropper, setShowCropper] = useState(false);
+  const [cropperFile, setCropperFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (profile) {
@@ -64,26 +67,49 @@ const Settings = () => {
   const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      if (file.size > 2 * 1024 * 1024) {
+      if (file.size > 10 * 1024 * 1024) { // 10MB max for original file
         toast({
           title: "File too large",
-          description: "Please select an image less than 2MB",
+          description: "Please select an image less than 10MB",
           variant: "destructive",
         });
         return;
       }
       
-      // Preview the selected image
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setAvatarUrl(event.target.result as string);
-        }
-      };
-      reader.readAsDataURL(file);
-      
-      setAvatarFile(file);
+      // Show cropper instead of direct preview
+      setCropperFile(file);
+      setShowCropper(true);
     }
+  };
+
+  const handleCropComplete = (croppedBlob: Blob) => {
+    // Convert blob to file for upload
+    const file = new File([croppedBlob], cropperFile?.name || "profile.jpg", {
+      type: "image/jpeg",
+    });
+    
+    // Preview the cropped image
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        setAvatarUrl(e.target.result as string);
+      }
+    };
+    reader.readAsDataURL(croppedBlob);
+    
+    setAvatarFile(file);
+    setShowCropper(false);
+    setCropperFile(null);
+    
+    toast({
+      title: "Image cropped",
+      description: "Your profile picture has been cropped successfully",
+    });
+  };
+
+  const cancelCrop = () => {
+    setShowCropper(false);
+    setCropperFile(null);
   };
 
   const uploadAvatar = async () => {
@@ -93,7 +119,7 @@ const Settings = () => {
       setUploadingAvatar(true);
       
       // Create a unique file name with the user ID as the folder
-      const fileExt = avatarFile.name.split('.').pop();
+      const fileExt = avatarFile.name.split('.').pop() || "jpg";
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
       
       // Upload the file to Storage
@@ -611,6 +637,14 @@ const Settings = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Image Cropper Dialog */}
+      <ImageCropper
+        imageFile={cropperFile}
+        onCropComplete={handleCropComplete}
+        onCancel={cancelCrop}
+        isOpen={showCropper}
+      />
     </div>
   );
 };

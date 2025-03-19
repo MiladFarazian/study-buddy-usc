@@ -1,5 +1,5 @@
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import ReactCrop, { type Crop, centerCrop, makeAspectCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import { Button } from "@/components/ui/button";
@@ -20,8 +20,8 @@ export function ImageCropper({ imageFile, onCropComplete, onCancel, isOpen }: Im
   const imgRef = useRef<HTMLImageElement>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load the image when the file changes
-  useState(() => {
+  // Load the image when the file changes - fixed from useState to useEffect
+  useEffect(() => {
     if (!imageFile) return;
 
     const reader = new FileReader();
@@ -29,7 +29,7 @@ export function ImageCropper({ imageFile, onCropComplete, onCancel, isOpen }: Im
       setImgSrc(reader.result?.toString() || "");
     });
     reader.readAsDataURL(imageFile);
-  });
+  }, [imageFile]); // Added proper dependency array
 
   // This function is called when the image is loaded
   const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
