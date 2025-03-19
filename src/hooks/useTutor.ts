@@ -67,7 +67,7 @@ export function useTutor(id: string) {
           .from('reviews')
           .select(`
             *,
-            reviewer:reviewer_id (
+            profiles!reviewer_id (
               first_name,
               last_name
             )
@@ -81,8 +81,8 @@ export function useTutor(id: string) {
         const formattedReviews: Review[] = reviewsData?.map(review => ({
           id: review.id,
           reviewerId: review.reviewer_id,
-          reviewerName: review.reviewer ? 
-            `${review.reviewer.first_name || ''} ${review.reviewer.last_name || ''}`.trim() : 
+          reviewerName: review.profiles ? 
+            `${review.profiles.first_name || ''} ${review.profiles.last_name || ''}`.trim() : 
             undefined,
           tutorId: review.tutor_id,
           rating: review.rating,

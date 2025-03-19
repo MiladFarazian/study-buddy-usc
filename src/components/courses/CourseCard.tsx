@@ -60,7 +60,7 @@ const CourseCard = ({ course }: CourseCardProps) => {
   };
   
   return (
-    <Card className="h-full hover:shadow-md transition-shadow">
+    <Card className="h-full flex flex-col hover:shadow-md transition-shadow">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <CardTitle className="text-lg font-bold">
@@ -70,18 +70,18 @@ const CourseCard = ({ course }: CourseCardProps) => {
             {department}
           </Badge>
         </div>
-        <h3 className="font-medium mt-1">{courseTitle}</h3>
+        <h3 className="font-medium mt-1 min-h-[3rem] line-clamp-2">{courseTitle}</h3>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex flex-col flex-grow">
         {description && (
-          <p className="text-sm text-gray-600 line-clamp-3 mb-3">{description}</p>
+          <p className="text-sm text-gray-600 line-clamp-3 mb-4">{description}</p>
         )}
         
-        <div className="space-y-1 text-sm mb-4">
+        <div className="space-y-1 text-sm mb-auto">
           {instructor && (
             <div className="flex">
               <span className="font-medium w-24">Instructor:</span> 
-              <span className="text-gray-700">{instructor}</span>
+              <span className="text-gray-700 line-clamp-1 flex-1">{instructor}</span>
             </div>
           )}
           
@@ -95,7 +95,7 @@ const CourseCard = ({ course }: CourseCardProps) => {
           {(course.days || course.time) && (
             <div className="flex">
               <span className="font-medium w-24">Schedule:</span> 
-              <span className="text-gray-700">
+              <span className="text-gray-700 line-clamp-1 flex-1">
                 {[course.days, course.time].filter(Boolean).join(' ')}
               </span>
             </div>
@@ -104,7 +104,7 @@ const CourseCard = ({ course }: CourseCardProps) => {
           {course.location && (
             <div className="flex">
               <span className="font-medium w-24">Location:</span> 
-              <span className="text-gray-700">{course.location}</span>
+              <span className="text-gray-700 line-clamp-1 flex-1">{course.location}</span>
             </div>
           )}
         </div>
@@ -114,7 +114,7 @@ const CourseCard = ({ course }: CourseCardProps) => {
             onClick={handleAddCourse}
             disabled={isAdding || isAdded}
             variant={isAdded ? "outline" : "default"}
-            className="w-full mt-2"
+            className="w-full mt-4"
           >
             {isAdding ? (
               <>Loading...</>
