@@ -61,47 +61,7 @@ export function useCourses(filterOptions: CourseFilterOptions) {
         } else {
           // Fallback to direct table query if edge function returns no data
           console.log(`No courses found from edge function, trying direct table query`);
-          
-          // Determine the table name based on term code
-          const tableName = `courses-${filterOptions.term}`;
-          
-          // Use type assertion to help TypeScript understand this is a valid table
-          const { data, error } = await supabase
-            .from(tableName as any)
-            .select('*');
-            
-          if (error) {
-            console.error("Direct query failed:", error);
-            throw error;
-          }
-          
-          if (data && data.length > 0) {
-            console.log(`Found ${data.length} courses in ${tableName} table`);
-            
-            // Convert to our standard Course type
-            const typedCourses: Course[] = data.map((item: any) => {
-              // Extract department from course number (e.g., "CSCI-104" -> "CSCI")
-              const department = item["Course number"]?.split('-')[0] || 'Unknown';
-              
-              return {
-                id: item.id || crypto.randomUUID(),
-                course_number: item["Course number"] || '',
-                course_title: item["Course title"] || '',
-                instructor: item.Instructor,
-                department: item.department || department,
-                units: item.units || null,
-                days: item.days || null,
-                time: item.time || null,
-                location: item.location || null,
-                description: item.description || null
-              };
-            });
-            
-            setCourses(typedCourses);
-          } else {
-            console.log(`No courses found in ${tableName} table`);
-            setCourses([]);
-          }
+          await fetchAllCoursesPaginated(filterOptions.term);
         }
       } catch (err: any) {
         console.error("Error fetching courses:", err);
@@ -109,6 +69,79 @@ export function useCourses(filterOptions: CourseFilterOptions) {
         setCourses([]);
       } finally {
         setLoading(false);
+      }
+    }
+    
+    // Function to fetch all courses with pagination
+    async function fetchAllCoursesPaginated(termCode: string) {
+      const tableName = `courses-${termCode}`;
+      const PAGE_SIZE = 1000;
+      let allCourses: any[] = [];
+      let page = 0;
+      let hasMore = true;
+      
+      console.log(`Fetching all courses from ${tableName} with pagination`);
+      
+      try {
+        while (hasMore) {
+          const from = page * PAGE_SIZE;
+          const to = from + PAGE_SIZE - 1;
+          
+          console.log(`Fetching page ${page} (rows ${from} to ${to})`);
+          
+          // Use type assertion to help TypeScript understand this is a valid table
+          const { data, error, count } = await supabase
+            .from(tableName as any)
+            .select('*', { count: 'exact' })
+            .range(from, to);
+            
+          if (error) {
+            console.error(`Error fetching page ${page}:`, error);
+            throw error;
+          }
+          
+          if (data && data.length > 0) {
+            console.log(`Retrieved ${data.length} courses for page ${page}`);
+            allCourses = [...allCourses, ...data];
+            
+            // Check if there might be more data
+            hasMore = data.length === PAGE_SIZE;
+            page++;
+          } else {
+            hasMore = false;
+          }
+        }
+        
+        console.log(`Total courses fetched: ${allCourses.length}`);
+        
+        if (allCourses.length > 0) {
+          // Convert to our standard Course type
+          const typedCourses: Course[] = allCourses.map((item: any) => {
+            // Extract department from course number (e.g., "CSCI-104" -> "CSCI")
+            const department = item["Course number"]?.split('-')[0] || 'Unknown';
+            
+            return {
+              id: item.id || crypto.randomUUID(),
+              course_number: item["Course number"] || '',
+              course_title: item["Course title"] || '',
+              instructor: item.Instructor,
+              department: item.department || department,
+              units: item.units || null,
+              days: item.days || null,
+              time: item.time || null,
+              location: item.location || null,
+              description: item.description || null
+            };
+          });
+          
+          setCourses(typedCourses);
+        } else {
+          console.log(`No courses found in ${tableName} table`);
+          setCourses([]);
+        }
+      } catch (err) {
+        console.error("Error fetching paginated courses:", err);
+        throw err;
       }
     }
     

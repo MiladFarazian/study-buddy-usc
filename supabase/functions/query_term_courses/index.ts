@@ -47,20 +47,44 @@ serve(async (req) => {
     console.log(`Checking direct courses table: ${tableName}`)
     
     try {
-      const { data, error } = await supabaseAdmin
-        .from(tableName)
-        .select('*')
+      const PAGE_SIZE = 1000;
+      let allCourses: any[] = [];
+      let page = 0;
+      let hasMore = true;
       
-      if (error) {
-        console.error(`Error querying ${tableName}:`, error)
-        throw error
+      while (hasMore) {
+        const from = page * PAGE_SIZE;
+        const to = from + PAGE_SIZE - 1;
+        
+        console.log(`Fetching page ${page} (rows ${from} to ${to})`);
+        
+        const { data, error, count } = await supabaseAdmin
+          .from(tableName)
+          .select('*', { count: 'exact' })
+          .range(from, to);
+        
+        if (error) {
+          console.error(`Error fetching page ${page}:`, error);
+          throw error;
+        }
+        
+        if (data && data.length > 0) {
+          console.log(`Retrieved ${data.length} courses for page ${page}`);
+          allCourses = [...allCourses, ...data];
+          
+          // Check if there might be more data
+          hasMore = data.length === PAGE_SIZE;
+          page++;
+        } else {
+          hasMore = false;
+        }
       }
-
-      console.log(`Found ${data?.length || 0} courses in ${tableName}`)
       
-      if (data && data.length > 0) {
+      console.log(`Total courses fetched: ${allCourses.length}`);
+      
+      if (allCourses.length > 0) {
         return new Response(
-          JSON.stringify(data),
+          JSON.stringify(allCourses),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
