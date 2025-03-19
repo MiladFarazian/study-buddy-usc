@@ -3,30 +3,31 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { ProfileForm } from "@/components/profile/ProfileForm";
 import { uploadAvatar } from "@/components/profile/AvatarUtils";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useProfileState } from "@/hooks/useProfileState";
 
 const Profile = () => {
   // Redirect to login if not authenticated
-  const { user, profile, loading, updateProfile } = useAuthRedirect("/profile", true);
+  const { user, profile, loading } = useAuthRedirect("/profile", true);
   const { toast } = useToast();
-
-  const [firstName, setFirstName] = useState(profile?.first_name || "");
-  const [lastName, setLastName] = useState(profile?.last_name || "");
-  const [major, setMajor] = useState(profile?.major || "");
-  const [gradYear, setGradYear] = useState(profile?.graduation_year || "");
-  const [bio, setBio] = useState(profile?.bio || "");
+  
+  // Use the custom hook for profile state management
+  const { 
+    firstName, lastName, major, gradYear, bio,
+    avatarUrl, avatarFile, uploadingAvatar,
+    setFirstName, setLastName, setMajor, setGradYear, setBio,
+    setAvatarUrl, setAvatarFile, setUploadingAvatar
+  } = useProfileState(profile);
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Profile picture states
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(profile?.avatar_url || null);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-
   // Update form state when profile data changes
   useEffect(() => {
     if (profile) {
@@ -37,7 +38,7 @@ const Profile = () => {
       setBio(profile.bio || "");
       setAvatarUrl(profile.avatar_url || null);
     }
-  }, [profile]);
+  }, [profile, setFirstName, setLastName, setMajor, setGradYear, setBio, setAvatarUrl]);
 
   const removeAvatar = async () => {
     if (!user || !profile?.avatar_url) return;
@@ -57,14 +58,6 @@ const Profile = () => {
       
       setAvatarUrl(null);
       setAvatarFile(null);
-      
-      // Update local profile state
-      if (updateProfile) {
-        updateProfile({
-          ...profile,
-          avatar_url: null,
-        });
-      }
       
       toast({
         title: "Profile picture removed",
@@ -132,19 +125,6 @@ const Profile = () => {
         throw error;
       }
       
-      // Update local profile state through auth context
-      if (updateProfile) {
-        updateProfile({
-          ...profile,
-          first_name: firstName,
-          last_name: lastName,
-          major,
-          graduation_year: gradYear,
-          bio,
-          avatar_url: newAvatarUrl,
-        });
-      }
-      
       setAvatarFile(null);
       
       toast({
@@ -176,6 +156,15 @@ const Profile = () => {
 
   return (
     <div className="container py-8">
+      <div className="mb-6">
+        <Button variant="outline" size="sm" asChild>
+          <Link to="/settings" className="flex items-center">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Settings
+          </Link>
+        </Button>
+      </div>
+      
       <ProfileHeader title="Your Profile" />
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

@@ -22,6 +22,7 @@ interface ProfileAvatarProps {
   isSubmitting: boolean;
   uploadingAvatar: boolean;
   setUploadingAvatar: (value: boolean) => void;
+  removeAvatar: () => Promise<void>; // Add this prop to fix the build error
   userRole?: string;
   profile?: any;
 }
@@ -37,11 +38,12 @@ export const ProfileAvatar = ({
   isSubmitting,
   uploadingAvatar,
   setUploadingAvatar,
+  removeAvatar, // Use the prop instead of the local function
   userRole,
   profile
 }: ProfileAvatarProps) => {
   const { toast } = useToast();
-  const { user, updateProfile } = useAuth();
+  const { user } = useAuth(); // Removed updateProfile as it's not used in this component
   const [showCropper, setShowCropper] = useState(false);
   const [cropperFile, setCropperFile] = useState<File | null>(null);
 
@@ -93,40 +95,6 @@ export const ProfileAvatar = ({
     setCropperFile(null);
   };
 
-  const handleRemoveAvatar = async () => {
-    if (!user) return;
-    
-    await removeAvatar(
-      user,
-      profile,
-      supabase,
-      setAvatarUrl,
-      setAvatarFile,
-      setUploadingAvatar,
-      (error) => {
-        toast({
-          title: "Remove failed",
-          description: "Failed to remove profile picture. Please try again.",
-          variant: "destructive",
-        });
-      },
-      () => {
-        // Update local profile state
-        if (updateProfile && profile) {
-          updateProfile({
-            ...profile,
-            avatar_url: null,
-          });
-        }
-        
-        toast({
-          title: "Profile picture removed",
-          description: "Your profile picture has been removed",
-        });
-      }
-    );
-  };
-
   const getInitials = (name: string = userEmail || "") => {
     if (firstName && lastName) {
       return `${firstName[0]}${lastName[0]}`.toUpperCase();
@@ -174,7 +142,7 @@ export const ProfileAvatar = ({
                   <Button
                     variant="outline"
                     className="text-red-500 hover:text-red-600"
-                    onClick={handleRemoveAvatar}
+                    onClick={removeAvatar}
                     disabled={uploadingAvatar || isSubmitting}
                   >
                     <X className="mr-2 h-4 w-4" />
