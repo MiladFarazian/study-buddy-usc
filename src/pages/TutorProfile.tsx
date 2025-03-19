@@ -1,4 +1,5 @@
 
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,11 +10,13 @@ import { useTutor } from "@/hooks/useTutor";
 import { Star, Calendar, Clock, ArrowLeft, Loader2, Mail, MessageCircle } from "lucide-react";
 import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
+import { BookSessionModal } from "@/components/scheduling/BookSessionModal";
 
 const TutorProfile = () => {
   const { id } = useParams<{ id: string }>();
   const { tutor, reviews, loading } = useTutor(id || "");
   const { user } = useAuth();
+  const [showBookingModal, setShowBookingModal] = useState(false);
 
   if (loading) {
     return (
@@ -188,7 +191,10 @@ const TutorProfile = () => {
 
               {user ? (
                 <>
-                  <Button className="w-full bg-usc-cardinal hover:bg-usc-cardinal-dark text-white mb-3">
+                  <Button 
+                    className="w-full bg-usc-cardinal hover:bg-usc-cardinal-dark text-white mb-3"
+                    onClick={() => setShowBookingModal(true)}
+                  >
                     Book a Session
                   </Button>
                   <Button variant="outline" className="w-full mb-3">
@@ -213,6 +219,15 @@ const TutorProfile = () => {
           </Card>
         </div>
       </div>
+      
+      {/* Booking Modal */}
+      {tutor && (
+        <BookSessionModal 
+          tutor={tutor}
+          isOpen={showBookingModal}
+          onClose={() => setShowBookingModal(false)}
+        />
+      )}
     </div>
   );
 };

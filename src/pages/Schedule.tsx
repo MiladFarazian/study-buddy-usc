@@ -1,12 +1,47 @@
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Clock, User } from "lucide-react";
+import { CalendarDays, Clock, User, Star, MapPin, ArrowRight } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { AvailabilityCalendar } from "@/components/scheduling/AvailabilityCalendar";
+import { format, parseISO } from "date-fns";
+import { useNavigate } from "react-router-dom";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 const Schedule = () => {
+  const { user, profile, isTutor } = useAuth();
+  const navigate = useNavigate();
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [showDialog, setShowDialog] = useState(false);
+  
+  const formatSessionTime = (timeString: string) => {
+    try {
+      return format(parseISO(timeString), 'h:mm a');
+    } catch (e) {
+      return timeString;
+    }
+  };
+  
+  const formatSessionDate = (timeString: string) => {
+    try {
+      return format(parseISO(timeString), 'EEE, MMM d, yyyy');
+    } catch (e) {
+      return timeString;
+    }
+  };
+  
+  const handleBookNewSession = () => {
+    navigate('/tutors');
+  };
+  
+  const handleCancelSession = () => {
+    setShowDialog(true);
+  };
+  
   return (
     <div className="py-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
@@ -14,10 +49,29 @@ const Schedule = () => {
           <h1 className="text-3xl font-bold mb-2">Schedule</h1>
           <p className="text-muted-foreground">Book and manage your tutoring sessions</p>
         </div>
-        <Button className="bg-usc-cardinal hover:bg-usc-cardinal-dark">
+        <Button 
+          className="bg-usc-cardinal hover:bg-usc-cardinal-dark"
+          onClick={handleBookNewSession}
+        >
           Book New Session
         </Button>
       </div>
+
+      {isTutor && (
+        <div className="mb-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Tutor Availability</CardTitle>
+              <CardDescription>
+                Set your weekly availability to let students book sessions with you
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AvailabilityCalendar />
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <Card className="lg:col-span-2">
@@ -60,12 +114,21 @@ const Schedule = () => {
                               <User className="h-3 w-3" />
                               <span>Alex Johnson</span>
                             </div>
+                            <div className="flex items-center gap-2">
+                              <MapPin className="h-3 w-3" />
+                              <span>Online (Zoom)</span>
+                            </div>
                           </div>
                         </div>
                       </div>
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm">Reschedule</Button>
-                        <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+                          onClick={handleCancelSession}
+                        >
                           Cancel
                         </Button>
                       </div>
@@ -98,12 +161,21 @@ const Schedule = () => {
                               <User className="h-3 w-3" />
                               <span>Marcus Williams</span>
                             </div>
+                            <div className="flex items-center gap-2">
+                              <MapPin className="h-3 w-3" />
+                              <span>Leavey Library, Room 204</span>
+                            </div>
                           </div>
                         </div>
                       </div>
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm">Reschedule</Button>
-                        <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+                          onClick={handleCancelSession}
+                        >
                           Cancel
                         </Button>
                       </div>
@@ -133,6 +205,8 @@ const Schedule = () => {
           <CardContent>
             <Calendar
               mode="single"
+              selected={date}
+              onSelect={setDate}
               className="rounded-md border"
             />
             <div className="mt-4">
@@ -148,9 +222,75 @@ const Schedule = () => {
                 </div>
               </div>
             </div>
+            
+            <div className="mt-6">
+              <h3 className="text-sm font-medium mb-2">Recommended Tutors</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                      <User className="h-4 w-4 text-gray-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Sarah Chen</p>
+                      <div className="flex items-center">
+                        <Star className="h-3 w-3 fill-usc-gold text-usc-gold" />
+                        <span className="text-xs ml-1">4.9</span>
+                      </div>
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                      <User className="h-4 w-4 text-gray-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Mike Johnson</p>
+                      <div className="flex items-center">
+                        <Star className="h-3 w-3 fill-usc-gold text-usc-gold" />
+                        <span className="text-xs ml-1">4.7</span>
+                      </div>
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
+      
+      {/* Cancel Confirmation Dialog */}
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Session</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel this tutoring session? Cancellations within 24 hours may be subject to a fee.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setShowDialog(false)}>
+              Keep Session
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => {
+                // Handle session cancellation logic here
+                setShowDialog(false);
+              }}
+            >
+              Yes, Cancel Session
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

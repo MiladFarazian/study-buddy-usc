@@ -63,6 +63,64 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_transactions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          session_id: string | null
+          status: string
+          stripe_payment_intent_id: string | null
+          student_id: string | null
+          tutor_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          session_id?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          student_id?: string | null
+          tutor_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          session_id?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          student_id?: string | null
+          tutor_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_transactions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_transactions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_transactions_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           availability: Json | null
@@ -167,6 +225,7 @@ export type Database = {
           id: string
           location: string | null
           notes: string | null
+          payment_status: string | null
           start_time: string
           status: string
           student_id: string
@@ -180,6 +239,7 @@ export type Database = {
           id?: string
           location?: string | null
           notes?: string | null
+          payment_status?: string | null
           start_time: string
           status?: string
           student_id: string
@@ -193,6 +253,7 @@ export type Database = {
           id?: string
           location?: string | null
           notes?: string | null
+          payment_status?: string | null
           start_time?: string
           status?: string
           student_id?: string
