@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,6 +22,7 @@ import PrivateRoute from "./components/auth/PrivateRoute";
 import AuthCallback from "./pages/AuthCallback";
 import TutorProfile from "./pages/TutorProfile";
 import Profile from "./pages/Profile";
+import Students from "./pages/Students";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -65,6 +67,11 @@ function App() {
               <Route path="/settings" element={
                 <PrivateRoute>
                   <Layout><Settings /></Layout>
+                </PrivateRoute>
+              } />
+              <Route path="/students" element={
+                <PrivateRoute>
+                  <Layout><Students /></Layout>
                 </PrivateRoute>
               } />
               <Route path="/tutors/:id" element={<TutorProfile />} />
