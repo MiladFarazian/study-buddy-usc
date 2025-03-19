@@ -28,9 +28,9 @@ export function useCourses(filterOptions: CourseFilterOptions) {
         // Determine the table name based on term code
         const tableName = `courses-${filterOptions.term}`;
         
-        // Query directly from the term-specific table
+        // Query directly using the exact table name
         const { data, error } = await supabase
-          .from(tableName)
+          .from(tableName as any)
           .select('*');
           
         if (error) {

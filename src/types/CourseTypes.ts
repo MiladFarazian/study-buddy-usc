@@ -6,6 +6,11 @@ export interface Course {
   instructor: string | null;
   department: string;
   description?: string | null;
+  // Additional fields used in components
+  units?: string | null;
+  days?: string | null;
+  time?: string | null;
+  location?: string | null;
 }
 
 export interface Term {

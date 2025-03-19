@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useMemo } from "react";
-import { Course } from "@/integrations/supabase/types-extension";
+import { Course } from "@/types/CourseTypes";
 
 export function useCoursesFilter(
   courses: Course[], 
@@ -45,8 +45,8 @@ export function useCoursesFilter(
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(course => 
-        (course.code && course.code.toLowerCase().includes(query)) ||
-        (course.name && course.name.toLowerCase().includes(query)) ||
+        (course.course_number && course.course_number.toLowerCase().includes(query)) ||
+        (course.course_title && course.course_title.toLowerCase().includes(query)) ||
         (course.description && course.description.toLowerCase().includes(query))
       );
     }

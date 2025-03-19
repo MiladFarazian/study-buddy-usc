@@ -7,7 +7,7 @@ interface CourseListViewProps {
   courses: Course[];
   loading: boolean;
   selectedTerm: string;
-  onImportComplete: () => void;
+  onImportComplete?: () => void;
 }
 
 const CourseListView = ({ 
@@ -33,8 +33,8 @@ const CourseListView = ({
         <p className="text-muted-foreground mb-4">
           {selectedTerm ? "Try adjusting your search or filters" : "Please select a term"}
         </p>
-        {user && selectedTerm && (
-          <Button onClick={() => onImportComplete()}>
+        {user && selectedTerm && onImportComplete && (
+          <Button onClick={onImportComplete}>
             Import USC Courses
           </Button>
         )}
@@ -49,8 +49,8 @@ const CourseListView = ({
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-medium">{course.course_number || course.code}</h3>
-                <span className="text-sm text-muted-foreground">{course.course_title || course.name}</span>
+                <h3 className="font-medium">{course.course_number}</h3>
+                <span className="text-sm text-muted-foreground">{course.course_title}</span>
               </div>
               <p className="text-sm line-clamp-2">{course.description}</p>
             </div>

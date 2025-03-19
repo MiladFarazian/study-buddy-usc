@@ -13,7 +13,7 @@ interface CourseListProps {
   loading: boolean;
   selectedTerm: string;
   courseCount: number;
-  onImportCourses: () => void;
+  onImportCourses?: () => void; // Made optional
 }
 
 const CourseList = ({ courses, loading, selectedTerm, courseCount, onImportCourses }: CourseListProps) => {
@@ -36,7 +36,7 @@ const CourseList = ({ courses, loading, selectedTerm, courseCount, onImportCours
           {selectedTerm ? "Try adjusting your search or filters" : "Please select a term to view courses"}
         </p>
         
-        {user && selectedTerm && courseCount === 0 && (
+        {user && selectedTerm && courseCount === 0 && onImportCourses && (
           <Button onClick={onImportCourses} className="mx-auto">
             Import USC Courses
           </Button>
@@ -74,8 +74,8 @@ const CourseList = ({ courses, loading, selectedTerm, courseCount, onImportCours
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-2">
                 <div>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
-                    <h3 className="font-medium">{course.course_number || course.code}</h3>
-                    <span className="text-sm text-muted-foreground">{course.course_title || course.name}</span>
+                    <h3 className="font-medium">{course.course_number}</h3>
+                    <span className="text-sm text-muted-foreground">{course.course_title}</span>
                   </div>
                   
                   {course.description && (
@@ -116,8 +116,8 @@ const CourseList = ({ courses, loading, selectedTerm, courseCount, onImportCours
             <TableBody>
               {courses.map((course) => (
                 <TableRow key={course.id}>
-                  <TableCell className="font-medium">{course.course_number || course.code}</TableCell>
-                  <TableCell>{course.course_title || course.name}</TableCell>
+                  <TableCell className="font-medium">{course.course_number}</TableCell>
+                  <TableCell>{course.course_title}</TableCell>
                   <TableCell>{course.department}</TableCell>
                   <TableCell>{course.instructor || "TBD"}</TableCell>
                 </TableRow>

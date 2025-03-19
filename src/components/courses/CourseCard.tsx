@@ -8,9 +8,9 @@ interface CourseCardProps {
 }
 
 const CourseCard = ({ course }: CourseCardProps) => {
-  // Get the course number and title, handling both new and old data structure
-  const courseNumber = course.course_number || course.code || '';
-  const courseTitle = course.course_title || course.name || '';
+  // Get the course number and title
+  const courseNumber = course.course_number || '';
+  const courseTitle = course.course_title || '';
   const department = course.department || '';
   const instructor = course.instructor || '';
   const description = course.description || null;
