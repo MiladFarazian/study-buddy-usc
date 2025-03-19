@@ -1,15 +1,12 @@
+
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
-import { Loader2, Upload, X, ArrowLeft } from "lucide-react";
-import { ImageCropper } from "@/components/ui/image-cropper";
+import { Loader2 } from "lucide-react";
+import { ProfileHeader } from "@/components/profile/ProfileHeader";
+import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
+import { ProfileForm } from "@/components/profile/ProfileForm";
 
 const Profile = () => {
   // Redirect to login if not authenticated
@@ -27,8 +24,6 @@ const Profile = () => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(profile?.avatar_url || null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [showCropper, setShowCropper] = useState(false);
-  const [cropperFile, setCropperFile] = useState<File | null>(null);
 
   // Update form state when profile data changes
   useEffect(() => {
@@ -41,54 +36,6 @@ const Profile = () => {
       setAvatarUrl(profile.avatar_url || null);
     }
   }, [profile]);
-
-  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      if (file.size > 10 * 1024 * 1024) { // 10MB max for original file
-        toast({
-          title: "File too large",
-          description: "Please select an image less than 10MB",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Show cropper instead of direct preview
-      setCropperFile(file);
-      setShowCropper(true);
-    }
-  };
-
-  const handleCropComplete = (croppedBlob: Blob) => {
-    // Convert blob to file for upload
-    const file = new File([croppedBlob], cropperFile?.name || "profile.jpg", {
-      type: "image/jpeg",
-    });
-    
-    // Preview the cropped image
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (e.target?.result) {
-        setAvatarUrl(e.target.result as string);
-      }
-    };
-    reader.readAsDataURL(croppedBlob);
-    
-    setAvatarFile(file);
-    setShowCropper(false);
-    setCropperFile(null);
-    
-    toast({
-      title: "Image cropped",
-      description: "Your profile picture has been cropped successfully",
-    });
-  };
-
-  const cancelCrop = () => {
-    setShowCropper(false);
-    setCropperFile(null);
-  };
 
   const uploadAvatar = async () => {
     if (!user || !avatarFile) return null;
@@ -251,195 +198,46 @@ const Profile = () => {
 
   if (!user) return null; // will be redirected by useAuthRedirect
 
-  const getInitials = (name: string = user.email || "") => {
-    if (firstName && lastName) {
-      return `${firstName[0]}${lastName[0]}`.toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
-  };
-
   return (
     <div className="container py-8">
-      <div className="flex items-center mb-6">
-        <Button variant="outline" asChild className="mr-4">
-          <Link to="/" className="flex items-center">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Link>
-        </Button>
-        <h1 className="text-3xl font-bold">Your Profile</h1>
-      </div>
+      <ProfileHeader title="Your Profile" />
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="md:col-span-1">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex flex-col items-center">
-                <div className="relative">
-                  <Avatar className="h-32 w-32 mb-4">
-                    <AvatarImage src={avatarUrl || ""} alt={user?.email || ""} />
-                    <AvatarFallback className="bg-usc-cardinal text-white text-xl">
-                      {getInitials(user?.email || "")}
-                    </AvatarFallback>
-                  </Avatar>
-                  
-                  <div className="mt-4 flex flex-col gap-2">
-                    <div className="relative">
-                      <Input
-                        id="avatar-upload"
-                        type="file"
-                        accept="image/*"
-                        onChange={handleAvatarFileChange}
-                        className="hidden"
-                      />
-                      
-                      <Button
-                        asChild
-                        variant="outline"
-                        className="w-full"
-                        disabled={uploadingAvatar || isSubmitting}
-                      >
-                        <label htmlFor="avatar-upload" className="cursor-pointer flex items-center justify-center">
-                          <Upload className="mr-2 h-4 w-4" />
-                          {avatarFile ? "Change Image" : "Upload Image"}
-                        </label>
-                      </Button>
-                    </div>
-                    
-                    {avatarUrl && (
-                      <Button
-                        variant="outline"
-                        className="text-red-500 hover:text-red-600"
-                        onClick={removeAvatar}
-                        disabled={uploadingAvatar || isSubmitting}
-                      >
-                        <X className="mr-2 h-4 w-4" />
-                        Remove Photo
-                      </Button>
-                    )}
-                  </div>
-                </div>
-                
-                <h2 className="text-xl font-semibold mt-4">
-                  {firstName && lastName ? `${firstName} ${lastName}` : user.email}
-                </h2>
-                <p className="text-muted-foreground">{profile?.role || "Student"}</p>
-                
-                <div className="w-full mt-6">
-                  <div className="p-3 border rounded-md mb-3">
-                    <p className="text-sm text-muted-foreground">Email</p>
-                    <p className="font-medium">{user.email}</p>
-                  </div>
-                  
-                  {profile?.role === "tutor" && (
-                    <>
-                      <div className="p-3 border rounded-md mb-3">
-                        <p className="text-sm text-muted-foreground">Rating</p>
-                        <p className="font-medium">{profile.average_rating?.toFixed(1) || "N/A"}/5.0</p>
-                      </div>
-                      <div className="p-3 border rounded-md">
-                        <p className="text-sm text-muted-foreground">Hourly Rate</p>
-                        <p className="font-medium">${profile.hourly_rate || "25"}/hour</p>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <ProfileAvatar 
+            avatarUrl={avatarUrl}
+            setAvatarUrl={setAvatarUrl}
+            setAvatarFile={setAvatarFile}
+            avatarFile={avatarFile}
+            userEmail={user.email}
+            firstName={firstName}
+            lastName={lastName}
+            isSubmitting={isSubmitting}
+            uploadingAvatar={uploadingAvatar}
+            removeAvatar={removeAvatar}
+            userRole={profile?.role}
+            profile={profile}
+          />
         </div>
         
         <div className="md:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Edit Profile</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div className="space-y-2">
-                    <label htmlFor="firstName" className="text-sm font-medium">
-                      First Name
-                    </label>
-                    <Input
-                      id="firstName"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      placeholder="Your first name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="lastName" className="text-sm font-medium">
-                      Last Name
-                    </label>
-                    <Input
-                      id="lastName"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      placeholder="Your last name"
-                    />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div className="space-y-2">
-                    <label htmlFor="major" className="text-sm font-medium">
-                      Major
-                    </label>
-                    <Input
-                      id="major"
-                      value={major}
-                      onChange={(e) => setMajor(e.target.value)}
-                      placeholder="e.g. Computer Science"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="gradYear" className="text-sm font-medium">
-                      Graduation Year
-                    </label>
-                    <Input
-                      id="gradYear"
-                      value={gradYear}
-                      onChange={(e) => setGradYear(e.target.value)}
-                      placeholder="e.g. 2025"
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-2 mb-6">
-                  <label htmlFor="bio" className="text-sm font-medium">
-                    Bio
-                  </label>
-                  <Textarea
-                    id="bio"
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                    placeholder="Tell us a bit about yourself..."
-                    rows={5}
-                  />
-                </div>
-                
-                <Button
-                  type="submit"
-                  className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
-                  disabled={isSubmitting || uploadingAvatar}
-                >
-                  {(isSubmitting || uploadingAvatar) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Save Changes
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+          <ProfileForm 
+            firstName={firstName}
+            lastName={lastName}
+            major={major}
+            gradYear={gradYear}
+            bio={bio}
+            isSubmitting={isSubmitting}
+            uploadingAvatar={uploadingAvatar}
+            onFirstNameChange={setFirstName}
+            onLastNameChange={setLastName}
+            onMajorChange={setMajor}
+            onGradYearChange={setGradYear}
+            onBioChange={setBio}
+            onSubmit={handleSubmit}
+          />
         </div>
       </div>
-
-      {/* Image Cropper Dialog */}
-      <ImageCropper
-        imageFile={cropperFile}
-        onCropComplete={handleCropComplete}
-        onCancel={cancelCrop}
-        isOpen={showCropper}
-      />
     </div>
   );
 };
