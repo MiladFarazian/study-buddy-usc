@@ -71,11 +71,6 @@ const Sidebar = () => {
   
   return (
     <div className="min-h-screen w-64 bg-white text-usc-cardinal border-r border-gray-200">
-      <div className="p-4 border-b border-gray-200">
-        <Link to="/" className="flex items-center gap-2">
-          <span className="text-xl font-bold">Study<span className="text-usc-gold">Buddy</span></span>
-        </Link>
-      </div>
       <nav className="p-4 space-y-2">
         {filteredItems.map((item) => {
           const isActive = location.pathname === item.path;
