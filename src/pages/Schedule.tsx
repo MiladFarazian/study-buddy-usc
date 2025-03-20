@@ -1,22 +1,102 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Clock, User, Star, MapPin, ArrowRight } from "lucide-react";
+import { CalendarDays, Clock, User, Star, MapPin, ArrowRight, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AvailabilityCalendar } from "@/components/scheduling/AvailabilityCalendar";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isFuture, isPast } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+
+interface Session {
+  id: string;
+  course_id: string | null;
+  tutor_id: string;
+  student_id: string;
+  start_time: string;
+  end_time: string;
+  location: string | null;
+  notes: string | null;
+  status: string;
+  payment_status: string;
+  created_at: string;
+  updated_at: string;
+  tutor?: {
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    avatar_url: string | null;
+  };
+  student?: {
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    avatar_url: string | null;
+  };
+  course?: {
+    id: string;
+    course_number: string;
+    course_title: string | null;
+  };
+}
 
 const Schedule = () => {
   const { user, profile, isTutor } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
+  
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [showDialog, setShowDialog] = useState(false);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  
+  // Load sessions when the user is logged in
+  useEffect(() => {
+    if (user) {
+      loadSessions();
+    }
+  }, [user]);
+  
+  const loadSessions = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      // If user is a tutor, fetch sessions where they are the tutor
+      // If user is a student, fetch sessions where they are the student
+      const userField = isTutor ? 'tutor_id' : 'student_id';
+      
+      const { data, error } = await supabase
+        .from('sessions')
+        .select(`
+          *,
+          tutor:profiles!tutor_id(id, first_name, last_name, avatar_url),
+          student:profiles!student_id(id, first_name, last_name, avatar_url)
+        `)
+        .eq(userField, user.id)
+        .order('start_time', { ascending: true });
+        
+      if (error) throw error;
+      
+      setSessions(data || []);
+    } catch (error) {
+      console.error("Error loading sessions:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load your sessions.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
   
   const formatSessionTime = (timeString: string) => {
     try {
@@ -38,9 +118,71 @@ const Schedule = () => {
     navigate('/tutors');
   };
   
-  const handleCancelSession = () => {
+  const handleCancelSession = (sessionId: string) => {
+    setSelectedSessionId(sessionId);
     setShowDialog(true);
   };
+  
+  const confirmCancelSession = async () => {
+    if (!selectedSessionId) return;
+    
+    try {
+      const { error } = await supabase
+        .from('sessions')
+        .update({ 
+          status: 'cancelled',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedSessionId);
+        
+      if (error) throw error;
+      
+      // Update the local state to reflect the cancellation
+      setSessions(prev => 
+        prev.map(session => 
+          session.id === selectedSessionId 
+            ? { ...session, status: 'cancelled' } 
+            : session
+        )
+      );
+      
+      toast({
+        title: "Session Cancelled",
+        description: "Your session has been cancelled successfully.",
+      });
+    } catch (error) {
+      console.error("Error cancelling session:", error);
+      toast({
+        title: "Error",
+        description: "Failed to cancel the session. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setShowDialog(false);
+      setSelectedSessionId(null);
+    }
+  };
+  
+  // Filter sessions based on tab
+  const upcomingSessions = sessions.filter(session => 
+    isFuture(parseISO(session.start_time)) && session.status !== 'cancelled'
+  );
+  
+  const pastSessions = sessions.filter(session => 
+    isPast(parseISO(session.end_time)) && session.status !== 'cancelled'
+  );
+  
+  const cancelledSessions = sessions.filter(session => 
+    session.status === 'cancelled'
+  );
+  
+  // Get calendar dates with sessions
+  const calendarDates = sessions
+    .filter(session => session.status !== 'cancelled')
+    .map(session => ({
+      date: format(parseISO(session.start_time), 'yyyy-MM-dd'),
+      title: session.course?.course_number || 'Tutoring Session'
+    }));
   
   return (
     <div className="py-6">
@@ -76,123 +218,217 @@ const Schedule = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Upcoming Sessions</CardTitle>
+            <CardTitle>Your Sessions</CardTitle>
             <CardDescription>Your scheduled tutoring appointments</CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="upcoming">
               <TabsList className="mb-4">
-                <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-                <TabsTrigger value="past">Past</TabsTrigger>
-                <TabsTrigger value="canceled">Canceled</TabsTrigger>
+                <TabsTrigger value="upcoming">Upcoming ({upcomingSessions.length})</TabsTrigger>
+                <TabsTrigger value="past">Past ({pastSessions.length})</TabsTrigger>
+                <TabsTrigger value="canceled">Canceled ({cancelledSessions.length})</TabsTrigger>
               </TabsList>
-              <TabsContent value="upcoming">
-                <div className="space-y-4">
-                  <div className="border rounded-lg p-4 hover:shadow-sm transition-shadow">
-                    <div className="flex items-start justify-between">
-                      <div className="flex gap-4">
-                        <div className="bg-usc-gold/20 text-usc-cardinal-dark rounded-md p-3 h-fit">
-                          <CalendarDays className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-medium">CSCI 104 Tutoring</h3>
-                            <Badge variant="outline" className="bg-green-50 text-green-700 hover:bg-green-50">
-                              Confirmed
-                            </Badge>
+              
+              {loading ? (
+                <div className="flex justify-center items-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  <span className="ml-2">Loading sessions...</span>
+                </div>
+              ) : (
+                <>
+                  <TabsContent value="upcoming">
+                    {upcomingSessions.length > 0 ? (
+                      <div className="space-y-4">
+                        {upcomingSessions.map(session => (
+                          <div key={session.id} className="border rounded-lg p-4 hover:shadow-sm transition-shadow">
+                            <div className="flex items-start justify-between">
+                              <div className="flex gap-4">
+                                <div className="bg-usc-gold/20 text-usc-cardinal-dark rounded-md p-3 h-fit">
+                                  <CalendarDays className="h-5 w-5" />
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <h3 className="font-medium">
+                                      {session.course?.course_number 
+                                        ? `${session.course.course_number} Tutoring` 
+                                        : "Tutoring Session"}
+                                    </h3>
+                                    <Badge variant="outline" className="bg-green-50 text-green-700 hover:bg-green-50">
+                                      {session.status === 'confirmed' ? 'Confirmed' : 'Pending'}
+                                    </Badge>
+                                  </div>
+                                  <div className="text-sm text-gray-500 mt-1 space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <CalendarDays className="h-3 w-3" />
+                                      <span>{formatSessionDate(session.start_time)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Clock className="h-3 w-3" />
+                                      <span>{formatSessionTime(session.start_time)} - {formatSessionTime(session.end_time)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <User className="h-3 w-3" />
+                                      <span>
+                                        {isTutor 
+                                          ? session.student?.first_name && session.student?.last_name 
+                                            ? `${session.student.first_name} ${session.student.last_name}`
+                                            : "Student"
+                                          : session.tutor?.first_name && session.tutor?.last_name
+                                            ? `${session.tutor.first_name} ${session.tutor.last_name}`
+                                            : "Tutor"
+                                        }
+                                      </span>
+                                    </div>
+                                    {session.location && (
+                                      <div className="flex items-center gap-2">
+                                        <MapPin className="h-3 w-3" />
+                                        <span>{session.location}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button variant="outline" size="sm">Reschedule</Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+                                  onClick={() => handleCancelSession(session.id)}
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-500 mt-1 space-y-1">
-                            <div className="flex items-center gap-2">
-                              <CalendarDays className="h-3 w-3" />
-                              <span>Wed, May 15, 2024</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-3 w-3" />
-                              <span>3:00 PM - 4:00 PM</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <User className="h-3 w-3" />
-                              <span>Alex Johnson</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <MapPin className="h-3 w-3" />
-                              <span>Online (Zoom)</span>
-                            </div>
-                          </div>
-                        </div>
+                        ))}
                       </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">Reschedule</Button>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <p>No upcoming sessions to display</p>
                         <Button 
                           variant="outline" 
-                          size="sm" 
-                          className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
-                          onClick={handleCancelSession}
+                          className="mt-4"
+                          onClick={handleBookNewSession}
                         >
-                          Cancel
+                          Book a Session
                         </Button>
                       </div>
-                    </div>
-                  </div>
-
-                  <div className="border rounded-lg p-4 hover:shadow-sm transition-shadow">
-                    <div className="flex items-start justify-between">
-                      <div className="flex gap-4">
-                        <div className="bg-usc-gold/20 text-usc-cardinal-dark rounded-md p-3 h-fit">
-                          <CalendarDays className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-medium">ECON 203 Review</h3>
-                            <Badge variant="outline" className="bg-green-50 text-green-700 hover:bg-green-50">
-                              Confirmed
-                            </Badge>
+                    )}
+                  </TabsContent>
+                  
+                  <TabsContent value="past">
+                    {pastSessions.length > 0 ? (
+                      <div className="space-y-4">
+                        {pastSessions.map(session => (
+                          <div key={session.id} className="border rounded-lg p-4 hover:shadow-sm transition-shadow">
+                            <div className="flex items-start justify-between">
+                              <div className="flex gap-4">
+                                <div className="bg-gray-100 text-gray-500 rounded-md p-3 h-fit">
+                                  <CalendarDays className="h-5 w-5" />
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <h3 className="font-medium">
+                                      {session.course?.course_number 
+                                        ? `${session.course.course_number} Tutoring` 
+                                        : "Tutoring Session"}
+                                    </h3>
+                                    <Badge variant="outline" className="bg-blue-50 text-blue-700 hover:bg-blue-50">
+                                      Completed
+                                    </Badge>
+                                  </div>
+                                  <div className="text-sm text-gray-500 mt-1 space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <CalendarDays className="h-3 w-3" />
+                                      <span>{formatSessionDate(session.start_time)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Clock className="h-3 w-3" />
+                                      <span>{formatSessionTime(session.start_time)} - {formatSessionTime(session.end_time)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <User className="h-3 w-3" />
+                                      <span>
+                                        {isTutor 
+                                          ? session.student?.first_name && session.student?.last_name 
+                                            ? `${session.student.first_name} ${session.student.last_name}`
+                                            : "Student"
+                                          : session.tutor?.first_name && session.tutor?.last_name
+                                            ? `${session.tutor.first_name} ${session.tutor.last_name}`
+                                            : "Tutor"
+                                        }
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <Button variant="outline" size="sm">
+                                {isTutor ? "View Session" : "Leave Review"}
+                              </Button>
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-500 mt-1 space-y-1">
-                            <div className="flex items-center gap-2">
-                              <CalendarDays className="h-3 w-3" />
-                              <span>Fri, May 17, 2024</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-3 w-3" />
-                              <span>2:00 PM - 3:30 PM</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <User className="h-3 w-3" />
-                              <span>Marcus Williams</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <MapPin className="h-3 w-3" />
-                              <span>Leavey Library, Room 204</span>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <p>No past sessions to display</p>
+                      </div>
+                    )}
+                  </TabsContent>
+                  
+                  <TabsContent value="canceled">
+                    {cancelledSessions.length > 0 ? (
+                      <div className="space-y-4">
+                        {cancelledSessions.map(session => (
+                          <div key={session.id} className="border rounded-lg p-4 hover:shadow-sm transition-shadow opacity-75">
+                            <div className="flex items-start justify-between">
+                              <div className="flex gap-4">
+                                <div className="bg-red-50 text-red-400 rounded-md p-3 h-fit">
+                                  <CalendarDays className="h-5 w-5" />
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <h3 className="font-medium">
+                                      {session.course?.course_number 
+                                        ? `${session.course.course_number} Tutoring` 
+                                        : "Tutoring Session"}
+                                    </h3>
+                                    <Badge variant="outline" className="bg-red-50 text-red-700 hover:bg-red-50">
+                                      Cancelled
+                                    </Badge>
+                                  </div>
+                                  <div className="text-sm text-gray-500 mt-1 space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <CalendarDays className="h-3 w-3" />
+                                      <span>{formatSessionDate(session.start_time)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Clock className="h-3 w-3" />
+                                      <span>{formatSessionTime(session.start_time)} - {formatSessionTime(session.end_time)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={handleBookNewSession}
+                              >
+                                Rebook
+                              </Button>
                             </div>
                           </div>
-                        </div>
+                        ))}
                       </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">Reschedule</Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
-                          onClick={handleCancelSession}
-                        >
-                          Cancel
-                        </Button>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <p>No canceled sessions to display</p>
                       </div>
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-              <TabsContent value="past">
-                <div className="text-center py-8 text-gray-500">
-                  <p>No past sessions to display</p>
-                </div>
-              </TabsContent>
-              <TabsContent value="canceled">
-                <div className="text-center py-8 text-gray-500">
-                  <p>No canceled sessions to display</p>
-                </div>
-              </TabsContent>
+                    )}
+                  </TabsContent>
+                </>
+              )}
             </Tabs>
           </CardContent>
         </Card>
@@ -209,19 +445,23 @@ const Schedule = () => {
               onSelect={setDate}
               className="rounded-md border"
             />
-            <div className="mt-4">
-              <p className="text-sm text-gray-500 mb-2">Upcoming Dates:</p>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <div className="h-2 w-2 bg-usc-cardinal rounded-full"></div>
-                  <span>May 15 - CSCI 104 Tutoring</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <div className="h-2 w-2 bg-usc-cardinal rounded-full"></div>
-                  <span>May 17 - ECON 203 Review</span>
+            {calendarDates.length > 0 && (
+              <div className="mt-4">
+                <p className="text-sm text-gray-500 mb-2">Upcoming Sessions:</p>
+                <div className="space-y-2">
+                  {calendarDates
+                    .filter((value, index, self) => index === self.findIndex(t => t.date === value.date))
+                    .sort((a, b) => a.date.localeCompare(b.date))
+                    .slice(0, 5)
+                    .map((item, i) => (
+                      <div key={i} className="flex items-center gap-2 text-sm">
+                        <div className="h-2 w-2 bg-usc-cardinal rounded-full"></div>
+                        <span>{format(new Date(item.date), 'MMM d')} - {item.title}</span>
+                      </div>
+                    ))}
                 </div>
               </div>
-            </div>
+            )}
             
             <div className="mt-6">
               <h3 className="text-sm font-medium mb-2">Recommended Tutors</h3>
@@ -281,10 +521,7 @@ const Schedule = () => {
             </Button>
             <Button 
               variant="destructive" 
-              onClick={() => {
-                // Handle session cancellation logic here
-                setShowDialog(false);
-              }}
+              onClick={confirmCancelSession}
             >
               Yes, Cancel Session
             </Button>

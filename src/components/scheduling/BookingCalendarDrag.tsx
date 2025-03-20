@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { format, addDays, parseISO, startOfWeek, eachDayOfInterval, addMinutes, differenceInMinutes } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,10 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot }: BookingCalendarDrag
   const [weekDays, setWeekDays] = useState<Date[]>([]);
   const [availableSlots, setAvailableSlots] = useState<BookingSlot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<BookingSlot | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<{ hour: number, minute: number, day: number } | null>(null);
+  const [dragEnd, setDragEnd] = useState<{ hour: number, minute: number, day: number } | null>(null);
+  const calendarRef = useRef<HTMLDivElement>(null);
   
   // Hours to display in the calendar (24-hour format)
   const hours = Array.from({ length: 14 }, (_, i) => i + 8); // 8 AM to 9 PM
@@ -86,6 +90,121 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot }: BookingCalendarDrag
     }
   };
 
+  const handleMouseDown = (hour: number, minute: number, dayIndex: number) => {
+    const slot = getSlotAt(weekDays[dayIndex], `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`);
+    if (!slot || !slot.available) return;
+    
+    setIsDragging(true);
+    setDragStart({ hour, minute, day: dayIndex });
+    setDragEnd({ hour, minute, day: dayIndex });
+  };
+
+  const handleMouseMove = (hour: number, minute: number, dayIndex: number) => {
+    if (!isDragging || !dragStart) return;
+    
+    // Only allow dragging within the same day
+    if (dragStart.day !== dayIndex) return;
+    
+    // Ensure the time is available
+    const slot = getSlotAt(weekDays[dayIndex], `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`);
+    if (!slot || !slot.available) return;
+    
+    setDragEnd({ hour, minute, day: dayIndex });
+  };
+
+  const handleMouseUp = () => {
+    if (isDragging && dragStart && dragEnd) {
+      // Create a booking slot from the dragged selection
+      createBookingFromDrag();
+    }
+    
+    setIsDragging(false);
+    setDragStart(null);
+    setDragEnd(null);
+  };
+
+  const createBookingFromDrag = () => {
+    if (!dragStart || !dragEnd) return;
+    
+    // Ensure start is before end
+    let startCoord = dragStart;
+    let endCoord = dragEnd;
+    
+    if (
+      (startCoord.hour > endCoord.hour) || 
+      (startCoord.hour === endCoord.hour && startCoord.minute > endCoord.minute)
+    ) {
+      // Swap if start is after end
+      [startCoord, endCoord] = [endCoord, startCoord];
+    }
+    
+    const day = weekDays[startCoord.day];
+    const startTime = `${startCoord.hour.toString().padStart(2, '0')}:${startCoord.minute.toString().padStart(2, '0')}`;
+    
+    // End time is 15 minutes after the selected end cell
+    let endHour = endCoord.hour;
+    let endMinute = endCoord.minute + 15;
+    
+    if (endMinute >= 60) {
+      endHour += 1;
+      endMinute -= 60;
+    }
+    
+    const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+    
+    // Verify that the entire time range is available
+    const allSlotsAvailable = verifyRangeAvailability(day, startTime, endTime);
+    
+    if (!allSlotsAvailable) {
+      toast({
+        title: "Invalid Selection",
+        description: "The entire time range must be available for booking.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Create a booking slot
+    const bookingSlot: BookingSlot = {
+      tutorId: tutor.id,
+      day: day,
+      start: startTime,
+      end: endTime,
+      available: true
+    };
+    
+    setSelectedSlot(bookingSlot);
+    onSelectSlot(bookingSlot);
+  };
+
+  const verifyRangeAvailability = (day: Date, startTime: string, endTime: string): boolean => {
+    const startMinutes = parseTimeToMinutes(startTime);
+    const endMinutes = parseTimeToMinutes(endTime);
+    
+    // Check every 15-minute slot in the range
+    for (let currentMinutes = startMinutes; currentMinutes < endMinutes; currentMinutes += 15) {
+      const timeString = formatTimeFromMinutes(currentMinutes);
+      const slot = getSlotAt(day, timeString);
+      
+      if (!slot || !slot.available) {
+        return false;
+      }
+    }
+    
+    return true;
+  };
+
+  const parseTimeToMinutes = (time: string): number => {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
+
+  const formatTimeFromMinutes = (totalMinutes: number): string => {
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  };
+  
   const handleSelectSlot = (slot: BookingSlot) => {
     if (!slot.available) return;
     
@@ -110,6 +229,24 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot }: BookingCalendarDrag
     );
   };
 
+  // Function to check if a cell is within the dragged range
+  const isInDragRange = (hour: number, minute: number, dayIndex: number): boolean => {
+    if (!isDragging || !dragStart || !dragEnd || dragStart.day !== dayIndex || dragEnd.day !== dayIndex) {
+      return false;
+    }
+    
+    // Convert to total minutes for easier comparison
+    const cellMinutes = hour * 60 + minute;
+    const startMinutes = dragStart.hour * 60 + dragStart.minute;
+    const endMinutes = dragEnd.hour * 60 + dragEnd.minute;
+    
+    // Check if cell is within range (inclusive of start and end)
+    return (
+      (cellMinutes >= Math.min(startMinutes, endMinutes) && 
+       cellMinutes <= Math.max(startMinutes, endMinutes))
+    );
+  };
+
   if (loading) {
     return (
       <Card className="w-full">
@@ -129,6 +266,7 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot }: BookingCalendarDrag
         <CardTitle>Book a Session</CardTitle>
         <CardDescription>
           Select a time slot for your tutoring session with {tutor.firstName || tutor.name.split(' ')[0]}.
+          You can click and drag to select a range of time.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -144,7 +282,12 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot }: BookingCalendarDrag
           </Button>
         </div>
         
-        <div className="border rounded-md overflow-hidden">
+        <div 
+          className="border rounded-md overflow-hidden"
+          ref={calendarRef}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+        >
           {/* Header row with days of the week */}
           <div className="grid grid-cols-8 bg-muted">
             <div className="p-2 border-r text-center font-medium text-sm">Time</div>
@@ -178,16 +321,19 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot }: BookingCalendarDrag
                       const isSelected = selectedSlot && 
                                          format(selectedSlot.day, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd') && 
                                          selectedSlot.start === timeString;
+                      const isInDrag = isInDragRange(hour, minute, dayIndex);
                       
                       return (
                         <div
                           key={`${timeString}-${dayIndex}`}
                           className={`
-                            h-8 border-r last:border-r-0 transition-colors
+                            h-8 border-r last:border-r-0 transition-colors cursor-default
                             ${isAvailable ? 'cursor-pointer hover:bg-green-50' : 'bg-gray-100 opacity-50'}
                             ${isSelected ? 'bg-usc-cardinal text-white' : ''}
+                            ${isInDrag && isAvailable ? 'bg-usc-gold' : ''}
                           `}
-                          onClick={() => slot && isAvailable && handleSelectSlot(slot)}
+                          onMouseDown={() => isAvailable && handleMouseDown(hour, minute, dayIndex)}
+                          onMouseMove={() => handleMouseMove(hour, minute, dayIndex)}
                         >
                           {minute === 0 && isAvailable && (
                             <div className="h-1 w-full bg-green-500"></div>
