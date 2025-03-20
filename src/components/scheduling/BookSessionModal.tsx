@@ -8,8 +8,10 @@ import { BookingSlot, createSessionBooking, createPaymentTransaction } from "@/l
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { BookingCalendar } from "./BookingCalendar";
+import { BookingCalendarDrag } from "./BookingCalendarDrag";
 import { PaymentForm } from "./PaymentForm";
 import { Loader2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, parseISO, addMinutes, differenceInMinutes } from "date-fns";
 
 interface BookSessionModalProps {
@@ -129,7 +131,21 @@ export const BookSessionModal = ({ tutor, isOpen, onClose }: BookSessionModalPro
         
         {step === 'select-slot' && (
           <>
-            <BookingCalendar tutor={tutor} onSelectSlot={handleSlotSelect} />
+            <Tabs defaultValue="calendly" className="w-full">
+              <TabsList className="mb-4">
+                <TabsTrigger value="calendly">Calendly Style</TabsTrigger>
+                <TabsTrigger value="classic">Classic View</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="calendly">
+                <BookingCalendarDrag tutor={tutor} onSelectSlot={handleSlotSelect} />
+              </TabsContent>
+              
+              <TabsContent value="classic">
+                <BookingCalendar tutor={tutor} onSelectSlot={handleSlotSelect} />
+              </TabsContent>
+            </Tabs>
+            
             <div className="flex justify-end gap-2 mt-4">
               <Button variant="outline" onClick={onClose}>
                 Cancel

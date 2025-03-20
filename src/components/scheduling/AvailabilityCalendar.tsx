@@ -21,6 +21,7 @@ import {
   AvailabilitySlot 
 } from "@/lib/scheduling-utils";
 import { X, Plus, Save, Loader2 } from "lucide-react";
+import { DragSelectCalendar } from "./DragSelectCalendar";
 
 const DEFAULT_AVAILABILITY: WeeklyAvailability = {
   monday: [],
@@ -157,6 +158,10 @@ export const AvailabilityCalendar = () => {
     setSelectedDay(dayOfWeek);
   };
 
+  const handleCalendarChange = (newAvailability: WeeklyAvailability) => {
+    setAvailability(newAvailability);
+  };
+
   if (loading) {
     return (
       <Card className="w-full">
@@ -175,11 +180,19 @@ export const AvailabilityCalendar = () => {
         <CardTitle>Your Availability Schedule</CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="calendar" className="w-full">
+        <Tabs defaultValue="drag" className="w-full">
           <TabsList className="mb-4">
+            <TabsTrigger value="drag">Calendly Style</TabsTrigger>
             <TabsTrigger value="calendar">Calendar View</TabsTrigger>
             <TabsTrigger value="weekly">Weekly Schedule</TabsTrigger>
           </TabsList>
+          
+          <TabsContent value="drag">
+            <DragSelectCalendar 
+              availability={availability} 
+              onChange={handleCalendarChange} 
+            />
+          </TabsContent>
           
           <TabsContent value="calendar">
             <div className="flex flex-col space-y-4">

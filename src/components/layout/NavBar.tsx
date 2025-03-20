@@ -16,6 +16,12 @@ const NavBar = () => {
     <header className="border-b border-gray-200 bg-white">
       <div className="container px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
+          <div className="flex items-center">
+            <Link to="/" className="flex items-center">
+              <span className="text-xl font-bold">Study<span className="text-usc-gold">Buddy</span></span>
+            </Link>
+          </div>
+
           {isMobile && (
             <Button
               variant="ghost"
@@ -30,12 +36,6 @@ const NavBar = () => {
               )}
             </Button>
           )}
-
-          <div className="flex items-center">
-            <Link to="/" className="md:hidden">
-              <span className="text-xl font-bold">Study<span className="text-usc-gold">Buddy</span></span>
-            </Link>
-          </div>
 
           <div className="flex items-center gap-4">
             {user && (
