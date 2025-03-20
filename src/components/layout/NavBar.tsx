@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import UserMenu from "@/components/auth/UserMenu";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Link } from "react-router-dom";
 
 const NavBar = () => {
   const { user } = useAuth();
@@ -13,9 +14,11 @@ const NavBar = () => {
 
   return (
     <header className="border-b border-gray-200 bg-white w-full">
-      <div className="flex h-16 items-center px-4 md:px-6 lg:px-8">
-        <div className="flex-1">
-          {/* Empty div to balance the layout */}
+      <div className="flex h-16 items-center justify-between px-4 md:px-6 lg:px-8">
+        <div className="flex items-center">
+          <Link to="/" className="flex items-center space-x-2">
+            <span className="font-bold text-xl text-usc-cardinal">StudyBuddy</span>
+          </Link>
         </div>
 
         {isMobile && (
