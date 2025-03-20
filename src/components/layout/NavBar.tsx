@@ -13,7 +13,7 @@ const NavBar = () => {
 
   return (
     <header className="border-b border-gray-200 bg-white w-full">
-      <div className="flex h-16 items-center justify-between px-4 md:px-6 lg:px-8">
+      <div className="flex h-16 items-center px-4 md:px-6 lg:px-8">
         <div className="flex-1">
           {/* Empty div to balance the layout */}
         </div>
