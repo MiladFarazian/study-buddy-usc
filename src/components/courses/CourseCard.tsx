@@ -3,11 +3,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Course } from "@/types/CourseTypes";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, CheckCircle } from "lucide-react";
+import { PlusCircle, CheckCircle, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { addCourseToProfile } from "@/lib/course-utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface CourseCardProps {
   course: Course;
@@ -26,8 +39,23 @@ const CourseCard = ({ course }: CourseCardProps) => {
   const courseNumber = course.course_number || '';
   const courseTitle = course.course_title || '';
   const department = course.department || '';
-  const instructor = course.instructor || '';
   const description = course.description || null;
+  
+  // Handle multiple instructors
+  const instructorString = course.instructor || '';
+  const instructors = instructorString.split(',').map(instr => instr.trim()).filter(Boolean);
+  const hasMultipleInstructors = instructors.length > 1;
+  
+  // State for selected instructor
+  const [selectedInstructor, setSelectedInstructor] = useState(instructors[0] || '');
+  
+  // Function to get course with selected instructor
+  const getCourseWithSelectedInstructor = () => {
+    return {
+      ...course,
+      instructor: selectedInstructor
+    };
+  };
   
   const handleAddCourse = async () => {
     if (!user) {
@@ -41,11 +69,12 @@ const CourseCard = ({ course }: CourseCardProps) => {
     
     setIsAdding(true);
     try {
-      await addCourseToProfile(user.id, course);
+      // Pass the course with the selected instructor
+      await addCourseToProfile(user.id, getCourseWithSelectedInstructor());
       setIsAdded(true);
       toast({
         title: "Course added",
-        description: `${courseNumber} has been added to your profile`,
+        description: `${courseNumber} has been added to your profile${selectedInstructor ? ` with instructor ${selectedInstructor}` : ''}`,
       });
     } catch (error) {
       console.error("Failed to add course:", error);
@@ -78,10 +107,30 @@ const CourseCard = ({ course }: CourseCardProps) => {
         )}
         
         <div className="space-y-1 text-sm mb-auto">
-          {instructor && (
+          {instructorString && (
             <div className="flex">
               <span className="font-medium w-24">Instructor:</span> 
-              <span className="text-gray-700 line-clamp-1 flex-1">{instructor}</span>
+              <div className="text-gray-700 line-clamp-1 flex-1">
+                {hasMultipleInstructors ? (
+                  <Select 
+                    value={selectedInstructor} 
+                    onValueChange={setSelectedInstructor}
+                  >
+                    <SelectTrigger className="w-full h-7 text-xs px-2 py-0 border-none bg-gray-50">
+                      <SelectValue placeholder="Select instructor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {instructors.map((instructor, index) => (
+                        <SelectItem key={index} value={instructor}>
+                          {instructor}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  instructorString
+                )}
+              </div>
             </div>
           )}
           
