@@ -4,12 +4,15 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 const AuthSection = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
 
   if (user) {
+    // Get first name from profile or fallback to email
+    const firstName = profile?.first_name || user.email?.split('@')[0] || 'User';
+    
     return (
       <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h2 className="text-xl font-semibold mb-2">Welcome back, {user.user_metadata.full_name || user.email}!</h2>
+        <h2 className="text-xl font-semibold mb-2">Welcome back, {firstName}!</h2>
         <p className="text-gray-600 mb-4">
           Continue exploring tutoring opportunities and improve your academic performance.
         </p>
