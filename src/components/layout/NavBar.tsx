@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Bell, Menu, X } from "lucide-react";
+import { Bell, Menu, X, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import UserMenu from "@/components/auth/UserMenu";
@@ -41,10 +41,17 @@ const NavBar = () => {
 
         <div className="flex items-center gap-4">
           {user && (
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-1 right-1 flex h-2 w-2 rounded-full bg-red-500" />
-            </Button>
+            <>
+              <Button variant="ghost" size="icon" className="relative" asChild>
+                <Link to="/messages">
+                  <MessageSquare className="h-5 w-5 text-gray-600" />
+                </Link>
+              </Button>
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="h-5 w-5 text-gray-600" />
+                <span className="absolute top-1 right-1 flex h-2 w-2 rounded-full bg-red-500" />
+              </Button>
+            </>
           )}
 
           <UserMenu />

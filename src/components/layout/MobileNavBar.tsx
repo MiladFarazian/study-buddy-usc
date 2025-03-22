@@ -1,20 +1,45 @@
 
-import { Home, BookOpen, Calendar, User } from "lucide-react";
+import { Home, BookOpen, Calendar, User, Users, GraduationCap, MessageSquare } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/contexts/AuthContext";
 
 const MobileNavBar = () => {
   const location = useLocation();
   const isMobile = useIsMobile();
+  const { isStudent, isTutor } = useAuth();
   
   if (!isMobile) return null;
+
+  const getStudentTutorIcon = () => {
+    if (isStudent) return GraduationCap;
+    if (isTutor) return Users;
+    return Users; // Default icon
+  };
+
+  const getStudentTutorPath = () => {
+    if (isStudent) return "/tutors";
+    if (isTutor) return "/students";
+    return "/tutors"; // Default path
+  };
+
+  const getStudentTutorTitle = () => {
+    if (isStudent) return "Tutors";
+    if (isTutor) return "Students";
+    return "Tutors"; // Default title
+  };
 
   const navItems = [
     {
       title: "Dashboard",
       icon: Home,
       path: "/",
+    },
+    {
+      title: getStudentTutorTitle(),
+      icon: getStudentTutorIcon(),
+      path: getStudentTutorPath(),
     },
     {
       title: "Courses",
