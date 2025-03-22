@@ -5,6 +5,7 @@ import { useCourses } from "@/hooks/useCourses";
 import CourseFilters from "@/components/courses/CourseFilters";
 import CourseList from "@/components/courses/CourseList";
 import TermSelector from "@/components/courses/TermSelector";
+import PopularCourses from "@/components/home/PopularCourses";
 
 const Courses = () => {
   const [selectedTerm, setSelectedTerm] = useState("");
@@ -41,6 +42,11 @@ const Courses = () => {
           <h1 className="text-3xl font-bold mb-2">USC Courses</h1>
           <p className="text-muted-foreground">Browse and search for courses at USC</p>
         </div>
+      </div>
+      
+      {/* Popular Courses Section */}
+      <div className="mb-8">
+        <PopularCourses />
       </div>
       
       <Card className="mb-8">
