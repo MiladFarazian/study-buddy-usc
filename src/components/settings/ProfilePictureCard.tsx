@@ -2,13 +2,11 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
-import { Upload, X, Loader2 } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { ImageCropper } from "@/components/ui/image-cropper";
+import { AvatarDisplay } from "@/components/profile/AvatarDisplay";
+import { AvatarActions } from "@/components/profile/AvatarActions";
 import { removeAvatar } from "@/components/profile/AvatarUtils";
 
 interface ProfilePictureCardProps {
@@ -125,16 +123,6 @@ export const ProfilePictureCard = ({
     );
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase();
-  };
-
-  console.log("Rendering ProfilePictureCard with avatarUrl:", avatarUrl);
-
   return (
     <>
       <Card>
@@ -146,48 +134,22 @@ export const ProfilePictureCard = ({
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex justify-center">
-            <Avatar className="h-24 w-24">
-              <AvatarImage src={avatarUrl || ""} alt="Profile" />
-              <AvatarFallback className="bg-usc-cardinal text-white text-xl">
-                {getInitials(firstName || userEmail?.charAt(0) || "U")}
-              </AvatarFallback>
-            </Avatar>
+            <AvatarDisplay
+              avatarUrl={avatarUrl}
+              userEmail={userEmail}
+              firstName={firstName}
+              lastName={profile?.last_name || ""}
+            />
           </div>
-          <div className="flex flex-col gap-2">
-            <div className="relative">
-              <Input
-                id="avatar-upload"
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarFileChange}
-                className="hidden"
-              />
-              
-              <Button
-                asChild
-                variant="outline"
-                className="w-full"
-                disabled={uploadingAvatar || loading}
-              >
-                <label htmlFor="avatar-upload" className="cursor-pointer flex items-center justify-center">
-                  <Upload className="mr-2 h-4 w-4" />
-                  {avatarFile ? "Change Image" : "Upload New Photo"}
-                </label>
-              </Button>
-            </div>
-            
-            {(avatarUrl || profile?.avatar_url) && (
-              <Button 
-                variant="outline" 
-                className="text-red-500 hover:text-red-600"
-                onClick={handleRemoveAvatar}
-                disabled={uploadingAvatar || loading}
-              >
-                <X className="mr-2 h-4 w-4" />
-                Remove Photo
-              </Button>
-            )}
-          </div>
+          
+          <AvatarActions
+            avatarUrl={avatarUrl}
+            avatarFile={avatarFile}
+            uploadingAvatar={uploadingAvatar}
+            isSubmitting={loading}
+            onFileChange={handleAvatarFileChange}
+            onRemove={handleRemoveAvatar}
+          />
         </CardContent>
       </Card>
 
