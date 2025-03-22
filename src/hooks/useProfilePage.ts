@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { Profile } from "@/integrations/supabase/types-extension";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { uploadAvatar } from "@/components/profile/AvatarUtils";
 
-export const useProfilePage = (profile: Profile | null, user: any) => {
+export const useProfilePage = (profile: any, user: any) => {
   const { toast } = useToast();
   
   // Form state
@@ -172,6 +171,13 @@ export const useProfilePage = (profile: Profile | null, user: any) => {
     }
   };
 
+  // Add this calculation
+  const isProfileComplete = profile && 
+    profile.first_name && 
+    profile.last_name && 
+    profile.major && 
+    profile.bio;
+  
   return {
     firstName,
     lastName,
@@ -191,6 +197,7 @@ export const useProfilePage = (profile: Profile | null, user: any) => {
     setAvatarFile,
     setUploadingAvatar,
     removeAvatar,
-    handleSubmit
+    handleSubmit,
+    isProfileComplete
   };
 };

@@ -1,12 +1,11 @@
 
 import { useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, X, Loader2 } from "lucide-react";
 import { ImageCropper } from "@/components/ui/image-cropper";
+import { AvatarDisplay } from "./AvatarDisplay";
+import { AvatarActions } from "./AvatarActions";
+import { ProfileInfo } from "./ProfileInfo";
 
 interface ProfileAvatarProps {
   avatarUrl: string | null;
@@ -95,15 +94,6 @@ export const ProfileAvatar = ({
     setShowCropper(false);
     setCropperFile(null);
   };
-
-  const getInitials = (name: string = userEmail || "") => {
-    if (firstName && lastName) {
-      return `${firstName[0]}${lastName[0]}`.toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
-  };
-  
-  console.log("ProfileAvatar rendering with avatarUrl:", avatarUrl);
   
   return (
     <>
@@ -111,77 +101,30 @@ export const ProfileAvatar = ({
         <CardContent className="pt-6">
           <div className="flex flex-col items-center">
             <div className="relative">
-              <Avatar className="h-32 w-32 mb-4">
-                <AvatarImage 
-                  src={avatarUrl || ""} 
-                  alt={userEmail || ""}
-                />
-                <AvatarFallback className="bg-usc-cardinal text-white text-xl">
-                  {getInitials(userEmail || "")}
-                </AvatarFallback>
-              </Avatar>
+              <AvatarDisplay
+                avatarUrl={avatarUrl}
+                userEmail={userEmail}
+                firstName={firstName}
+                lastName={lastName}
+              />
               
-              <div className="mt-4 flex flex-col gap-2">
-                <div className="relative">
-                  <Input
-                    id="avatar-upload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarFileChange}
-                    className="hidden"
-                  />
-                  
-                  <Button
-                    asChild
-                    variant="outline"
-                    className="w-full"
-                    disabled={uploadingAvatar || isSubmitting}
-                  >
-                    <label htmlFor="avatar-upload" className="cursor-pointer flex items-center justify-center">
-                      <Upload className="mr-2 h-4 w-4" />
-                      {avatarFile ? "Change Image" : "Upload Image"}
-                    </label>
-                  </Button>
-                </div>
-                
-                {avatarUrl && (
-                  <Button
-                    variant="outline"
-                    className="text-red-500 hover:text-red-600"
-                    onClick={removeAvatar}
-                    disabled={uploadingAvatar || isSubmitting}
-                  >
-                    <X className="mr-2 h-4 w-4" />
-                    Remove Photo
-                  </Button>
-                )}
-              </div>
+              <AvatarActions
+                avatarUrl={avatarUrl}
+                avatarFile={avatarFile}
+                uploadingAvatar={uploadingAvatar}
+                isSubmitting={isSubmitting}
+                onFileChange={handleAvatarFileChange}
+                onRemove={removeAvatar}
+              />
             </div>
             
-            <h2 className="text-xl font-semibold mt-4">
-              {firstName && lastName ? `${firstName} ${lastName}` : userEmail}
-            </h2>
-            <p className="text-muted-foreground">{userRole || "Student"}</p>
-            
-            <div className="w-full mt-6">
-              <div className="p-3 border rounded-md mb-3">
-                <p className="text-sm text-muted-foreground">Email</p>
-                <p className="font-medium">{userEmail}</p>
-              </div>
-              
-              {userRole === "tutor" && profile && (
-                <>
-                  <div className="p-3 border rounded-md mb-3">
-                    <p className="text-sm text-muted-foreground">Rating</p>
-                    <p className="font-medium">{profile?.average_rating?.toFixed(1) || "N/A"}/5.0</p>
-                  </div>
-                  <div className="p-3 border rounded-md">
-                    <p className="text-sm text-muted-foreground">Hourly Rate</p>
-                    <p className="font-medium">${profile?.hourly_rate || "25"}/hour</p>
-                  </div>
-                </>
-              )}
-            </div>
+            <ProfileInfo
+              firstName={firstName}
+              lastName={lastName}
+              userEmail={userEmail}
+              userRole={userRole}
+              profile={profile}
+            />
           </div>
         </CardContent>
       </Card>

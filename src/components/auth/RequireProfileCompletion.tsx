@@ -7,8 +7,15 @@ interface RequireProfileCompletionProps {
 }
 
 const RequireProfileCompletion = ({ children }: RequireProfileCompletionProps) => {
-  const { user, isProfileComplete, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const location = useLocation();
+
+  // Check if profile is complete (has required fields)
+  const isProfileComplete = profile && 
+    profile.first_name && 
+    profile.last_name && 
+    profile.major && 
+    profile.bio;
 
   // Don't redirect if:
   // 1. Still loading
