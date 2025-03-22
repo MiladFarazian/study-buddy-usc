@@ -44,3 +44,19 @@ export type Term = {
 export type Spring2025Course = Database["public"]["Tables"]["courses-20251"]["Row"];
 export type Summer2025Course = Database["public"]["Tables"]["courses-20252"]["Row"];
 export type Fall2025Course = Database["public"]["Tables"]["courses-20253"]["Row"];
+
+// Define messaging types
+export type Conversation = Database["public"]["Tables"]["conversations"]["Row"];
+export type ConversationInsert = Database["public"]["Tables"]["conversations"]["Insert"];
+export type ConversationUpdate = Database["public"]["Tables"]["conversations"]["Update"];
+
+export type Message = Database["public"]["Tables"]["messages"]["Row"];
+export type MessageInsert = Database["public"]["Tables"]["messages"]["Insert"];
+export type MessageUpdate = Database["public"]["Tables"]["messages"]["Update"];
+
+// Extended conversation type with participant profile data
+export type ConversationWithProfiles = Conversation & {
+  tutor: Profile;
+  student: Profile;
+  unread_count?: number;
+};

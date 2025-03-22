@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -23,6 +24,7 @@ import TutorProfile from "./pages/TutorProfile";
 import Profile from "./pages/Profile";
 import Students from "./pages/Students";
 import EmailVerification from "./pages/EmailVerification";
+import Messages from "./pages/Messages";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -73,6 +75,11 @@ function App() {
               <Route path="/students" element={
                 <PrivateRoute>
                   <Layout><Students /></Layout>
+                </PrivateRoute>
+              } />
+              <Route path="/messages" element={
+                <PrivateRoute>
+                  <Layout><Messages /></Layout>
                 </PrivateRoute>
               } />
               <Route path="/tutors/:id" element={<TutorProfile />} />

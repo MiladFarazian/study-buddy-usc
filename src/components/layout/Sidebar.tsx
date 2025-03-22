@@ -6,6 +6,7 @@ import {
   Calendar, 
   FileText, 
   LayoutDashboard, 
+  MessageSquare, 
   Settings, 
   Users 
 } from "lucide-react";
@@ -45,6 +46,12 @@ const Sidebar = () => {
       title: "Schedule",
       icon: Calendar,
       path: "/schedule",
+      showWhen: !!user // Only for authenticated users
+    },
+    {
+      title: "Messages",
+      icon: MessageSquare,
+      path: "/messages",
       showWhen: !!user // Only for authenticated users
     },
     {
