@@ -76,7 +76,10 @@ const Login = () => {
     <div className="flex flex-col min-h-screen items-center justify-center bg-slate-50">
       <div className="max-w-md w-full px-4">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Study<span className="text-usc-gold">Buddy</span></h1>
+          <h1 className="text-3xl font-bold mb-2">
+            <span className="text-usc-cardinal">Study</span>
+            <span className="text-usc-gold">Buddy</span>
+          </h1>
           <p className="text-gray-600">Your USC tutoring and study partner</p>
         </div>
         
