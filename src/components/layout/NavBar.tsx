@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Bell, Menu, X, MessageSquare } from "lucide-react";
+import { Bell, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import UserMenu from "@/components/auth/UserMenu";
@@ -10,7 +10,6 @@ import { Link } from "react-router-dom";
 const NavBar = () => {
   const { user } = useAuth();
   const isMobile = useIsMobile();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <header className="border-b border-gray-200 bg-white w-full">
@@ -23,21 +22,6 @@ const NavBar = () => {
             </span>
           </Link>
         </div>
-
-        {isMobile && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden"
-          >
-            {mobileMenuOpen ? (
-              <X className="h-6 w-6" />
-            ) : (
-              <Menu className="h-6 w-6" />
-            )}
-          </Button>
-        )}
 
         <div className="flex items-center gap-4">
           {user && (
@@ -54,7 +38,7 @@ const NavBar = () => {
             </>
           )}
 
-          <UserMenu />
+          {!isMobile && <UserMenu />}
         </div>
       </div>
     </header>

@@ -6,11 +6,13 @@ import CourseFilters from "@/components/courses/CourseFilters";
 import CourseList from "@/components/courses/CourseList";
 import TermSelector from "@/components/courses/TermSelector";
 import PopularCourses from "@/components/home/PopularCourses";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Courses = () => {
   const [selectedTerm, setSelectedTerm] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("all");
+  const isMobile = useIsMobile();
   
   const { 
     courses, 
@@ -36,22 +38,22 @@ const Courses = () => {
   };
 
   return (
-    <div className="container py-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+    <div className="container py-4 md:py-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 mb-6 md:mb-8">
         <div>
-          <h1 className="text-3xl font-bold mb-2">USC Courses</h1>
-          <p className="text-muted-foreground">Browse and search for courses at USC</p>
+          <h1 className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">USC Courses</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Browse and search for courses at USC</p>
         </div>
       </div>
       
       {/* Popular Courses Section */}
-      <div className="mb-8">
+      <div className="mb-6 md:mb-8">
         <PopularCourses />
       </div>
       
-      <Card className="mb-8">
-        <CardContent className="p-6">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+      <Card className="mb-6 md:mb-8">
+        <CardContent className={isMobile ? "p-4" : "p-6"}>
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4 md:mb-6">
             <TermSelector
               selectedTerm={selectedTerm}
               onTermChange={handleTermChange}

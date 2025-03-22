@@ -1,5 +1,5 @@
 
-import { Home, BookOpen, Calendar, User, Users, GraduationCap, MessageSquare } from "lucide-react";
+import { Home, BookOpen, Calendar, User, Users, GraduationCap } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
