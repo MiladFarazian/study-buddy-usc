@@ -11,11 +11,11 @@ interface MessageButtonProps {
 }
 
 export default function MessageButton({ recipient, className }: MessageButtonProps) {
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   
   // Don't show message button to yourself or unauthenticated users
-  if (!isAuthenticated || user?.id === recipient.id) {
+  if (!user || user.id === recipient.id) {
     return null;
   }
   
