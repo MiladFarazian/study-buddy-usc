@@ -1,4 +1,3 @@
-
 import { Link, useLocation } from "react-router-dom";
 import { 
   BarChart, 
@@ -12,10 +11,14 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Sidebar = () => {
   const location = useLocation();
   const { isStudent, isTutor, user } = useAuth();
+  const isMobile = useIsMobile();
+  
+  if (isMobile) return null;
   
   const sidebarItems = [
     {
@@ -77,7 +80,7 @@ const Sidebar = () => {
   const filteredItems = sidebarItems.filter(item => item.showWhen);
   
   return (
-    <div className="min-h-screen w-64 bg-white text-usc-cardinal border-r border-gray-200">
+    <div className="min-h-screen w-64 bg-white text-usc-cardinal border-r border-gray-200 hidden md:block">
       <nav className="p-4 space-y-2">
         {filteredItems.map((item) => {
           const isActive = location.pathname === item.path;
