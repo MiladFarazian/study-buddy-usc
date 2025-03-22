@@ -19,7 +19,8 @@ export const useProfileSubmission = (
     lastName: string,
     major: string,
     gradYear: string,
-    bio: string
+    bio: string,
+    subjects?: string[]
   }) => {
     e.preventDefault();
     
@@ -58,6 +59,9 @@ export const useProfileSubmission = (
         console.log("Avatar upload completed, new URL:", newAvatarUrl);
       }
       
+      // Preserve the existing subjects if they exist and no new ones provided
+      const subjects = formData.subjects || profile?.subjects || [];
+      
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -67,6 +71,7 @@ export const useProfileSubmission = (
           graduation_year: formData.gradYear,
           bio: formData.bio,
           avatar_url: newAvatarUrl,
+          subjects: subjects,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id);

@@ -37,7 +37,8 @@ export const useProfilePage = (profile: any, user: any) => {
       lastName,
       major,
       gradYear,
-      bio
+      bio,
+      subjects: profile?.subjects // Make sure we pass the subjects
     });
   };
 

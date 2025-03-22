@@ -39,14 +39,33 @@ export const useAuthProfile = (userId: string | undefined) => {
     }
   }, [userId]);
 
-  const updateProfile = (updatedProfile: Partial<Profile>) => {
-    if (profile) {
-      setProfile({
-        ...profile,
-        ...updatedProfile,
-      });
+  const updateProfile = async (updatedProfile: Partial<Profile>) => {
+    if (!userId || !profile) return null;
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({
+          ...updatedProfile,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error updating profile:', error);
+        return { error };
+      }
+      
+      // Update the local state with the server response
+      setProfile(data as Profile);
+      return { data: data as Profile };
+    } catch (error) {
+      console.error('Profile update error:', error);
+      return { error };
     }
   };
 
-  return { profile, updateProfile };
+  return { profile, updateProfile, fetchProfile };
 };
