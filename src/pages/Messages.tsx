@@ -64,10 +64,10 @@ export default function Messages() {
   };
 
   return (
-    <div className="py-4 md:py-6">
-      <div className="mb-4 md:mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">Messages</h1>
-        <p className="text-sm md:text-base text-muted-foreground">
+    <div className={`${isMobile ? 'py-3' : 'py-4 md:py-6'}`}>
+      <div className={`mb-3 ${isMobile ? '' : 'md:mb-6'}`}>
+        <h1 className={`${isMobile ? 'text-xl' : 'text-2xl md:text-3xl'} font-bold mb-1 md:mb-2`}>Messages</h1>
+        <p className={`${isMobile ? 'text-xs' : 'text-sm md:text-base'} text-muted-foreground`}>
           {isStudent 
             ? "Connect with your tutors" 
             : isTutor 
@@ -76,7 +76,7 @@ export default function Messages() {
         </p>
       </div>
 
-      <div className="bg-white border rounded-lg shadow-sm overflow-hidden min-h-[500px] md:min-h-[600px] h-[calc(100vh-230px)] flex">
+      <div className={`bg-white border rounded-lg shadow-sm overflow-hidden ${isMobile ? 'min-h-[400px] h-[calc(100vh-180px)]' : 'min-h-[500px] md:min-h-[600px] h-[calc(100vh-230px)]'} flex`}>
         {/* Conversations list - show on mobile only when not in chat view */}
         {(!isMobile || (isMobile && !showChat)) && (
           <div className={`${isMobile ? 'w-full' : 'w-1/3'} border-r`}>

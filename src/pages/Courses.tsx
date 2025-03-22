@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useCourses } from "@/hooks/useCourses";
 import CourseFilters from "@/components/courses/CourseFilters";
@@ -38,22 +38,22 @@ const Courses = () => {
   };
 
   return (
-    <div className="container py-4 md:py-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 mb-6 md:mb-8">
+    <div className={`${isMobile ? 'px-2 py-3' : 'container py-4 md:py-8'}`}>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-4 mb-4 md:mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">USC Courses</h1>
-          <p className="text-sm md:text-base text-muted-foreground">Browse and search for courses at USC</p>
+          <h1 className={`${isMobile ? 'text-xl' : 'text-2xl md:text-3xl'} font-bold mb-1 md:mb-2`}>USC Courses</h1>
+          <p className={`${isMobile ? 'text-xs' : 'text-sm md:text-base'} text-muted-foreground`}>Browse and search for courses at USC</p>
         </div>
       </div>
       
       {/* Popular Courses Section */}
-      <div className="mb-6 md:mb-8">
+      <div className="mb-4 md:mb-8">
         <PopularCourses />
       </div>
       
-      <Card className="mb-6 md:mb-8">
-        <CardContent className={isMobile ? "p-4" : "p-6"}>
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4 md:mb-6">
+      <Card className="mb-4 md:mb-8">
+        <CardContent className={isMobile ? "p-3" : "p-4 md:p-6"}>
+          <div className={`flex flex-col ${isMobile ? 'gap-3' : 'lg:flex-row justify-between items-start lg:items-center gap-4'} mb-4 md:mb-6`}>
             <TermSelector
               selectedTerm={selectedTerm}
               onTermChange={handleTermChange}

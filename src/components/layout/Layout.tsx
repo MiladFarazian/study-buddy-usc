@@ -17,7 +17,7 @@ const Layout = ({ children }: LayoutProps) => {
       <NavBar />
       <div className="flex flex-1">
         {!isMobile && <Sidebar />}
-        <main className={`flex-1 px-4 md:px-6 lg:px-8 py-6 ${isMobile ? "pb-20" : ""}`}>
+        <main className={`flex-1 ${isMobile ? 'px-3 py-3 pb-20' : 'px-4 md:px-6 lg:px-8 py-6'}`}>
           {children}
         </main>
       </div>

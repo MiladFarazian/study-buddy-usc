@@ -4,15 +4,18 @@ import FeatureCards from "@/components/home/FeatureCards";
 import FeaturedTutors from "@/components/home/FeaturedTutors";
 import PopularCourses from "@/components/home/PopularCourses";
 import AuthSection from "@/components/home/AuthSection";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Index = () => {
+  const isMobile = useIsMobile();
+  
   return (
-    <div className="space-y-12 py-6">
+    <div className={`space-y-8 ${isMobile ? 'py-4' : 'py-6'}`}>
       <Hero />
-      <div className="mt-6">
+      <div className={isMobile ? "mt-4" : "mt-6"}>
         <AuthSection />
       </div>
-      <div className="mt-12">
+      <div className={isMobile ? "mt-8" : "mt-12"}>
         <FeatureCards />
       </div>
       <FeaturedTutors />
