@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar, GraduationCap, Clock, UserMinus } from "lucide-react";
 import { format } from "date-fns";
 import { Student } from "@/hooks/useTutorStudents";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +25,8 @@ interface StudentCardProps {
 }
 
 const StudentCard: React.FC<StudentCardProps> = ({ student, onRemove }) => {
+  const isMobile = useIsMobile();
+  
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -37,31 +40,31 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, onRemove }) => {
 
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow">
-      <CardContent className="p-6">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16">
+      <CardContent className={isMobile ? "p-4" : "p-6"}>
+        <div className="flex flex-col gap-3 md:gap-4">
+          <div className="flex items-center gap-3 md:gap-4">
+            <Avatar className={`${isMobile ? "h-12 w-12" : "h-16 w-16"}`}>
               <AvatarImage src={student.avatarUrl || ""} alt={student.name} />
               <AvatarFallback className="bg-usc-cardinal text-white">
                 {getInitials(student.name)}
               </AvatarFallback>
             </Avatar>
             <div>
-              <h3 className="text-xl font-semibold">{student.name}</h3>
-              <p className="text-gray-500">{student.major || "No major specified"}</p>
+              <h3 className={`${isMobile ? "text-lg" : "text-xl"} font-semibold`}>{student.name}</h3>
+              <p className="text-gray-500 text-sm">{student.major || "No major specified"}</p>
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4 py-2">
+          <div className={`grid grid-cols-${isMobile ? "1" : "2"} gap-2 md:gap-4 py-1 md:py-2`}>
             <div className="flex items-center">
               <GraduationCap className="h-4 w-4 text-gray-500 mr-2" />
-              <span className="text-sm text-gray-500">
+              <span className="text-xs md:text-sm text-gray-500">
                 Class of {student.graduationYear || "N/A"}
               </span>
             </div>
             <div className="flex items-center">
               <Calendar className="h-4 w-4 text-gray-500 mr-2" />
-              <span className="text-sm text-gray-500">
+              <span className="text-xs md:text-sm text-gray-500">
                 Joined {format(new Date(student.joined), "MMM d, yyyy")}
               </span>
             </div>
@@ -69,14 +72,14 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, onRemove }) => {
           
           <div className="flex items-center py-1">
             <Clock className="h-4 w-4 text-gray-500 mr-2" />
-            <span className="text-sm text-gray-500">
+            <span className="text-xs md:text-sm text-gray-500">
               {student.sessions || 0} sessions completed
             </span>
           </div>
           
-          <div className="flex gap-2 mt-2">
+          <div className="flex gap-2 mt-1 md:mt-2">
             <Button 
-              className="w-full bg-usc-cardinal hover:bg-usc-cardinal-dark"
+              className="w-full bg-usc-cardinal hover:bg-usc-cardinal-dark text-sm md:text-base"
               disabled
             >
               Schedule Session
@@ -84,11 +87,11 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, onRemove }) => {
             
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="outline" size="icon">
+                <Button variant="outline" size="icon" className="h-9 w-9">
                   <UserMinus className="h-4 w-4 text-red-500" />
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent>
+              <AlertDialogContent className={isMobile ? "w-[90%] max-w-md" : ""}>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Remove Student</AlertDialogTitle>
                   <AlertDialogDescription>
