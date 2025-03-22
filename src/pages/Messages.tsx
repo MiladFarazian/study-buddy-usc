@@ -97,7 +97,7 @@ export default function Messages() {
               messages={messages}
               loading={messageLoading}
               onSendMessage={sendMessage}
-              onBackClick={isMobile ? handleBackToList : undefined}
+              onBackClick={handleBackToList}
               isMobile={isMobile}
             />
           </div>
