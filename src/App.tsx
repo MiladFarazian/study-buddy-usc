@@ -46,6 +46,7 @@ function App() {
               <Route path="/" element={<Layout><Index /></Layout>} />
               <Route path="/courses" element={<Layout><Courses /></Layout>} />
               <Route path="/tutors" element={<Layout><Tutors /></Layout>} />
+              <Route path="/tutors/:id" element={<Layout><TutorProfile /></Layout>} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/verify-email" element={<EmailVerification />} />
@@ -82,7 +83,6 @@ function App() {
                   <Layout><Messages /></Layout>
                 </PrivateRoute>
               } />
-              <Route path="/tutors/:id" element={<TutorProfile />} />
               <Route 
                 path="/profile" 
                 element={

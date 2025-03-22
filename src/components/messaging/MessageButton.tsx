@@ -14,12 +14,18 @@ export default function MessageButton({ recipient, className }: MessageButtonPro
   const { user } = useAuth();
   const navigate = useNavigate();
   
-  // Don't show message button to yourself or unauthenticated users
-  if (!user || user.id === recipient.id) {
+  // Don't show message button to yourself
+  if (user && user.id === recipient.id) {
     return null;
   }
   
   const handleClick = () => {
+    if (!user) {
+      // Redirect to login if user is not authenticated
+      navigate("/login");
+      return;
+    }
+    
     navigate(`/messages?user=${recipient.id}&isTutor=${recipient.role === 'tutor'}`);
   };
   

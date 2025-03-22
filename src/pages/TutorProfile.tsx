@@ -7,10 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { useTutor } from "@/hooks/useTutor";
-import { Star, Calendar, Clock, ArrowLeft, Loader2, Mail, MessageCircle } from "lucide-react";
+import { Star, Calendar, Clock, ArrowLeft, Loader2, MessageCircle } from "lucide-react";
 import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { BookSessionModal } from "@/components/scheduling/BookSessionModal";
+import MessageButton from "@/components/messaging/MessageButton";
 
 const TutorProfile = () => {
   const { id } = useParams<{ id: string }>();
@@ -189,32 +190,19 @@ const TutorProfile = () => {
                 </div>
               </div>
 
-              {user ? (
-                <>
-                  <Button 
-                    className="w-full bg-usc-cardinal hover:bg-usc-cardinal-dark text-white mb-3"
-                    onClick={() => setShowBookingModal(true)}
-                  >
-                    Book a Session
-                  </Button>
-                  <Button variant="outline" className="w-full mb-3">
-                    <MessageCircle className="mr-2 h-4 w-4" />
-                    Message
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button asChild className="w-full bg-usc-cardinal hover:bg-usc-cardinal-dark text-white mb-3">
-                    <Link to="/login">Sign In to Book</Link>
-                  </Button>
-                </>
-              )}
-
-              <div className="mt-4 text-center">
-                <p className="text-sm text-muted-foreground">
-                  Questions? <Link to="#" className="text-usc-cardinal">Contact Support</Link>
-                </p>
-              </div>
+              {/* Show Book Session button for all users */}
+              <Button 
+                className="w-full bg-usc-cardinal hover:bg-usc-cardinal-dark text-white mb-3"
+                onClick={() => setShowBookingModal(true)}
+              >
+                Book a Session
+              </Button>
+              
+              {/* Show Message button for all users */}
+              <MessageButton 
+                recipient={tutor} 
+                className="w-full"
+              />
             </CardContent>
           </Card>
         </div>

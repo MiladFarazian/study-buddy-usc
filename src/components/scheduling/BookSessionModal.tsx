@@ -35,7 +35,13 @@ export const BookSessionModal = ({ tutor, isOpen, onClose }: BookSessionModalPro
   };
   
   const handleProceedToPayment = async () => {
-    if (!selectedSlot || !user || !profile) return;
+    if (!selectedSlot) return;
+    
+    // Redirect to login if not authenticated
+    if (!user || !profile) {
+      navigate('/login');
+      return;
+    }
     
     setCreatingSession(true);
     
@@ -106,7 +112,8 @@ export const BookSessionModal = ({ tutor, isOpen, onClose }: BookSessionModalPro
     onClose();
   };
   
-  if (!user || !profile) {
+  // Show login prompt for unauthenticated users when they try to proceed
+  if (!user && selectedSlot) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent>
@@ -168,7 +175,7 @@ export const BookSessionModal = ({ tutor, isOpen, onClose }: BookSessionModalPro
           </>
         )}
         
-        {step === 'payment' && sessionId && selectedSlot && (
+        {step === 'payment' && sessionId && selectedSlot && user && profile && (
           <PaymentForm 
             tutor={tutor}
             selectedSlot={selectedSlot}
