@@ -1,7 +1,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { format } from "date-fns";
-import { Send, User, Users } from "lucide-react";
+import { Send, User, Users, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,6 +14,8 @@ interface ChatInterfaceProps {
   messages: Message[];
   loading: boolean;
   onSendMessage: (content: string) => Promise<{ success: boolean; error?: string }>;
+  onBackClick?: () => void;
+  isMobile?: boolean;
 }
 
 export default function ChatInterface({
@@ -21,6 +23,8 @@ export default function ChatInterface({
   messages,
   loading,
   onSendMessage,
+  onBackClick,
+  isMobile,
 }: ChatInterfaceProps) {
   const { user } = useAuth();
   const [messageInput, setMessageInput] = useState("");
@@ -92,6 +96,16 @@ export default function ChatInterface({
     <div className="flex flex-col h-full">
       {/* Chat header */}
       <div className="border-b p-4 flex items-center space-x-3">
+        {isMobile && onBackClick && (
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="mr-1" 
+            onClick={onBackClick}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        )}
         {!otherUser.avatar_url ? (
           <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
             <User className="h-5 w-5 text-muted-foreground" />
