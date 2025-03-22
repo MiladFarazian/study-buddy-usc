@@ -4,9 +4,10 @@ import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Profile } from "@/integrations/supabase/types-extension";
+import { Tutor } from "@/types/tutor";
 
 interface MessageButtonProps {
-  recipient: Profile;
+  recipient: Profile | Tutor;
   className?: string;
 }
 
@@ -26,7 +27,10 @@ export default function MessageButton({ recipient, className }: MessageButtonPro
       return;
     }
     
-    navigate(`/messages?user=${recipient.id}&isTutor=${recipient.role === 'tutor'}`);
+    // Handle different recipient types
+    const isTutor = 'role' in recipient ? recipient.role === 'tutor' : true;
+    
+    navigate(`/messages?user=${recipient.id}&isTutor=${isTutor}`);
   };
   
   return (
