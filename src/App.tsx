@@ -19,6 +19,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import PrivateRoute from "./components/auth/PrivateRoute";
+import RequireProfileCompletion from "./components/auth/RequireProfileCompletion";
 import AuthCallback from "./pages/AuthCallback";
 import TutorProfile from "./pages/TutorProfile";
 import Profile from "./pages/Profile";
@@ -55,32 +56,44 @@ function App() {
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/schedule" element={
                 <PrivateRoute>
-                  <Layout><Schedule /></Layout>
+                  <RequireProfileCompletion>
+                    <Layout><Schedule /></Layout>
+                  </RequireProfileCompletion>
                 </PrivateRoute>
               } />
               <Route path="/resources" element={
                 <PrivateRoute>
-                  <Layout><Resources /></Layout>
+                  <RequireProfileCompletion>
+                    <Layout><Resources /></Layout>
+                  </RequireProfileCompletion>
                 </PrivateRoute>
               } />
               <Route path="/analytics" element={
                 <PrivateRoute>
-                  <Layout><Analytics /></Layout>
+                  <RequireProfileCompletion>
+                    <Layout><Analytics /></Layout>
+                  </RequireProfileCompletion>
                 </PrivateRoute>
               } />
               <Route path="/settings" element={
                 <PrivateRoute>
-                  <Layout><Settings /></Layout>
+                  <RequireProfileCompletion>
+                    <Layout><Settings /></Layout>
+                  </RequireProfileCompletion>
                 </PrivateRoute>
               } />
               <Route path="/students" element={
                 <PrivateRoute>
-                  <Layout><Students /></Layout>
+                  <RequireProfileCompletion>
+                    <Layout><Students /></Layout>
+                  </RequireProfileCompletion>
                 </PrivateRoute>
               } />
               <Route path="/messages" element={
                 <PrivateRoute>
-                  <Layout><Messages /></Layout>
+                  <RequireProfileCompletion>
+                    <Layout><Messages /></Layout>
+                  </RequireProfileCompletion>
                 </PrivateRoute>
               } />
               <Route 

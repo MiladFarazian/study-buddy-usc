@@ -18,6 +18,7 @@ type AuthContextType = {
   loading: boolean;
   isStudent: boolean;
   isTutor: boolean;
+  isProfileComplete: boolean;
   updateProfile: (updatedProfile: Partial<Profile>) => void;
 };
 
@@ -29,6 +30,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  // Profile completeness check
+  const isProfileComplete = !!profile && !!profile.first_name && !!profile.last_name && !!profile.major;
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -218,6 +222,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     isStudent,
     isTutor,
+    isProfileComplete,
     updateProfile,
   };
 

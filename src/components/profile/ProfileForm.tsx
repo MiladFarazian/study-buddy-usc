@@ -46,24 +46,28 @@ export const ProfileForm = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div className="space-y-2">
               <label htmlFor="firstName" className="text-sm font-medium">
-                First Name
+                First Name <span className="text-red-500">*</span>
               </label>
               <Input
                 id="firstName"
                 value={firstName}
                 onChange={(e) => onFirstNameChange(e.target.value)}
                 placeholder="Your first name"
+                required
+                className={!firstName ? "border-red-300 focus:border-red-500" : ""}
               />
             </div>
             <div className="space-y-2">
               <label htmlFor="lastName" className="text-sm font-medium">
-                Last Name
+                Last Name <span className="text-red-500">*</span>
               </label>
               <Input
                 id="lastName"
                 value={lastName}
                 onChange={(e) => onLastNameChange(e.target.value)}
                 placeholder="Your last name"
+                required
+                className={!lastName ? "border-red-300 focus:border-red-500" : ""}
               />
             </div>
           </div>
@@ -71,13 +75,15 @@ export const ProfileForm = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div className="space-y-2">
               <label htmlFor="major" className="text-sm font-medium">
-                Major
+                Major <span className="text-red-500">*</span>
               </label>
               <Input
                 id="major"
                 value={major}
                 onChange={(e) => onMajorChange(e.target.value)}
                 placeholder="e.g. Computer Science"
+                required
+                className={!major ? "border-red-300 focus:border-red-500" : ""}
               />
             </div>
             <div className="space-y-2">
@@ -95,7 +101,7 @@ export const ProfileForm = ({
           
           <div className="space-y-2 mb-6">
             <label htmlFor="bio" className="text-sm font-medium">
-              Bio
+                Bio <span className="text-red-500">*</span>
             </label>
             <Textarea
               id="bio"
@@ -103,13 +109,15 @@ export const ProfileForm = ({
               onChange={(e) => onBioChange(e.target.value)}
               placeholder="Tell us a bit about yourself..."
               rows={5}
+              required
+              className={!bio ? "border-red-300 focus:border-red-500" : ""}
             />
           </div>
           
           <Button
             type="submit"
             className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
-            disabled={isSubmitting || uploadingAvatar}
+            disabled={isSubmitting || uploadingAvatar || !firstName || !lastName || !major || !bio}
           >
             {(isSubmitting || uploadingAvatar) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save Changes

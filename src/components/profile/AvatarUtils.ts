@@ -14,8 +14,14 @@ export const uploadAvatar = async (
     setUploadingAvatar(true);
     console.log("Starting avatar upload for user:", user.id);
     
+    // Check file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/heic', 'image/heif'];
+    if (!allowedTypes.includes(avatarFile.type.toLowerCase())) {
+      throw new Error('Unsupported file type. Please use JPEG, PNG, or HEIC format.');
+    }
+    
     // Create a unique file name with the user ID as the folder
-    const fileExt = avatarFile.name.split('.').pop() || "jpg";
+    const fileExt = avatarFile.name.split('.').pop()?.toLowerCase() || "jpg";
     const fileName = `${user.id}/${Date.now()}.${fileExt}`;
     
     // Upload the file to Storage

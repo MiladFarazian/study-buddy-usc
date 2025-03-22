@@ -2,7 +2,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
-import { Loader2, X } from "lucide-react";
+import { Loader2, X, AlertTriangle } from "lucide-react";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { ProfileForm } from "@/components/profile/ProfileForm";
@@ -12,12 +12,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { removeCourseFromProfile } from "@/lib/course-utils";
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Profile = () => {
   // Redirect to login if not authenticated
-  const { user, profile, loading } = useAuthRedirect("/profile", true);
+  const { user, profile, loading, isProfileComplete } = useAuthRedirect("/profile", true);
   const { toast } = useToast();
   const [removingCourse, setRemovingCourse] = useState<string | null>(null);
+  const location = useLocation();
+  
+  // Check if user was redirected here to complete their profile
+  const requireProfileCompletion = location.state?.requireCompletion || !isProfileComplete;
   
   // Use our custom hook for profile state management
   const {
@@ -69,6 +75,16 @@ const Profile = () => {
   return (
     <div className="container py-8">
       <ProfileHeader title="Your Profile" />
+      
+      {requireProfileCompletion && (
+        <Alert variant="default" className="mb-6 bg-amber-50 border-amber-200">
+          <AlertTriangle className="h-5 w-5 text-amber-600" />
+          <AlertTitle className="text-amber-800">Profile Completion Required</AlertTitle>
+          <AlertDescription className="text-amber-700">
+            Please complete your profile details below to continue using all features of the application.
+          </AlertDescription>
+        </Alert>
+      )}
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="md:col-span-1">
