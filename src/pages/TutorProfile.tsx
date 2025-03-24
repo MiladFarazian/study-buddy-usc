@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { BookSessionModal } from "@/components/scheduling/BookSessionModal";
 import MessageButton from "@/components/messaging/MessageButton";
+import { TutorAvailabilityCard } from "@/components/scheduling/TutorAvailabilityCard";
 
 const TutorProfile = () => {
   const { id } = useParams<{ id: string }>();
@@ -124,6 +125,11 @@ const TutorProfile = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Tutor Availability Section */}
+          <div className="mt-8">
+            <TutorAvailabilityCard tutorId={tutor.id} readOnly={true} />
+          </div>
 
           {/* Reviews Section */}
           <Card className="mt-8">

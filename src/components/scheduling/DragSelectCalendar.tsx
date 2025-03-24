@@ -1,278 +1,156 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { format, parseISO, addDays, startOfWeek, eachDayOfInterval } from 'date-fns';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { WeeklyAvailability, AvailabilitySlot } from '@/lib/scheduling-utils';
-
-interface TimeSlot {
-  time: string;
-  dayOfWeek: string;
-  selected: boolean;
-}
+import React, { useState } from "react";
+import { WeeklyAvailability } from "@/lib/scheduling-utils";
+import { cn } from "@/lib/utils";
 
 interface DragSelectCalendarProps {
   availability: WeeklyAvailability;
-  onChange: (newAvailability: WeeklyAvailability) => void;
+  onChange: (availability: WeeklyAvailability) => void;
+  readOnly?: boolean;
   className?: string;
 }
 
-export const DragSelectCalendar = ({ availability, onChange, className }: DragSelectCalendarProps) => {
-  const [startDate, setStartDate] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
-  const [weekDays, setWeekDays] = useState<Date[]>([]);
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[][]>([]);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragState, setDragState] = useState<boolean | null>(null);
-  const [dragStartCoord, setDragStartCoord] = useState<{ row: number; col: number } | null>(null);
-  const gridRef = useRef<HTMLDivElement>(null);
-  
-  // Hours to display in the calendar (24-hour format)
-  const hours = Array.from({ length: 14 }, (_, i) => i + 8); // 8 AM to 9 PM
-  
-  // Days of the week
-  const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-  
-  useEffect(() => {
-    // Generate array of dates for the week
-    const days = eachDayOfInterval({
-      start: startDate,
-      end: addDays(startDate, 6)
-    });
-    setWeekDays(days);
-    
-    // Initialize time slots grid
-    initializeTimeSlots();
-  }, [startDate, availability]);
-  
-  const initializeTimeSlots = () => {
-    const slots: TimeSlot[][] = [];
-    
-    // Create a slot for each 15-minute interval
-    hours.forEach(hour => {
-      [0, 15, 30, 45].forEach(minute => {
-        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        const rowSlots: TimeSlot[] = [];
-        
-        daysOfWeek.forEach(day => {
-          // Check if this time slot is in the availability
-          const isSelected = isTimeSlotSelected(day, timeString);
-          rowSlots.push({
-            time: timeString,
-            dayOfWeek: day,
-            selected: isSelected
-          });
-        });
-        
-        slots.push(rowSlots);
-      });
-    });
-    
-    setTimeSlots(slots);
+export const DragSelectCalendar: React.FC<DragSelectCalendarProps> = ({ 
+  availability, 
+  onChange,
+  readOnly = false,
+  className 
+}) => {
+  const [dragging, setDragging] = useState(false);
+  const [selectionStart, setSelectionStart] = useState<string | null>(null);
+  const [currentSelection, setCurrentSelection] = useState<string | null>(null);
+
+  const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+  const times = Array.from({ length: 24 * 2 }, (_, i) => {
+    const hour = Math.floor(i / 2);
+    const minute = (i % 2) * 30;
+    return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+  });
+
+  const isSlotAvailable = (day: string, time: string): boolean => {
+    const dayAvailability = availability[day] || [];
+    return dayAvailability.some(slot => time >= slot.start && time < slot.end);
   };
-  
-  const isTimeSlotSelected = (day: string, time: string): boolean => {
-    if (!availability[day]) return false;
-    
-    return availability[day].some(slot => {
-      // Check if the time is within any slot's range
-      const slotStart = parseTimeToMinutes(slot.start);
-      const slotEnd = parseTimeToMinutes(slot.end);
-      const currentTime = parseTimeToMinutes(time);
-      
-      return currentTime >= slotStart && currentTime < slotEnd;
-    });
+
+  const toggleSlot = (day: string, time: string) => {
+    if (readOnly) return;
+
+    const dayAvailability = availability[day] || [];
+    const isCurrentlyAvailable = dayAvailability.some(slot => time >= slot.start && time < slot.end);
+
+    let updatedAvailability = { ...availability };
+
+    if (isCurrentlyAvailable) {
+      // Remove the time slot
+      updatedAvailability = {
+        ...updatedAvailability,
+        [day]: dayAvailability.filter(slot => !(time >= slot.start && time < slot.end))
+      };
+    } else {
+      // Add the time slot
+      const newSlot = { day: day, start: time, end: addMinutes(time, 30) };
+      updatedAvailability = {
+        ...updatedAvailability,
+        [day]: [...dayAvailability, newSlot].sort((a, b) => a.start.localeCompare(b.start))
+      };
+    }
+
+    onChange(updatedAvailability);
   };
-  
-  const parseTimeToMinutes = (time: string): number => {
-    const [hours, minutes] = time.split(':').map(Number);
-    return hours * 60 + minutes;
-  };
-  
-  const formatTimeToString = (minutes: number): string => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-  };
-  
-  const handleMouseDown = (row: number, col: number) => {
-    if (!gridRef.current) return;
+
+  const handleMouseDown = (day: string, time: string) => {
+    if (readOnly) return;
     
-    setIsDragging(true);
-    setDragStartCoord({ row, col });
-    
-    // Toggle the selection state based on the current state of the first cell
-    const newDragState = !timeSlots[row][col].selected;
-    setDragState(newDragState);
-    
-    // Update the selection for this cell
-    updateSelection(row, col, newDragState);
+    setDragging(true);
+    setSelectionStart(`${day}-${time}`);
+    setCurrentSelection(`${day}-${time}`);
   };
-  
-  const handleMouseMove = (row: number, col: number) => {
-    if (!isDragging || dragState === null || !dragStartCoord) return;
-    
-    updateSelection(row, col, dragState);
-  };
-  
+
   const handleMouseUp = () => {
-    if (isDragging) {
-      // Convert timeSlots to availability format and trigger onChange
-      const newAvailability = convertToAvailabilityFormat();
-      onChange(newAvailability);
-      
-      // Reset drag state
-      setIsDragging(false);
-      setDragState(null);
-      setDragStartCoord(null);
+    if (readOnly) return;
+    
+    setDragging(false);
+    setSelectionStart(null);
+    setCurrentSelection(null);
+  };
+
+  const handleMouseEnter = (day: string, time: string) => {
+    if (readOnly) return;
+    
+    if (dragging) {
+      setCurrentSelection(`${day}-${time}`);
+
+      // Determine the slots to toggle based on the direction of the drag
+      let startDay = selectionStart?.split('-')[0] || day;
+      let startTime = selectionStart?.split('-')[1] || time;
+
+      let endDay = day;
+      let endTime = time;
+
+      // Ensure start is before end
+      if (days.indexOf(startDay) > days.indexOf(endDay) ||
+          (days.indexOf(startDay) === days.indexOf(endDay) && startTime > endTime)) {
+        [startDay, endDay] = [endDay, startDay];
+        [startTime, endTime] = [endTime, startTime];
+      }
+
+      // Toggle slots within the selection range
+      let currentDayIndex = days.indexOf(startDay);
+      while (currentDayIndex <= days.indexOf(endDay)) {
+        const currentDay = days[currentDayIndex];
+        let currentTime = (currentDay === startDay) ? startTime : times[0];
+        const endOfDayTime = (currentDay === endDay) ? endTime : times[times.length - 1];
+
+        while (currentTime <= endOfDayTime) {
+          toggleSlot(currentDay, currentTime);
+          const timeIndex = times.indexOf(currentTime);
+          currentTime = times[timeIndex + 1];
+          if (!currentTime) break;
+        }
+        currentDayIndex++;
+      }
     }
   };
-  
-  const updateSelection = (row: number, col: number, selected: boolean) => {
-    // Update the timeSlots state with the new selection
-    setTimeSlots(prev => {
-      const newTimeSlots = [...prev];
-      
-      // Handle drag selection by selecting all cells between start and current
-      if (dragStartCoord) {
-        const startRow = Math.min(dragStartCoord.row, row);
-        const endRow = Math.max(dragStartCoord.row, row);
-        const startCol = Math.min(dragStartCoord.col, col);
-        const endCol = Math.max(dragStartCoord.col, col);
-        
-        // If dragging within the same column, update all cells in that column
-        if (dragStartCoord.col === col) {
-          for (let r = startRow; r <= endRow; r++) {
-            newTimeSlots[r][col].selected = selected;
-          }
-        } 
-        // Otherwise update the rectangular selection
-        else {
-          for (let r = startRow; r <= endRow; r++) {
-            for (let c = startCol; c <= endCol; c++) {
-              newTimeSlots[r][c].selected = selected;
-            }
-          }
-        }
-      } else {
-        // Just update the single cell
-        newTimeSlots[row][col].selected = selected;
-      }
-      
-      return newTimeSlots;
-    });
+
+  const addMinutes = (time: string, minutes: number): string => {
+    const [hours, mins] = time.split(':').map(Number);
+    const totalMinutes = hours * 60 + mins + minutes;
+    const newHours = Math.floor(totalMinutes / 60) % 24;
+    const newMins = totalMinutes % 60;
+    return `${String(newHours).padStart(2, '0')}:${String(newMins).padStart(2, '0')}`;
   };
-  
-  const convertToAvailabilityFormat = (): WeeklyAvailability => {
-    const result: WeeklyAvailability = {
-      monday: [],
-      tuesday: [],
-      wednesday: [],
-      thursday: [],
-      friday: [],
-      saturday: [],
-      sunday: []
-    };
-    
-    // For each day of the week, find continuous blocks of selected cells
-    daysOfWeek.forEach((day, dayIndex) => {
-      let currentSlot: { start: string; end: string } | null = null;
-      
-      // Loop through all time slots for this day
-      for (let rowIndex = 0; rowIndex < timeSlots.length; rowIndex++) {
-        const isSelected = timeSlots[rowIndex][dayIndex].selected;
-        const time = timeSlots[rowIndex][dayIndex].time;
-        
-        if (isSelected) {
-          // If starting a new slot
-          if (!currentSlot) {
-            currentSlot = {
-              start: time,
-              end: ''
-            };
-          }
-          
-          // If this is the last row or the next row is not selected,
-          // complete this slot with the end time (15 minutes after current time)
-          if (rowIndex === timeSlots.length - 1 || !timeSlots[rowIndex + 1][dayIndex].selected) {
-            // Calculate the end time (15 minutes after the current time)
-            const [hours, minutes] = time.split(':').map(Number);
-            const totalMinutes = hours * 60 + minutes + 15;
-            const endTime = formatTimeToString(totalMinutes);
-            
-            currentSlot.end = endTime;
-            result[day].push({ ...currentSlot, day });
-            currentSlot = null;
-          }
-        }
-      }
-    });
-    
-    return result;
-  };
-  
-  const handlePrevWeek = () => {
-    setStartDate(prev => addDays(prev, -7));
-  };
-  
-  const handleNextWeek = () => {
-    setStartDate(prev => addDays(prev, 7));
-  };
-  
+
   return (
-    <div className={cn("w-full", className)} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
-      <div className="flex justify-between items-center mb-4">
-        <Button variant="outline" size="sm" onClick={handlePrevWeek}>
-          <ChevronLeft className="h-4 w-4 mr-1" /> Previous
-        </Button>
-        <h3 className="text-lg font-medium">
-          Week of {format(startDate, 'MMM d, yyyy')}
-        </h3>
-        <Button variant="outline" size="sm" onClick={handleNextWeek}>
-          Next <ChevronRight className="h-4 w-4 ml-1" />
-        </Button>
-      </div>
-      
-      <div className="border rounded-md overflow-hidden">
-        {/* Header row with days of the week */}
-        <div className="grid grid-cols-8 bg-muted">
-          <div className="p-2 border-r text-center font-medium text-sm">Time</div>
-          {weekDays.map((day, index) => (
-            <div key={index} className="p-2 border-r last:border-r-0 text-center font-medium text-sm">
-              <div>{format(day, 'EEE')}</div>
-              <div>{format(day, 'd')}</div>
-            </div>
-          ))}
+    <div className={cn("grid grid-cols-[50px_repeat(7,1fr)] border rounded-md", className)}>
+      <div className="py-2 font-medium">Time</div>
+      {days.map(day => (
+        <div key={day} className="py-2 font-medium text-center capitalize">
+          {day}
         </div>
-        
-        {/* Time slots grid */}
-        <div ref={gridRef} className="max-h-[500px] overflow-y-auto">
-          {timeSlots.map((row, rowIndex) => (
-            <div key={rowIndex} className="grid grid-cols-8 border-t">
-              {/* Time column */}
-              <div className="p-2 border-r text-sm text-center">
-                {row[0].time}
+      ))}
+      {times.map(time => (
+        <React.Fragment key={time}>
+          <div className="px-2 py-1 text-right text-sm text-muted-foreground">{time}</div>
+          {days.map(day => {
+            const isAvailable = isSlotAvailable(day, time);
+            return (
+              <div
+                key={`${day}-${time}`}
+                className={cn(
+                  "border-t border-l last:border-r h-8 w-full relative",
+                  isAvailable ? "bg-green-100 hover:bg-green-200" : "bg-white hover:bg-gray-100",
+                  dragging ? "cursor-pointer" : "cursor-default"
+                )}
+                onMouseDown={() => handleMouseDown(day, time)}
+                onMouseEnter={() => handleMouseEnter(day, time)}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={() => {}} // Prevent "stuck" hover states
+              >
+                {isAvailable && <div className="absolute inset-0 bg-green-500 opacity-20" />}
               </div>
-              
-              {/* Days columns */}
-              {row.map((slot, colIndex) => (
-                <div
-                  key={colIndex}
-                  className={cn(
-                    "h-8 border-r last:border-r-0 hover:bg-muted/60 cursor-pointer transition-colors",
-                    slot.selected && "bg-usc-gold/30"
-                  )}
-                  onMouseDown={() => handleMouseDown(rowIndex, colIndex)}
-                  onMouseMove={() => handleMouseMove(rowIndex, colIndex)}
-                />
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
-      
-      <div className="mt-4 text-sm text-muted-foreground">
-        Click and drag to select available time slots
-      </div>
+            );
+          })}
+        </React.Fragment>
+      ))}
     </div>
   );
 };

@@ -116,7 +116,7 @@ const Schedule = () => {
 
       {isTutor && (
         <div className="mb-8">
-          <TutorAvailabilityCard />
+          <TutorAvailabilityCard tutorId={user?.id} readOnly={false} />
         </div>
       )}
 

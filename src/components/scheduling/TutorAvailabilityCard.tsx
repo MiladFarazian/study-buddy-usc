@@ -128,6 +128,7 @@ export const TutorAvailabilityCard = ({ tutorId, readOnly = false }: TutorAvaila
               <DragSelectCalendar 
                 availability={availability} 
                 onChange={!readOnly ? handleAvailabilityChange : () => {}}
+                readOnly={readOnly}
                 className="mb-4"
               />
             </TabsContent>
