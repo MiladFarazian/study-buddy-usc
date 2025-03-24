@@ -10,12 +10,12 @@ const Index = () => {
   const isMobile = useIsMobile();
   
   return (
-    <div className={`space-y-8 ${isMobile ? 'py-4' : 'py-6'}`}>
+    <div className={`space-y-4 md:space-y-8 ${isMobile ? 'py-4' : 'py-6'}`}>
       <Hero />
       <div className={isMobile ? "mt-4" : "mt-6"}>
         <AuthSection />
       </div>
-      <div className={isMobile ? "mt-8" : "mt-12"}>
+      <div className={isMobile ? "mt-6" : "mt-12"}>
         <FeatureCards />
       </div>
       <FeaturedTutors />

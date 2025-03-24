@@ -19,7 +19,7 @@ const FeaturedTutors = () => {
   return (
     <div className="mt-8 md:mt-12">
       <div className="flex items-center justify-between mb-4 md:mb-6">
-        <h2 className="text-xl md:text-2xl font-bold">Featured Tutors</h2>
+        <h2 className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>Featured Tutors</h2>
         <Button asChild variant="ghost" className="text-usc-cardinal">
           <Link to="/tutors" className="flex items-center text-sm md:text-base">
             View All
