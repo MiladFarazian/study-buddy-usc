@@ -19,7 +19,7 @@ const PopularCourses = () => {
   const { courses, loading } = usePopularCourses(20);
   
   return (
-    <div className={isMobile ? "mt-6" : "mt-12"}>
+    <div className={isMobile ? "mt-6 max-w-full overflow-hidden" : "mt-12"}>
       <div className="flex items-center justify-between mb-4 md:mb-6">
         <h2 className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>Popular Courses</h2>
         <Button asChild variant="ghost" className="text-usc-cardinal">
@@ -48,17 +48,19 @@ const PopularCourses = () => {
           <p className="text-gray-500">No popular courses found. Start adding courses to your profile!</p>
         </div>
       ) : (
-        <Carousel className="w-full">
-          <CarouselContent className="-ml-2 md:-ml-4">
-            {courses.map((course) => (
-              <CarouselItem key={course.id} className={`${isMobile ? 'pl-2 basis-4/5' : 'pl-4 md:basis-1/2 lg:basis-1/3'}`}>
-                <CourseCard course={course} />
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <CarouselPrevious className={`${isMobile ? 'left-0 w-7 h-7' : 'left-0'}`} />
-          <CarouselNext className={`${isMobile ? 'right-0 w-7 h-7' : 'right-0'}`} />
-        </Carousel>
+        <div className="relative">
+          <Carousel className="w-full">
+            <CarouselContent className="-ml-2 md:-ml-4">
+              {courses.map((course) => (
+                <CarouselItem key={course.id} className={`${isMobile ? 'pl-2 basis-full' : 'pl-4 md:basis-1/2 lg:basis-1/3'}`}>
+                  <CourseCard course={course} />
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className={`${isMobile ? '-left-1 w-7 h-7' : '-left-12'} bg-white`} />
+            <CarouselNext className={`${isMobile ? '-right-1 w-7 h-7' : '-right-12'} bg-white`} />
+          </Carousel>
+        </div>
       )}
     </div>
   );
