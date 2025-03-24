@@ -1,7 +1,7 @@
 
 import * as React from "react"
 import { cn } from "@/lib/utils"
-import { CarouselContext, type CarouselProps } from "./carousel-context"
+import { CarouselContext, type CarouselApi, type CarouselProps } from "./carousel-context"
 import useEmblaCarousel from "embla-carousel-react"
 
 const Carousel = React.forwardRef<
@@ -30,14 +30,14 @@ const Carousel = React.forwardRef<
     const [canScrollPrev, setCanScrollPrev] = React.useState(false)
     const [canScrollNext, setCanScrollNext] = React.useState(false)
 
-    const onSelect = React.useCallback((api: CarouselProps["setApi"]) => {
+    const onSelect = React.useCallback(() => {
       if (!api) {
         return
       }
 
       setCanScrollPrev(api.canScrollPrev())
       setCanScrollNext(api.canScrollNext())
-    }, [])
+    }, [api])
 
     const scrollPrev = React.useCallback(() => {
       api?.scrollPrev()
@@ -73,12 +73,13 @@ const Carousel = React.forwardRef<
         return
       }
 
-      onSelect(api)
-      api.on("reInit", onSelect)
+      onSelect()
       api.on("select", onSelect)
+      api.on("reInit", onSelect)
 
       return () => {
-        api?.off("select", onSelect)
+        api.off("select", onSelect)
+        api.off("reInit", onSelect)
       }
     }, [api, onSelect])
 
@@ -86,7 +87,7 @@ const Carousel = React.forwardRef<
       <CarouselContext.Provider
         value={{
           carouselRef,
-          api: api,
+          api,
           opts,
           orientation:
             orientation || (opts?.axis === "y" ? "vertical" : "horizontal"),
