@@ -9,7 +9,8 @@ import {
   CarouselContent,
   CarouselItem,
   CarouselNext,
-  CarouselPrevious
+  CarouselPrevious,
+  MobileCarousel
 } from "@/components/ui/carousel";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -49,17 +50,29 @@ const PopularCourses = () => {
         </div>
       ) : (
         <div className="relative">
-          <Carousel className="w-full">
-            <CarouselContent className="-ml-2 md:-ml-4">
-              {courses.map((course) => (
-                <CarouselItem key={course.id} className={`${isMobile ? 'pl-2 basis-full' : 'pl-4 md:basis-1/2 lg:basis-1/3'}`}>
-                  <CourseCard course={course} />
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious className={`${isMobile ? '-left-1 w-7 h-7' : '-left-12'} bg-white`} />
-            <CarouselNext className={`${isMobile ? '-right-1 w-7 h-7' : '-right-12'} bg-white`} />
-          </Carousel>
+          {isMobile ? (
+            <MobileCarousel className="w-full">
+              <CarouselContent className="-ml-2">
+                {courses.map((course) => (
+                  <CarouselItem key={course.id} className="pl-2 basis-full">
+                    <CourseCard course={course} />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+            </MobileCarousel>
+          ) : (
+            <Carousel className="w-full">
+              <CarouselContent className="-ml-4">
+                {courses.map((course) => (
+                  <CarouselItem key={course.id} className="pl-4 md:basis-1/2 lg:basis-1/3">
+                    <CourseCard course={course} />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="-left-12 bg-white" />
+              <CarouselNext className="-right-12 bg-white" />
+            </Carousel>
+          )}
         </div>
       )}
     </div>
