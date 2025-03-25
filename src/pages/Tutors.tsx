@@ -103,7 +103,7 @@ const Tutors = () => {
   );
 
   return (
-    <div className="py-4 md:py-6 px-4 md:px-0">
+    <div className="py-4 md:py-6 px-4 md:px-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-4 mb-4 md:mb-8">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">Find Tutors</h1>
@@ -174,7 +174,7 @@ const Tutors = () => {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {filteredTutors.map((tutor) => (
             <TutorCard key={tutor.id} tutor={tutor} />
           ))}

@@ -17,7 +17,7 @@ const FeaturedTutors = () => {
     .slice(0, isMobile ? 2 : 3);
 
   return (
-    <div className="mt-8 md:mt-12 max-w-full overflow-hidden">
+    <div className="mt-8 md:mt-12 container px-0">
       <div className="flex items-center justify-between mb-4 md:mb-6">
         <h2 className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>Featured Tutors</h2>
         <Button asChild variant="ghost" className="text-usc-cardinal">
@@ -42,7 +42,7 @@ const FeaturedTutors = () => {
           <span className="ml-2 text-sm md:text-base">Loading featured tutors...</span>
         </div>
       ) : (
-        <div className={`${isMobile ? 'space-y-4' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6'}`}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {featuredTutors.map((tutor) => (
             <TutorCard key={tutor.id} tutor={tutor} />
           ))}
