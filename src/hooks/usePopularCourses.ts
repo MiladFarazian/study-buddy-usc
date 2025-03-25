@@ -15,6 +15,7 @@ export function usePopularCourses(limit: number = 20) {
       
       try {
         // Query profile subjects to find the most commonly added courses
+        // This doesn't need authentication as we're just fetching public data
         const { data: profileCourses, error: profileError } = await supabase
           .from('profiles')
           .select('subjects')
@@ -42,6 +43,31 @@ export function usePopularCourses(limit: number = 20) {
           .map(entry => entry[0]); // Get course numbers
         
         if (popularCourseNumbers.length === 0) {
+          // Try loading some default courses if no popular ones found
+          const { data: defaultCourses, error: defaultCoursesError } = await supabase
+            .from('tutor_courses')
+            .select('*')
+            .limit(limit);
+            
+          if (defaultCoursesError) {
+            throw defaultCoursesError;
+          }
+          
+          if (defaultCourses && defaultCourses.length > 0) {
+            const formattedDefaultCourses = defaultCourses.map(item => ({
+              id: item.id,
+              course_number: item.course_number,
+              course_title: item.course_title,
+              instructor: null,
+              department: item.department || item.course_number.split('-')[0],
+              popularity: 1
+            }));
+            
+            setCourses(formattedDefaultCourses);
+            setLoading(false);
+            return;
+          }
+          
           setCourses([]);
           setLoading(false);
           return;

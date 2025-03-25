@@ -11,7 +11,7 @@ export function useTutors() {
     const fetchTutors = async () => {
       setLoading(true);
       try {
-        // Fetch tutors
+        // Fetch tutors - no authentication required, these are public profiles
         const { data: tutorProfiles, error } = await supabase
           .from('profiles')
           .select('*')
