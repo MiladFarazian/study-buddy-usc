@@ -4,6 +4,8 @@ import { format, addDays, startOfWeek, eachDayOfInterval } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Tutor } from "@/types/tutor";
 import { BookingSlot } from "@/lib/scheduling";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 
 // Import refactored components
 import { useAvailabilityData } from "./calendar/useAvailabilityData";
@@ -29,7 +31,7 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot }: BookingCalendarDrag
   const hours = Array.from({ length: 14 }, (_, i) => i + 8); // 8 AM to 9 PM
   
   // Custom hooks
-  const { loading, availableSlots, hasAvailability } = useAvailabilityData(tutor, startDate);
+  const { loading, availableSlots, hasAvailability, errorMessage, refreshAvailability } = useAvailabilityData(tutor, startDate);
   const { 
     isDragging, 
     selectedSlot, 
@@ -66,12 +68,49 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot }: BookingCalendarDrag
     );
   };
 
+  console.log("BookingCalendarDrag render state:", { 
+    tutorId: tutor?.id,
+    loading, 
+    hasAvailability, 
+    availableSlotsCount: availableSlots.length, 
+    errorMessage
+  });
+
   if (loading) {
-    return <LoadingDisplay />;
+    return <LoadingDisplay message="Loading tutor's availability schedule..." />;
   }
 
   if (!hasAvailability) {
-    return <NoAvailabilityDisplay />;
+    return (
+      <NoAvailabilityDisplay 
+        reason={errorMessage || "This tutor hasn't set their availability yet."}
+        onRetry={refreshAvailability}
+      />
+    );
+  }
+
+  // Display a message if there are no slots for the current week
+  if (availableSlots.length === 0) {
+    return (
+      <Card className="w-full">
+        <CardContent className="pt-6">
+          <div className="flex flex-col justify-center items-center h-64 text-center">
+            <h3 className="text-lg font-medium mb-2">No Available Times</h3>
+            <p className="text-muted-foreground max-w-md mb-4">
+              No availability for the selected week. Try another week or check back later.
+            </p>
+            <div className="flex space-x-4 mt-2">
+              <Button onClick={handlePrevWeek} variant="outline">Previous Week</Button>
+              <Button onClick={handleNextWeek} variant="outline">Next Week</Button>
+              <Button onClick={refreshAvailability} variant="outline">
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Refresh
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
@@ -80,7 +119,7 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot }: BookingCalendarDrag
         <CardTitle>Book a Session</CardTitle>
         <CardDescription>
           Select a time slot for your tutoring session with {tutor.firstName || tutor.name.split(' ')[0]}.
-          {!isDragging && "You can click and drag to select a range of time."}
+          {!isDragging && " You can click and drag to select a range of time."}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -115,7 +154,7 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot }: BookingCalendarDrag
       </CardContent>
       <CardFooter className="flex justify-between">
         <p className="text-sm text-muted-foreground">
-          Rate: ${tutor.hourlyRate.toFixed(2)}/hour
+          Rate: ${tutor.hourlyRate?.toFixed(2) || "25.00"}/hour
         </p>
       </CardFooter>
     </Card>

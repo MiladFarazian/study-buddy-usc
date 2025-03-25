@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Tutor } from "@/types/tutor";
 import { getTutorAvailability, getTutorBookedSessions, generateAvailableSlots, BookingSlot } from "@/lib/scheduling";
 import { startOfWeek, addDays } from 'date-fns';
+import { supabase } from "@/integrations/supabase/client";
 
 export function useAvailabilityData(tutor: Tutor, startDate: Date) {
   const { toast } = useToast();
@@ -12,11 +13,21 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
   const [hasAvailability, setHasAvailability] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Check if Supabase client is properly initialized with auth
   useEffect(() => {
-    if (tutor.id) {
+    const checkSupabaseAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      console.log("Current auth session:", data.session ? "Active" : "None");
+    };
+    
+    checkSupabaseAuth();
+  }, []);
+
+  useEffect(() => {
+    if (tutor?.id) {
       loadAvailability();
     }
-  }, [tutor.id, startDate]);
+  }, [tutor?.id, startDate]);
 
   const loadAvailability = async () => {
     setLoading(true);
@@ -77,6 +88,7 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
     } catch (error) {
       console.error("Error loading tutor availability:", error);
       setErrorMessage("An error occurred while loading availability data.");
+      setHasAvailability(false);
       
       toast({
         title: "Error",
@@ -88,5 +100,5 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
     }
   };
 
-  return { loading, availableSlots, hasAvailability, errorMessage };
+  return { loading, availableSlots, hasAvailability, errorMessage, refreshAvailability: loadAvailability };
 }
