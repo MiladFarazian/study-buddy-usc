@@ -6,7 +6,7 @@ import { DragSelectCalendar } from "@/components/scheduling/DragSelectCalendar";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { getTutorAvailability, updateTutorAvailability, WeeklyAvailability } from "@/lib/scheduling-utils";
+import { getTutorAvailability, updateTutorAvailability, WeeklyAvailability } from "@/lib/scheduling";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 
