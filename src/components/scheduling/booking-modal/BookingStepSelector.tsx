@@ -19,8 +19,8 @@ export const BookingStepSelector = ({
   return (
     <Tabs defaultValue="calendly" className="w-full">
       <TabsList className="mb-4">
-        <TabsTrigger value="calendly">Calendly Style</TabsTrigger>
-        <TabsTrigger value="classic">Classic View</TabsTrigger>
+        <TabsTrigger value="calendly" className="data-[state=active]:bg-usc-cardinal data-[state=active]:text-white">Calendly Style</TabsTrigger>
+        <TabsTrigger value="classic" className="data-[state=active]:bg-usc-cardinal data-[state=active]:text-white">Classic View</TabsTrigger>
       </TabsList>
       
       <TabsContent value="calendly">

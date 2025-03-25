@@ -23,7 +23,7 @@ export const SlotSelectionFooter = ({
       <Button 
         onClick={onProceed} 
         disabled={isDisabled || isLoading} 
-        className="bg-usc-cardinal hover:bg-usc-cardinal-dark"
+        className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
       >
         {isLoading ? (
           <>

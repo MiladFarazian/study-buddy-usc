@@ -52,9 +52,9 @@ export const TimeGrid: React.FC<TimeGridProps> = ({
                     key={`${timeString}-${dayIndex}`}
                     className={cn(
                       "h-6 md:h-8 border-r last:border-r-0 transition-colors cursor-default",
-                      isAvailable ? "cursor-pointer hover:bg-green-50" : "bg-gray-100 opacity-50",
+                      isAvailable ? "cursor-pointer bg-usc-cardinal hover:bg-usc-cardinal-dark text-white" : "bg-gray-100 opacity-50",
                       isSelected ? "bg-usc-cardinal text-white" : "",
-                      isInDrag && isAvailable ? "bg-usc-gold" : ""
+                      isInDrag && isAvailable ? "bg-usc-gold text-gray-800" : ""
                     )}
                     onMouseDown={() => isAvailable && handleMouseDown(hour, minute, dayIndex)}
                     onMouseMove={() => handleMouseMove(hour, minute, dayIndex)}
@@ -62,7 +62,7 @@ export const TimeGrid: React.FC<TimeGridProps> = ({
                     onTouchMove={() => handleMouseMove(hour, minute, dayIndex)}
                   >
                     {minute === 0 && isAvailable && (
-                      <div className="h-1 w-full bg-green-500"></div>
+                      <div className="h-1 w-full bg-green-500 hidden"></div>
                     )}
                   </div>
                 );
