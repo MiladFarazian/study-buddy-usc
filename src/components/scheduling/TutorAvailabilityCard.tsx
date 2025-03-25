@@ -37,7 +37,9 @@ export const TutorAvailabilityCard = ({ tutorId, readOnly = false }: TutorAvaila
     setLoading(true);
     try {
       const data = await getTutorAvailability(effectiveTutorId);
-      setAvailability(data || {
+      
+      // Set default empty availability if none found
+      const defaultAvailability = {
         monday: [],
         tuesday: [],
         wednesday: [],
@@ -45,7 +47,18 @@ export const TutorAvailabilityCard = ({ tutorId, readOnly = false }: TutorAvaila
         friday: [],
         saturday: [],
         sunday: []
-      });
+      };
+      
+      setAvailability(data || defaultAvailability);
+      
+      if (!data && tutorId) {
+        console.log("No availability found for tutor:", tutorId);
+        toast({
+          title: "No Availability",
+          description: "This tutor hasn't set their availability yet.",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       console.error("Error loading availability:", error);
       toast({

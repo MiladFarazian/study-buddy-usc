@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { format, addDays, parseISO, startOfWeek, eachDayOfInterval, addMinutes, differenceInMinutes } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -12,7 +11,7 @@ import {
   BookingSlot 
 } from "@/lib/scheduling-utils";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Loader2, Clock, ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarDays, Loader2, Clock, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
 
 interface BookingCalendarDragProps {
   tutor: Tutor;
@@ -29,6 +28,7 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot }: BookingCalendarDrag
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{ hour: number, minute: number, day: number } | null>(null);
   const [dragEnd, setDragEnd] = useState<{ hour: number, minute: number, day: number } | null>(null);
+  const [hasAvailability, setHasAvailability] = useState(true);
   const calendarRef = useRef<HTMLDivElement>(null);
   
   // Hours to display in the calendar (24-hour format)
@@ -52,15 +52,23 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot }: BookingCalendarDrag
   const loadAvailability = async () => {
     setLoading(true);
     try {
+      console.log("Loading availability for tutor:", tutor.id);
       // Get tutor's availability settings
       const availability = await getTutorAvailability(tutor.id);
       
       if (!availability) {
-        toast({
-          title: "No Availability",
-          description: "This tutor hasn't set their availability yet.",
-          variant: "destructive",
-        });
+        console.log("No availability found for tutor:", tutor.id);
+        setHasAvailability(false);
+        setLoading(false);
+        return;
+      }
+      
+      // Check if there's any actual availability set
+      const hasAnySlots = Object.values(availability).some(daySlots => daySlots.length > 0);
+      
+      if (!hasAnySlots) {
+        console.log("Tutor has no availability slots set:", tutor.id);
+        setHasAvailability(false);
         setLoading(false);
         return;
       }
@@ -77,6 +85,7 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot }: BookingCalendarDrag
         tutorId: tutor.id
       }));
       
+      console.log(`Generated ${slotsWithTutor.length} available slots for tutor: ${tutor.id}`);
       setAvailableSlots(slotsWithTutor);
     } catch (error) {
       console.error("Error loading tutor availability:", error);
@@ -260,13 +269,29 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot }: BookingCalendarDrag
     );
   }
 
+  if (!hasAvailability) {
+    return (
+      <Card className="w-full">
+        <CardContent className="pt-6">
+          <div className="flex flex-col justify-center items-center h-64 text-center">
+            <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">No Availability Set</h3>
+            <p className="text-muted-foreground max-w-md">
+              This tutor hasn't set their availability yet. Please check back later or try another tutor.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="w-full">
       <CardHeader>
         <CardTitle>Book a Session</CardTitle>
         <CardDescription>
           Select a time slot for your tutoring session with {tutor.firstName || tutor.name.split(' ')[0]}.
-          You can click and drag to select a range of time.
+          {!isDragging && "You can click and drag to select a range of time."}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -274,25 +299,29 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot }: BookingCalendarDrag
           <Button variant="outline" size="sm" onClick={handlePrevWeek}>
             <ChevronLeft className="h-4 w-4 mr-1" /> Previous
           </Button>
-          <h3 className="text-lg font-medium">
+          <h3 className="text-lg font-medium hidden md:block">
             Week of {format(startDate, 'MMM d, yyyy')}
           </h3>
+          <span className="text-sm text-center md:hidden">
+            {format(startDate, 'MMM d')} - {format(addDays(startDate, 6), 'MMM d')}
+          </span>
           <Button variant="outline" size="sm" onClick={handleNextWeek}>
             Next <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         </div>
         
         <div 
-          className="border rounded-md overflow-hidden"
+          className="border rounded-md overflow-x-auto"
           ref={calendarRef}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
+          onTouchEnd={handleMouseUp}
         >
           {/* Header row with days of the week */}
           <div className="grid grid-cols-8 bg-muted">
-            <div className="p-2 border-r text-center font-medium text-sm">Time</div>
+            <div className="p-1 md:p-2 border-r text-center font-medium text-xs md:text-sm">Time</div>
             {weekDays.map((day, index) => (
-              <div key={index} className="p-2 border-r last:border-r-0 text-center font-medium text-sm">
+              <div key={index} className="p-1 md:p-2 border-r last:border-r-0 text-center font-medium text-xs md:text-sm">
                 <div>{format(day, 'EEE')}</div>
                 <div>{format(day, 'd')}</div>
               </div>
@@ -300,7 +329,7 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot }: BookingCalendarDrag
           </div>
           
           {/* Time slots grid */}
-          <div className="max-h-[500px] overflow-y-auto">
+          <div className="max-h-[400px] md:max-h-[500px] overflow-y-auto">
             {hours.map((hour) => (
               [0, 15, 30, 45].map((minute, minuteIndex) => {
                 const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
@@ -308,11 +337,11 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot }: BookingCalendarDrag
                   <div key={`${hour}-${minute}`} className="grid grid-cols-8 border-t">
                     {/* Time column */}
                     {minuteIndex === 0 && (
-                      <div className="p-2 border-r text-sm text-center row-span-4">
+                      <div className="p-1 md:p-2 border-r text-xs md:text-sm text-center row-span-4">
                         {format(new Date().setHours(hour, 0), 'h a')}
                       </div>
                     )}
-                    {minuteIndex !== 0 && <div className="p-2 border-r text-sm text-center invisible">.</div>}
+                    {minuteIndex !== 0 && <div className="p-1 md:p-2 border-r text-xs md:text-sm text-center invisible">.</div>}
                     
                     {/* Days columns */}
                     {weekDays.map((day, dayIndex) => {
@@ -327,13 +356,15 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot }: BookingCalendarDrag
                         <div
                           key={`${timeString}-${dayIndex}`}
                           className={`
-                            h-8 border-r last:border-r-0 transition-colors cursor-default
+                            h-6 md:h-8 border-r last:border-r-0 transition-colors cursor-default
                             ${isAvailable ? 'cursor-pointer hover:bg-green-50' : 'bg-gray-100 opacity-50'}
                             ${isSelected ? 'bg-usc-cardinal text-white' : ''}
                             ${isInDrag && isAvailable ? 'bg-usc-gold' : ''}
                           `}
                           onMouseDown={() => isAvailable && handleMouseDown(hour, minute, dayIndex)}
                           onMouseMove={() => handleMouseMove(hour, minute, dayIndex)}
+                          onTouchStart={() => isAvailable && handleMouseDown(hour, minute, dayIndex)}
+                          onTouchMove={() => handleMouseMove(hour, minute, dayIndex)}
                         >
                           {minute === 0 && isAvailable && (
                             <div className="h-1 w-full bg-green-500"></div>

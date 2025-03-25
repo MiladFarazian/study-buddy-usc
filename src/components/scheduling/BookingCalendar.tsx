@@ -13,7 +13,7 @@ import {
   BookingSlot 
 } from "@/lib/scheduling-utils";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Loader2, Clock } from "lucide-react";
+import { CalendarDays, Loader2, Clock, AlertCircle } from "lucide-react";
 
 interface BookingCalendarProps {
   tutor: Tutor;
@@ -27,6 +27,7 @@ export const BookingCalendar = ({ tutor, onSelectSlot }: BookingCalendarProps) =
   const [availableSlots, setAvailableSlots] = useState<BookingSlot[]>([]);
   const [visibleSlots, setVisibleSlots] = useState<BookingSlot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<BookingSlot | null>(null);
+  const [hasAvailability, setHasAvailability] = useState(true);
 
   useEffect(() => {
     if (tutor.id) {
@@ -47,15 +48,23 @@ export const BookingCalendar = ({ tutor, onSelectSlot }: BookingCalendarProps) =
   const loadAvailability = async () => {
     setLoading(true);
     try {
+      console.log("Loading availability for tutor:", tutor.id);
       // Get tutor's availability settings
       const availability = await getTutorAvailability(tutor.id);
       
       if (!availability) {
-        toast({
-          title: "No Availability",
-          description: "This tutor hasn't set their availability yet.",
-          variant: "destructive",
-        });
+        console.log("No availability found for tutor:", tutor.id);
+        setHasAvailability(false);
+        setLoading(false);
+        return;
+      }
+      
+      // Check if there's any actual availability set
+      const hasAnySlots = Object.values(availability).some(daySlots => daySlots.length > 0);
+      
+      if (!hasAnySlots) {
+        console.log("Tutor has no availability slots set:", tutor.id);
+        setHasAvailability(false);
         setLoading(false);
         return;
       }
@@ -73,6 +82,7 @@ export const BookingCalendar = ({ tutor, onSelectSlot }: BookingCalendarProps) =
         tutorId: tutor.id
       }));
       
+      console.log(`Generated ${slotsWithTutor.length} available slots for tutor: ${tutor.id}`);
       setAvailableSlots(slotsWithTutor);
       
       // Set initial visible slots for today
@@ -124,6 +134,22 @@ export const BookingCalendar = ({ tutor, onSelectSlot }: BookingCalendarProps) =
           <div className="flex justify-center items-center h-64">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             <span className="ml-2">Loading availability...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!hasAvailability) {
+    return (
+      <Card className="w-full">
+        <CardContent className="pt-6">
+          <div className="flex flex-col justify-center items-center h-64 text-center">
+            <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">No Availability Set</h3>
+            <p className="text-muted-foreground max-w-md">
+              This tutor hasn't set their availability yet. Please check back later or try another tutor.
+            </p>
           </div>
         </CardContent>
       </Card>

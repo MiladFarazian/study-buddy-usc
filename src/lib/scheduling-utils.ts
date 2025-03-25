@@ -23,15 +23,43 @@ export type BookingSlot = {
 // Get tutor's availability from their profile
 export async function getTutorAvailability(tutorId: string): Promise<WeeklyAvailability | null> {
   try {
+    if (!tutorId) {
+      console.error("No tutor ID provided to getTutorAvailability");
+      return null;
+    }
+    
+    console.log("Fetching availability for tutor:", tutorId);
+    
     const { data, error } = await supabase
       .from('profiles')
       .select('availability')
       .eq('id', tutorId)
       .single();
       
-    if (error) throw error;
+    if (error) {
+      console.error("Error fetching tutor availability:", error);
+      return null;
+    }
     
-    return data?.availability as WeeklyAvailability || null;
+    // Log the result for debugging
+    console.log("Tutor availability data:", data?.availability);
+    
+    // Ensure we return the availability in the correct format
+    if (data?.availability) {
+      // Check if it's a valid object with day properties
+      const avail = data.availability as WeeklyAvailability;
+      const weekDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+      
+      // Ensure all days exist in the availability object
+      const cleanAvailability: WeeklyAvailability = {};
+      weekDays.forEach(day => {
+        cleanAvailability[day] = avail[day] || [];
+      });
+      
+      return cleanAvailability;
+    }
+    
+    return null;
   } catch (error) {
     console.error("Error fetching tutor availability:", error);
     return null;
