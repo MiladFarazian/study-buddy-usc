@@ -23,6 +23,28 @@ export const TimeGrid: React.FC<TimeGridProps> = ({
   selectedSlot,
   isInDragRange
 }) => {
+  // Helper function to check if a slot is part of a range
+  const isPartOfAvailabilityRange = (day: Date, hour: number, minute: number): boolean => {
+    const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+    const slot = getSlotAt(day, timeString);
+    
+    if (!slot || !slot.available) return false;
+    
+    // Find the start and end times of the availability range this slot belongs to
+    const startHour = parseInt(slot.start.split(':')[0]);
+    const startMinute = parseInt(slot.start.split(':')[1]);
+    const endHour = parseInt(slot.end.split(':')[0]);
+    const endMinute = parseInt(slot.end.split(':')[1]);
+    
+    // Convert current cell time to minutes for comparison
+    const cellTimeInMinutes = hour * 60 + minute;
+    const startTimeInMinutes = startHour * 60 + startMinute;
+    const endTimeInMinutes = endHour * 60 + endMinute;
+    
+    // Check if this cell is within the range
+    return cellTimeInMinutes >= startTimeInMinutes && cellTimeInMinutes < endTimeInMinutes;
+  };
+  
   return (
     <div className="max-h-[400px] md:max-h-[500px] overflow-y-auto">
       {hours.map((hour) => (
@@ -41,11 +63,14 @@ export const TimeGrid: React.FC<TimeGridProps> = ({
               {/* Days columns */}
               {weekDays.map((day, dayIndex) => {
                 const slot = getSlotAt(day, timeString);
-                const isAvailable = slot?.available;
+                const isAvailable = isPartOfAvailabilityRange(day, hour, minute);
                 const isSelected = selectedSlot && 
                                    format(selectedSlot.day, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd') && 
                                    selectedSlot.start === timeString;
                 const isInDrag = isInDragRange(hour, minute, dayIndex);
+                
+                // Check if this is the start of a slot (for display purposes)
+                const isSlotStart = slot?.available && slot?.start === timeString;
                 
                 return (
                   <div
@@ -61,8 +86,10 @@ export const TimeGrid: React.FC<TimeGridProps> = ({
                     onTouchStart={() => isAvailable && handleMouseDown(hour, minute, dayIndex)}
                     onTouchMove={() => handleMouseMove(hour, minute, dayIndex)}
                   >
-                    {minute === 0 && isAvailable && (
-                      <div className="h-1 w-full bg-green-500 hidden"></div>
+                    {isSlotStart && (
+                      <div className="text-xs font-medium text-center">
+                        {slot.start}
+                      </div>
                     )}
                   </div>
                 );
