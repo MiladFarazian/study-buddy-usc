@@ -10,7 +10,7 @@ const Index = () => {
   const isMobile = useIsMobile();
   
   return (
-    <div className={`space-y-4 md:space-y-8 ${isMobile ? 'py-4 px-2' : 'py-6'} max-w-full overflow-hidden`}>
+    <div className={`space-y-4 md:space-y-8 ${isMobile ? 'py-4 px-2' : 'py-6'} max-w-full`}>
       <Hero />
       <div className={isMobile ? "mt-4" : "mt-6"}>
         <AuthSection />

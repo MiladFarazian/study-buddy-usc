@@ -15,6 +15,10 @@ const MobileCarousel = React.forwardRef<
   return (
     <Carousel
       ref={ref}
+      opts={{
+        align: "start",
+        loop: false,
+      }}
       className={cn("w-full relative", className)}
       {...props}
     >

@@ -10,7 +10,6 @@ import {
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
-  MobileCarousel
 } from "@/components/ui/carousel";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -20,7 +19,7 @@ const PopularCourses = () => {
   const { courses, loading } = usePopularCourses(20);
   
   return (
-    <div className={isMobile ? "mt-6 max-w-full overflow-hidden" : "mt-12"}>
+    <div className={isMobile ? "mt-6" : "mt-12"}>
       <div className="flex items-center justify-between mb-4 md:mb-6">
         <h2 className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>Popular Courses</h2>
         <Button asChild variant="ghost" className="text-usc-cardinal">
@@ -51,15 +50,24 @@ const PopularCourses = () => {
       ) : (
         <div className="relative">
           {isMobile ? (
-            <MobileCarousel className="w-full">
-              <CarouselContent className="-ml-2">
-                {courses.map((course) => (
-                  <CarouselItem key={course.id} className="pl-2 basis-full">
-                    <CourseCard course={course} />
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-            </MobileCarousel>
+            <div className="space-y-3">
+              {courses.slice(0, 3).map((course) => (
+                <CourseCard key={course.id} course={course} />
+              ))}
+              {courses.length > 3 && (
+                <div className="text-center mt-4">
+                  <Button 
+                    asChild 
+                    variant="outline" 
+                    className="text-usc-cardinal border-usc-cardinal hover:bg-usc-cardinal hover:text-white"
+                  >
+                    <Link to="/courses">
+                      View More Courses
+                    </Link>
+                  </Button>
+                </div>
+              )}
+            </div>
           ) : (
             <Carousel className="w-full">
               <CarouselContent className="-ml-4">
