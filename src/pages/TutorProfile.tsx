@@ -14,7 +14,7 @@ import { TutorAvailabilityCard } from "@/components/scheduling/TutorAvailability
 
 const TutorProfile = () => {
   const { id } = useParams<{ id: string }>();
-  const { tutor, reviews, loading } = useTutor(id || "");
+  const { tutor, reviews, loading, refreshReviews } = useTutor(id || "");
 
   if (loading) {
     return (
@@ -82,7 +82,11 @@ const TutorProfile = () => {
           </div>
 
           {/* Reviews Section */}
-          <TutorReviewsSection reviews={reviews} />
+          <TutorReviewsSection 
+            reviews={reviews} 
+            tutorId={tutor.id} 
+            onReviewAdded={refreshReviews} 
+          />
         </div>
 
         {/* Sidebar/Booking Section */}
