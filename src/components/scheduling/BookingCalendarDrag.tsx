@@ -44,7 +44,8 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot, onClose }: BookingCal
     handleMouseDown, 
     handleMouseMove, 
     handleMouseUp, 
-    isInDragRange 
+    isInDragRange,
+    getSlotAt
   } = useDragSelection(availableSlots, onSelectSlot);
   
   useEffect(() => {
@@ -71,15 +72,6 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot, onClose }: BookingCal
   
   const handleLogin = () => {
     navigate('/login');
-  };
-  
-  // Function to get slot for a specific day and time
-  const getSlotAt = (day: Date, timeString: string): BookingSlot | undefined => {
-    const dayStr = format(day, 'yyyy-MM-dd');
-    return availableSlots.find(slot => 
-      format(slot.day, 'yyyy-MM-dd') === dayStr && 
-      slot.start === timeString
-    );
   };
 
   console.log("BookingCalendarDrag render state:", { 
