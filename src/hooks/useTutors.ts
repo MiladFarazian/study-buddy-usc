@@ -73,6 +73,7 @@ export function useTutors() {
         setTutors(tutorsWithCourses.filter(Boolean) as Tutor[]);
       } catch (error) {
         console.error("Error fetching tutors:", error);
+        setTutors([]); // Set empty array on error
       } finally {
         setLoading(false);
       }

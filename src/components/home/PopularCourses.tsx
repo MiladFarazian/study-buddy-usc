@@ -45,7 +45,7 @@ const PopularCourses = () => {
         </div>
       ) : courses.length === 0 ? (
         <div className="text-center py-6 md:py-8 bg-gray-50 rounded-lg">
-          <p className="text-gray-500">No popular courses found. Start adding courses to your profile!</p>
+          <p className="text-gray-500">No popular courses available at the moment.</p>
         </div>
       ) : (
         <div className="relative">

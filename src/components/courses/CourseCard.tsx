@@ -3,17 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Course } from "@/types/CourseTypes";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, CheckCircle, ChevronDown } from "lucide-react";
+import { PlusCircle, CheckCircle } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { addCourseToProfile } from "@/lib/course-utils";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
