@@ -15,7 +15,7 @@ const Hero = () => {
         Connect with qualified tutors, access course resources, and ace your classes. USC's premier
         peer-to-peer tutoring platform.
       </p>
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-row gap-4">
         <Button asChild size={isMobile ? "default" : "lg"} className="bg-white text-usc-cardinal hover:bg-gray-100 border-none">
           <Link to="/tutors">Find a Tutor</Link>
         </Button>
