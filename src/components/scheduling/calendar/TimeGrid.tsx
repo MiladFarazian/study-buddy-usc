@@ -23,26 +23,68 @@ export const TimeGrid: React.FC<TimeGridProps> = ({
   selectedSlot,
   isInDragRange
 }) => {
-  // Helper function to check if a slot is part of a range
-  const isPartOfAvailabilityRange = (day: Date, hour: number, minute: number): boolean => {
+  // Helper function to check if a cell belongs to an availability range
+  const getCellAvailabilityStatus = (day: Date, hour: number, minute: number): {
+    isAvailable: boolean;
+    isSlotStart: boolean;
+    slot?: BookingSlot;
+  } => {
     const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-    const slot = getSlotAt(day, timeString);
     
-    if (!slot || !slot.available) return false;
+    // Check all slots for this day to see if any contain this time
+    for (let i = 0; i < 96; i++) { // 24 hours * 4 quarters = 96 possible start times
+      const checkHour = Math.floor(i / 4);
+      const checkMinute = (i % 4) * 15;
+      const checkTimeString = `${checkHour.toString().padStart(2, '0')}:${checkMinute.toString().padStart(2, '0')}`;
+      
+      const slot = getSlotAt(day, checkTimeString);
+      if (!slot || !slot.available) continue;
+      
+      // Convert cell time and slot times to minutes for comparison
+      const cellTimeInMinutes = hour * 60 + minute;
+      const slotStartHour = parseInt(slot.start.split(':')[0]);
+      const slotStartMinute = parseInt(slot.start.split(':')[1]);
+      const slotEndHour = parseInt(slot.end.split(':')[0]);
+      const slotEndMinute = parseInt(slot.end.split(':')[1]);
+      
+      const slotStartInMinutes = slotStartHour * 60 + slotStartMinute;
+      const slotEndInMinutes = slotEndHour * 60 + slotEndMinute;
+      
+      // Check if this cell is within the slot's time range
+      if (cellTimeInMinutes >= slotStartInMinutes && cellTimeInMinutes < slotEndInMinutes) {
+        return {
+          isAvailable: true,
+          isSlotStart: timeString === slot.start,
+          slot
+        };
+      }
+    }
     
-    // Find the start and end times of the availability range this slot belongs to
-    const startHour = parseInt(slot.start.split(':')[0]);
-    const startMinute = parseInt(slot.start.split(':')[1]);
-    const endHour = parseInt(slot.end.split(':')[0]);
-    const endMinute = parseInt(slot.end.split(':')[1]);
+    return {
+      isAvailable: false,
+      isSlotStart: false
+    };
+  };
+
+  // Function to check if a cell is selected
+  const isCellSelected = (day: Date, hour: number, minute: number): boolean => {
+    if (!selectedSlot) return false;
     
-    // Convert current cell time to minutes for comparison
+    const formattedSelectedDay = format(selectedSlot.day, 'yyyy-MM-dd');
+    const formattedCurrentDay = format(day, 'yyyy-MM-dd');
+    
+    if (formattedSelectedDay !== formattedCurrentDay) return false;
+    
     const cellTimeInMinutes = hour * 60 + minute;
-    const startTimeInMinutes = startHour * 60 + startMinute;
-    const endTimeInMinutes = endHour * 60 + endMinute;
+    const selectedStartHour = parseInt(selectedSlot.start.split(':')[0]);
+    const selectedStartMinute = parseInt(selectedSlot.start.split(':')[1]);
+    const selectedEndHour = parseInt(selectedSlot.end.split(':')[0]);
+    const selectedEndMinute = parseInt(selectedSlot.end.split(':')[1]);
     
-    // Check if this cell is within the range
-    return cellTimeInMinutes >= startTimeInMinutes && cellTimeInMinutes < endTimeInMinutes;
+    const selectedStartInMinutes = selectedStartHour * 60 + selectedStartMinute;
+    const selectedEndInMinutes = selectedEndHour * 60 + selectedEndMinute;
+    
+    return cellTimeInMinutes >= selectedStartInMinutes && cellTimeInMinutes < selectedEndInMinutes;
   };
   
   return (
@@ -62,15 +104,9 @@ export const TimeGrid: React.FC<TimeGridProps> = ({
               
               {/* Days columns */}
               {weekDays.map((day, dayIndex) => {
-                const slot = getSlotAt(day, timeString);
-                const isAvailable = isPartOfAvailabilityRange(day, hour, minute);
-                const isSelected = selectedSlot && 
-                                   format(selectedSlot.day, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd') && 
-                                   selectedSlot.start === timeString;
+                const { isAvailable, isSlotStart, slot } = getCellAvailabilityStatus(day, hour, minute);
+                const isSelected = isCellSelected(day, hour, minute);
                 const isInDrag = isInDragRange(hour, minute, dayIndex);
-                
-                // Check if this is the start of a slot (for display purposes)
-                const isSlotStart = slot?.available && slot?.start === timeString;
                 
                 return (
                   <div
@@ -78,7 +114,7 @@ export const TimeGrid: React.FC<TimeGridProps> = ({
                     className={cn(
                       "h-6 md:h-8 border-r last:border-r-0 transition-colors cursor-default",
                       isAvailable ? "cursor-pointer bg-usc-cardinal hover:bg-usc-cardinal-dark text-white" : "bg-gray-100 opacity-50",
-                      isSelected ? "bg-usc-cardinal text-white" : "",
+                      isSelected ? "bg-usc-cardinal-dark text-white" : "",
                       isInDrag && isAvailable ? "bg-usc-gold text-gray-800" : ""
                     )}
                     onMouseDown={() => isAvailable && handleMouseDown(hour, minute, dayIndex)}
@@ -88,7 +124,7 @@ export const TimeGrid: React.FC<TimeGridProps> = ({
                   >
                     {isSlotStart && (
                       <div className="text-xs font-medium text-center">
-                        {slot.start}
+                        {slot?.start}
                       </div>
                     )}
                   </div>

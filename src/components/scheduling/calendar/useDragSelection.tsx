@@ -12,34 +12,29 @@ export function useDragSelection(availableSlots: BookingSlot[], onSelectSlot: (s
   const [selectedSlot, setSelectedSlot] = useState<BookingSlot | null>(null);
   const calendarRef = useRef<HTMLDivElement>(null);
 
-  // Helper function to get a slot at a specific time and day
-  const getSlotAt = (dayIndex: number, timeString: string): BookingSlot | undefined => {
+  // Get a slot at a specific time and day
+  const getSlotAt = (day: Date, timeString: string): BookingSlot | undefined => {
     return availableSlots.find(slot => 
-      new Date(slot.day).getDay() === dayIndex && 
+      format(slot.day, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd') && 
       slot.start === timeString
     );
   };
 
-  // Find the full availability block a time belongs to
-  const findAvailabilityBlock = (dayIndex: number, hour: number, minute: number) => {
+  // Find the slot that contains a specific time
+  const findSlotForTime = (dayIndex: number, hour: number, minute: number): BookingSlot | null => {
+    // Format the time
     const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+    const clickedTimeInMinutes = hour * 60 + minute;
     
-    // Get all slots for this day
-    const daySlotsMap = new Map();
-    availableSlots
-      .filter(slot => new Date(slot.day).getDay() === dayIndex)
-      .forEach(slot => {
-        daySlotsMap.set(slot.start, slot);
-      });
-    
-    // Look for slots that contain this time
-    for (const [startTime, slot] of daySlotsMap.entries()) {
-      const startHour = parseInt(startTime.split(':')[0]);
-      const startMinute = parseInt(startTime.split(':')[1]);
+    // Find a slot for this day that contains this time
+    for (const slot of availableSlots) {
+      if (new Date(slot.day).getDay() !== dayIndex) continue;
+      
+      const startHour = parseInt(slot.start.split(':')[0]);
+      const startMinute = parseInt(slot.start.split(':')[1]);
       const endHour = parseInt(slot.end.split(':')[0]);
       const endMinute = parseInt(slot.end.split(':')[1]);
       
-      const clickedTimeInMinutes = hour * 60 + minute;
       const slotStartInMinutes = startHour * 60 + startMinute;
       const slotEndInMinutes = endHour * 60 + endMinute;
       
@@ -51,22 +46,47 @@ export function useDragSelection(availableSlots: BookingSlot[], onSelectSlot: (s
     return null;
   };
 
+  // Handle mouse down to start the selection
   const handleMouseDown = (hour: number, minute: number, dayIndex: number) => {
-    // Find the availability block this time belongs to
-    const availabilityBlock = findAvailabilityBlock(dayIndex, hour, minute);
-    if (!availabilityBlock) return;
+    const slot = findSlotForTime(dayIndex, hour, minute);
+    if (!slot) {
+      console.log("No available slot at this time");
+      return;
+    }
     
     setIsDragging(true);
     setDragStart({ hour, minute, day: dayIndex });
     setDragEnd({ hour, minute, day: dayIndex });
     
-    // If clicking on an availability block, select it immediately
-    const day = availabilityBlock.day;
+    // Initially select a 15-minute block
+    const startTimeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+    
+    // Calculate end time (15 minutes later)
+    let endHour = hour;
+    let endMinute = minute + 15;
+    if (endMinute >= 60) {
+      endHour += 1;
+      endMinute -= 60;
+    }
+    const endTimeString = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+    
+    // Make sure we don't go beyond the available slot's end time
+    const slotEndHour = parseInt(slot.end.split(':')[0]);
+    const slotEndMinute = parseInt(slot.end.split(':')[1]);
+    const slotEndInMinutes = slotEndHour * 60 + slotEndMinute;
+    const selectedEndInMinutes = endHour * 60 + endMinute;
+    
+    // If our selection would go beyond the slot's end, use the slot's end instead
+    let finalEndTimeString = endTimeString;
+    if (selectedEndInMinutes > slotEndInMinutes) {
+      finalEndTimeString = slot.end;
+    }
+    
     const bookingSlot: BookingSlot = {
-      tutorId: availabilityBlock.tutorId,
-      day: day,
-      start: availabilityBlock.start,
-      end: availabilityBlock.end,
+      tutorId: slot.tutorId,
+      day: slot.day,
+      start: startTimeString,
+      end: finalEndTimeString,
       available: true
     };
     
@@ -74,78 +94,92 @@ export function useDragSelection(availableSlots: BookingSlot[], onSelectSlot: (s
     onSelectSlot(bookingSlot);
   };
 
+  // Handle mouse move to update the selection
   const handleMouseMove = (hour: number, minute: number, dayIndex: number) => {
     if (!isDragging || !dragStart) return;
     
     // Only allow dragging within the same day
     if (dragStart.day !== dayIndex) return;
     
-    // Ensure the time is within an available block
-    const availabilityBlock = findAvailabilityBlock(dayIndex, hour, minute);
-    if (!availabilityBlock) return;
+    // Find the slot this time belongs to
+    const slot = findSlotForTime(dayIndex, hour, minute);
+    if (!slot) return;
     
     setDragEnd({ hour, minute, day: dayIndex });
+    
+    // Create the booking from drag selection
+    createBookingFromDrag();
   };
 
+  // Handle mouse up to end the selection
   const handleMouseUp = () => {
     if (isDragging && dragStart && dragEnd) {
-      // Create a booking slot from the dragged selection
       createBookingFromDrag();
     }
     
     setIsDragging(false);
   };
 
+  // Create a booking from the drag selection
   const createBookingFromDrag = () => {
     if (!dragStart || !dragEnd) return;
     
-    // Ensure start is before end
-    let startCoord = dragStart;
-    let endCoord = dragEnd;
+    // Get times in minutes for easier comparison
+    let startHour = dragStart.hour;
+    let startMinute = dragStart.minute;
+    let endHour = dragEnd.hour;
+    let endMinute = dragEnd.minute;
     
-    if (
-      (startCoord.hour > endCoord.hour) || 
-      (startCoord.hour === endCoord.hour && startCoord.minute > endCoord.minute)
-    ) {
+    // Ensure start time is before end time
+    const startTotalMinutes = startHour * 60 + startMinute;
+    const endTotalMinutes = endHour * 60 + endMinute;
+    
+    if (startTotalMinutes > endTotalMinutes) {
       // Swap if start is after end
-      [startCoord, endCoord] = [endCoord, startCoord];
+      [startHour, endHour] = [endHour, startHour];
+      [startMinute, endMinute] = [endMinute, startMinute];
     }
     
-    const dayIndex = startCoord.day;
-    
-    // Get start block
-    const startBlock = findAvailabilityBlock(dayIndex, startCoord.hour, startCoord.minute);
-    if (!startBlock) return;
-    
-    // Get end block
-    const endBlock = findAvailabilityBlock(dayIndex, endCoord.hour, endCoord.minute);
-    if (!endBlock) return;
-    
-    // If blocks are different, check if they're contiguous
-    if (startBlock !== endBlock) {
-      // For simplicity, let's use the last block's end time
-      // A more sophisticated implementation would check for contiguity
-      const day = startBlock.day;
-      const bookingSlot: BookingSlot = {
-        tutorId: startBlock.tutorId,
-        day: day,
-        start: startBlock.start,
-        end: endBlock.end,
-        available: true
-      };
-      
-      setSelectedSlot(bookingSlot);
-      onSelectSlot(bookingSlot);
-      return;
+    // Round to nearest 15 minutes for end time
+    const endRoundedMinutes = Math.ceil(endMinute / 15) * 15;
+    if (endRoundedMinutes >= 60) {
+      endHour += 1;
+      endMinute = endRoundedMinutes - 60;
+    } else {
+      endMinute = endRoundedMinutes;
     }
     
-    // If same block, use that block
-    const day = startBlock.day;
+    // Format times
+    const startTimeString = `${startHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`;
+    const endTimeString = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+    
+    // Find the available slot this time range belongs to
+    const dayIndex = dragStart.day;
+    const day = weekDays[dayIndex];
+    if (!day) return;
+    
+    // Find the slot that this time range belongs to
+    const startSlot = findSlotForTime(dayIndex, startHour, startMinute);
+    if (!startSlot) return;
+    
+    // Check that the selection doesn't go beyond the available slot
+    const slotEndHour = parseInt(startSlot.end.split(':')[0]);
+    const slotEndMinute = parseInt(startSlot.end.split(':')[1]);
+    const slotEndInMinutes = slotEndHour * 60 + slotEndMinute;
+    const selectedEndInMinutes = endHour * 60 + endMinute;
+    
+    // If our selection would go beyond the slot's end, use the slot's end instead
+    let finalEndTimeString = endTimeString;
+    if (selectedEndInMinutes > slotEndInMinutes) {
+      finalEndTimeString = startSlot.end;
+    }
+    
+    // Create the booking slot
     const bookingSlot: BookingSlot = {
-      tutorId: startBlock.tutorId,
-      day: day,
-      start: startBlock.start,
-      end: startBlock.end,
+      tutorId: startSlot.tutorId,
+      day: startSlot.day,
+      start: startTimeString,
+      end: finalEndTimeString,
       available: true
     };
     
@@ -153,6 +187,7 @@ export function useDragSelection(availableSlots: BookingSlot[], onSelectSlot: (s
     onSelectSlot(bookingSlot);
   };
 
+  // Check if a cell is in the drag range
   const isInDragRange = (hour: number, minute: number, dayIndex: number): boolean => {
     if (!isDragging || !dragStart || !dragEnd || dragStart.day !== dayIndex || dragEnd.day !== dayIndex) {
       return false;
@@ -169,6 +204,10 @@ export function useDragSelection(availableSlots: BookingSlot[], onSelectSlot: (s
        cellMinutes <= Math.max(startMinutes, endMinutes))
     );
   };
+
+  // When component renders, we need access to the weekDays array
+  // Since it's not passed to the hook directly, we use a sneaky technique to access it
+  const weekDays = dragStart && dragEnd ? availableSlots.filter(s => s.available).map(s => s.day) : [];
 
   return {
     isDragging,
