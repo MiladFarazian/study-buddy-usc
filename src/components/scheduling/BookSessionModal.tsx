@@ -4,15 +4,15 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Tutor } from "@/types/tutor";
-import { BookingSlot, createSessionBooking, createPaymentTransaction } from "@/lib/scheduling-utils";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import { BookingSlot, createSessionBooking } from "@/lib/scheduling";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { BookingCalendar } from "./BookingCalendar";
 import { BookingCalendarDrag } from "./BookingCalendarDrag";
 import { PaymentForm } from "./PaymentForm";
-import { Loader2, X } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { format, parseISO, addMinutes, differenceInMinutes } from "date-fns";
+import { format, parseISO, differenceInMinutes } from "date-fns";
 
 interface BookSessionModalProps {
   tutor: Tutor;
@@ -87,16 +87,6 @@ export const BookSessionModal = ({ tutor, isOpen, onClose }: BookSessionModalPro
       const durationHours = differenceInMinutes(endTimeObj, startTimeObj) / 60;
       const sessionCost = tutor.hourlyRate * durationHours;
       
-      // Create payment transaction
-      const payment = await createPaymentTransaction(
-        session.id,
-        user.id,
-        tutor.id,
-        sessionCost
-      );
-      
-      if (!payment) throw new Error("Failed to create payment transaction");
-      
       setSessionId(session.id);
       setStep('payment');
       
@@ -136,10 +126,6 @@ export const BookSessionModal = ({ tutor, isOpen, onClose }: BookSessionModalPro
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Sign In Required</DialogTitle>
-            <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100" onClick={onClose}>
-              <X className="h-4 w-4" />
-              <span className="sr-only">Close</span>
-            </DialogClose>
           </DialogHeader>
           <div className="py-4">
             <p className="mb-4">Please sign in to book a session with this tutor.</p>
@@ -155,13 +141,9 @@ export const BookSessionModal = ({ tutor, isOpen, onClose }: BookSessionModalPro
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Book a Session with {tutor.name}</DialogTitle>
-          <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100" onClick={onClose}>
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
-          </DialogClose>
         </DialogHeader>
         
         {step === 'select-slot' && (
@@ -181,7 +163,7 @@ export const BookSessionModal = ({ tutor, isOpen, onClose }: BookSessionModalPro
               </TabsContent>
             </Tabs>
             
-            <div className="flex justify-end gap-2 mt-4">
+            <div className="flex justify-end gap-2 mt-4 pt-2">
               <Button variant="outline" onClick={onClose}>
                 Cancel
               </Button>
