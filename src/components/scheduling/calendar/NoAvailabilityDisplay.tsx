@@ -3,7 +3,13 @@ import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 
-export const NoAvailabilityDisplay: React.FC = () => {
+interface NoAvailabilityDisplayProps {
+  reason?: string;
+}
+
+export const NoAvailabilityDisplay: React.FC<NoAvailabilityDisplayProps> = ({ 
+  reason 
+}) => {
   return (
     <Card className="w-full">
       <CardContent className="pt-6">
@@ -11,7 +17,7 @@ export const NoAvailabilityDisplay: React.FC = () => {
           <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
           <h3 className="text-lg font-medium mb-2">No Availability Set</h3>
           <p className="text-muted-foreground max-w-md">
-            This tutor hasn't set their availability yet. Please check back later or try another tutor.
+            {reason || "This tutor hasn't set their availability yet. Please check back later or try another tutor."}
           </p>
         </div>
       </CardContent>
