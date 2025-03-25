@@ -78,3 +78,15 @@ export async function updateTutorAvailability(
     return false;
   }
 }
+
+// Map a date to the day of the week
+export function mapDateToDayOfWeek(date: Date): string {
+  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  return days[date.getDay()];
+}
+
+// Check if a date has availability based on the day of the week
+export function hasAvailabilityForDate(date: Date, availability: WeeklyAvailability): boolean {
+  const dayOfWeek = mapDateToDayOfWeek(date);
+  return availability[dayOfWeek]?.length > 0;
+}

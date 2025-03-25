@@ -3,9 +3,9 @@ import { useState, useEffect } from 'react';
 import { format, addDays, startOfWeek, eachDayOfInterval } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Tutor } from "@/types/tutor";
-import { BookingSlot } from "@/lib/scheduling";
+import { BookingSlot, mapDateToDayOfWeek } from "@/lib/scheduling";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, X } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -22,9 +22,10 @@ import { LoadingDisplay } from "./calendar/LoadingDisplay";
 interface BookingCalendarDragProps {
   tutor: Tutor;
   onSelectSlot: (slot: BookingSlot) => void;
+  onClose?: () => void;
 }
 
-export const BookingCalendarDrag = ({ tutor, onSelectSlot }: BookingCalendarDragProps) => {
+export const BookingCalendarDrag = ({ tutor, onSelectSlot, onClose }: BookingCalendarDragProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   // Initialize state
@@ -53,6 +54,11 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot }: BookingCalendarDrag
       end: addDays(startDate, 6)
     });
     setWeekDays(days);
+    
+    // Debug log which days we're showing
+    days.forEach(day => {
+      console.log(`Calendar showing ${format(day, 'yyyy-MM-dd')} (${mapDateToDayOfWeek(day)})`);
+    });
   }, [startDate]);
   
   const handlePrevWeek = () => {
@@ -116,6 +122,12 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot }: BookingCalendarDrag
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Refresh
               </Button>
+              {onClose && (
+                <Button onClick={onClose} variant="outline">
+                  <X className="mr-2 h-4 w-4" />
+                  Close
+                </Button>
+              )}
             </div>
           </div>
         </CardContent>
@@ -126,11 +138,21 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot }: BookingCalendarDrag
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Book a Session</CardTitle>
-        <CardDescription>
-          Select a time slot for your tutoring session with {tutor.firstName || tutor.name.split(' ')[0]}.
-          {!isDragging && " You can click and drag to select a range of time."}
-        </CardDescription>
+        <div className="flex justify-between items-center">
+          <div>
+            <CardTitle>Book a Session</CardTitle>
+            <CardDescription>
+              Select a time slot for your tutoring session with {tutor.firstName || tutor.name.split(' ')[0]}.
+              {!isDragging && " You can click and drag to select a range of time."}
+            </CardDescription>
+          </div>
+          {onClose && (
+            <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <CalendarHeader 

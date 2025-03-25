@@ -2,8 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { Tutor } from "@/types/tutor";
-import { getTutorAvailability, getTutorBookedSessions, generateAvailableSlots, BookingSlot } from "@/lib/scheduling";
-import { startOfWeek, addDays } from 'date-fns';
+import { getTutorAvailability, getTutorBookedSessions, generateAvailableSlots, BookingSlot, mapDateToDayOfWeek } from "@/lib/scheduling";
+import { startOfWeek, addDays, format } from 'date-fns';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -41,6 +41,7 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
     
     try {
       console.log(`Loading availability for tutor: ${tutor.id}, name: ${tutor.name}`);
+      console.log(`Start date for calendar: ${format(startDate, 'yyyy-MM-dd')} (${mapDateToDayOfWeek(startDate)})`);
       
       // Get tutor's availability settings
       const availability = await getTutorAvailability(tutor.id);
@@ -67,6 +68,22 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
         return;
       }
       
+      // Days of the week in the current calendar view
+      const daysInView = [];
+      for (let i = 0; i < 7; i++) {
+        const day = addDays(startDate, i);
+        const dayOfWeek = mapDateToDayOfWeek(day);
+        daysInView.push({ date: day, dayOfWeek });
+      }
+      console.log("Days in current calendar view:", daysInView.map(d => `${format(d.date, 'yyyy-MM-dd')} (${d.dayOfWeek})`));
+      
+      // Log available days in the tutor's schedule
+      for (const [day, slots] of Object.entries(availability)) {
+        if (slots.length > 0) {
+          console.log(`Tutor is available on ${day}s with ${slots.length} slots`);
+        }
+      }
+      
       // Get tutor's booked sessions
       const bookedSessions = await getTutorBookedSessions(tutor.id, startDate, addDays(startDate, 6));
       console.log("Booked sessions:", bookedSessions);
@@ -82,6 +99,15 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
       }));
       
       console.log(`Final available slots: ${slotsWithTutor.length}`);
+      
+      if (slotsWithTutor.length > 0) {
+        // Log some example slots for debugging
+        const exampleSlots = slotsWithTutor.slice(0, Math.min(3, slotsWithTutor.length));
+        exampleSlots.forEach(slot => {
+          console.log(`Available slot: ${format(slot.day, 'yyyy-MM-dd')} (${mapDateToDayOfWeek(slot.day)}) from ${slot.start} to ${slot.end}`);
+        });
+      }
+      
       setAvailableSlots(slotsWithTutor);
       
       // If we got to this point but have no slots, set a message

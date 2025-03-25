@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, startOfDay, endOfDay, addDays } from "date-fns";
 import { BookingSlot, WeeklyAvailability } from "./types";
+import { mapDateToDayOfWeek } from "./availability-utils";
 
 // Get existing sessions for the tutor to determine which slots are already booked
 export async function getTutorBookedSessions(tutorId: string, startDate: Date, endDate: Date) {
@@ -50,11 +51,13 @@ export function generateAvailableSlots(
   // Generate slots for each day
   for (let i = 0; i < daysToShow; i++) {
     const currentDate = addDays(startDate, i);
-    const dayOfWeek = daysOfWeek[currentDate.getDay()];
+    const dayOfWeek = mapDateToDayOfWeek(currentDate);
     const formattedDate = format(currentDate, 'yyyy-MM-dd');
     
     // Get availability for this day of the week
     const dayAvailability = availability[dayOfWeek] || [];
+    
+    console.log(`Generating slots for ${formattedDate} (${dayOfWeek}), found ${dayAvailability.length} time slots`);
     
     // For each available time slot in the day
     dayAvailability.forEach(slot => {
