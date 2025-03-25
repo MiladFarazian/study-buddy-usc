@@ -4,11 +4,12 @@ import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const MobileNavBar = () => {
   const location = useLocation();
   const isMobile = useIsMobile();
-  const { isStudent, isTutor } = useAuth();
+  const { isStudent, isTutor, user, profile } = useAuth();
   
   if (!isMobile) return null;
 
@@ -28,6 +29,14 @@ const MobileNavBar = () => {
     if (isStudent) return "Tutors";
     if (isTutor) return "Students";
     return "Tutors"; // Default title
+  };
+
+  // Get initials for avatar fallback
+  const getInitials = () => {
+    if (profile?.first_name && profile?.last_name) {
+      return `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase();
+    }
+    return user?.email ? user.email.substring(0, 2).toUpperCase() : "US";
   };
 
   const navItems = [
@@ -51,12 +60,10 @@ const MobileNavBar = () => {
       icon: Calendar,
       path: "/schedule",
     },
-    {
-      title: "Profile",
-      icon: User,
-      path: "/profile",
-    },
   ];
+
+  // Check if we're on the profile page
+  const isProfileActive = location.pathname.startsWith("/profile");
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 md:hidden">
@@ -89,6 +96,31 @@ const MobileNavBar = () => {
             </Link>
           );
         })}
+        
+        {/* Profile link with avatar instead of icon */}
+        <Link
+          to="/profile"
+          className={cn(
+            "flex flex-col items-center justify-center py-2 px-3 text-xs",
+            isProfileActive ? "text-usc-cardinal" : "text-gray-600"
+          )}
+        >
+          <div className="mb-1 flex items-center justify-center">
+            <Avatar className="h-5 w-5">
+              <AvatarImage 
+                src={profile?.avatar_url || ""} 
+                alt={user?.email || "User"}
+              />
+              <AvatarFallback className={cn(
+                "text-[10px]",
+                isProfileActive ? "bg-usc-cardinal text-white" : "bg-gray-200 text-gray-600"
+              )}>
+                {getInitials()}
+              </AvatarFallback>
+            </Avatar>
+          </div>
+          <span>Profile</span>
+        </Link>
       </div>
     </div>
   );

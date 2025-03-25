@@ -2,7 +2,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
-import { Loader2, X, AlertTriangle } from "lucide-react";
+import { Loader2, X, AlertTriangle, LogOut } from "lucide-react";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { ProfileForm } from "@/components/profile/ProfileForm";
@@ -17,7 +17,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Profile = () => {
   // Redirect to login if not authenticated
-  const { user, profile, loading, isProfileComplete } = useAuthRedirect("/profile", true);
+  const { user, profile, loading, isProfileComplete, signOut } = useAuthRedirect("/profile", true);
   const { toast } = useToast();
   const [removingCourse, setRemovingCourse] = useState<string | null>(null);
   const location = useLocation();
@@ -58,6 +58,20 @@ const Profile = () => {
       });
     } finally {
       setRemovingCourse(null);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      // The redirect will be handled by the auth context
+    } catch (error) {
+      console.error("Sign out error:", error);
+      toast({
+        title: "Sign Out Failed",
+        description: "An error occurred while signing out",
+        variant: "destructive",
+      });
     }
   };
 
@@ -103,6 +117,16 @@ const Profile = () => {
             userRole={profile?.role}
             profile={profile}
           />
+          
+          {/* Sign Out Button */}
+          <Button 
+            variant="destructive" 
+            className="w-full mt-4 flex items-center justify-center" 
+            onClick={handleSignOut}
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Sign Out
+          </Button>
           
           {/* My Courses Section */}
           <Card className="mt-6">
