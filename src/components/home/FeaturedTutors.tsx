@@ -10,11 +10,15 @@ const FeaturedTutors = () => {
   const { tutors, loading } = useTutors();
   const isMobile = useIsMobile();
   
+  console.log("FeaturedTutors - Number of tutors:", tutors.length);
+  
   // Show only the top 3 tutors based on rating
   // For mobile, only show top 2
   const featuredTutors = [...tutors]
     .sort((a, b) => b.rating - a.rating)
     .slice(0, isMobile ? 2 : 3);
+
+  console.log("FeaturedTutors - Featured tutors:", featuredTutors.length);
 
   return (
     <div className="mt-8 md:mt-12 container px-0">
