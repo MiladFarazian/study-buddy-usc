@@ -4,9 +4,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useProfileForm } from "./useProfileForm";
 import { useAvatarOperations } from "./useAvatarOperations";
 import { useProfileSubmission } from "./useProfileSubmission";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const useProfilePage = (profile: any, user: any) => {
   const { toast } = useToast();
+  const { updateProfile: updateAuthProfile } = useAuth();
   
   // Use our custom hooks for different aspects of profile management
   const {
@@ -21,7 +23,7 @@ export const useProfilePage = (profile: any, user: any) => {
   } = useAvatarOperations(user, profile);
   
   const { isSubmitting, handleSubmit: submitProfile } = useProfileSubmission(
-    user, profile, avatarFile, setUploadingAvatar, setAvatarFile
+    user, profile, avatarFile, setUploadingAvatar, setAvatarFile, updateAuthProfile
   );
 
   // Debug output

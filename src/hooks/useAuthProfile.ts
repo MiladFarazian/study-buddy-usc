@@ -6,9 +6,11 @@ import { Profile } from "@/contexts/types/auth-types";
 
 export const useAuthProfile = (userId: string | undefined) => {
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   const fetchProfile = async (id: string) => {
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -28,6 +30,8 @@ export const useAuthProfile = (userId: string | undefined) => {
       }
     } catch (error) {
       console.error('Profile fetch error:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -42,6 +46,7 @@ export const useAuthProfile = (userId: string | undefined) => {
   const updateProfile = async (updatedProfile: Partial<Profile>) => {
     if (!userId || !profile) return null;
     
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -55,17 +60,31 @@ export const useAuthProfile = (userId: string | undefined) => {
       
       if (error) {
         console.error('Error updating profile:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update your profile. Please try again.",
+          variant: "destructive",
+        });
         return { error };
       }
       
-      // Update the local state with the server response
+      // Immediately update the local state with the server response
+      console.log('Profile updated successfully:', data);
       setProfile(data as Profile);
+      
+      toast({
+        title: "Profile Updated",
+        description: "Your profile has been updated successfully.",
+      });
+      
       return { data: data as Profile };
     } catch (error) {
       console.error('Profile update error:', error);
       return { error };
+    } finally {
+      setLoading(false);
     }
   };
 
-  return { profile, updateProfile, fetchProfile };
+  return { profile, loading, updateProfile, fetchProfile };
 };

@@ -3,13 +3,15 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { uploadAvatar } from "@/components/profile/AvatarUtils";
+import { Profile } from "@/contexts/types/auth-types";
 
 export const useProfileSubmission = (
   user: any, 
   profile: any,
   avatarFile: File | null,
   setUploadingAvatar: (value: boolean) => void,
-  setAvatarFile: (file: File | null) => void
+  setAvatarFile: (file: File | null) => void,
+  updateProfileContext?: (profile: Partial<Profile>) => void
 ) => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,18 +64,20 @@ export const useProfileSubmission = (
       // Preserve the existing subjects if they exist and no new ones provided
       const subjects = formData.subjects || profile?.subjects || [];
       
+      const updatedProfileData = {
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        major: formData.major,
+        graduation_year: formData.gradYear,
+        bio: formData.bio,
+        avatar_url: newAvatarUrl,
+        subjects: subjects,
+        updated_at: new Date().toISOString(),
+      };
+      
       const { error } = await supabase
         .from('profiles')
-        .update({
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          major: formData.major,
-          graduation_year: formData.gradYear,
-          bio: formData.bio,
-          avatar_url: newAvatarUrl,
-          subjects: subjects,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updatedProfileData)
         .eq('id', user.id);
       
       if (error) {
@@ -83,6 +87,11 @@ export const useProfileSubmission = (
       
       console.log("Profile updated successfully");
       setAvatarFile(null);
+      
+      // Update global auth context if the function is provided
+      if (updateProfileContext) {
+        updateProfileContext(updatedProfileData);
+      }
       
       toast({
         title: "Profile updated",
