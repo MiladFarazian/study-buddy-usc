@@ -36,8 +36,8 @@ export function useBookingCreation(
       [startMinute, endMinute] = [endMinute, startMinute];
     }
     
-    // Round to nearest 15 minutes for end time
-    const endRoundedMinutes = Math.ceil(endMinute / 15) * 15;
+    // Round to nearest 30 minutes for end time
+    const endRoundedMinutes = Math.ceil(endMinute / 30) * 30;
     if (endRoundedMinutes >= 60) {
       endHour += 1;
       endMinute = endRoundedMinutes - 60;

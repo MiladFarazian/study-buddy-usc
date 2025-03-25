@@ -35,9 +35,9 @@ export const TimeGrid: React.FC<TimeGridProps> = ({
     const cellTimeInMinutes = hour * 60 + minute;
     
     // Look for an availability slot that contains this time
-    for (let i = 0; i < 24 * 4; i++) { // 24 hours * 4 quarters = 96 possible start times
-      const checkHour = Math.floor(i / 4);
-      const checkMinute = (i % 4) * 15;
+    for (let i = 0; i < 24 * 2; i++) { // 24 hours * 2 half-hours = 48 possible start times
+      const checkHour = Math.floor(i / 2);
+      const checkMinute = (i % 2) * 30;
       const checkTimeString = `${checkHour.toString().padStart(2, '0')}:${checkMinute.toString().padStart(2, '0')}`;
       
       const slot = getSlotAt(day, checkTimeString);
@@ -92,13 +92,13 @@ export const TimeGrid: React.FC<TimeGridProps> = ({
   return (
     <div className="max-h-[400px] md:max-h-[500px] overflow-y-auto">
       {hours.map((hour) => (
-        [0, 15, 30, 45].map((minute, minuteIndex) => {
+        [0, 30].map((minute, minuteIndex) => {
           const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
           return (
             <div key={`${hour}-${minute}`} className="grid grid-cols-8 border-t">
               {/* Time column */}
               {minuteIndex === 0 && (
-                <div className="p-1 md:p-2 border-r text-xs md:text-sm text-center row-span-4">
+                <div className="p-1 md:p-2 border-r text-xs md:text-sm text-center row-span-2">
                   {format(new Date().setHours(hour, 0), 'h a')}
                 </div>
               )}
@@ -114,7 +114,7 @@ export const TimeGrid: React.FC<TimeGridProps> = ({
                   <div
                     key={`${timeString}-${dayIndex}`}
                     className={cn(
-                      "h-6 md:h-8 border-r last:border-r-0 transition-colors cursor-default",
+                      "h-12 md:h-16 border-r last:border-r-0 transition-colors cursor-default",
                       isAvailable ? "cursor-pointer bg-usc-cardinal hover:bg-usc-cardinal-dark text-white" : "bg-gray-100 opacity-50",
                       isSelected ? "bg-usc-cardinal-dark text-white" : "",
                       isInDrag && isAvailable ? "bg-usc-gold text-gray-800" : ""
@@ -125,7 +125,7 @@ export const TimeGrid: React.FC<TimeGridProps> = ({
                     onTouchMove={() => handleMouseMove(hour, minute, dayIndex)}
                   >
                     {isSlotStart && (
-                      <div className="text-xs font-medium text-center">
+                      <div className="text-xs font-medium text-center pt-2">
                         {slot?.start}
                       </div>
                     )}

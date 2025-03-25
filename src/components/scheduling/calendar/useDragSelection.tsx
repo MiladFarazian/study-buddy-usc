@@ -50,12 +50,12 @@ export function useDragSelection(availableSlots: BookingSlot[], onSelectSlot: (s
     setDragStart({ hour, minute, day: dayIndex });
     setDragEnd({ hour, minute, day: dayIndex });
     
-    // Initially select a 15-minute block
+    // Initially select a 30-minute block
     const startTimeString = formatTimeString(hour, minute);
     
-    // Calculate end time (15 minutes later)
+    // Calculate end time (30 minutes later)
     let endHour = hour;
-    let endMinute = minute + 15;
+    let endMinute = minute + 30;
     if (endMinute >= 60) {
       endHour += 1;
       endMinute -= 60;

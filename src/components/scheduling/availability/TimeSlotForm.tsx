@@ -12,10 +12,10 @@ import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { WeeklyAvailability } from "@/lib/scheduling";
 
-// Generate time slots in 15-minute increments
-const TIME_SLOTS = Array.from({ length: 24 * 4 }, (_, i) => {
-  const hour = Math.floor(i / 4);
-  const minute = (i % 4) * 15;
+// Generate time slots in 30-minute increments
+const TIME_SLOTS = Array.from({ length: 24 * 2 }, (_, i) => {
+  const hour = Math.floor(i / 2);
+  const minute = (i % 2) * 30;
   return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
 });
 
