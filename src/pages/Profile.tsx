@@ -1,4 +1,3 @@
-
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
@@ -87,7 +86,7 @@ const Profile = () => {
   if (!user) return null; // will be redirected by useAuthRedirect
 
   return (
-    <div className="container py-8">
+    <div className="container py-8 pb-20">
       <ProfileHeader title="Your Profile" />
       
       {requireProfileCompletion && (
@@ -117,16 +116,6 @@ const Profile = () => {
             userRole={profile?.role}
             profile={profile}
           />
-          
-          {/* Sign Out Button */}
-          <Button 
-            variant="destructive" 
-            className="w-full mt-4 flex items-center justify-center" 
-            onClick={handleSignOut}
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Sign Out
-          </Button>
           
           {/* My Courses Section */}
           <Card className="mt-6">
@@ -184,6 +173,18 @@ const Profile = () => {
             onSubmit={handleSubmit}
           />
         </div>
+      </div>
+      
+      {/* Sign Out Button at the bottom of the page */}
+      <div className="flex justify-center mt-12">
+        <Button 
+          variant="outline" 
+          className="border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600"
+          onClick={handleSignOut}
+        >
+          <LogOut className="mr-2 h-4 w-4" />
+          Sign Out
+        </Button>
       </div>
     </div>
   );
