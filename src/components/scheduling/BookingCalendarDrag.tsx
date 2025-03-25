@@ -6,6 +6,8 @@ import { Tutor } from "@/types/tutor";
 import { BookingSlot } from "@/lib/scheduling";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from "@/contexts/AuthContext";
 
 // Import refactored components
 import { useAvailabilityData } from "./calendar/useAvailabilityData";
@@ -23,6 +25,8 @@ interface BookingCalendarDragProps {
 }
 
 export const BookingCalendarDrag = ({ tutor, onSelectSlot }: BookingCalendarDragProps) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   // Initialize state
   const [startDate, setStartDate] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [weekDays, setWeekDays] = useState<Date[]>([]);
@@ -59,6 +63,10 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot }: BookingCalendarDrag
     setStartDate(prev => addDays(prev, 7));
   };
   
+  const handleLogin = () => {
+    navigate('/login');
+  };
+  
   // Function to get slot for a specific day and time
   const getSlotAt = (day: Date, timeString: string): BookingSlot | undefined => {
     const dayStr = format(day, 'yyyy-MM-dd');
@@ -73,7 +81,8 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot }: BookingCalendarDrag
     loading, 
     hasAvailability, 
     availableSlotsCount: availableSlots.length, 
-    errorMessage
+    errorMessage,
+    userLoggedIn: !!user
   });
 
   if (loading) {
@@ -85,6 +94,7 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot }: BookingCalendarDrag
       <NoAvailabilityDisplay 
         reason={errorMessage || "This tutor hasn't set their availability yet."}
         onRetry={refreshAvailability}
+        onLogin={handleLogin}
       />
     );
   }

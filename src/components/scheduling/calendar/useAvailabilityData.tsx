@@ -5,19 +5,25 @@ import { Tutor } from "@/types/tutor";
 import { getTutorAvailability, getTutorBookedSessions, generateAvailableSlots, BookingSlot } from "@/lib/scheduling";
 import { startOfWeek, addDays } from 'date-fns';
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function useAvailabilityData(tutor: Tutor, startDate: Date) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [availableSlots, setAvailableSlots] = useState<BookingSlot[]>([]);
   const [hasAvailability, setHasAvailability] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Check if Supabase client is properly initialized with auth
+  // Verify Supabase auth session status
   useEffect(() => {
     const checkSupabaseAuth = async () => {
       const { data } = await supabase.auth.getSession();
-      console.log("Current auth session:", data.session ? "Active" : "None");
+      console.log("Availability Data - Auth session status:", data.session ? "Active" : "None");
+      
+      if (!data.session) {
+        console.log("No active session found - this will cause API permission issues in private routes");
+      }
     };
     
     checkSupabaseAuth();
@@ -85,14 +91,23 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
         setHasAvailability(true);
       }
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error loading tutor availability:", error);
-      setErrorMessage("An error occurred while loading availability data.");
+      
+      // Provide more detailed error information
+      let errorMsg = "An error occurred while loading availability data.";
+      
+      if (error?.message?.includes("No API key found") || error?.message?.includes("JWT")) {
+        errorMsg = "Authentication error. Please sign in to view availability.";
+        console.error("Auth error detected. User session may have expired or be invalid.");
+      }
+      
+      setErrorMessage(errorMsg);
       setHasAvailability(false);
       
       toast({
         title: "Error",
-        description: "Failed to load tutor's availability.",
+        description: errorMsg,
         variant: "destructive",
       });
     } finally {

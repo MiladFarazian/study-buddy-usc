@@ -12,6 +12,12 @@ export async function getTutorAvailability(tutorId: string): Promise<WeeklyAvail
     
     console.log("Fetching availability for tutor:", tutorId);
     
+    // Check if we have an active session first
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      console.log("No active auth session when fetching tutor availability - public data access mode");
+    }
+    
     const { data, error } = await supabase
       .from('profiles')
       .select('availability')
@@ -19,7 +25,12 @@ export async function getTutorAvailability(tutorId: string): Promise<WeeklyAvail
       .single();
       
     if (error) {
-      console.error("Error fetching tutor availability:", error);
+      if (error.message.includes("JWT")) {
+        console.error("Authentication error when fetching tutor availability:", error);
+        throw new Error("Authentication required to view tutor availability");
+      } else {
+        console.error("Error fetching tutor availability:", error);
+      }
       return null;
     }
     
@@ -44,7 +55,7 @@ export async function getTutorAvailability(tutorId: string): Promise<WeeklyAvail
     return null;
   } catch (error) {
     console.error("Error fetching tutor availability:", error);
-    return null;
+    throw error; // Re-throw to allow for more specific error handling
   }
 }
 

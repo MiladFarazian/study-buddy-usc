@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -29,9 +29,25 @@ export const BookSessionModal = ({ tutor, isOpen, onClose }: BookSessionModalPro
   const [selectedSlot, setSelectedSlot] = useState<BookingSlot | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [creatingSession, setCreatingSession] = useState(false);
+  const [authRequired, setAuthRequired] = useState(false);
+  
+  useEffect(() => {
+    // Reset state when modal opens/closes
+    if (!isOpen) {
+      setStep('select-slot');
+      setSelectedSlot(null);
+      setSessionId(null);
+      setAuthRequired(false);
+    }
+  }, [isOpen]);
   
   const handleSlotSelect = (slot: BookingSlot) => {
     setSelectedSlot(slot);
+    
+    // If user is not logged in, we'll show the login prompt when they try to proceed
+    if (!user) {
+      setAuthRequired(true);
+    }
   };
   
   const handleProceedToPayment = async () => {
@@ -39,7 +55,7 @@ export const BookSessionModal = ({ tutor, isOpen, onClose }: BookSessionModalPro
     
     // Redirect to login if not authenticated
     if (!user || !profile) {
-      navigate('/login');
+      setAuthRequired(true);
       return;
     }
     
@@ -113,7 +129,7 @@ export const BookSessionModal = ({ tutor, isOpen, onClose }: BookSessionModalPro
   };
   
   // Show login prompt for unauthenticated users when they try to proceed
-  if (!user && selectedSlot) {
+  if (authRequired && !user) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent>
