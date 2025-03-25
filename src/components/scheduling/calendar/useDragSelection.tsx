@@ -14,22 +14,67 @@ export function useDragSelection(availableSlots: BookingSlot[], onSelectSlot: (s
 
   // Get a slot at a specific time and day
   const getSlotAt = (day: Date, timeString: string): BookingSlot | undefined => {
-    return availableSlots.find(slot => 
-      format(slot.day, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd') && 
+    const formattedDay = format(day, 'yyyy-MM-dd');
+    // Check for an exact match first
+    const exactMatch = availableSlots.find(slot => 
+      format(slot.day, 'yyyy-MM-dd') === formattedDay && 
       slot.start === timeString
     );
+    
+    if (exactMatch) return exactMatch;
+    
+    // If no exact match, check if this time is within any available slot
+    const timeInMinutes = convertTimeToMinutes(timeString);
+    
+    return availableSlots.find(slot => {
+      if (format(slot.day, 'yyyy-MM-dd') !== formattedDay) return false;
+      
+      const slotStartMinutes = convertTimeToMinutes(slot.start);
+      const slotEndMinutes = convertTimeToMinutes(slot.end);
+      
+      return timeInMinutes >= slotStartMinutes && timeInMinutes < slotEndMinutes;
+    });
+  };
+  
+  // Helper function to convert HH:MM to minutes
+  const convertTimeToMinutes = (timeString: string): number => {
+    const [hours, minutes] = timeString.split(':').map(Number);
+    return hours * 60 + minutes;
   };
 
   // Find the slot that contains a specific time
   const findSlotForTime = (dayIndex: number, hour: number, minute: number): BookingSlot | null => {
+    // Make sure weekDays exists before using it
+    if (!availableSlots.length) return null;
+    
+    // Get all unique dates from available slots
+    const uniqueDates = Array.from(new Set(availableSlots.map(slot => format(slot.day, 'yyyy-MM-dd'))));
+    
+    // Map these to days of week to find the right date for this dayIndex
+    const weekDays = uniqueDates.map(dateStr => new Date(dateStr));
+    
+    if (dayIndex < 0 || dayIndex >= weekDays.length) {
+      console.log(`Invalid day index: ${dayIndex}, weekDays length: ${weekDays.length}`);
+      return null;
+    }
+    
+    const day = weekDays[dayIndex];
+    if (!day) {
+      console.log(`No day found for index ${dayIndex}`);
+      return null;
+    }
+    
     // Format the time
     const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
     const clickedTimeInMinutes = hour * 60 + minute;
+    const formattedDay = format(day, 'yyyy-MM-dd');
     
     // Find a slot for this day that contains this time
     for (const slot of availableSlots) {
-      if (new Date(slot.day).getDay() !== dayIndex) continue;
+      // Check if this slot is for the same day
+      if (format(slot.day, 'yyyy-MM-dd') !== formattedDay) continue;
       
+      // Convert slot times to minutes
       const startHour = parseInt(slot.start.split(':')[0]);
       const startMinute = parseInt(slot.start.split(':')[1]);
       const endHour = parseInt(slot.end.split(':')[0]);
@@ -38,6 +83,7 @@ export function useDragSelection(availableSlots: BookingSlot[], onSelectSlot: (s
       const slotStartInMinutes = startHour * 60 + startMinute;
       const slotEndInMinutes = endHour * 60 + endMinute;
       
+      // Check if clicked time is within slot
       if (clickedTimeInMinutes >= slotStartInMinutes && clickedTimeInMinutes < slotEndInMinutes) {
         return slot;
       }
@@ -48,11 +94,16 @@ export function useDragSelection(availableSlots: BookingSlot[], onSelectSlot: (s
 
   // Handle mouse down to start the selection
   const handleMouseDown = (hour: number, minute: number, dayIndex: number) => {
+    // Get the available slot at this time if any
     const slot = findSlotForTime(dayIndex, hour, minute);
+    
     if (!slot) {
       console.log("No available slot at this time");
       return;
     }
+    
+    console.log("Starting drag at", hour, minute, "on day", dayIndex);
+    console.log("Found slot:", slot);
     
     setIsDragging(true);
     setDragStart({ hour, minute, day: dayIndex });
@@ -114,6 +165,7 @@ export function useDragSelection(availableSlots: BookingSlot[], onSelectSlot: (s
   // Handle mouse up to end the selection
   const handleMouseUp = () => {
     if (isDragging && dragStart && dragEnd) {
+      console.log("Ending drag selection");
       createBookingFromDrag();
     }
     
@@ -153,14 +205,35 @@ export function useDragSelection(availableSlots: BookingSlot[], onSelectSlot: (s
     const startTimeString = `${startHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`;
     const endTimeString = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
     
-    // Find the available slot this time range belongs to
+    // Get all unique dates from available slots
+    const uniqueDates = Array.from(new Set(availableSlots.map(slot => format(slot.day, 'yyyy-MM-dd'))));
+    const weekDays = uniqueDates.map(dateStr => new Date(dateStr));
+    
+    // Find the day for this selection
     const dayIndex = dragStart.day;
+    if (dayIndex < 0 || dayIndex >= weekDays.length) {
+      console.log(`Invalid day index: ${dayIndex}, weekDays length: ${weekDays.length}`);
+      return;
+    }
+    
     const day = weekDays[dayIndex];
-    if (!day) return;
+    if (!day) {
+      console.log(`No day found for index ${dayIndex}`);
+      return;
+    }
     
     // Find the slot that this time range belongs to
     const startSlot = findSlotForTime(dayIndex, startHour, startMinute);
-    if (!startSlot) return;
+    if (!startSlot) {
+      console.log("No slot found for start time");
+      return;
+    }
+    
+    console.log("Creating booking from drag:", {
+      startTime: startTimeString,
+      endTime: endTimeString,
+      day: format(day, 'yyyy-MM-dd')
+    });
     
     // Check that the selection doesn't go beyond the available slot
     const slotEndHour = parseInt(startSlot.end.split(':')[0]);
@@ -182,6 +255,8 @@ export function useDragSelection(availableSlots: BookingSlot[], onSelectSlot: (s
       end: finalEndTimeString,
       available: true
     };
+    
+    console.log("Final booking slot:", bookingSlot);
     
     setSelectedSlot(bookingSlot);
     onSelectSlot(bookingSlot);
@@ -205,10 +280,6 @@ export function useDragSelection(availableSlots: BookingSlot[], onSelectSlot: (s
     );
   };
 
-  // When component renders, we need access to the weekDays array
-  // Since it's not passed to the hook directly, we use a sneaky technique to access it
-  const weekDays = dragStart && dragEnd ? availableSlots.filter(s => s.available).map(s => s.day) : [];
-
   return {
     isDragging,
     selectedSlot,
@@ -216,6 +287,7 @@ export function useDragSelection(availableSlots: BookingSlot[], onSelectSlot: (s
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
-    isInDragRange
+    isInDragRange,
+    getSlotAt
   };
 }

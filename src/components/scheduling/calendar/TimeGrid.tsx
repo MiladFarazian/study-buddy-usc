@@ -31,8 +31,11 @@ export const TimeGrid: React.FC<TimeGridProps> = ({
   } => {
     const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
     
-    // Check all slots for this day to see if any contain this time
-    for (let i = 0; i < 96; i++) { // 24 hours * 4 quarters = 96 possible start times
+    // This time in minutes for easier comparison
+    const cellTimeInMinutes = hour * 60 + minute;
+    
+    // Look for an availability slot that contains this time
+    for (let i = 0; i < 24 * 4; i++) { // 24 hours * 4 quarters = 96 possible start times
       const checkHour = Math.floor(i / 4);
       const checkMinute = (i % 4) * 15;
       const checkTimeString = `${checkHour.toString().padStart(2, '0')}:${checkMinute.toString().padStart(2, '0')}`;
@@ -40,8 +43,7 @@ export const TimeGrid: React.FC<TimeGridProps> = ({
       const slot = getSlotAt(day, checkTimeString);
       if (!slot || !slot.available) continue;
       
-      // Convert cell time and slot times to minutes for comparison
-      const cellTimeInMinutes = hour * 60 + minute;
+      // Convert slot times to minutes for comparison
       const slotStartHour = parseInt(slot.start.split(':')[0]);
       const slotStartMinute = parseInt(slot.start.split(':')[1]);
       const slotEndHour = parseInt(slot.end.split(':')[0]);
@@ -117,9 +119,9 @@ export const TimeGrid: React.FC<TimeGridProps> = ({
                       isSelected ? "bg-usc-cardinal-dark text-white" : "",
                       isInDrag && isAvailable ? "bg-usc-gold text-gray-800" : ""
                     )}
-                    onMouseDown={() => isAvailable && handleMouseDown(hour, minute, dayIndex)}
+                    onMouseDown={() => handleMouseDown(hour, minute, dayIndex)}
                     onMouseMove={() => handleMouseMove(hour, minute, dayIndex)}
-                    onTouchStart={() => isAvailable && handleMouseDown(hour, minute, dayIndex)}
+                    onTouchStart={() => handleMouseDown(hour, minute, dayIndex)}
                     onTouchMove={() => handleMouseMove(hour, minute, dayIndex)}
                   >
                     {isSlotStart && (
