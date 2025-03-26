@@ -16,14 +16,14 @@ export const SlotSelectionFooter = ({
   isDisabled 
 }: SlotSelectionFooterProps) => {
   return (
-    <div className="flex justify-end gap-2 mt-4 pt-2">
+    <div className="flex justify-between gap-2 mt-6 pt-2 border-t">
       <Button variant="outline" onClick={onCancel}>
         Cancel
       </Button>
       <Button 
         onClick={onProceed} 
         disabled={isDisabled || isLoading} 
-        className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
+        className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white min-w-[140px]"
       >
         {isLoading ? (
           <>
@@ -31,7 +31,7 @@ export const SlotSelectionFooter = ({
             Processing...
           </>
         ) : (
-          'Proceed to Payment'
+          'Confirm Booking'
         )}
       </Button>
     </div>

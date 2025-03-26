@@ -3,18 +3,22 @@ import { useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useTutor } from "@/hooks/useTutor";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Book, Calendar, Clock, DollarSign, Loader2, Mail } from "lucide-react";
 import { TutorProfileHeader } from "@/components/tutor/TutorProfileHeader";
 import { TutorBioSection } from "@/components/tutor/TutorBioSection";
 import { TutorEducationSection } from "@/components/tutor/TutorEducationSection";
 import { TutorSubjectsSection } from "@/components/tutor/TutorSubjectsSection";
 import { TutorReviewsSection } from "@/components/tutor/TutorReviewsSection";
-import { TutorBookingSidebar } from "@/components/tutor/TutorBookingSidebar";
 import { TutorAvailabilityCard } from "@/components/scheduling/TutorAvailabilityCard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BookSessionModal } from "@/components/scheduling/BookSessionModal";
+import { useState } from "react";
+import MessageButton from "@/components/messaging/MessageButton";
 
 const TutorProfile = () => {
   const { id } = useParams<{ id: string }>();
   const { tutor, reviews, loading, refreshReviews } = useTutor(id || "");
+  const [showBookingModal, setShowBookingModal] = useState(false);
 
   if (loading) {
     return (
@@ -61,39 +65,159 @@ const TutorProfile = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Profile Section */}
-        <div className="lg:col-span-2">
-          <Card>
+        {/* Left Sidebar - Tutor Info */}
+        <div className="lg:col-span-1">
+          <Card className="mb-6">
             <CardContent className="p-6">
-              <TutorProfileHeader 
-                tutor={tutor} 
-                reviewsCount={reviews.length} 
-                getInitials={getInitials} 
-              />
-              <TutorBioSection bio={tutor.bio} />
-              <TutorEducationSection field={tutor.field} graduationYear={tutor.graduationYear} />
-              <TutorSubjectsSection subjects={tutor.subjects} />
+              <div className="flex flex-col items-center text-center">
+                <TutorProfileHeader 
+                  tutor={tutor} 
+                  reviewsCount={reviews.length} 
+                  getInitials={getInitials} 
+                  showDetails={false}
+                />
+                
+                <h2 className="text-xl font-semibold mt-4">{tutor.name}</h2>
+                <p className="text-muted-foreground">{tutor.field}</p>
+                
+                <div className="flex items-center justify-center mt-1">
+                  <span className="text-yellow-500">★</span>
+                  <span className="ml-1 font-medium">{tutor.rating.toFixed(1)}/5.0</span>
+                </div>
+                
+                <div className="w-full mt-6 space-y-4">
+                  <div className="flex items-start">
+                    <DollarSign className="h-5 w-5 mr-3 mt-0.5 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">${tutor.hourlyRate}/hour</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start">
+                    <Mail className="h-5 w-5 mr-3 mt-0.5 text-muted-foreground" />
+                    <div>
+                      <p className="text-muted-foreground truncate">Contact via messaging</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start">
+                    <Book className="h-5 w-5 mr-3 mt-0.5 text-muted-foreground" />
+                    <div>
+                      <p className="text-muted-foreground">Tutors {tutor.subjects.length} subjects</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <Button 
+                  className="w-full mt-6 bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
+                  onClick={() => setShowBookingModal(true)}
+                >
+                  Book a Session
+                </Button>
+                
+                <MessageButton 
+                  recipient={tutor} 
+                  className="w-full mt-3"
+                  variant="outline"
+                />
+              </div>
             </CardContent>
           </Card>
-
-          {/* Tutor Availability Section */}
-          <div className="mt-8">
-            <TutorAvailabilityCard tutorId={tutor.id} readOnly={true} />
-          </div>
-
-          {/* Reviews Section */}
-          <TutorReviewsSection 
-            reviews={reviews} 
-            tutorId={tutor.id} 
-            onReviewAdded={refreshReviews} 
-          />
         </div>
 
-        {/* Sidebar/Booking Section */}
-        <div>
-          <TutorBookingSidebar tutor={tutor} />
+        {/* Main Content Area */}
+        <div className="lg:col-span-2">
+          <Tabs defaultValue="about" className="w-full">
+            <TabsList className="w-full grid grid-cols-3 mb-6">
+              <TabsTrigger value="about" className="data-[state=active]:bg-usc-cardinal data-[state=active]:text-white">About</TabsTrigger>
+              <TabsTrigger value="subjects" className="data-[state=active]:bg-usc-cardinal data-[state=active]:text-white">Subjects</TabsTrigger>
+              <TabsTrigger value="availability" className="data-[state=active]:bg-usc-cardinal data-[state=active]:text-white">Availability</TabsTrigger>
+            </TabsList>
+            
+            <Card>
+              <CardContent className="p-6">
+                <TabsContent value="about" className="mt-0">
+                  <div className="space-y-6">
+                    <div>
+                      <h2 className="text-2xl font-bold mb-4">About {tutor.firstName || tutor.name.split(' ')[0]}</h2>
+                      <p className="text-muted-foreground">
+                        {tutor.bio || 
+                          `${tutor.name} is a ${tutor.field} major with experience in tutoring students.`}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-xl font-semibold mb-3">Education</h3>
+                      <div className="bg-muted/30 p-4 rounded-md">
+                        <h4 className="font-medium">University of Southern California</h4>
+                        <p className="text-muted-foreground">Major: {tutor.field}</p>
+                        <p className="text-muted-foreground">Year: {tutor.graduationYear ? `Class of ${tutor.graduationYear}` : "Senior"}</p>
+                      </div>
+                    </div>
+                    
+                    <TutorReviewsSection 
+                      reviews={reviews} 
+                      tutorId={tutor.id} 
+                      onReviewAdded={refreshReviews} 
+                    />
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="subjects" className="mt-0">
+                  <div>
+                    <h2 className="text-2xl font-bold mb-4">Subjects</h2>
+                    <p className="text-muted-foreground mb-4">
+                      {tutor.firstName || tutor.name.split(' ')[0]} can help you with the following subjects:
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                      {tutor.subjects.map((subject) => (
+                        <div key={subject.code} className="p-3 border rounded-md">
+                          <p className="font-medium">{subject.name}</p>
+                          <p className="text-sm text-muted-foreground">{subject.code}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="availability" className="mt-0">
+                  <div>
+                    <h2 className="text-2xl font-bold mb-4">Availability</h2>
+                    <p className="text-muted-foreground mb-4">
+                      Check {tutor.firstName || tutor.name.split(' ')[0]}'s availability and schedule a session.
+                    </p>
+                    <TutorAvailabilityCard tutorId={tutor.id} readOnly={true} />
+                  </div>
+                </TabsContent>
+              </CardContent>
+            </Card>
+          </Tabs>
         </div>
       </div>
+      
+      {/* CTA Section at bottom */}
+      <div className="mt-12 bg-usc-cardinal text-white rounded-lg p-6">
+        <div className="flex flex-col md:flex-row justify-between items-center">
+          <div>
+            <h2 className="text-xl md:text-2xl font-bold">Ready to get started with {tutor.name}?</h2>
+            <p className="mt-2">Book a session now and improve your academic performance!</p>
+          </div>
+          <Button 
+            variant="outline" 
+            className="mt-4 md:mt-0 bg-white text-usc-cardinal hover:bg-gray-100"
+            onClick={() => setShowBookingModal(true)}
+          >
+            Book a Session
+          </Button>
+        </div>
+      </div>
+      
+      {/* Booking Modal */}
+      <BookSessionModal 
+        tutor={tutor}
+        isOpen={showBookingModal}
+        onClose={() => setShowBookingModal(false)}
+      />
     </div>
   );
 };

@@ -1,12 +1,14 @@
 
 import { useNavigate } from "react-router-dom";
 import { Tutor } from "@/types/tutor";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { PaymentForm } from "./PaymentForm";
 import { AuthRequiredDialog } from "./booking-modal/AuthRequiredDialog";
 import { BookingStepSelector } from "./booking-modal/BookingStepSelector";
 import { SlotSelectionFooter } from "./booking-modal/SlotSelectionFooter";
 import { useBookingSession } from "./booking-modal/useBookingSession";
+import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface BookSessionModalProps {
   tutor: Tutor;
@@ -39,10 +41,19 @@ export const BookSessionModal = ({ tutor, isOpen, onClose }: BookSessionModalPro
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Book a Session with {tutor.name}</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Book a Session with {tutor.name}</DialogTitle>
+            <DialogDescription>
+              Select a date and time from {tutor.firstName || tutor.name.split(' ')[0]}'s availability.
+            </DialogDescription>
+          </DialogHeader>
+          <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+          </Button>
+        </div>
         
         {step === 'select-slot' && (
           <>
