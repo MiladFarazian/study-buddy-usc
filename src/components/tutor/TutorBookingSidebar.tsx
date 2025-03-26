@@ -22,7 +22,9 @@ export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
         </CardHeader>
         <CardContent>
           <div className="mb-4">
-            <p className="font-bold text-2xl text-usc-cardinal">${tutor.hourlyRate}/hour</p>
+            <p className="font-bold text-2xl text-usc-cardinal">
+              ${tutor.hourlyRate?.toFixed(2) || "25.00"}/hour
+            </p>
           </div>
 
           <div className="space-y-4 mb-6">
@@ -36,8 +38,8 @@ export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
             <div className="flex items-center">
               <Clock className="h-5 w-5 mr-2 text-muted-foreground" />
               <div>
-                <p className="font-medium">Sessions from 1-2 hours</p>
-                <p className="text-sm text-muted-foreground">Tailored to your needs</p>
+                <p className="font-medium">Customizable session length</p>
+                <p className="text-sm text-muted-foreground">Choose the exact time you need</p>
               </div>
             </div>
           </div>

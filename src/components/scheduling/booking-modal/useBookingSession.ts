@@ -33,11 +33,15 @@ export const useBookingSession = (tutor: Tutor, isOpen: boolean, onClose: () => 
     // If user is not logged in, we'll show the login prompt when they try to proceed
     if (!user) {
       setAuthRequired(true);
+      return;
     }
+    
+    // If the user is logged in, proceed directly to payment
+    handleProceedToPayment(slot);
   };
   
-  const handleProceedToPayment = async () => {
-    if (!selectedSlot) return;
+  const handleProceedToPayment = async (slot = selectedSlot) => {
+    if (!slot) return;
     
     // Redirect to login if not authenticated
     if (!user || !profile) {
@@ -49,9 +53,9 @@ export const useBookingSession = (tutor: Tutor, isOpen: boolean, onClose: () => 
     
     try {
       // Format the date and times for the session
-      const sessionDate = format(selectedSlot.day, 'yyyy-MM-dd');
-      const startTime = `${sessionDate}T${selectedSlot.start}:00`;
-      const endTime = `${sessionDate}T${selectedSlot.end}:00`;
+      const sessionDate = format(slot.day, 'yyyy-MM-dd');
+      const startTime = `${sessionDate}T${slot.start}:00`;
+      const endTime = `${sessionDate}T${slot.end}:00`;
       
       // Create the session in the database
       const session = await createSessionBooking(
@@ -67,8 +71,8 @@ export const useBookingSession = (tutor: Tutor, isOpen: boolean, onClose: () => 
       if (!session) throw new Error("Failed to create session");
       
       // Calculate session cost
-      const startTimeObj = parseISO(`2000-01-01T${selectedSlot.start}`);
-      const endTimeObj = parseISO(`2000-01-01T${selectedSlot.end}`);
+      const startTimeObj = parseISO(`2000-01-01T${slot.start}`);
+      const endTimeObj = parseISO(`2000-01-01T${slot.end}`);
       const durationHours = differenceInMinutes(endTimeObj, startTimeObj) / 60;
       const sessionCost = tutor.hourlyRate * durationHours;
       
