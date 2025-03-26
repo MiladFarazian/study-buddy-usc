@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BookingSlot } from "@/lib/scheduling";
 import { Tutor } from "@/types/tutor";
 import { AlertCircle } from "lucide-react";
@@ -9,6 +9,7 @@ import { DateSelector } from "./date-selector/DateSelector";
 import { TimeSlotList } from "./time-slot/TimeSlotList";
 import { SessionDurationSelector } from "./duration/SessionDurationSelector";
 import { StudentInfoForm } from "./student-info/StudentInfoForm";
+import { convertTimeToMinutes, convertMinutesToTime } from "../calendar/hooks/useTimeFormatting";
 
 interface BookingStepSelectorProps {
   tutor: Tutor;
@@ -26,7 +27,9 @@ export const BookingStepSelector = ({
   const [email, setEmail] = useState<string>("");
   const [sessionDuration, setSessionDuration] = useState<number>(60); // Default 60 minutes
   const [sessionStart, setSessionStart] = useState<string | null>(null);
+  const [selectedStartTime, setSelectedStartTime] = useState<string>("");
   const [calculatedCost, setCalculatedCost] = useState<number | null>(null);
+  const [availableStartTimes, setAvailableStartTimes] = useState<string[]>([]);
   
   const startDate = date || new Date();
   const { loading, availableSlots, hasAvailability, errorMessage } = useAvailabilityData(tutor, startDate);
@@ -45,18 +48,52 @@ export const BookingStepSelector = ({
   const handleTimeSlotSelect = (slot: BookingSlot) => {
     setSelectedTimeSlot(slot);
     
-    // Set initial duration to 60 minutes or the max available time if less
+    // Generate available start times in 15-minute increments
     const startTimeMinutes = convertTimeToMinutes(slot.start);
     const endTimeMinutes = convertTimeToMinutes(slot.end);
     const maxDuration = endTimeMinutes - startTimeMinutes;
     
-    // Set default duration (1 hour or max available)
+    const startTimes: string[] = [];
+    // Generate start times in 15-minute increments, leaving at least 15 minutes for session
+    for (let time = startTimeMinutes; time < endTimeMinutes - 15; time += 15) {
+      startTimes.push(convertMinutesToTime(time));
+    }
+    
+    setAvailableStartTimes(startTimes);
+    
+    // Set default start time to the beginning of the slot
+    const defaultStartTime = slot.start;
+    setSelectedStartTime(defaultStartTime);
+    setSessionStart(defaultStartTime);
+    
+    // Set default duration to 60 minutes or max available time if less
     const defaultDuration = Math.min(60, maxDuration);
     setSessionDuration(defaultDuration);
-    setSessionStart(slot.start);
     
     // Calculate cost based on duration
     calculateCost(defaultDuration, tutor.hourlyRate || 25);
+  };
+  
+  // Handle start time selection
+  const handleStartTimeChange = (startTime: string) => {
+    setSelectedStartTime(startTime);
+    setSessionStart(startTime);
+    
+    // Adjust max duration based on new start time
+    if (selectedTimeSlot) {
+      const startTimeMinutes = convertTimeToMinutes(startTime);
+      const endTimeMinutes = convertTimeToMinutes(selectedTimeSlot.end);
+      const maxPossibleDuration = endTimeMinutes - startTimeMinutes;
+      
+      // If current duration exceeds max possible, adjust it
+      if (sessionDuration > maxPossibleDuration) {
+        setSessionDuration(maxPossibleDuration);
+        calculateCost(maxPossibleDuration, tutor.hourlyRate || 25);
+      } else {
+        // Recalculate session time range and cost with new start time
+        calculateCost(sessionDuration, tutor.hourlyRate || 25);
+      }
+    }
   };
   
   // Helper function to convert time string to minutes
@@ -81,7 +118,7 @@ export const BookingStepSelector = ({
   
   // Handle duration slider change
   const handleDurationChange = (value: number[]) => {
-    if (!selectedTimeSlot || !value.length) return;
+    if (!selectedTimeSlot || !value.length || !sessionStart) return;
     
     const newDuration = value[0];
     setSessionDuration(newDuration);
@@ -90,11 +127,11 @@ export const BookingStepSelector = ({
     calculateCost(newDuration, tutor.hourlyRate || 25);
   };
   
-  // Get the maximum possible duration for the selected time slot
+  // Get the maximum possible duration for the selected time slot and start time
   const getMaxDuration = (): number => {
-    if (!selectedTimeSlot) return 180; // Default max 3 hours
+    if (!selectedTimeSlot || !sessionStart) return 180; // Default max 3 hours
     
-    const startTimeMinutes = convertTimeToMinutes(selectedTimeSlot.start);
+    const startTimeMinutes = convertTimeToMinutes(sessionStart);
     const endTimeMinutes = convertTimeToMinutes(selectedTimeSlot.end);
     
     // Cap at 3 hours or max available
@@ -191,8 +228,12 @@ export const BookingStepSelector = ({
           calculatedCost={calculatedCost}
           sessionDuration={sessionDuration}
           onDurationChange={handleDurationChange}
+          onStartTimeChange={handleStartTimeChange}
           maxDuration={getMaxDuration()}
           hourlyRate={tutor.hourlyRate || 25}
+          availableStartTimes={availableStartTimes}
+          selectedStartTime={selectedStartTime}
+          formatTimeForDisplay={formatTimeForDisplay}
         />
       )}
       
