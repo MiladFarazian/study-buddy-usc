@@ -27,12 +27,7 @@ export const BookingStepSelector = ({
   onClose 
 }: BookingStepSelectorProps) => {
   const [date, setDate] = useState<Date | undefined>(new Date());
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState<{
-    day: Date;
-    start: string;
-    end: string;
-    available: boolean;
-  } | null>(null);
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<BookingSlot | null>(null);
   const [email, setEmail] = useState<string>("");
   const [sessionDuration, setSessionDuration] = useState<number>(60); // Default 60 minutes
   const [sessionStart, setSessionStart] = useState<string | null>(null);
@@ -138,7 +133,7 @@ export const BookingStepSelector = ({
     const endTime = convertMinutesToTime(endMinutes);
     
     return {
-      tutorId: selectedTimeSlot.tutorId,
+      tutorId: tutor.id, // Use the tutor.id directly instead of selectedTimeSlot.tutorId
       day: selectedTimeSlot.day,
       start: sessionStart,
       end: endTime,
