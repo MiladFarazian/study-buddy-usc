@@ -1,19 +1,14 @@
 
-import { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookingSlot, WeeklyAvailability } from "@/lib/scheduling";
+import { useState } from "react";
+import { BookingSlot } from "@/lib/scheduling";
 import { Tutor } from "@/types/tutor";
-import { format, parseISO, differenceInMinutes, addMinutes } from "date-fns";
+import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Clock, AlertCircle } from "lucide-react";
-import { Calendar } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useAvailabilityData } from "../calendar/useAvailabilityData";
-import { Slider } from "@/components/ui/slider";
+import { DateSelector } from "./date-selector/DateSelector";
+import { TimeSlotList } from "./time-slot/TimeSlotList";
+import { SessionDurationSelector } from "./duration/SessionDurationSelector";
+import { StudentInfoForm } from "./student-info/StudentInfoForm";
 
 interface BookingStepSelectorProps {
   tutor: Tutor;
@@ -39,21 +34,14 @@ export const BookingStepSelector = ({
   // Filter available slots for the selected date
   const availableTimeSlotsForDate = availableSlots.filter(slot => {
     if (!date) return false;
+    const slotDate = new Date(slot.day);
     return (
-      format(slot.day, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd') && 
+      slotDate.toDateString() === date.toDateString() && 
       slot.available
     );
   });
   
-  // Helper function to convert 24h time to 12h format for display
-  function formatTimeForDisplay(time24: string): string {
-    const [hours, minutes] = time24.split(':').map(Number);
-    const period = hours >= 12 ? 'PM' : 'AM';
-    const hours12 = hours % 12 || 12;
-    return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
-  }
-  
-  // Function to handle time slot selection
+  // Handle time slot selection
   const handleTimeSlotSelect = (slot: BookingSlot) => {
     setSelectedTimeSlot(slot);
     
@@ -113,17 +101,6 @@ export const BookingStepSelector = ({
     return Math.min(180, endTimeMinutes - startTimeMinutes);
   };
   
-  // Format time for displaying the session start and end times
-  const getSessionTimeRange = (): string => {
-    if (!sessionStart || !sessionDuration || !selectedTimeSlot) return '';
-    
-    const startMinutes = convertTimeToMinutes(sessionStart);
-    const endMinutes = startMinutes + sessionDuration;
-    const endTime = convertMinutesToTime(endMinutes);
-    
-    return `${formatTimeForDisplay(sessionStart)} - ${formatTimeForDisplay(endTime)}`;
-  };
-  
   // Function to get the final booking slot based on selected duration
   const getFinalBookingSlot = (): BookingSlot | null => {
     if (!selectedTimeSlot || !sessionStart || !sessionDuration) return null;
@@ -133,7 +110,7 @@ export const BookingStepSelector = ({
     const endTime = convertMinutesToTime(endMinutes);
     
     return {
-      tutorId: tutor.id, // Use the tutor.id directly instead of selectedTimeSlot.tutorId
+      tutorId: tutor.id,
       day: selectedTimeSlot.day,
       start: sessionStart,
       end: endTime,
@@ -172,120 +149,57 @@ export const BookingStepSelector = ({
     );
   }
   
+  // Helper function to format time for displaying
+  const formatTimeForDisplay = (time24: string): string => {
+    const [hours, minutes] = time24.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const hours12 = hours % 12 || 12;
+    return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+  };
+  
+  // Format time for displaying the session start and end times
+  const getSessionTimeRange = (): string => {
+    if (!sessionStart || !sessionDuration || !selectedTimeSlot) return '';
+    
+    const startMinutes = convertTimeToMinutes(sessionStart);
+    const endMinutes = startMinutes + sessionDuration;
+    const endTime = convertMinutesToTime(endMinutes);
+    
+    return `${formatTimeForDisplay(sessionStart)} - ${formatTimeForDisplay(endTime)}`;
+  };
+  
   return (
     <div className="space-y-6 py-2">
-      <div className="space-y-2">
-        <Label>1. Select Date</Label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className={cn(
-                "w-full justify-start text-left font-normal",
-                !date && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {date ? format(date, "EEEE, MMMM do, yyyy") : <span>Select a date</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              initialFocus
-              className="p-3 pointer-events-auto"
-              disabled={(date) => {
-                // Disable dates that don't have available slots
-                return !availableSlots.some(slot => 
-                  format(slot.day, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd') && slot.available
-                );
-              }}
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
+      <DateSelector 
+        date={date} 
+        onDateChange={setDate} 
+        availableSlots={availableSlots} 
+      />
       
       {date && availableTimeSlotsForDate.length > 0 && (
-        <div className="space-y-2">
-          <Label>2. Select Available Time Block</Label>
-          <ScrollArea className="h-[200px] border rounded-md p-2">
-            <div className="space-y-2 p-2">
-              {availableTimeSlotsForDate.map((slot, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-between text-left",
-                    selectedTimeSlot === slot && "border-usc-cardinal bg-red-50"
-                  )}
-                  onClick={() => handleTimeSlotSelect(slot)}
-                >
-                  <div className="flex items-center">
-                    <Clock className="h-4 w-4 mr-2" />
-                    <span>
-                      {formatTimeForDisplay(slot.start)} - {formatTimeForDisplay(slot.end)}
-                    </span>
-                  </div>
-                  <span className="text-sm text-muted-foreground">
-                    {differenceInMinutes(
-                      parseISO(`2000-01-01T${slot.end}`),
-                      parseISO(`2000-01-01T${slot.start}`)
-                    ) / 60} hours
-                  </span>
-                </Button>
-              ))}
-            </div>
-          </ScrollArea>
-        </div>
+        <TimeSlotList 
+          availableTimeSlots={availableTimeSlotsForDate}
+          selectedTimeSlot={selectedTimeSlot}
+          onSelectTimeSlot={handleTimeSlotSelect}
+          formatTimeForDisplay={formatTimeForDisplay}
+        />
       )}
       
       {selectedTimeSlot && (
-        <div className="space-y-3 p-4 border rounded-md bg-muted/30">
-          <Label>3. Choose Session Duration</Label>
-          
-          <div className="py-4">
-            <div className="flex justify-between items-center mb-2">
-              <span className="font-medium">{getSessionTimeRange()}</span>
-              {calculatedCost !== null && (
-                <span className="font-bold text-usc-cardinal">${calculatedCost.toFixed(2)}</span>
-              )}
-            </div>
-            
-            <Slider
-              defaultValue={[sessionDuration]}
-              min={15}
-              max={getMaxDuration()}
-              step={15}
-              value={[sessionDuration]}
-              onValueChange={handleDurationChange}
-              className="my-4"
-            />
-            
-            <div className="flex justify-between text-sm text-muted-foreground mt-1">
-              <span>15 min</span>
-              <span>{getMaxDuration() / 60} hours</span>
-            </div>
-          </div>
-          
-          <div className="flex justify-between items-center text-sm">
-            <span>Duration: {(sessionDuration / 60).toFixed(1)} hours</span>
-            <span>Rate: ${tutor.hourlyRate || 25.00}/hour</span>
-          </div>
-        </div>
+        <SessionDurationSelector
+          sessionTimeRange={getSessionTimeRange()}
+          calculatedCost={calculatedCost}
+          sessionDuration={sessionDuration}
+          onDurationChange={handleDurationChange}
+          maxDuration={getMaxDuration()}
+          hourlyRate={tutor.hourlyRate || 25}
+        />
       )}
       
-      <div className="space-y-2">
-        <Label>4. Your Email</Label>
-        <Input 
-          type="email" 
-          placeholder="your@email.com" 
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <p className="text-xs text-muted-foreground">A confirmation will be sent to this email address</p>
-      </div>
+      <StudentInfoForm 
+        email={email}
+        onEmailChange={(e) => setEmail(e.target.value)}
+      />
       
       <div className="pt-4 flex justify-end space-x-2">
         <Button variant="outline" onClick={onClose}>
