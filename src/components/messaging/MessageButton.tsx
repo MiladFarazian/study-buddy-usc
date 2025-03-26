@@ -9,9 +9,11 @@ import { Tutor } from "@/types/tutor";
 interface MessageButtonProps {
   recipient: Profile | Tutor;
   className?: string;
+  variant?: "outline" | "default" | "destructive" | "secondary" | "ghost" | "link";
+  size?: "default" | "sm" | "lg" | "icon";
 }
 
-export default function MessageButton({ recipient, className }: MessageButtonProps) {
+export default function MessageButton({ recipient, className, variant = "outline", size = "sm" }: MessageButtonProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   
@@ -36,8 +38,8 @@ export default function MessageButton({ recipient, className }: MessageButtonPro
   return (
     <Button 
       onClick={handleClick}
-      variant="outline"
-      size="sm"
+      variant={variant}
+      size={size}
       className={className}
     >
       <MessageSquare className="h-4 w-4 mr-2" />

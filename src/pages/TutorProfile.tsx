@@ -1,4 +1,3 @@
-
 import { useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -65,7 +64,6 @@ const TutorProfile = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Sidebar - Tutor Info */}
         <div className="lg:col-span-1">
           <Card className="mb-6">
             <CardContent className="p-6">
@@ -118,14 +116,12 @@ const TutorProfile = () => {
                 <MessageButton 
                   recipient={tutor} 
                   className="w-full mt-3"
-                  variant="outline"
                 />
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Main Content Area */}
         <div className="lg:col-span-2">
           <Tabs defaultValue="about" className="w-full">
             <TabsList className="w-full grid grid-cols-3 mb-6">
@@ -195,7 +191,6 @@ const TutorProfile = () => {
         </div>
       </div>
       
-      {/* CTA Section at bottom */}
       <div className="mt-12 bg-usc-cardinal text-white rounded-lg p-6">
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div>
@@ -212,7 +207,6 @@ const TutorProfile = () => {
         </div>
       </div>
       
-      {/* Booking Modal */}
       <BookSessionModal 
         tutor={tutor}
         isOpen={showBookingModal}
