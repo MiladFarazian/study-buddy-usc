@@ -39,6 +39,7 @@ export const PaymentForm = ({
   const [stripeLoaded, setStripeLoaded] = useState(false);
   const [cardElement, setCardElement] = useState<any>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [cardError, setCardError] = useState<string | null>(null);
   
   // Calculate session duration and cost
   const startTime = parseISO(`2000-01-01T${selectedSlot.start}`);
@@ -47,52 +48,56 @@ export const PaymentForm = ({
   const sessionCost = tutor.hourlyRate * durationHours;
   
   useEffect(() => {
-    const loadStripe = async () => {
+    const loadStripeAndCreateIntent = async () => {
       try {
+        setLoading(true);
+        
+        // Initialize Stripe
         const stripe = await initializeStripe();
         const elements = stripe.elements();
         
-        // Create the card element
-        const card = elements.create('card', {
+        // Create the card element with improved styling
+        const cardEl = elements.create('card', {
           style: {
             base: {
-              iconColor: '#c4f0ff',
-              color: '#000',
-              fontWeight: '500',
-              fontFamily: 'Roboto, Open Sans, Segoe UI, sans-serif',
-              fontSize: '16px',
+              color: '#32325d',
+              fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
               fontSmoothing: 'antialiased',
-              ':-webkit-autofill': {
-                color: '#fce883',
-              },
+              fontSize: '16px',
               '::placeholder': {
-                color: '#87BBFD',
-              },
+                color: '#aab7c4'
+              }
             },
             invalid: {
-              iconColor: '#FFC7EE',
-              color: '#FFC7EE',
-            },
-          },
+              color: '#fa755a',
+              iconColor: '#fa755a'
+            }
+          }
         });
         
-        // Wait for the next repaint to mount the element
+        // Mount card element when DOM is ready
         setTimeout(() => {
-          const cardElement = document.getElementById('card-element');
-          if (cardElement) {
-            card.mount('#card-element');
-            setCardElement(card);
+          const cardContainer = document.getElementById('card-element');
+          if (cardContainer) {
+            cardEl.mount('#card-element');
+            
+            // Add event listener for card errors
+            cardEl.on('change', (event: any) => {
+              setCardError(event.error ? event.error.message : '');
+            });
+            
+            setCardElement(cardEl);
             setStripeLoaded(true);
           }
         }, 100);
         
         // Create a payment intent
-        createPaymentIntentForSession();
+        await createPaymentIntentForSession();
         
       } catch (error) {
-        console.error('Error loading Stripe:', error);
+        console.error('Error setting up payment:', error);
         toast({
-          title: 'Payment Error',
+          title: 'Payment Setup Error',
           description: 'Failed to load payment system. Please try again.',
           variant: 'destructive',
         });
@@ -101,13 +106,28 @@ export const PaymentForm = ({
       }
     };
     
-    loadStripe();
-  }, []);
+    loadStripeAndCreateIntent();
+    
+    // Cleanup function
+    return () => {
+      if (cardElement) {
+        cardElement.unmount();
+      }
+    };
+  }, [sessionId]);
   
   const createPaymentIntentForSession = async () => {
     try {
       const formattedDate = format(selectedSlot.day, 'MMM dd, yyyy');
       const description = `Tutoring session with ${tutor.name} on ${formattedDate} at ${selectedSlot.start}`;
+      
+      console.log("Creating payment intent for session:", { 
+        sessionId, 
+        amount: sessionCost,
+        tutorId: tutor.id,
+        studentId,
+        description
+      });
       
       const paymentIntent = await createPaymentIntent(
         sessionId,
@@ -117,6 +137,7 @@ export const PaymentForm = ({
         description
       );
       
+      console.log("Received payment intent:", paymentIntent);
       setClientSecret(paymentIntent.client_secret);
     } catch (error) {
       console.error('Error creating payment intent:', error);
@@ -147,8 +168,8 @@ export const PaymentForm = ({
       const paymentResult = await processPayment(
         clientSecret,
         cardElement,
-        studentName,
-        studentEmail
+        studentName || 'Unknown Student',
+        studentEmail || 'unknown@example.com'
       );
       
       console.log('Payment successful:', paymentResult);
@@ -230,22 +251,25 @@ export const PaymentForm = ({
           <div className="space-y-4">
             <div>
               <Label htmlFor="card-element">Card Details</Label>
-              <div className="mt-1 border rounded-md p-3">
+              <div className="mt-1 border rounded-md p-3 bg-white">
                 {loading ? (
                   <div className="h-10 flex items-center justify-center">
                     <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                   </div>
                 ) : (
-                  <div id="card-element" className="h-10"></div>
+                  <div id="card-element" className="h-10 flex items-center"></div>
                 )}
               </div>
+              {cardError && (
+                <p className="text-sm text-destructive mt-1">{cardError}</p>
+              )}
             </div>
             
             <div className="pt-4">
               <Button
                 type="submit"
                 className="w-full bg-usc-cardinal hover:bg-usc-cardinal-dark"
-                disabled={loading || processing || !stripeLoaded}
+                disabled={loading || processing || !stripeLoaded || !clientSecret}
               >
                 {processing ? (
                   <>

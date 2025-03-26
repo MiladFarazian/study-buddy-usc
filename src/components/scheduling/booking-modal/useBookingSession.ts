@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { BookingSlot, createSessionBooking } from "@/lib/scheduling";
 import { format, parseISO, differenceInMinutes } from "date-fns";
 import { Tutor } from "@/types/tutor";
+import { createPaymentTransaction } from "@/lib/scheduling/payment-utils";
 
 export const useBookingSession = (tutor: Tutor, isOpen: boolean, onClose: () => void) => {
   const { user, profile } = useAuth();
@@ -75,6 +76,14 @@ export const useBookingSession = (tutor: Tutor, isOpen: boolean, onClose: () => 
       const endTimeObj = parseISO(`2000-01-01T${slot.end}`);
       const durationHours = differenceInMinutes(endTimeObj, startTimeObj) / 60;
       const sessionCost = (tutor.hourlyRate || 25) * durationHours;
+      
+      // Create a payment transaction
+      await createPaymentTransaction(
+        session.id,
+        user.id,
+        tutor.id,
+        sessionCost
+      );
       
       setSessionId(session.id);
       setStep('payment');
