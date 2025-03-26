@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Clock } from "lucide-react";
+import { Calendar, Clock, ArrowRightLeft } from "lucide-react";
 import { Tutor } from "@/types/tutor";
 import MessageButton from "@/components/messaging/MessageButton";
 import { useState } from "react";
@@ -31,20 +31,26 @@ export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
             <div className="flex items-center">
               <Calendar className="h-5 w-5 mr-2 text-muted-foreground" />
               <div>
-                <p className="font-medium">Flexible Schedule</p>
-                <p className="text-sm text-muted-foreground">Weekly or one-time sessions</p>
+                <p className="font-medium">Choose from available dates</p>
+                <p className="text-sm text-muted-foreground">Based on tutor's schedule</p>
               </div>
             </div>
             <div className="flex items-center">
               <Clock className="h-5 w-5 mr-2 text-muted-foreground" />
               <div>
-                <p className="font-medium">Customizable session length</p>
-                <p className="text-sm text-muted-foreground">Choose the exact time you need</p>
+                <p className="font-medium">Select your session length</p>
+                <p className="text-sm text-muted-foreground">Adjustable duration to fit your needs</p>
+              </div>
+            </div>
+            <div className="flex items-center">
+              <ArrowRightLeft className="h-5 w-5 mr-2 text-muted-foreground" />
+              <div>
+                <p className="font-medium">Flexible time slots</p>
+                <p className="text-sm text-muted-foreground">Pick any time within available hours</p>
               </div>
             </div>
           </div>
 
-          {/* Show Book Session button for all users */}
           <Button 
             className="w-full bg-usc-cardinal hover:bg-usc-cardinal-dark text-white mb-3"
             onClick={() => setShowBookingModal(true)}
@@ -52,7 +58,6 @@ export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
             Book a Session
           </Button>
           
-          {/* Show Message button for all users */}
           <MessageButton 
             recipient={tutor} 
             className="w-full"
@@ -60,7 +65,6 @@ export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
         </CardContent>
       </Card>
 
-      {/* Booking Modal */}
       {tutor && (
         <BookSessionModal 
           tutor={tutor}

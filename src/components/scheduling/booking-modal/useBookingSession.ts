@@ -74,10 +74,16 @@ export const useBookingSession = (tutor: Tutor, isOpen: boolean, onClose: () => 
       const startTimeObj = parseISO(`2000-01-01T${slot.start}`);
       const endTimeObj = parseISO(`2000-01-01T${slot.end}`);
       const durationHours = differenceInMinutes(endTimeObj, startTimeObj) / 60;
-      const sessionCost = tutor.hourlyRate * durationHours;
+      const sessionCost = (tutor.hourlyRate || 25) * durationHours;
       
       setSessionId(session.id);
       setStep('payment');
+      
+      console.log("Session created, moving to payment step", {
+        sessionId: session.id,
+        cost: sessionCost,
+        duration: durationHours
+      });
       
     } catch (error) {
       console.error("Error creating session:", error);
