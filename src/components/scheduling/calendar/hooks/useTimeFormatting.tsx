@@ -1,36 +1,26 @@
 
-import { format } from 'date-fns';
-
-// Helper function to convert HH:MM to minutes
-export const convertTimeToMinutes = (timeString: string): number => {
-  const [hours, minutes] = timeString.split(':').map(Number);
+// Convert time string (HH:MM) to minutes since midnight
+export const convertTimeToMinutes = (timeStr: string): number => {
+  const [hours, minutes] = timeStr.split(':').map(Number);
   return hours * 60 + minutes;
 };
 
-// Format the time in HH:MM format
+// Convert minutes since midnight to time string (HH:MM)
+export const convertMinutesToTime = (totalMinutes: number): string => {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+};
+
+// Format time string to 12-hour format with AM/PM
 export const formatTimeString = (hour: number, minute: number): string => {
   return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
 };
 
-// Helper to check if one time is before another
-export const isTimeBefore = (time1: string, time2: string): boolean => {
-  return convertTimeToMinutes(time1) < convertTimeToMinutes(time2);
-};
-
-// Get a time string 15 minutes later
-export const addFifteenMinutes = (timeString: string): string => {
-  let [hours, minutes] = timeString.split(':').map(Number);
-  
-  minutes += 15;
-  if (minutes >= 60) {
-    hours += 1;
-    minutes -= 60;
-  }
-  
-  return formatTimeString(hours, minutes);
-};
-
-// Format a date to string
-export const formatDate = (date: Date): string => {
-  return format(date, 'yyyy-MM-dd');
+// Format 24-hour time string (HH:MM) to 12-hour format with AM/PM
+export const formatTimeForDisplay = (time24: string): string => {
+  const [hours, minutes] = time24.split(':').map(Number);
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const hours12 = hours % 12 || 12;
+  return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
 };
