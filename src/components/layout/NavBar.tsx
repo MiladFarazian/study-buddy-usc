@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
@@ -20,15 +21,17 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { NotificationsList } from "@/components/notifications/NotificationsList";
+import { useIsMobile } from "@/hooks/use-mobile";
 
-const NavBar = ({ isMobile }: { isMobile: boolean }) => {
-  const { user, profile, logout } = useAuth();
+const NavBar = () => {
+  const { user, profile, signOut } = useAuth(); // Changed from logout to signOut
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const { unreadCount } = useNotifications();
+  const isMobile = useIsMobile();
 
   const handleLogout = async () => {
-    await logout();
+    await signOut(); // Changed from logout to signOut
     navigate("/login");
   };
 

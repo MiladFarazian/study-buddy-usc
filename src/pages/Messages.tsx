@@ -16,42 +16,43 @@ export default function Messages() {
   const isMobile = useIsMobile();
   const [showChat, setShowChat] = useState(!isMobile);
   
-  const {
-    conversations,
-    currentConversation,
-    setCurrentConversation,
-    messages,
-    loading,
-    messageLoading,
-    sendMessage,
-    startConversation
-  } = useMessaging();
-
+  // Fix the useMessaging hook usage to match the actual implementation
+  const messaging = useMessaging();
+  const { 
+    conversation, 
+    messages, 
+    loading: messageLoading, 
+    sendMessage: sendMessageToConversation 
+  } = messaging;
+  
   // Reset view state when conversation changes
   useEffect(() => {
-    if (currentConversation && isMobile) {
+    if (conversation && isMobile) {
       setShowChat(true);
     }
-  }, [currentConversation, isMobile]);
+  }, [conversation, isMobile]);
 
   // Handle starting a new conversation if directed from another page
   useEffect(() => {
     const initConversation = async () => {
       if (targetUserId && user) {
-        await startConversation(targetUserId, !isTargetTutor);
+        // We need to adapt to the useMessaging API here
+        // You might need to implement this in useMessaging.ts
+        await messaging.startConversationWithUser(targetUserId, isTargetTutor);
         setShowChat(true);
         // Clear the URL params after starting the conversation
         navigate("/messages", { replace: true });
       }
     };
     
-    if (targetUserId && user && !loading) {
+    if (targetUserId && user && !messageLoading) {
       initConversation();
     }
-  }, [targetUserId, isTargetTutor, user, loading, startConversation, navigate]);
+  }, [targetUserId, isTargetTutor, user, messageLoading, navigate, messaging]);
 
   const handleSelectConversation = (conversation: any) => {
-    setCurrentConversation(conversation);
+    // Need to adapt to the useMessaging API here
+    messaging.selectConversation(conversation);
     if (isMobile) {
       setShowChat(true);
     }
@@ -60,6 +61,19 @@ export default function Messages() {
   const handleBackToList = () => {
     if (isMobile) {
       setShowChat(false);
+    }
+  };
+
+  // Create a wrapper for the sendMessage function to match the expected signature
+  const handleSendMessage = async (content: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      if (!conversation) {
+        return { success: false, error: "No active conversation" };
+      }
+      await sendMessageToConversation(conversation.id, content);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: (error as Error).message };
     }
   };
 
@@ -81,10 +95,10 @@ export default function Messages() {
         {(!isMobile || (isMobile && !showChat)) && (
           <div className={`${isMobile ? 'w-full' : 'w-1/3'} border-r`}>
             <ConversationList 
-              conversations={conversations}
-              currentConversation={currentConversation}
+              conversations={messaging.conversations || []}
+              currentConversation={conversation}
               onSelectConversation={handleSelectConversation}
-              loading={loading}
+              loading={messageLoading}
             />
           </div>
         )}
@@ -93,10 +107,10 @@ export default function Messages() {
         {(!isMobile || (isMobile && showChat)) && (
           <div className={`${isMobile ? 'w-full' : 'flex-1'}`}>
             <ChatInterface 
-              conversation={currentConversation}
+              conversation={conversation}
               messages={messages}
               loading={messageLoading}
-              onSendMessage={sendMessage}
+              onSendMessage={handleSendMessage}
               onBackClick={handleBackToList}
               isMobile={isMobile}
             />

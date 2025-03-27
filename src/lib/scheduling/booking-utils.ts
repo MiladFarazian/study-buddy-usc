@@ -3,14 +3,38 @@ import { supabase } from "@/integrations/supabase/client";
 import { BookingSlot } from "./types";
 import { createNotification } from "../notification-service";
 
+// Get tutor's booked sessions
+export async function getTutorBookedSessions(
+  tutorId: string,
+  startDate: Date,
+  endDate: Date
+) {
+  try {
+    const { data, error } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('tutor_id', tutorId)
+      .gte('start_time', startDate.toISOString())
+      .lte('end_time', endDate.toISOString());
+      
+    if (error) throw error;
+    
+    return data || [];
+  } catch (error) {
+    console.error("Error fetching tutor booked sessions:", error);
+    return [];
+  }
+}
+
 // Create a session booking
 export const createSessionBooking = async (
-  tutorId: string,
   studentId: string,
-  startTime: Date,
-  endTime: Date,
-  courseId?: string,
-  notes?: string
+  tutorId: string,
+  courseId: string | null,
+  startTime: string,
+  endTime: string,
+  location: string | null,
+  notes: string | null
 ) => {
   try {
     // Create session record
@@ -19,9 +43,10 @@ export const createSessionBooking = async (
       .insert({
         tutor_id: tutorId,
         student_id: studentId,
-        start_time: startTime.toISOString(),
-        end_time: endTime.toISOString(),
+        start_time: startTime,
+        end_time: endTime,
         course_id: courseId,
+        location: location,
         notes: notes,
         status: 'pending',
         payment_status: 'unpaid'

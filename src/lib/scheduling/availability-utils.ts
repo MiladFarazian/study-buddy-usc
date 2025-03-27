@@ -1,6 +1,6 @@
-
 import { supabase } from "@/integrations/supabase/client";
-import { WeeklyAvailability } from "./types";
+import { WeeklyAvailability, BookingSlot } from "./types";
+import { format, addDays } from 'date-fns';
 
 // Get tutor's availability from their profile
 export async function getTutorAvailability(tutorId: string): Promise<WeeklyAvailability | null> {
@@ -89,4 +89,57 @@ export function mapDateToDayOfWeek(date: Date): string {
 export function hasAvailabilityForDate(date: Date, availability: WeeklyAvailability): boolean {
   const dayOfWeek = mapDateToDayOfWeek(date);
   return availability[dayOfWeek]?.length > 0;
+}
+
+// Generate available time slots based on tutor's availability and booked sessions
+export function generateAvailableSlots(
+  availability: WeeklyAvailability,
+  bookedSessions: any[],
+  startDate: Date,
+  daysAhead: number
+): BookingSlot[] {
+  const availableSlots: BookingSlot[] = [];
+  
+  // Generate slots for the given number of days ahead
+  for (let i = 0; i < daysAhead; i++) {
+    const currentDate = addDays(startDate, i);
+    const dayOfWeek = mapDateToDayOfWeek(currentDate);
+    
+    // Skip if no availability for this day
+    if (!availability[dayOfWeek] || availability[dayOfWeek].length === 0) {
+      continue;
+    }
+    
+    // For each availability slot in this day
+    for (const slot of availability[dayOfWeek]) {
+      // Create a booking slot
+      const bookingSlot: BookingSlot = {
+        tutorId: '', // Will be set by the caller
+        day: currentDate,
+        start: slot.start,
+        end: slot.end,
+        available: true
+      };
+      
+      // Check if this slot overlaps with any booked sessions
+      const dateString = format(currentDate, 'yyyy-MM-dd');
+      const isBooked = bookedSessions.some(session => {
+        const sessionDate = format(new Date(session.start_time), 'yyyy-MM-dd');
+        const sessionStart = format(new Date(session.start_time), 'HH:mm');
+        const sessionEnd = format(new Date(session.end_time), 'HH:mm');
+        
+        return (
+          sessionDate === dateString &&
+          ((sessionStart <= slot.start && sessionEnd > slot.start) ||
+           (sessionStart < slot.end && sessionEnd >= slot.end) ||
+           (sessionStart >= slot.start && sessionEnd <= slot.end))
+        );
+      });
+      
+      bookingSlot.available = !isBooked;
+      availableSlots.push(bookingSlot);
+    }
+  }
+  
+  return availableSlots;
 }
