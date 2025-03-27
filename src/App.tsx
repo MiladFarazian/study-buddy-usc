@@ -38,11 +38,10 @@ const queryClient = new QueryClient({
 
 function App() {
   return (
-    // Wrap everything in React provider components
     <BrowserRouter>
-      <AuthProvider>
-        <TooltipProvider>
-          <QueryClientProvider client={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <TooltipProvider>
             <Toaster />
             <Sonner />
             <Routes>
@@ -108,9 +107,9 @@ function App() {
               />
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </QueryClientProvider>
-        </TooltipProvider>
-      </AuthProvider>
+          </TooltipProvider>
+        </AuthProvider>
+      </QueryClientProvider>
     </BrowserRouter>
   );
 }
