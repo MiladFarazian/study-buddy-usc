@@ -5,8 +5,9 @@ export * from './availability-utils';
 export * from './booking-utils';
 export * from './payment-utils';
 
-// UI Components for new booking flow
+// UI Components for booking flow
 export * from './ui/DateSelector';
 export * from './ui/TimeSelector';
 export * from './ui/DurationSelector';
 export * from './ui/BookingSummary';
+export * from './ui/ScheduleCalendar';
