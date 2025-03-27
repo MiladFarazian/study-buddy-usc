@@ -1,144 +1,84 @@
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ThemeProvider } from "@/components/ui/theme-provider";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import NavBar from "./components/layout/NavBar";
-import Footer from "./components/layout/Footer";
-import Home from "./pages/Home";
-import Profile from "./pages/Profile";
-import Settings from "./pages/Settings";
-import Tutors from "./pages/Tutors";
-import Schedule from "./pages/Schedule";
-import Register from "./pages/Register";
-import Login from "./pages/Login";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
-import VerifyEmail from "./pages/VerifyEmail";
-import Messages from "./pages/Messages";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { UserProvider } from "./contexts/AuthContext";
+import { NotificationsProvider } from "./contexts/NotificationsContext";
 import { Toaster } from "@/components/ui/toaster";
-import { NotificationsProvider } from "@/contexts/NotificationsContext";
+import PrivateRoute from "./components/auth/PrivateRoute";
+import RequireProfileCompletion from "./components/auth/RequireProfileCompletion";
+import Layout from "./components/layout/Layout";
+import Home from "./pages/Home";
+import Courses from "./pages/Courses";
+import ProfilePage from "./pages/ProfilePage";
+import Settings from "./pages/Settings";
+import Scheduling from "./pages/Scheduling";
+import Messages from "./pages/Messages";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import ResetPassword from "./pages/ResetPassword";
+import UpdatePassword from "./pages/UpdatePassword";
+import VerifyEmail from "./pages/VerifyEmail";
+import Contact from "./pages/Contact";
+import About from "./pages/About";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
+import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
-
-function App() {
-  const AuthRoute = ({ children }: { children: React.ReactNode }) => {
-    const { user, loading } = useAuth();
-
-    if (loading) {
-      return <div>Loading...</div>;
-    }
-
-    return user ? <>{children}</> : <Navigate to="/login" />;
-  };
-
-  const GuestRoute = ({ children }: { children: React.ReactNode }) => {
-    const { user, loading } = useAuth();
-
-    if (loading) {
-      return <div>Loading...</div>;
-    }
-
-    return user ? <Navigate to="/" /> : <>{children}</>;
-  };
-
+export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <ThemeProvider defaultTheme="light" storageKey="theme-preference">
-          <AuthProvider>
-            <NotificationsProvider>
-              <NavBar />
-              <main className="container py-10">
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route
-                    path="/register"
-                    element={
-                      <GuestRoute>
-                        <Register />
-                      </GuestRoute>
-                    }
-                  />
-                  <Route
-                    path="/login"
-                    element={
-                      <GuestRoute>
-                        <Login />
-                      </GuestRoute>
-                    }
-                  />
-                  <Route
-                    path="/forgot-password"
-                    element={
-                      <GuestRoute>
-                        <ForgotPassword />
-                      </GuestRoute>
-                    }
-                  />
-                  <Route
-                    path="/reset-password"
-                    element={
-                      <GuestRoute>
-                        <ResetPassword />
-                      </GuestRoute>
-                    }
-                  />
-                  <Route path="/verify-email" element={<VerifyEmail />} />
-                  <Route
-                    path="/profile"
-                    element={
-                      <AuthRoute>
-                        <Profile />
-                      </AuthRoute>
-                    }
-                  />
-                  <Route
-                    path="/settings"
-                    element={
-                      <AuthRoute>
-                        <Settings />
-                      </AuthRoute>
-                    }
-                  />
-                  <Route
-                    path="/tutors"
-                    element={
-                      <AuthRoute>
-                        <Tutors />
-                      </AuthRoute>
-                    }
-                  />
-                  <Route
-                    path="/schedule"
-                    element={
-                      <AuthRoute>
-                        <Schedule />
-                      </AuthRoute>
-                    }
-                  />
-                  <Route
-                    path="/messages"
-                    element={
-                      <AuthRoute>
-                        <Messages />
-                      </AuthRoute>
-                    }
-                  />
-                </Routes>
-              </main>
-              <Footer />
-            </NotificationsProvider>
-          </AuthProvider>
-        </ThemeProvider>
-      </BrowserRouter>
-      <Toaster />
-    </QueryClientProvider>
+    <UserProvider>
+      <NotificationsProvider>
+        <Router>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/update-password/:token" element={<UpdatePassword />} />
+            <Route path="/verify-email/:token" element={<VerifyEmail />} />
+            
+            <Route path="/" element={<Layout><Home /></Layout>} />
+            <Route path="/courses" element={<Layout><Courses /></Layout>} />
+            <Route path="/contact" element={<Layout><Contact /></Layout>} />
+            <Route path="/about" element={<Layout><About /></Layout>} />
+            <Route path="/terms" element={<Layout><Terms /></Layout>} />
+            <Route path="/privacy" element={<Layout><Privacy /></Layout>} />
+            
+            <Route path="/profile/:id" element={<Layout><ProfilePage /></Layout>} />
+
+            <Route 
+              path="/settings" 
+              element={
+                <PrivateRoute>
+                  <Layout><Settings /></Layout>
+                </PrivateRoute>
+              } 
+            />
+            
+            <Route 
+              path="/schedule" 
+              element={
+                <PrivateRoute>
+                  <RequireProfileCompletion>
+                    <Layout><Scheduling /></Layout>
+                  </RequireProfileCompletion>
+                </PrivateRoute>
+              } 
+            />
+            
+            <Route 
+              path="/messages" 
+              element={
+                <PrivateRoute>
+                  <RequireProfileCompletion>
+                    <Layout><Messages /></Layout>
+                  </RequireProfileCompletion>
+                </PrivateRoute>
+              } 
+            />
+            
+            <Route path="*" element={<Layout><NotFound /></Layout>} />
+          </Routes>
+          <Toaster />
+        </Router>
+      </NotificationsProvider>
+    </UserProvider>
   );
 }
-
-export default App;

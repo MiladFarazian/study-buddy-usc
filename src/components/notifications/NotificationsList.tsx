@@ -1,7 +1,8 @@
 
 import { useState } from "react";
 import { format, isToday, isYesterday } from "date-fns";
-import { Notification, useNotifications } from "@/contexts/NotificationsContext";
+import { Notification } from "@/types/NotificationTypes";
+import { useNotifications } from "@/contexts/NotificationsContext";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNavigate } from "react-router-dom";
@@ -54,14 +55,14 @@ export const NotificationsList = () => {
               <div
                 key={notification.id}
                 className={`p-4 transition-colors hover:bg-gray-50 cursor-pointer ${
-                  !notification.isRead ? "bg-blue-50" : ""
+                  !notification.is_read ? "bg-blue-50" : ""
                 }`}
                 onClick={() => handleNotificationClick(notification)}
               >
                 <div className="flex justify-between items-start">
                   <div className="font-medium">{notification.title}</div>
                   <div className="text-xs text-gray-500">
-                    {formatDate(notification.createdAt)}
+                    {formatDate(notification.created_at)}
                   </div>
                 </div>
                 <div className="text-sm mt-1 text-gray-600">{notification.message}</div>

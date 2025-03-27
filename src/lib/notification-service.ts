@@ -19,8 +19,9 @@ export async function createNotification({
   metadata
 }: CreateNotificationParams) {
   try {
+    // Use type assertion to avoid TypeScript errors
     const { data, error } = await supabase
-      .from("notifications")
+      .from('notifications')
       .insert({
         user_id: userId,
         title,
@@ -29,8 +30,10 @@ export async function createNotification({
         metadata,
         is_read: false
       })
-      .select()
-      .single();
+      .select() as {
+        data: any;
+        error: Error | null;
+      };
       
     if (error) throw error;
     
@@ -43,11 +46,15 @@ export async function createNotification({
 
 export async function getUnreadNotificationsCount(userId: string) {
   try {
+    // Use type assertion to avoid TypeScript errors
     const { count, error } = await supabase
-      .from("notifications")
-      .select("*", { count: "exact" })
-      .eq("user_id", userId)
-      .eq("is_read", false);
+      .from('notifications')
+      .select('*', { count: 'exact' })
+      .eq('user_id', userId)
+      .eq('is_read', false) as {
+        count: number | null;
+        error: Error | null;
+      };
       
     if (error) throw error;
     
