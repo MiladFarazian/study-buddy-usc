@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,6 +9,7 @@ import {
   Profile
 } from "@/integrations/supabase/types-extension";
 import { useToast } from "@/hooks/use-toast";
+import { createNotification } from "@/lib/notification-service";
 
 export function useMessaging() {
   const { user } = useAuth();
@@ -20,7 +20,6 @@ export function useMessaging() {
   const [loading, setLoading] = useState(true);
   const [messageLoading, setMessageLoading] = useState(false);
 
-  // Fetch user conversations
   useEffect(() => {
     if (!user) {
       setConversations([]);
@@ -31,7 +30,6 @@ export function useMessaging() {
     const fetchConversations = async () => {
       setLoading(true);
       
-      // Get all conversations for the current user
       const { data: conversationsData, error: conversationsError } = await supabase
         .from("conversations")
         .select("*")
@@ -55,7 +53,6 @@ export function useMessaging() {
         return;
       }
 
-      // Fetch all profiles involved in these conversations
       const profileIds = new Set<string>();
       conversationsData.forEach(conversation => {
         profileIds.add(conversation.tutor_id);
@@ -78,13 +75,11 @@ export function useMessaging() {
         return;
       }
 
-      // Create a map of profiles by ID for quick lookup
       const profilesMap = new Map<string, Profile>();
       profilesData?.forEach(profile => {
         profilesMap.set(profile.id, profile as Profile);
       });
 
-      // Count unread messages for each conversation
       const conversationsWithProfiles = await Promise.all(
         conversationsData.map(async (conversation) => {
           const { count, error: countError } = await supabase
@@ -94,7 +89,6 @@ export function useMessaging() {
             .eq("read", false)
             .not("sender_id", "eq", user.id);
           
-          // Map the tutor and student profiles
           const tutorProfile = profilesMap.get(conversation.tutor_id);
           const studentProfile = profilesMap.get(conversation.student_id);
           
@@ -112,7 +106,6 @@ export function useMessaging() {
         })
       );
       
-      // Filter out any null values (in case a profile was missing)
       const validConversations = conversationsWithProfiles.filter(
         (c): c is ConversationWithProfiles => c !== null
       );
@@ -123,7 +116,6 @@ export function useMessaging() {
 
     fetchConversations();
 
-    // Subscribe to changes in conversations
     const channel = supabase
       .channel("conversations-channel")
       .on(
@@ -145,7 +137,6 @@ export function useMessaging() {
     };
   }, [user, toast]);
 
-  // Fetch messages for current conversation and set up real-time updates
   useEffect(() => {
     if (!currentConversation) {
       setMessages([]);
@@ -175,7 +166,6 @@ export function useMessaging() {
       setMessages(data || []);
       setMessageLoading(false);
 
-      // Mark messages as read
       if (data && data.length > 0) {
         const unreadMessages = data.filter(
           msg => !msg.read && msg.sender_id !== user?.id
@@ -195,7 +185,6 @@ export function useMessaging() {
 
     fetchMessages();
 
-    // Subscribe to new messages
     const channel = supabase
       .channel(`messages-${currentConversation.id}`)
       .on(
@@ -207,11 +196,9 @@ export function useMessaging() {
           filter: `conversation_id=eq.${currentConversation.id}`,
         },
         (payload) => {
-          // Add new message to the list
           const newMessage = payload.new as Message;
           setMessages((prev) => [...prev, newMessage]);
           
-          // Mark message as read if from the other user
           if (newMessage.sender_id !== user?.id) {
             supabase
               .from("messages")
@@ -227,7 +214,6 @@ export function useMessaging() {
     };
   }, [currentConversation, user, toast]);
 
-  // Send a message
   const sendMessage = async (content: string) => {
     if (!user || !currentConversation || !content.trim()) {
       return { success: false, error: "Cannot send empty message" };
@@ -255,7 +241,6 @@ export function useMessaging() {
       return { success: false, error: error.message };
     }
 
-    // Update conversation's last message
     await supabase
       .from("conversations")
       .update({
@@ -265,10 +250,32 @@ export function useMessaging() {
       })
       .eq("id", currentConversation.id);
 
+    const recipientId = user.id === currentConversation.tutor.id 
+      ? currentConversation.student.id 
+      : currentConversation.tutor.id;
+    
+    const senderName = user.id === currentConversation.tutor.id
+      ? `${currentConversation.tutor.first_name || ''} ${currentConversation.tutor.last_name || ''}`.trim()
+      : `${currentConversation.student.first_name || ''} ${currentConversation.student.last_name || ''}`.trim();
+    
+    try {
+      await createNotification({
+        userId: recipientId,
+        title: 'New Message',
+        message: `${senderName || 'Someone'} sent you a message: "${content.length > 50 ? content.substring(0, 50) + '...' : content}"`,
+        type: 'message',
+        metadata: {
+          conversationId: currentConversation.id,
+          messageId: data.id
+        }
+      });
+    } catch (notifError) {
+      console.error("Error creating message notification:", notifError);
+    }
+
     return { success: true, message: data };
   };
 
-  // Create a new conversation or get existing one
   const startConversation = async (participantId: string, isStudent: boolean) => {
     if (!user) {
       return { success: false, error: "Not authenticated" };
@@ -277,7 +284,6 @@ export function useMessaging() {
     const tutorId = isStudent ? participantId : user.id;
     const studentId = isStudent ? user.id : participantId;
 
-    // Check if conversation already exists
     const { data: existingConversationData, error: fetchError } = await supabase
       .from("conversations")
       .select("*")
@@ -286,7 +292,6 @@ export function useMessaging() {
       .single();
 
     if (fetchError && fetchError.code !== "PGRST116") {
-      // PGRST116 is the error code for no rows returned
       console.error("Error checking existing conversation:", fetchError);
       toast({
         title: "Error starting conversation",
@@ -296,9 +301,7 @@ export function useMessaging() {
       return { success: false, error: fetchError.message };
     }
 
-    // If conversation exists, fetch the complete profiles and set it as current
     if (existingConversationData) {
-      // Fetch tutor and student profiles
       const { data: tutorData } = await supabase
         .from("profiles")
         .select("*")
@@ -324,7 +327,6 @@ export function useMessaging() {
       }
     }
 
-    // Create new conversation if it doesn't exist
     const { data: newConversation, error: insertError } = await supabase
       .from("conversations")
       .insert({
@@ -344,7 +346,6 @@ export function useMessaging() {
       return { success: false, error: insertError.message };
     }
 
-    // Fetch the tutor and student profiles
     const { data: tutorData } = await supabase
       .from("profiles")
       .select("*")

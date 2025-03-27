@@ -1,114 +1,142 @@
-
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Layout from "./components/layout/Layout";
-import { AuthProvider } from "./contexts/AuthContext";
-import Index from "./pages/Index";
-import Courses from "./pages/Courses";
+import { ThemeProvider } from "@/components/ui/theme-provider";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import NavBar from "./components/layout/NavBar";
+import Footer from "./components/layout/Footer";
+import Home from "./pages/Home";
+import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 import Tutors from "./pages/Tutors";
 import Schedule from "./pages/Schedule";
-import Resources from "./pages/Resources";
-import Analytics from "./pages/Analytics";
-import Settings from "./pages/Settings";
-import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
-import NotFound from "./pages/NotFound";
-import PrivateRoute from "./components/auth/PrivateRoute";
-import RequireProfileCompletion from "./components/auth/RequireProfileCompletion";
-import AuthCallback from "./pages/AuthCallback";
-import TutorProfile from "./pages/TutorProfile";
-import Profile from "./pages/Profile";
-import Students from "./pages/Students";
-import EmailVerification from "./pages/EmailVerification";
+import VerifyEmail from "./pages/VerifyEmail";
 import Messages from "./pages/Messages";
+import { Toaster } from "@/components/ui/toaster";
+import { NotificationsProvider } from "@/contexts/NotificationsContext";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 60 * 1000, // 1 minute
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 function App() {
+  const AuthRoute = ({ children }: { children: React.ReactNode }) => {
+    const { user, loading } = useAuth();
+
+    if (loading) {
+      return <div>Loading...</div>;
+    }
+
+    return user ? <>{children}</> : <Navigate to="/login" />;
+  };
+
+  const GuestRoute = ({ children }: { children: React.ReactNode }) => {
+    const { user, loading } = useAuth();
+
+    if (loading) {
+      return <div>Loading...</div>;
+    }
+
+    return user ? <Navigate to="/" /> : <>{children}</>;
+  };
+
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AuthProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Layout><Index /></Layout>} />
-              <Route path="/courses" element={<Layout><Courses /></Layout>} />
-              <Route path="/tutors" element={<Layout><Tutors /></Layout>} />
-              <Route path="/tutors/:id" element={<Layout><TutorProfile /></Layout>} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/verify-email" element={<EmailVerification />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/auth/callback" element={<AuthCallback />} />
-              <Route path="/schedule" element={
-                <PrivateRoute>
-                  <RequireProfileCompletion>
-                    <Layout><Schedule /></Layout>
-                  </RequireProfileCompletion>
-                </PrivateRoute>
-              } />
-              <Route path="/resources" element={
-                <PrivateRoute>
-                  <RequireProfileCompletion>
-                    <Layout><Resources /></Layout>
-                  </RequireProfileCompletion>
-                </PrivateRoute>
-              } />
-              <Route path="/analytics" element={
-                <PrivateRoute>
-                  <RequireProfileCompletion>
-                    <Layout><Analytics /></Layout>
-                  </RequireProfileCompletion>
-                </PrivateRoute>
-              } />
-              <Route path="/settings" element={
-                <PrivateRoute>
-                  <RequireProfileCompletion>
-                    <Layout><Settings /></Layout>
-                  </RequireProfileCompletion>
-                </PrivateRoute>
-              } />
-              <Route path="/students" element={
-                <PrivateRoute>
-                  <RequireProfileCompletion>
-                    <Layout><Students /></Layout>
-                  </RequireProfileCompletion>
-                </PrivateRoute>
-              } />
-              <Route path="/messages" element={
-                <PrivateRoute>
-                  <RequireProfileCompletion>
-                    <Layout><Messages /></Layout>
-                  </RequireProfileCompletion>
-                </PrivateRoute>
-              } />
-              <Route 
-                path="/profile" 
-                element={
-                  <PrivateRoute>
-                    <Profile />
-                  </PrivateRoute>
-                } 
-              />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </AuthProvider>
-      </TooltipProvider>
+      <BrowserRouter>
+        <ThemeProvider defaultTheme="light" storageKey="theme-preference">
+          <AuthProvider>
+            <NotificationsProvider>
+              <NavBar />
+              <main className="container py-10">
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route
+                    path="/register"
+                    element={
+                      <GuestRoute>
+                        <Register />
+                      </GuestRoute>
+                    }
+                  />
+                  <Route
+                    path="/login"
+                    element={
+                      <GuestRoute>
+                        <Login />
+                      </GuestRoute>
+                    }
+                  />
+                  <Route
+                    path="/forgot-password"
+                    element={
+                      <GuestRoute>
+                        <ForgotPassword />
+                      </GuestRoute>
+                    }
+                  />
+                  <Route
+                    path="/reset-password"
+                    element={
+                      <GuestRoute>
+                        <ResetPassword />
+                      </GuestRoute>
+                    }
+                  />
+                  <Route path="/verify-email" element={<VerifyEmail />} />
+                  <Route
+                    path="/profile"
+                    element={
+                      <AuthRoute>
+                        <Profile />
+                      </AuthRoute>
+                    }
+                  />
+                  <Route
+                    path="/settings"
+                    element={
+                      <AuthRoute>
+                        <Settings />
+                      </AuthRoute>
+                    }
+                  />
+                  <Route
+                    path="/tutors"
+                    element={
+                      <AuthRoute>
+                        <Tutors />
+                      </AuthRoute>
+                    }
+                  />
+                  <Route
+                    path="/schedule"
+                    element={
+                      <AuthRoute>
+                        <Schedule />
+                      </AuthRoute>
+                    }
+                  />
+                  <Route
+                    path="/messages"
+                    element={
+                      <AuthRoute>
+                        <Messages />
+                      </AuthRoute>
+                    }
+                  />
+                </Routes>
+              </main>
+              <Footer />
+            </NotificationsProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </BrowserRouter>
+      <Toaster />
     </QueryClientProvider>
   );
 }

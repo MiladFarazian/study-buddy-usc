@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, startOfDay, endOfDay, addDays } from "date-fns";
 import { BookingSlot, WeeklyAvailability } from "./types";
 import { mapDateToDayOfWeek } from "./availability-utils";
+import { createNotification } from "@/lib/notification-service";
 
 // Get existing sessions for the tutor to determine which slots are already booked
 export async function getTutorBookedSessions(tutorId: string, startDate: Date, endDate: Date) {
@@ -102,10 +103,28 @@ export async function createSessionBooking(
         status: 'pending',
         payment_status: 'unpaid'
       })
-      .select()
+      .select('*, student:profiles!student_id(first_name, last_name)')
       .single();
       
     if (error) throw error;
+    
+    // Create notification for tutor about the new booking
+    if (data) {
+      const sessionDate = format(parseISO(data.start_time), 'MMMM d, yyyy');
+      const sessionTime = `${format(parseISO(data.start_time), 'h:mm a')} - ${format(parseISO(data.end_time), 'h:mm a')}`;
+      const studentName = `${data.student.first_name || ''} ${data.student.last_name || ''}`.trim() || 'A student';
+      
+      await createNotification({
+        userId: tutorId,
+        title: 'New Session Booked',
+        message: `${studentName} has booked a session with you on ${sessionDate} at ${sessionTime}`,
+        type: 'session_booked',
+        metadata: {
+          sessionId: data.id,
+          studentId: studentId
+        }
+      });
+    }
     
     return data;
   } catch (error) {
