@@ -1,3 +1,4 @@
+
 import { Link, useLocation } from "react-router-dom";
 import { 
   BarChart, 
@@ -81,7 +82,15 @@ const Sidebar = () => {
   
   return (
     <div className="min-h-screen w-64 bg-white text-usc-cardinal border-r border-gray-200 hidden md:block">
-      <nav className="p-4 space-y-2">
+      <div className="p-4 border-b">
+        <Link to="/" className="flex items-center">
+          <span className="font-playfair font-bold text-xl">
+            <span className="text-usc-cardinal">Study</span>
+            <span className="text-usc-gold">Buddy</span>
+          </span>
+        </Link>
+      </div>
+      <nav className="p-4 space-y-1">
         {filteredItems.map((item) => {
           const isActive = location.pathname === item.path;
           
