@@ -1,6 +1,4 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -94,55 +92,5 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
-
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Playfair Display', serif;
-  }
-}
-
-/* Animation utilities */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.5s ease-out forwards;
-}
-
-.page-container {
-  animation: fadeIn 0.5s ease-out forwards;
-}
-
-/* Chat message styling */
-.message-user {
-  @apply bg-usc-cardinal text-white rounded-lg rounded-br-none p-4;
-}
-
-.message-other {
-  @apply bg-muted rounded-lg rounded-bl-none p-4;
-}
-
-.message-timestamp {
-  @apply text-xs mt-1;
-}
-
-.conversation-item {
-  @apply transition-all duration-200;
-}
-
-.conversation-item:hover {
-  @apply bg-muted/50;
-}
-
-.conversation-item.active {
-  @apply bg-muted;
 }
