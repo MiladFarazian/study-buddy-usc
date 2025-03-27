@@ -1,41 +1,60 @@
 
-import { format } from "date-fns";
-import { BookingSlot } from "@/lib/scheduling-utils";
+import { format, differenceInMinutes, parseISO } from "date-fns";
+import { CalendarDays, Clock, DollarSign } from "lucide-react";
 import { Tutor } from "@/types/tutor";
-import { Calendar, Clock, DollarSign } from "lucide-react";
+import { BookingSlot } from "@/lib/scheduling";
+import { Separator } from "@/components/ui/separator";
 
 interface SessionDetailsDisplayProps {
   tutor: Tutor;
   selectedSlot: BookingSlot;
 }
 
-export const SessionDetailsDisplay = ({ tutor, selectedSlot }: SessionDetailsDisplayProps) => {
-  // Calculate session duration and cost
-  const startTime = new Date(`2000-01-01T${selectedSlot.start}`);
-  const endTime = new Date(`2000-01-01T${selectedSlot.end}`);
-  const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+export const SessionDetailsDisplay = ({ 
+  tutor, 
+  selectedSlot 
+}: SessionDetailsDisplayProps) => {
+  // Calculate duration and cost
+  const startTime = parseISO(`2000-01-01T${selectedSlot.start}`);
+  const endTime = parseISO(`2000-01-01T${selectedSlot.end}`);
+  const durationMinutes = differenceInMinutes(endTime, startTime);
+  const durationHours = durationMinutes / 60;
   const sessionCost = tutor.hourlyRate * durationHours;
   
   return (
-    <div className="mb-6 p-4 bg-muted rounded-lg">
-      <h3 className="font-medium mb-3">Session Details</h3>
-      <div className="space-y-2">
-        <div className="flex items-center">
-          <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-          <span>{format(selectedSlot.day, 'EEEE, MMMM d, yyyy')}</span>
+    <div className="space-y-4 mb-6">
+      <h3 className="text-lg font-medium">Session Details</h3>
+      
+      <div className="bg-gray-50 rounded-md p-4 space-y-3">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center">
+            <CalendarDays className="h-4 w-4 mr-2 text-muted-foreground" />
+            <span className="text-sm">
+              {format(selectedSlot.day, 'EEEE, MMMM d, yyyy')}
+            </span>
+          </div>
+          
+          <div className="flex items-center">
+            <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+            <span className="text-sm">
+              {format(startTime, 'h:mm a')} - {format(endTime, 'h:mm a')}
+            </span>
+          </div>
         </div>
-        <div className="flex items-center">
-          <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
-          <span>
-            {selectedSlot.start} - {selectedSlot.end} ({(durationHours * 60).toFixed(0)} minutes)
-          </span>
-        </div>
+        
         <div className="flex items-center">
           <DollarSign className="h-4 w-4 mr-2 text-muted-foreground" />
-          <span>
-            ${tutor.hourlyRate.toFixed(2)}/hour × {durationHours.toFixed(1)} hours = ${sessionCost.toFixed(2)}
+          <span className="text-sm">
+            ${tutor.hourlyRate.toFixed(2)}/hour • {durationHours.toFixed(1)} hours
           </span>
         </div>
+      </div>
+      
+      <Separator />
+      
+      <div className="flex justify-between font-medium">
+        <span>Total</span>
+        <span>${sessionCost.toFixed(2)}</span>
       </div>
     </div>
   );
