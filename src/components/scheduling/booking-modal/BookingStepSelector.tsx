@@ -1,3 +1,4 @@
+
 import { Tutor } from "@/types/tutor";
 import { BookingCalendarDrag } from "../BookingCalendarDrag";
 import { BookingSlot } from "@/lib/scheduling";
@@ -10,7 +11,6 @@ interface BookingStepSelectorProps {
 }
 
 export const BookingStepSelector = ({ tutor, onSelectSlot, onClose }: BookingStepSelectorProps) => {
-
   const handleSlotSelect = (slot: BookingSlot) => {
     const enhancedSlot = enhanceBookingSlot(slot, tutor.id);
     onSelectSlot(enhancedSlot);
