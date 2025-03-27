@@ -9,8 +9,6 @@ export async function createPaymentTransaction(
   amount: number
 ) {
   try {
-    console.log("Creating payment transaction:", { sessionId, studentId, tutorId, amount });
-    
     const { data, error } = await supabase
       .from('payment_transactions')
       .insert({
@@ -23,12 +21,8 @@ export async function createPaymentTransaction(
       .select()
       .single();
       
-    if (error) {
-      console.error("Error creating payment transaction:", error);
-      throw error;
-    }
+    if (error) throw error;
     
-    console.log("Payment transaction created:", data);
     return data;
   } catch (error) {
     console.error("Error creating payment transaction:", error);
@@ -42,8 +36,6 @@ export async function updatePaymentTransactionWithStripe(
   stripePaymentIntentId: string
 ) {
   try {
-    console.log("Updating transaction with Stripe ID:", { transactionId, stripePaymentIntentId });
-    
     const { error } = await supabase
       .from('payment_transactions')
       .update({
@@ -52,10 +44,7 @@ export async function updatePaymentTransactionWithStripe(
       })
       .eq('id', transactionId);
       
-    if (error) {
-      console.error("Error updating payment transaction:", error);
-      throw error;
-    }
+    if (error) throw error;
     
     return true;
   } catch (error) {
@@ -70,8 +59,6 @@ export async function markPaymentComplete(
   sessionId: string
 ) {
   try {
-    console.log("Marking payment as complete:", { transactionId, sessionId });
-    
     // Update payment transaction
     const { error: paymentError } = await supabase
       .from('payment_transactions')
@@ -81,10 +68,7 @@ export async function markPaymentComplete(
       })
       .eq('id', transactionId);
       
-    if (paymentError) {
-      console.error("Error updating payment transaction:", paymentError);
-      throw paymentError;
-    }
+    if (paymentError) throw paymentError;
     
     // Update session payment status
     const { error: sessionError } = await supabase
@@ -96,10 +80,7 @@ export async function markPaymentComplete(
       })
       .eq('id', sessionId);
       
-    if (sessionError) {
-      console.error("Error updating session:", sessionError);
-      throw sessionError;
-    }
+    if (sessionError) throw sessionError;
     
     return true;
   } catch (error) {

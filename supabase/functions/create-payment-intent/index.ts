@@ -30,13 +30,10 @@ serve(async (req) => {
   try {
     const { sessionId, amount, tutorId, studentId, description } = await req.json();
     
-    console.log("Creating payment intent with:", { sessionId, amount, tutorId, studentId });
-    
     // Create a Stripe payment intent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount * 100), // Stripe expects amount in cents
       currency: "usd",
-      payment_method_types: ["card"], // Explicitly specify payment method types
       metadata: {
         sessionId,
         tutorId,
@@ -44,8 +41,6 @@ serve(async (req) => {
       },
       description,
     });
-    
-    console.log("Payment intent created:", paymentIntent.id);
     
     // Store the payment intent in the database
     const { error: dbError } = await supabase

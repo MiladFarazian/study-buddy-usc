@@ -38,8 +38,6 @@ export const createPaymentIntent = async (
   description: string
 ): Promise<StripePaymentIntent> => {
   try {
-    console.log("Creating payment intent:", { sessionId, amount, tutorId, studentId, description });
-    
     const { data, error } = await supabase.functions.invoke('create-payment-intent', {
       body: {
         sessionId,
@@ -50,17 +48,9 @@ export const createPaymentIntent = async (
       }
     });
 
-    if (error) {
-      console.error("Supabase function error:", error);
-      throw error;
-    }
+    if (error) throw error;
+    if (!data) throw new Error('No data returned from create-payment-intent function');
     
-    if (!data) {
-      console.error("No data returned from create-payment-intent function");
-      throw new Error('No data returned from create-payment-intent function');
-    }
-    
-    console.log("Payment intent created:", data);
     return data as StripePaymentIntent;
   } catch (error) {
     console.error('Error creating payment intent:', error);
@@ -78,8 +68,6 @@ export const processPayment = async (
   try {
     const stripe = await initializeStripe();
     
-    console.log("Processing payment for:", { name, email });
-    
     const result = await stripe.confirmCardPayment(clientSecret, {
       payment_method: {
         card: cardElement,
@@ -91,11 +79,9 @@ export const processPayment = async (
     });
     
     if (result.error) {
-      console.error("Stripe payment error:", result.error);
       throw new Error(result.error.message);
     }
     
-    console.log("Payment successful:", result.paymentIntent);
     return result.paymentIntent;
   } catch (error) {
     console.error('Error processing payment:', error);
