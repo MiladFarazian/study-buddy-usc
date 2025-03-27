@@ -27,6 +27,7 @@ import Students from "./pages/Students";
 import EmailVerification from "./pages/EmailVerification";
 import Messages from "./pages/Messages";
 
+// Create a new QueryClient instance OUTSIDE of the component
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -37,12 +38,13 @@ const queryClient = new QueryClient({
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AuthProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
+    // Wrap everything in React provider components
+    <BrowserRouter>
+      <AuthProvider>
+        <TooltipProvider>
+          <QueryClientProvider client={queryClient}>
+            <Toaster />
+            <Sonner />
             <Routes>
               <Route path="/" element={<Layout><Index /></Layout>} />
               <Route path="/courses" element={<Layout><Courses /></Layout>} />
@@ -106,10 +108,10 @@ function App() {
               />
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </BrowserRouter>
-        </AuthProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+          </QueryClientProvider>
+        </TooltipProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 
