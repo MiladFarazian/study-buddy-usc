@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tutor } from "@/types/tutor";
 import { useAvailabilityData } from "@/hooks/useAvailabilityData";
@@ -13,7 +13,7 @@ import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AuthRequiredDialog } from "./booking-modal/AuthRequiredDialog";
 
-interface BookingContent {
+interface BookingContentProps {
   loading: boolean;
   availableSlots: any[];
   hasAvailability: boolean;
@@ -22,6 +22,7 @@ interface BookingContent {
   setAuthRequired: (value: boolean) => void;
   handleComplete: () => void;
   handleClose: () => void;
+  tutor: Tutor;
 }
 
 // Inner content component that uses the scheduling context
@@ -33,9 +34,15 @@ function BookingContent({
   authRequired,
   setAuthRequired,
   handleComplete,
-  handleClose
-}: BookingContent) {
-  const { state } = useScheduling();
+  handleClose,
+  tutor
+}: BookingContentProps) {
+  const { state, setTutor } = useScheduling();
+  
+  // Set the tutor in the context when the component mounts
+  useEffect(() => {
+    setTutor(tutor);
+  }, [tutor, setTutor]);
   
   if (loading) {
     return (
@@ -112,7 +119,7 @@ export function NewScheduler({ tutor, isOpen, onClose }: NewSchedulerProps) {
           </DialogHeader>
           
           <div className="p-6 pt-2">
-            <BookingContentWithTutor 
+            <BookingContent 
               tutor={tutor}
               loading={loading}
               availableSlots={availableSlots}
@@ -128,16 +135,4 @@ export function NewScheduler({ tutor, isOpen, onClose }: NewSchedulerProps) {
       </Dialog>
     </SchedulingProvider>
   );
-}
-
-// Helper component to set the tutor in the context
-function BookingContentWithTutor({ tutor, ...props }: BookingContent & { tutor: Tutor }) {
-  const { setTutor } = useScheduling();
-  
-  // Set the tutor in the context when the component mounts
-  useState(() => {
-    setTutor(tutor);
-  });
-  
-  return <BookingContent {...props} />;
 }

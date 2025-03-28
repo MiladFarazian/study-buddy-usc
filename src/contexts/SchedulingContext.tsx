@@ -34,9 +34,9 @@ const initialState: SchedulingState = {
 function schedulingReducer(state: SchedulingState, action: SchedulingAction): SchedulingState {
   switch (action.type) {
     case 'SELECT_DATE':
-      return { ...state, selectedDate: action.payload, bookingStep: 'time' };
+      return { ...state, selectedDate: action.payload };
     case 'SELECT_TIME_SLOT':
-      return { ...state, selectedTimeSlot: action.payload, bookingStep: 'details' };
+      return { ...state, selectedTimeSlot: action.payload };
     case 'SET_DURATION':
       return { ...state, selectedDuration: action.payload };
     case 'SET_STEP':
@@ -64,7 +64,11 @@ const SchedulingContext = createContext<SchedulingContextType | undefined>(undef
 // Provider component
 export const SchedulingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(schedulingReducer, initialState);
-  const [tutor, setTutor] = useState<Tutor | null>(null);
+  const [tutor, setTutorState] = useState<Tutor | null>(null);
+
+  const setTutor = (newTutor: Tutor) => {
+    setTutorState(newTutor);
+  };
 
   const calculatePrice = (durationMinutes: number) => {
     if (!tutor) return 0;

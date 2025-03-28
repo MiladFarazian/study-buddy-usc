@@ -1,12 +1,10 @@
 
-import { useState } from 'react';
-import { format, isSameDay, isToday, parseISO } from 'date-fns';
-import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState, useEffect, useMemo } from 'react';
+import { BookingSlot } from "@/lib/scheduling";
+import { useScheduling } from "@/contexts/SchedulingContext";
+import { format, isSameDay } from 'date-fns';
 import { Button } from "@/components/ui/button";
-import { useScheduling } from '@/contexts/SchedulingContext';
-import { BookingSlot } from '@/lib/scheduling/types';
-import { Calendar as CalendarIcon, ArrowRight } from 'lucide-react';
+import { Calendar } from "@/components/ui/calendar";
 
 interface DateSelectionStepProps {
   availableSlots: BookingSlot[];
@@ -17,84 +15,87 @@ export function DateSelectionStep({ availableSlots, isLoading }: DateSelectionSt
   const { state, dispatch } = useScheduling();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(state.selectedDate || undefined);
 
-  // Get all unique dates that have available slots
-  const availableDates = Array.from(
-    new Set(
-      availableSlots
-        .filter(slot => slot.available)
-        .map(slot => format(slot.day, 'yyyy-MM-dd'))
-    )
-  ).map(dateStr => parseISO(dateStr));
-
-  const handleDateSelect = (date: Date | undefined) => {
-    if (!date) return;
+  // Extract all available dates from the available slots
+  const availableDates = useMemo(() => {
+    const uniqueDates = new Set<string>();
+    const dates: Date[] = [];
     
-    setSelectedDate(date);
+    availableSlots.forEach(slot => {
+      if (slot.available) {
+        const dateString = format(slot.day, 'yyyy-MM-dd');
+        if (!uniqueDates.has(dateString)) {
+          uniqueDates.add(dateString);
+          dates.push(new Date(slot.day));
+        }
+      }
+    });
+    
+    return dates;
+  }, [availableSlots]);
+
+  // Helper function to check if a date has available slots
+  const isDateAvailable = (date: Date) => {
+    return availableDates.some(availableDate => 
+      isSameDay(availableDate, date)
+    );
   };
 
-  const handleContinue = () => {
-    if (selectedDate) {
-      dispatch({ type: 'SELECT_DATE', payload: selectedDate });
+  // Update local state when context state changes
+  useEffect(() => {
+    if (state.selectedDate) {
+      setSelectedDate(state.selectedDate);
+    }
+  }, [state.selectedDate]);
+
+  // Handle date selection
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date && isDateAvailable(date)) {
+      setSelectedDate(date);
+      dispatch({ type: 'SELECT_DATE', payload: date });
     }
   };
 
-  // Function to check if a date has available slots
-  const hasAvailableSlots = (date: Date) => {
-    return availableDates.some(availableDate => isSameDay(availableDate, date));
+  // Handle continue button click
+  const handleContinue = () => {
+    if (selectedDate) {
+      dispatch({ type: 'SET_STEP', payload: 'time' });
+    }
+  };
+
+  // Handle back button click
+  const handleBack = () => {
+    dispatch({ type: 'RESET' });
   };
 
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Select a Date</h2>
-            {selectedDate && (
-              <Button 
-                onClick={handleContinue}
-                className="bg-usc-cardinal hover:bg-usc-cardinal-dark"
-              >
-                Continue <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            )}
-          </div>
-          
-          <div className="rounded-lg border p-3">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={handleDateSelect}
-              disabled={(date) => {
-                // Disable dates with no available slots
-                return !hasAvailableSlots(date);
-              }}
-              className="rounded-md mx-auto"
-              initialFocus
-            />
-          </div>
-          
-          {selectedDate && (
-            <div className="bg-muted p-3 rounded-lg flex items-center justify-between">
-              <div className="flex items-center">
-                <CalendarIcon className="h-5 w-5 mr-2 text-usc-cardinal" />
-                <span>
-                  {isToday(selectedDate) 
-                    ? 'Today' 
-                    : format(selectedDate, 'EEEE, MMMM d, yyyy')}
-                </span>
-              </div>
-              
-              <Button
-                onClick={handleContinue}
-                size="sm"
-                className="bg-usc-cardinal hover:bg-usc-cardinal-dark"
-              >
-                Next
-              </Button>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+    <div className="space-y-6">
+      <h2 className="text-lg font-semibold">Select a Date</h2>
+      
+      <div className="flex justify-center">
+        <Calendar
+          mode="single"
+          selected={selectedDate}
+          onSelect={handleDateSelect}
+          disabled={(date) => !isDateAvailable(date)}
+          className="rounded-md border"
+        />
+      </div>
+      
+      <div className="mt-6 flex justify-between">
+        <Button 
+          variant="outline" 
+          onClick={handleBack}
+        >
+          Back
+        </Button>
+        <Button 
+          onClick={handleContinue}
+          disabled={!selectedDate}
+          className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
+        >
+          Continue
+        </Button>
+      </div>
+    </div>
   );
 }
