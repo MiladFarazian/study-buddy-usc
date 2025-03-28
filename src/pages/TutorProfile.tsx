@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookSessionModal } from "@/components/scheduling/BookSessionModal";
 import { useState } from "react";
 import MessageButton from "@/components/messaging/MessageButton";
-import NewScheduler from "@/components/scheduling/NewScheduler";
+import { NewScheduler } from "@/components/scheduling/NewScheduler";
 
 const TutorProfile = () => {
   const { id } = useParams<{ id: string }>();
