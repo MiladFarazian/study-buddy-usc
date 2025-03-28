@@ -4,6 +4,7 @@ export * from './types';
 export * from './availability-utils';
 export * from './booking-utils';
 export * from './payment-utils';
+export * from './time-utils';
 
 // UI Components for booking flow
 export * from './ui/DateSelector';
