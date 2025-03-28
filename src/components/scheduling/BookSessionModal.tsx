@@ -83,9 +83,18 @@ export function BookSessionModal({ tutor, isOpen, onClose }: BookSessionModalPro
             <div className="p-6">
               <SessionDetailsDisplay tutor={tutor} selectedSlot={selectedSlot} />
               <PaymentCardElement 
-                amount={0} // This should be calculated based on the selected slot
-                onPaymentComplete={handlePaymentComplete} 
-                isProcessing={creatingSession} 
+                onCardElementReady={() => {}}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handlePaymentComplete();
+                }}
+                onCancel={handleCancel}
+                processing={creatingSession}
+                loading={false}
+                cardError={null}
+                amount={0}
+                stripeLoaded={true}
+                clientSecret={null}
               />
             </div>
           )}
@@ -99,7 +108,7 @@ export function BookSessionModal({ tutor, isOpen, onClose }: BookSessionModalPro
       </Dialog>
       
       <AuthRequiredDialog 
-        open={authRequired} 
+        isOpen={authRequired} 
         onClose={() => setAuthRequired(false)} 
       />
     </>

@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { format, startOfDay, addDays } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -17,13 +17,7 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
   const [hasAvailability, setHasAvailability] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (tutor.id) {
-      loadAvailability();
-    }
-  }, [tutor.id, startDate]);
-
-  const loadAvailability = async () => {
+  const loadAvailability = useCallback(async () => {
     setLoading(true);
     try {
       console.log("Loading availability for tutor:", tutor.id);
@@ -84,7 +78,18 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
     } finally {
       setLoading(false);
     }
+  }, [tutor.id, startDate, toast]);
+
+  useEffect(() => {
+    if (tutor.id) {
+      loadAvailability();
+    }
+  }, [tutor.id, startDate, loadAvailability]);
+
+  // Add the refreshAvailability function that was missing
+  const refreshAvailability = () => {
+    loadAvailability();
   };
 
-  return { loading, availableSlots, hasAvailability, errorMessage };
+  return { loading, availableSlots, hasAvailability, errorMessage, refreshAvailability };
 }

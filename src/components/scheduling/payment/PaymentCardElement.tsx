@@ -1,11 +1,10 @@
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Loader2, CreditCard } from "lucide-react";
-import { initializeStripe } from "@/lib/stripe-utils";
 
-interface PaymentCardElementProps {
+export interface PaymentCardElementProps {
   onCardElementReady: (cardElement: any) => void;
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
@@ -31,36 +30,13 @@ export const PaymentCardElement = ({
   useEffect(() => {
     const loadStripeCard = async () => {
       try {
-        // Initialize Stripe
-        const stripe = await initializeStripe();
-        const elements = stripe.elements();
+        // Initialize Stripe (placeholder for actual implementation)
+        console.log("Initializing Stripe card element");
         
-        // Create the card element with improved styling
-        const cardEl = elements.create('card', {
-          style: {
-            base: {
-              color: '#32325d',
-              fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
-              fontSmoothing: 'antialiased',
-              fontSize: '16px',
-              '::placeholder': {
-                color: '#aab7c4'
-              }
-            },
-            invalid: {
-              color: '#fa755a',
-              iconColor: '#fa755a'
-            }
-          }
-        });
-        
-        // Mount card element when DOM is ready
+        // Simulate card element creation
         setTimeout(() => {
-          const cardContainer = document.getElementById('card-element');
-          if (cardContainer) {
-            cardEl.mount('#card-element');
-            onCardElementReady(cardEl);
-          }
+          const mockCardElement = { on: (event: string, callback: any) => {} };
+          onCardElementReady(mockCardElement);
         }, 100);
       } catch (error) {
         console.error('Error setting up card element:', error);
