@@ -5,7 +5,7 @@ import { Calendar, Clock, ArrowRightLeft } from "lucide-react";
 import { Tutor } from "@/types/tutor";
 import MessageButton from "@/components/messaging/MessageButton";
 import { useState } from "react";
-import { BookSessionModal } from "@/components/scheduling/BookSessionModal";
+import { NewScheduler } from "@/components/scheduling/NewScheduler";
 
 interface TutorBookingSidebarProps {
   tutor: Tutor;
@@ -66,7 +66,7 @@ export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
       </Card>
 
       {tutor && (
-        <BookSessionModal 
+        <NewScheduler 
           tutor={tutor}
           isOpen={showBookingModal}
           onClose={() => setShowBookingModal(false)}

@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookSessionModal } from "@/components/scheduling/BookSessionModal";
 import { useState } from "react";
 import MessageButton from "@/components/messaging/MessageButton";
+import NewScheduler from "@/components/scheduling/NewScheduler";
 
 const TutorProfile = () => {
   const { id } = useParams<{ id: string }>();
@@ -207,11 +208,13 @@ const TutorProfile = () => {
         </div>
       </div>
       
-      <BookSessionModal 
-        tutor={tutor}
-        isOpen={showBookingModal}
-        onClose={() => setShowBookingModal(false)}
-      />
+      {tutor && (
+        <NewScheduler 
+          tutor={tutor}
+          isOpen={showBookingModal}
+          onClose={() => setShowBookingModal(false)}
+        />
+      )}
     </div>
   );
 };
