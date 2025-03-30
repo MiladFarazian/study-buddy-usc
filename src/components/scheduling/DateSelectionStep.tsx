@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { BookingSlot } from "@/lib/scheduling";
-import { useScheduling } from "@/contexts/SchedulingContext";
+import { useScheduling, BookingStep } from "@/contexts/SchedulingContext";
 import { format, isSameDay } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -58,7 +58,7 @@ export function DateSelectionStep({ availableSlots, isLoading }: DateSelectionSt
   // Handle continue button click
   const handleContinue = () => {
     if (selectedDate) {
-      dispatch({ type: 'SET_STEP', payload: 'time' });
+      dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_DATE_TIME });
     }
   };
 

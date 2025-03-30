@@ -1,7 +1,7 @@
 
 import { useState, useMemo } from 'react';
 import { BookingSlot } from "@/lib/scheduling";
-import { useScheduling } from "@/contexts/SchedulingContext";
+import { useScheduling, BookingStep } from "@/contexts/SchedulingContext";
 import { format, isSameDay, parseISO } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
@@ -34,14 +34,14 @@ export function TimeSlotSelectionStep({ availableSlots, isLoading }: TimeSlotSel
 
   // Handle back button click
   const handleBack = () => {
-    dispatch({ type: 'SET_STEP', payload: 'date' });
+    dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_DATE_TIME });
   };
 
   // Handle continue button click
   const handleContinue = () => {
     if (selectedTimeSlot) {
       dispatch({ type: 'SET_DURATION', payload: selectedDuration });
-      dispatch({ type: 'SET_STEP', payload: 'details' });
+      dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_DURATION });
     }
   };
 

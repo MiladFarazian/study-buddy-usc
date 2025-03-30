@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useScheduling } from "@/contexts/SchedulingContext";
+import { useScheduling, BookingStep } from "@/contexts/SchedulingContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatTimeDisplay } from "@/lib/scheduling/time-utils";
@@ -33,7 +33,7 @@ export function PaymentStep({ onComplete, onRequireAuth }: PaymentStepProps) {
   const sessionPrice = calculatePrice(state.selectedDuration);
   
   const handleBack = () => {
-    dispatch({ type: 'SET_STEP', payload: 'details' });
+    dispatch({ type: 'SET_STEP', payload: BookingStep.FILL_FORM });
   };
   
   const handlePayment = async () => {
@@ -42,7 +42,7 @@ export function PaymentStep({ onComplete, onRequireAuth }: PaymentStepProps) {
     // Simulate payment processing
     setTimeout(() => {
       setProcessing(false);
-      dispatch({ type: 'SET_STEP', payload: 'confirmation' });
+      dispatch({ type: 'SET_STEP', payload: BookingStep.CONFIRMATION });
     }, 1500);
   };
   

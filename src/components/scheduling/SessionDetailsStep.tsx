@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useScheduling } from "@/contexts/SchedulingContext";
+import { useScheduling, BookingStep } from "@/contexts/SchedulingContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,12 +24,12 @@ export function SessionDetailsStep() {
   };
   
   const handleBack = () => {
-    dispatch({ type: 'SET_STEP', payload: 'time' });
+    dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_DURATION });
   };
   
   const handleContinue = () => {
     dispatch({ type: 'SET_NOTES', payload: notes });
-    dispatch({ type: 'SET_STEP', payload: 'payment' });
+    dispatch({ type: 'SET_STEP', payload: BookingStep.FILL_FORM });
   };
   
   return (
