@@ -1,4 +1,5 @@
 
+import React from "react";
 import { CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useScheduling } from "@/contexts/SchedulingContext";
@@ -7,9 +8,10 @@ import { format } from "date-fns";
 
 interface ConfirmationStepProps {
   onClose: () => void;
+  onReset: () => void;
 }
 
-export function ConfirmationStep({ onClose }: ConfirmationStepProps) {
+export function ConfirmationStep({ onClose, onReset }: ConfirmationStepProps) {
   const { state, tutor } = useScheduling();
   
   if (!state.selectedDate || !state.selectedTimeSlot || !tutor) {
@@ -45,6 +47,12 @@ export function ConfirmationStep({ onClose }: ConfirmationStepProps) {
             <span className="text-muted-foreground">Duration:</span>
             <span>{state.selectedDuration} minutes</span>
           </li>
+          {state.notes && (
+            <li className="flex justify-between">
+              <span className="text-muted-foreground">Notes:</span>
+              <span className="text-right max-w-[70%]">{state.notes}</span>
+            </li>
+          )}
         </ul>
       </div>
       
@@ -52,12 +60,20 @@ export function ConfirmationStep({ onClose }: ConfirmationStepProps) {
         <p className="text-sm text-muted-foreground mb-4">
           You'll receive an email confirmation with all the details.
         </p>
-        <Button 
-          onClick={onClose}
-          className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
-        >
-          Close
-        </Button>
+        <div className="flex gap-3 justify-center">
+          <Button 
+            onClick={onReset}
+            variant="outline"
+          >
+            Book Another Session
+          </Button>
+          <Button 
+            onClick={onClose}
+            className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
+          >
+            Close
+          </Button>
+        </div>
       </div>
     </div>
   );

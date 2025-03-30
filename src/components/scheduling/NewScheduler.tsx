@@ -1,98 +1,124 @@
 
-import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Tutor } from "@/types/tutor";
-import { useAvailabilityData } from "@/hooks/useAvailabilityData";
-import { SchedulingProvider, useScheduling } from "@/contexts/SchedulingContext";
-import { DateSelectionStep } from "./DateSelectionStep";
-import { TimeSlotSelectionStep } from "./TimeSlotSelectionStep";
-import { SessionDetailsStep } from "./SessionDetailsStep";
-import { PaymentStep } from "./PaymentStep";
-import { ConfirmationStep } from "./ConfirmationStep";
-import { Loader2, AlertCircle } from "lucide-react";
+import React from 'react';
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { AuthRequiredDialog } from "./booking-modal/AuthRequiredDialog";
+import { SchedulingProvider, useScheduling, BookingStep } from "@/contexts/SchedulingContext";
+import { Calendar } from "./Calendar";
+import { TimeSlots } from "./TimeSlots";
+import { SessionDurationSelector } from "./SessionDurationSelector";
+import { BookingForm } from "./BookingForm";
+import { ConfirmationStep } from "./ConfirmationStep";
+import { useAvailabilityData } from "@/hooks/useAvailabilityData";
+import { Tutor } from "@/types/tutor";
+import { Loader2 } from "lucide-react";
 
-interface BookingContentProps {
-  loading: boolean;
-  availableSlots: any[];
-  hasAvailability: boolean;
-  errorMessage: string | null;
-  authRequired: boolean;
-  setAuthRequired: (value: boolean) => void;
-  handleComplete: () => void;
-  handleClose: () => void;
-  tutor: Tutor;
+interface SchedulerContentProps {
+  onClose: () => void;
 }
 
-// Inner content component that uses the scheduling context
-function BookingContent({
-  loading, 
-  availableSlots, 
-  hasAvailability, 
-  errorMessage,
-  authRequired,
-  setAuthRequired,
-  handleComplete,
-  handleClose,
-  tutor
-}: BookingContentProps) {
-  const { state, setTutor } = useScheduling();
+function SchedulerContent({ onClose }: SchedulerContentProps) {
+  const { state, dispatch, tutor, continueToNextStep, goToPreviousStep } = useScheduling();
+  const { bookingStep } = state;
   
-  // Set the tutor in the context when the component mounts
-  useEffect(() => {
-    setTutor(tutor);
-  }, [tutor, setTutor]);
+  const startDate = new Date();
+  const { loading, availableSlots, hasAvailability, errorMessage } = 
+    useAvailabilityData(tutor!, startDate);
+  
+  const handleReset = () => {
+    dispatch({ type: 'RESET' });
+  };
   
   if (loading) {
     return (
-      <div className="py-12 flex flex-col items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal mb-4" />
-        <p className="text-muted-foreground">Loading availability...</p>
+      <div className="flex justify-center items-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal mr-2" />
+        <p>Loading availability...</p>
       </div>
     );
   }
   
   if (!hasAvailability) {
     return (
-      <div className="py-12 flex flex-col items-center justify-center text-center px-4">
-        <AlertCircle className="h-8 w-8 text-yellow-500 mb-4" />
-        <h3 className="text-lg font-medium mb-2">No Availability</h3>
+      <div className="text-center py-8">
         <p className="text-muted-foreground mb-4">
-          {errorMessage || "This tutor hasn't set their availability yet."}
+          {errorMessage || "No availability found for this tutor."}
         </p>
-        <Button onClick={handleClose} variant="outline">Close</Button>
+        <Button variant="outline" onClick={onClose}>
+          Close
+        </Button>
       </div>
     );
   }
   
+  // Get available dates from the slots
+  const availableDates = Array.from(
+    new Set(
+      availableSlots
+        .filter(slot => slot.available)
+        .map(slot => new Date(slot.day.setHours(0, 0, 0, 0)))
+    )
+  );
+  
   return (
-    <>
-      {state.bookingStep === 'date' && (
-        <DateSelectionStep availableSlots={availableSlots} isLoading={loading} />
+    <div className="p-4">
+      {bookingStep === BookingStep.SELECT_DATE_TIME && (
+        <>
+          <Calendar availableDates={availableDates} />
+          <TimeSlots availableSlots={availableSlots} />
+          
+          {state.selectedDate && state.selectedTimeSlot && (
+            <div className="mt-6 flex justify-end">
+              <Button 
+                onClick={continueToNextStep}
+                className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
+              >
+                Continue
+              </Button>
+            </div>
+          )}
+        </>
       )}
       
-      {state.bookingStep === 'time' && (
-        <TimeSlotSelectionStep availableSlots={availableSlots} isLoading={loading} />
+      {bookingStep === BookingStep.SELECT_DURATION && (
+        <>
+          <SessionDurationSelector />
+          
+          <div className="mt-6 flex justify-between">
+            <Button variant="outline" onClick={goToPreviousStep}>
+              Back
+            </Button>
+            <Button 
+              onClick={continueToNextStep}
+              className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
+            >
+              Continue
+            </Button>
+          </div>
+        </>
       )}
       
-      {state.bookingStep === 'details' && (
-        <SessionDetailsStep />
+      {bookingStep === BookingStep.FILL_FORM && (
+        <>
+          <BookingForm />
+          
+          <div className="mt-6 flex justify-between">
+            <Button variant="outline" onClick={goToPreviousStep}>
+              Back
+            </Button>
+            <Button 
+              onClick={continueToNextStep}
+              className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
+            >
+              Complete Booking
+            </Button>
+          </div>
+        </>
       )}
       
-      {state.bookingStep === 'payment' && (
-        <PaymentStep onComplete={handleComplete} onRequireAuth={() => setAuthRequired(true)} />
+      {bookingStep === BookingStep.CONFIRMATION && (
+        <ConfirmationStep onClose={onClose} onReset={handleReset} />
       )}
-      
-      {state.bookingStep === 'confirmation' && (
-        <ConfirmationStep onClose={handleClose} />
-      )}
-      
-      <AuthRequiredDialog 
-        isOpen={authRequired} 
-        onClose={() => setAuthRequired(false)} 
-      />
-    </>
+    </div>
   );
 }
 
@@ -103,36 +129,32 @@ interface NewSchedulerProps {
 }
 
 export function NewScheduler({ tutor, isOpen, onClose }: NewSchedulerProps) {
-  const [authRequired, setAuthRequired] = useState(false);
-  const { loading, availableSlots, hasAvailability, errorMessage } = useAvailabilityData(tutor, new Date());
-  
-  const handleComplete = () => {
-    // Any completion logic can go here
-  };
-  
   return (
-    <SchedulingProvider>
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-[550px] p-0 overflow-hidden">
-          <DialogHeader className="p-6 pb-2">
-            <DialogTitle>Book a Session with {tutor.firstName || tutor.name.split(' ')[0]}</DialogTitle>
-          </DialogHeader>
-          
-          <div className="p-6 pt-2">
-            <BookingContent 
-              tutor={tutor}
-              loading={loading}
-              availableSlots={availableSlots}
-              hasAvailability={hasAvailability}
-              errorMessage={errorMessage}
-              authRequired={authRequired}
-              setAuthRequired={setAuthRequired}
-              handleComplete={handleComplete}
-              handleClose={onClose}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
-    </SchedulingProvider>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[600px]">
+        <DialogTitle>Book a Session with {tutor.name}</DialogTitle>
+        <SchedulingProvider>
+          <SchedulerProviderInitializer tutor={tutor}>
+            <SchedulerContent onClose={onClose} />
+          </SchedulerProviderInitializer>
+        </SchedulingProvider>
+      </DialogContent>
+    </Dialog>
   );
+}
+
+// Helper component to initialize the SchedulingProvider with the tutor
+interface SchedulerProviderInitializerProps {
+  tutor: Tutor;
+  children: React.ReactNode;
+}
+
+function SchedulerProviderInitializer({ tutor, children }: SchedulerProviderInitializerProps) {
+  const { setTutor } = useScheduling();
+  
+  React.useEffect(() => {
+    setTutor(tutor);
+  }, [tutor, setTutor]);
+  
+  return <>{children}</>;
 }
