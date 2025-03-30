@@ -10,3 +10,4 @@ export * from './DateSelectionStep';
 export * from './TimeSlotSelectionStep';
 export * from './SessionDetailsStep';
 export * from './PaymentStep';
+export * from './SimpleBookingWizard';

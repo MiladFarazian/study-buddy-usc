@@ -5,7 +5,8 @@ import { Calendar, Clock, ArrowRightLeft } from "lucide-react";
 import { Tutor } from "@/types/tutor";
 import MessageButton from "@/components/messaging/MessageButton";
 import { useState } from "react";
-import { NewScheduler } from "@/components/scheduling/NewScheduler";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { SimpleBookingWizard } from "@/components/scheduling/SimpleBookingWizard";
 
 interface TutorBookingSidebarProps {
   tutor: Tutor;
@@ -65,13 +66,17 @@ export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
         </CardContent>
       </Card>
 
-      {tutor && (
-        <NewScheduler 
-          tutor={tutor}
-          isOpen={showBookingModal}
-          onClose={() => setShowBookingModal(false)}
-        />
-      )}
+      <Dialog 
+        open={showBookingModal} 
+        onOpenChange={setShowBookingModal}
+      >
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <SimpleBookingWizard 
+            tutor={tutor}
+            onClose={() => setShowBookingModal(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

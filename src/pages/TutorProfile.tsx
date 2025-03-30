@@ -10,10 +10,10 @@ import { TutorSubjectsSection } from "@/components/tutor/TutorSubjectsSection";
 import { TutorReviewsSection } from "@/components/tutor/TutorReviewsSection";
 import { TutorAvailabilityCard } from "@/components/scheduling/TutorAvailabilityCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookSessionModal } from "@/components/scheduling/BookSessionModal";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useState } from "react";
 import MessageButton from "@/components/messaging/MessageButton";
-import { NewScheduler } from "@/components/scheduling/NewScheduler";
+import { SimpleBookingWizard } from "@/components/scheduling/SimpleBookingWizard";
 
 const TutorProfile = () => {
   const { id } = useParams<{ id: string }>();
@@ -208,13 +208,17 @@ const TutorProfile = () => {
         </div>
       </div>
       
-      {tutor && (
-        <NewScheduler 
-          tutor={tutor}
-          isOpen={showBookingModal}
-          onClose={() => setShowBookingModal(false)}
-        />
-      )}
+      <Dialog 
+        open={showBookingModal} 
+        onOpenChange={setShowBookingModal}
+      >
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <SimpleBookingWizard 
+            tutor={tutor}
+            onClose={() => setShowBookingModal(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
