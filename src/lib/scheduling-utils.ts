@@ -12,6 +12,11 @@ export interface BookingSlot {
   endTime: string;
   tutorId: string;
   booked: boolean;
+  // Add missing properties used in components
+  day: Date;
+  start: string;
+  end: string;
+  available: boolean;
 }
 
 export const getTutorAvailability = async (tutorId: string): Promise<WeeklyAvailability> => {
@@ -38,11 +43,10 @@ export const generateAvailableSlots = (
   availability: WeeklyAvailability,
   bookedSlots: BookingSlot[],
   startDate: Date,
-  endDate: Date,
+  endDate: Date | number,
   durationMinutes: number = 60
 ): BookingSlot[] => {
   // This would generate available slots based on availability, booked slots, and date range
   // For now, return an empty array
   return [];
 };
-
