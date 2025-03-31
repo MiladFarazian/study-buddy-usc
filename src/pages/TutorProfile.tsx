@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useState } from "react";
 import MessageButton from "@/components/messaging/MessageButton";
-import { SimpleBookingWizard } from "@/components/scheduling/SimpleBookingWizard";
+import { CalendlyBookingWizard } from "@/components/scheduling/CalendlyBookingWizard";
 import { TutorAvailabilitySection } from "@/components/tutor/TutorAvailabilitySection";
 
 const TutorProfile = () => {
@@ -54,7 +54,6 @@ const TutorProfile = () => {
       .join("");
   };
 
-  // Format hourly rate with two decimal places
   const formattedHourlyRate = tutor.hourlyRate ? `$${tutor.hourlyRate.toFixed(2)}` : "$25.00";
 
   return (
@@ -211,7 +210,7 @@ const TutorProfile = () => {
         onOpenChange={setShowBookingModal}
       >
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          <SimpleBookingWizard 
+          <CalendlyBookingWizard 
             tutor={tutor}
             onClose={() => setShowBookingModal(false)}
           />

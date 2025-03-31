@@ -4,7 +4,7 @@ import { TutorAvailabilityCard } from "../scheduling/TutorAvailabilityCard";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { SimpleBookingWizard } from "../scheduling/SimpleBookingWizard";
+import { CalendlyBookingWizard } from "../scheduling/CalendlyBookingWizard";
 import { Tutor } from "@/types/tutor";
 
 interface TutorAvailabilitySectionProps {
@@ -39,7 +39,7 @@ export const TutorAvailabilitySection = ({ tutor }: TutorAvailabilitySectionProp
           <DialogHeader>
             <DialogTitle>Book a Session with {tutor.name}</DialogTitle>
           </DialogHeader>
-          <SimpleBookingWizard 
+          <CalendlyBookingWizard 
             tutor={tutor}
             onClose={() => setShowBookingModal(false)}
           />

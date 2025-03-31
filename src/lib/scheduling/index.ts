@@ -1,14 +1,18 @@
 
-// Re-export all scheduling utilities for easy imports
-export * from './types';
-export * from './availability-utils';
-export * from './booking-utils';
-export * from './payment-utils';
-export * from './time-utils';
+// Export main scheduler components
+export * from './NewScheduler';
+export * from './Calendar';
+export * from './TimeSlots';
+export * from './SessionDurationSelector';
+export * from './BookingForm';
+export * from './ConfirmationStep';
+export * from './DateSelectionStep';
+export * from './TimeSlotSelectionStep';
+export * from './SessionDetailsStep';
+export * from './PaymentStep';
+export * from './SimpleBookingWizard';
 
-// UI Components for booking flow
-export * from './ui/DateSelector';
-export * from './ui/TimeSelector';
-export * from './ui/DurationSelector';
-export * from './ui/BookingSummary';
-export * from './ui/ScheduleCalendar';
+// Export scheduling utilities
+export * from './booking-utils';
+export * from './availability-utils';
+export * from './time-utils';

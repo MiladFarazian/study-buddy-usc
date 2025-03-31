@@ -34,3 +34,10 @@ export type BookingFormData = {
   duration: number;
   notes?: string;
 };
+
+export type TimeSlot = {
+  time: string; // Format: "HH:mm" (24-hour)
+  available: boolean;
+};
+
+export type CalendarViewMode = 'week' | 'month';
