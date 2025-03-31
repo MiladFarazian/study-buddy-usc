@@ -1,13 +1,4 @@
 
-// Export main scheduler components
-export * from './NewScheduler';
-export * from './Calendar';
-export * from './TimeSlots';
-export * from './SessionDurationSelector';
-export * from './BookingForm';
-export * from './ConfirmationStep';
-export * from './DateSelectionStep';
-export * from './TimeSlotSelectionStep';
-export * from './SessionDetailsStep';
-export * from './PaymentStep';
-export * from './SimpleBookingWizard';
+// This file is kept empty and can be removed in a future cleanup.
+// All scheduling functionality has been removed.
+export {};
