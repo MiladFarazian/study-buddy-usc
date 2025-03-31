@@ -13,7 +13,7 @@ export function ScheduleCalendar({ sessions }: ScheduleCalendarProps) {
   // Function to highlight dates with sessions
   const sessionsDateClass = (date: Date): string => {
     const hasSession = sessions.some(session => {
-      const sessionDate = new Date(session.start_time); // Changed from startTime to start_time
+      const sessionDate = new Date(session.start_time);
       return (
         date.getDate() === sessionDate.getDate() &&
         date.getMonth() === sessionDate.getMonth() &&
@@ -46,9 +46,15 @@ export function ScheduleCalendar({ sessions }: ScheduleCalendarProps) {
           classNames={{
             day_today: "bg-muted font-bold text-usc-cardinal",
             day_selected: "bg-usc-cardinal text-primary-foreground hover:bg-usc-cardinal/90 focus:bg-usc-cardinal/90",
-            day: function(date) { 
-              return sessionsDateClass(date);
-            }, // Fixed by using a function return
+            day: sessionsDateClass,
+          }}
+          styles={{
+            day: (date) => {
+              if (sessionsDateClass(date) !== '') {
+                return { color: '#990000', fontWeight: 'bold', backgroundColor: 'rgba(153, 0, 0, 0.1)' };
+              }
+              return {};
+            }
           }}
         />
       </CardContent>
