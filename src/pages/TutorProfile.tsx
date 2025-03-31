@@ -15,6 +15,7 @@ import { useState } from "react";
 import MessageButton from "@/components/messaging/MessageButton";
 import { CalendlyBookingWizard } from "@/components/scheduling/CalendlyBookingWizard";
 import { TutorAvailabilitySection } from "@/components/tutor/TutorAvailabilitySection";
+import { SchedulingProvider } from "@/contexts/SchedulingContext";
 
 const TutorProfile = () => {
   const { id } = useParams<{ id: string }>();
@@ -210,10 +211,12 @@ const TutorProfile = () => {
         onOpenChange={setShowBookingModal}
       >
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          <CalendlyBookingWizard 
-            tutor={tutor}
-            onClose={() => setShowBookingModal(false)}
-          />
+          <SchedulingProvider>
+            <CalendlyBookingWizard 
+              tutor={tutor}
+              onClose={() => setShowBookingModal(false)}
+            />
+          </SchedulingProvider>
         </DialogContent>
       </Dialog>
     </div>

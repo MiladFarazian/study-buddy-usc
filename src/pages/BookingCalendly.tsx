@@ -17,6 +17,14 @@ const BookingCalendlyContent = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { tutor, loading: tutorLoading } = useTutor(id || "");
+  const { setTutor } = useScheduling();
+  
+  // Set the tutor in the context when it loads
+  useEffect(() => {
+    if (tutor) {
+      setTutor(tutor);
+    }
+  }, [tutor, setTutor]);
   
   // Get availability data
   const today = startOfDay(new Date());

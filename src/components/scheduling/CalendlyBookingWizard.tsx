@@ -11,6 +11,7 @@ import { format, addDays, parseISO, isAfter, startOfDay } from 'date-fns';
 import { BookingSlot } from "@/lib/scheduling/types";
 import { createSessionBooking } from "@/lib/scheduling";
 import { Loader2 } from "lucide-react";
+import { useScheduling } from "@/contexts/SchedulingContext";
 
 interface CalendlyBookingWizardProps {
   tutor: Tutor;
@@ -23,6 +24,13 @@ export function CalendlyBookingWizard({ tutor, onClose }: CalendlyBookingWizardP
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<BookingSlot | null>(null);
   const [isBooking, setIsBooking] = useState(false);
+  
+  // Set the tutor in the SchedulingContext
+  const { setTutor } = useScheduling();
+  
+  useEffect(() => {
+    setTutor(tutor);
+  }, [tutor, setTutor]);
   
   // Get availability data
   const today = startOfDay(new Date());
@@ -88,12 +96,6 @@ export function CalendlyBookingWizard({ tutor, onClose }: CalendlyBookingWizardP
     } finally {
       setIsBooking(false);
     }
-  };
-  
-  // Handle date selection from CalendlyDateSelector
-  const handleDateSelect = (date: Date) => {
-    setSelectedDate(date);
-    setSelectedTimeSlot(null);
   };
   
   if (loading) {
