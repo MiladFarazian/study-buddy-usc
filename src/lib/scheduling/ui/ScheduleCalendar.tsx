@@ -48,23 +48,25 @@ export function ScheduleCalendar({ sessions }: ScheduleCalendarProps) {
             day_selected: "bg-usc-cardinal text-primary-foreground hover:bg-usc-cardinal/90 focus:bg-usc-cardinal/90",
           }}
           components={{
-            Day: ({ date, ...props }) => {
+            Day: ({ day, displayMonth }) => {
+              if (!day) return null;
+              
               // Apply custom styling for days with sessions
+              const date = day.date;
               const hasSession = sessionsDateClass(date);
+              
+              const hasSessionStyle = hasSession ? {
+                color: '#990000',
+                fontWeight: 'bold',
+                backgroundColor: 'rgba(153, 0, 0, 0.1)'
+              } : {};
+              
               return (
                 <button
-                  {...props}
-                  className={`${props.className || ''} ${hasSession}`}
-                  style={{
-                    ...props.style,
-                    ...(hasSession ? {
-                      color: '#990000',
-                      fontWeight: 'bold',
-                      backgroundColor: 'rgba(153, 0, 0, 0.1)'
-                    } : {})
-                  }}
+                  className={`h-9 w-9 p-0 font-normal aria-selected:opacity-100 ${hasSession}`}
+                  style={hasSessionStyle}
                 >
-                  {props.children || date.getDate()}
+                  {date.getDate()}
                 </button>
               );
             }
