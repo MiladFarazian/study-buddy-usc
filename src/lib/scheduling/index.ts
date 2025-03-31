@@ -6,7 +6,11 @@ export * from './types';
 export * from './booking-utils';
 export * from './availability-utils';
 export * from './time-utils';
+export * from './payment-utils';
 
-// Re-export UI components from the components module
-// These will be imported from the components area, not directly from lib
+// Export UI components
+export { DateSelector } from './ui/DateSelector';
+export { TimeSelector } from './ui/TimeSelector';
+export { DurationSelector } from './ui/DurationSelector';
+export { BookingSummary } from './ui/BookingSummary';
 export { ScheduleCalendar } from './ui/ScheduleCalendar';

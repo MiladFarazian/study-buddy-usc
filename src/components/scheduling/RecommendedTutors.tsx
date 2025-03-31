@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useTutors } from "@/hooks/useTutors";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,8 +37,8 @@ export function RecommendedTutors() {
         <h2 className="text-xl font-bold mb-4 px-6 pt-6">Explore More Tutors</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4 p-6">
           {tutors.slice(0, 3).map((tutor) => {
-            // Update the part that references avatar to use avatarUrl instead
-            const tutorImage = tutor.avatarUrl || 'https://example.com/placeholder.jpg';
+            // Use imageUrl instead of avatarUrl
+            const tutorImage = tutor.imageUrl || 'https://example.com/placeholder.jpg';
             return (
               <div key={tutor.id} className="flex items-center space-x-4">
                 <Avatar>
