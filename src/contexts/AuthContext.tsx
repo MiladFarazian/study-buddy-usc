@@ -1,47 +1,61 @@
 
-import { createContext, useContext, ReactNode } from "react";
-import { Loader2 } from "lucide-react";
-import { useAuthState } from "@/hooks/useAuthState";
-import { useAuthMethods } from "@/hooks/useAuthMethods";
-import { AuthContextType } from "./types/auth-types";
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'student' | 'tutor' | 'admin';
+}
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const { session, user, profile, loading, isStudent, isTutor, isProfileComplete, updateProfile } = useAuthState();
-  const { signIn, signInWithEmail, signUp, signOut } = useAuthMethods();
+interface AuthContextType {
+  user: User | null;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
+  register: (email: string, password: string, name: string) => Promise<void>;
+}
 
-  const value = {
-    session,
-    user,
-    profile,
-    signIn,
-    signInWithEmail,
-    signUp,
-    signOut,
-    loading,
-    isStudent,
-    isTutor,
-    isProfileComplete,
-    updateProfile,
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  login: async () => {},
+  logout: () => {},
+  register: async () => {}
+});
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
+
+  const login = async (email: string, password: string) => {
+    // This would connect to your authentication service
+    // For now, we'll simulate a successful login
+    setUser({
+      id: '1',
+      name: 'John Doe',
+      email: email,
+      role: 'student'
+    });
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal" />
-        <span className="ml-2">Loading...</span>
-      </div>
-    );
-  }
+  const logout = () => {
+    setUser(null);
+  };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
+  const register = async (email: string, password: string, name: string) => {
+    // This would connect to your authentication service
+    // For now, we'll simulate a successful registration
+    setUser({
+      id: '1',
+      name: name,
+      email: email,
+      role: 'student'
+    });
+  };
 
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-}
+  return (
+    <AuthContext.Provider value={{ user, login, logout, register }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => useContext(AuthContext);
