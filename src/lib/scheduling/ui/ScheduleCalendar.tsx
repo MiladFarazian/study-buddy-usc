@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Session } from "@/types/session";
@@ -46,14 +46,24 @@ export function ScheduleCalendar({ sessions }: ScheduleCalendarProps) {
           classNames={{
             day_today: "bg-muted font-bold text-usc-cardinal",
             day_selected: "bg-usc-cardinal text-primary-foreground hover:bg-usc-cardinal/90 focus:bg-usc-cardinal/90",
-            day: sessionsDateClass,
           }}
-          styles={{
-            day: (date) => {
-              if (sessionsDateClass(date) !== '') {
-                return { color: '#990000', fontWeight: 'bold', backgroundColor: 'rgba(153, 0, 0, 0.1)' };
-              }
-              return {};
+          components={{
+            Day: (props) => {
+              // Apply custom styling for days with sessions
+              const hasSession = sessionsDateClass(props.date);
+              return (
+                <div 
+                  {...props} 
+                  className={`${props.className} ${hasSession}`}
+                  style={hasSession ? { 
+                    color: '#990000', 
+                    fontWeight: 'bold', 
+                    backgroundColor: 'rgba(153, 0, 0, 0.1)' 
+                  } : undefined}
+                >
+                  {props.children}
+                </div>
+              );
             }
           }}
         />
