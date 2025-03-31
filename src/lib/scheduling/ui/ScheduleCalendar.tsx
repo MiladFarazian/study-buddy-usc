@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Calendar } from "@/components/ui/calendar";
 import { Session } from "@/types/session";
 import { format } from 'date-fns';
+import { DayContent, DayContentProps } from 'react-day-picker';
 
 interface ScheduleCalendarProps {
   sessions: Session[];
@@ -48,11 +49,12 @@ export function ScheduleCalendar({ sessions }: ScheduleCalendarProps) {
             day_selected: "bg-usc-cardinal text-primary-foreground hover:bg-usc-cardinal/90 focus:bg-usc-cardinal/90",
           }}
           components={{
-            Day: ({ day, displayMonth }) => {
-              if (!day) return null;
+            DayContent: (props: DayContentProps) => {
+              const { date } = props;
+              
+              if (!date) return <DayContent {...props} />;
               
               // Apply custom styling for days with sessions
-              const date = day.date;
               const hasSession = sessionsDateClass(date);
               
               const hasSessionStyle = hasSession ? {
@@ -62,12 +64,9 @@ export function ScheduleCalendar({ sessions }: ScheduleCalendarProps) {
               } : {};
               
               return (
-                <button
-                  className={`h-9 w-9 p-0 font-normal aria-selected:opacity-100 ${hasSession}`}
-                  style={hasSessionStyle}
-                >
-                  {date.getDate()}
-                </button>
+                <div style={hasSessionStyle} className={hasSession}>
+                  <DayContent {...props} />
+                </div>
               );
             }
           }}
