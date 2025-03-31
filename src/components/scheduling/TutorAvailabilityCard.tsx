@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { AvailabilityCalendar } from "@/components/scheduling/AvailabilityCalendar";
+import { WeeklyAvailabilityCalendar } from "@/components/scheduling/calendar/WeeklyAvailabilityCalendar";
 import { DragSelectCalendar } from "@/components/scheduling/DragSelectCalendar";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -131,11 +132,20 @@ export const TutorAvailabilityCard = ({ tutorId, readOnly = false }: TutorAvaila
       </CardHeader>
       <CardContent>
         {availability && (
-          <Tabs defaultValue="dragSelect">
+          <Tabs defaultValue="weeklyCalendar">
             <TabsList className="mb-4">
-              <TabsTrigger value="dragSelect">Calendar View</TabsTrigger>
+              <TabsTrigger value="weeklyCalendar">Week View</TabsTrigger>
+              <TabsTrigger value="dragSelect">Grid View</TabsTrigger>
               <TabsTrigger value="list">List View</TabsTrigger>
             </TabsList>
+            
+            <TabsContent value="weeklyCalendar">
+              <WeeklyAvailabilityCalendar 
+                availability={availability} 
+                onChange={!readOnly ? handleAvailabilityChange : () => {}}
+                readOnly={readOnly}
+              />
+            </TabsContent>
             
             <TabsContent value="dragSelect">
               <DragSelectCalendar 

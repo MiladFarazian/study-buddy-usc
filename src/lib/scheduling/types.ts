@@ -17,3 +17,20 @@ export type BookingSlot = {
   end: string;
   available: boolean;
 };
+
+export type Session = {
+  id: string;
+  tutorId: string;
+  studentId: string;
+  startTime: Date;
+  endTime: Date;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  paymentStatus: 'unpaid' | 'paid' | 'refunded';
+};
+
+export type BookingFormData = {
+  date: Date | null;
+  time: string | null;
+  duration: number;
+  notes?: string;
+};

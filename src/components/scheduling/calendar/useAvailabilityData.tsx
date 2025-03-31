@@ -84,12 +84,11 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
     if (tutor.id) {
       loadAvailability();
     }
-  }, [tutor.id, startDate, loadAvailability]);
+  }, [tutor.id, loadAvailability]);
 
-  // Add the refreshAvailability function that was missing
-  const refreshAvailability = () => {
+  const refreshAvailability = useCallback(() => {
     loadAvailability();
-  };
+  }, [loadAvailability]);
 
   return { loading, availableSlots, hasAvailability, errorMessage, refreshAvailability };
 }

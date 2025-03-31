@@ -1,4 +1,3 @@
-
 import { useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,6 +14,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useState } from "react";
 import MessageButton from "@/components/messaging/MessageButton";
 import { SimpleBookingWizard } from "@/components/scheduling/SimpleBookingWizard";
+import { TutorAvailabilitySection } from "@/components/tutor/TutorAvailabilitySection";
 
 const TutorProfile = () => {
   const { id } = useParams<{ id: string }>();
@@ -182,13 +182,7 @@ const TutorProfile = () => {
                 </TabsContent>
                 
                 <TabsContent value="availability" className="mt-0">
-                  <div>
-                    <h2 className="text-2xl font-bold mb-4">Availability</h2>
-                    <p className="text-muted-foreground mb-4">
-                      Check {tutor.firstName || tutor.name.split(' ')[0]}'s availability and schedule a session.
-                    </p>
-                    <TutorAvailabilityCard tutorId={tutor.id} readOnly={true} />
-                  </div>
+                  <TutorAvailabilitySection tutor={tutor} />
                 </TabsContent>
               </CardContent>
             </Card>

@@ -5,10 +5,13 @@ import { AccountSettings } from "@/components/settings/AccountSettings";
 import { NotificationSettings } from "@/components/settings/NotificationSettings";
 import { PrivacySettings } from "@/components/settings/PrivacySettings";
 import { CoursesSettings } from "@/components/settings/CoursesSettings";
+import { TutorSettingsTab } from "@/components/settings/TutorSettingsTab";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Settings = () => {
   const isMobile = useIsMobile();
+  const { isTutor } = useAuth();
   
   return (
     <div className="py-4 md:py-6">
@@ -18,10 +21,13 @@ const Settings = () => {
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className={`mb-6 md:mb-8 ${isMobile ? "w-full grid grid-cols-5 gap-1" : ""}`}>
+        <TabsList className={`mb-6 md:mb-8 ${isMobile ? "w-full grid grid-cols-6 gap-1" : ""}`}>
           <TabsTrigger value="profile" className={isMobile ? "text-xs py-1 px-2" : ""}>Profile</TabsTrigger>
           <TabsTrigger value="account" className={isMobile ? "text-xs py-1 px-2" : ""}>Account</TabsTrigger>
           <TabsTrigger value="courses" className={isMobile ? "text-xs py-1 px-2" : ""}>Courses</TabsTrigger>
+          {isTutor && (
+            <TabsTrigger value="tutor" className={isMobile ? "text-xs py-1 px-2" : ""}>Tutor</TabsTrigger>
+          )}
           <TabsTrigger value="notifications" className={isMobile ? "text-xs py-1 px-2" : ""}>Notif.</TabsTrigger>
           <TabsTrigger value="privacy" className={isMobile ? "text-xs py-1 px-2" : ""}>Privacy</TabsTrigger>
         </TabsList>
@@ -37,6 +43,12 @@ const Settings = () => {
         <TabsContent value="courses">
           <CoursesSettings />
         </TabsContent>
+        
+        {isTutor && (
+          <TabsContent value="tutor">
+            <TutorSettingsTab />
+          </TabsContent>
+        )}
         
         <TabsContent value="notifications">
           <NotificationSettings />
