@@ -1,9 +1,8 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { X } from "lucide-react";
-import { AvailabilitySlot } from "@/lib/scheduling";
+import { AvailabilitySlot } from "@/lib/scheduling/types";
 
 interface DaySlotsListProps {
   day: string;

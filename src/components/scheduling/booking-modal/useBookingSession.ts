@@ -1,133 +1,97 @@
-
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { BookingSlot, createSessionBooking } from "@/lib/scheduling";
-import { format, parseISO, differenceInMinutes } from "date-fns";
 import { Tutor } from "@/types/tutor";
-import { createPaymentTransaction } from "@/lib/scheduling/payment-utils";
+import { BookingSlot } from "@/lib/scheduling/types";
+import { createSessionBooking } from "@/lib/scheduling";
 
 export const useBookingSession = (tutor: Tutor, isOpen: boolean, onClose: () => void) => {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   
   const [step, setStep] = useState<'select-slot' | 'payment' | 'processing'>('select-slot');
   const [selectedSlot, setSelectedSlot] = useState<BookingSlot | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null);
   const [creatingSession, setCreatingSession] = useState(false);
   const [authRequired, setAuthRequired] = useState(false);
   
-  useEffect(() => {
-    // Reset state when modal opens/closes
-    if (!isOpen) {
-      setStep('select-slot');
-      setSelectedSlot(null);
-      setSessionId(null);
-      setAuthRequired(false);
-    }
-  }, [isOpen]);
-  
-  const handleSlotSelect = (slot: BookingSlot) => {
-    console.log("Selected slot:", slot);
-    setSelectedSlot(slot);
-    
-    // If user is not logged in, we'll show the login prompt when they try to proceed
+  const handleSlotSelect = useCallback((slot: BookingSlot) => {
     if (!user) {
       setAuthRequired(true);
       return;
     }
-    
-    // If the user is logged in, proceed directly to payment
-    handleProceedToPayment(slot);
-  };
+    setSelectedSlot(slot);
+    setStep('payment');
+  }, [user]);
   
-  const handleProceedToPayment = async (slot = selectedSlot) => {
-    if (!slot) return;
-    
-    // Redirect to login if not authenticated
-    if (!user || !profile) {
+  const handleProceedToPayment = useCallback(() => {
+    if (!user) {
       setAuthRequired(true);
       return;
     }
+    setStep('payment');
+  }, [user]);
+  
+  const handlePaymentComplete = useCallback(async () => {
+    if (!user || !selectedSlot) return;
     
     setCreatingSession(true);
     
     try {
-      // Format the date and times for the session
-      const sessionDate = format(slot.day, 'yyyy-MM-dd');
-      const startTime = `${sessionDate}T${slot.start}:00`;
-      const endTime = `${sessionDate}T${slot.end}:00`;
+      // Parse start time
+      const startDate = new Date(selectedSlot.day);
+      const [startHour, startMin] = selectedSlot.start.split(':').map(Number);
+      startDate.setHours(startHour, startMin, 0, 0);
       
-      // Create the session in the database
-      const session = await createSessionBooking(
+      // Set end time (30 mins after start)
+      const endDate = new Date(startDate);
+      endDate.setMinutes(endDate.getMinutes() + 30);
+      
+      // Create booking
+      await createSessionBooking(
         user.id,
         tutor.id,
-        null, // No course selected for now
-        startTime,
-        endTime,
-        null, // No location for now
-        null  // No notes for now
+        null, // courseId
+        startDate.toISOString(),
+        endDate.toISOString(),
+        null, // location
+        null  // notes
       );
       
-      if (!session) throw new Error("Failed to create session");
-      
-      // Calculate session cost
-      const startTimeObj = parseISO(`2000-01-01T${slot.start}`);
-      const endTimeObj = parseISO(`2000-01-01T${slot.end}`);
-      const durationHours = differenceInMinutes(endTimeObj, startTimeObj) / 60;
-      const sessionCost = (tutor.hourlyRate || 25) * durationHours;
-      
-      // Create a payment transaction
-      await createPaymentTransaction(
-        session.id,
-        user.id,
-        tutor.id,
-        sessionCost
-      );
-      
-      setSessionId(session.id);
-      setStep('payment');
-      
-      console.log("Session created, moving to payment step", {
-        sessionId: session.id,
-        cost: sessionCost,
-        duration: durationHours
+      toast({
+        title: "Session Booked!",
+        description: `Your session with ${tutor.name} has been scheduled.`,
       });
       
+      setStep('processing');
+      
+      // Automatically close the modal after a delay
+      setTimeout(() => {
+        onClose();
+      }, 2000);
+      
     } catch (error) {
-      console.error("Error creating session:", error);
+      console.error("Error booking session:", error);
       toast({
-        title: "Error",
-        description: "Failed to create the session. Please try again.",
+        title: "Booking Failed",
+        description: "There was an error booking your session. Please try again.",
         variant: "destructive",
       });
     } finally {
       setCreatingSession(false);
     }
-  };
+  }, [user, tutor, selectedSlot, toast, onClose]);
   
-  const handlePaymentComplete = () => {
-    toast({
-      title: "Booking Confirmed",
-      description: "Your session has been successfully booked!",
-    });
-    onClose();
-  };
-  
-  const handleCancel = () => {
-    // Reset state
+  const handleCancel = useCallback(() => {
     setStep('select-slot');
     setSelectedSlot(null);
-    setSessionId(null);
     onClose();
-  };
+  }, [onClose]);
   
   return {
     user,
-    profile,
+    profile: null, // Replace with actual profile if needed
     step,
     selectedSlot,
-    sessionId,
     creatingSession,
     authRequired,
     handleSlotSelect,

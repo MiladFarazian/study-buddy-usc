@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tutor } from "@/types/tutor";
-import { BookingSlot } from "@/lib/scheduling";
+import { BookingSlot } from "@/lib/scheduling/types";
 import { BookingStepSelector } from "./booking-modal/BookingStepSelector";
 import { useBookingSession } from "./booking-modal/useBookingSession";
 import { PaymentSuccessScreen } from "./payment/PaymentSuccessScreen";
@@ -37,7 +36,6 @@ export function BookSessionModal({ tutor, isOpen, onClose }: BookSessionModalPro
   const [activeTab, setActiveTab] = useState<string>("calendar");
   const { loading, availableSlots, hasAvailability, errorMessage } = useAvailabilityData(tutor, new Date());
   
-  // Reset active tab when modal opens/closes
   useEffect(() => {
     if (isOpen) {
       setActiveTab("calendar");

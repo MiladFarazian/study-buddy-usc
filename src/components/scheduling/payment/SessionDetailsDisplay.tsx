@@ -1,8 +1,7 @@
-
 import { format, differenceInMinutes, parseISO } from "date-fns";
 import { CalendarDays, Clock, DollarSign } from "lucide-react";
 import { Tutor } from "@/types/tutor";
-import { BookingSlot } from "@/lib/scheduling";
+import { BookingSlot } from "@/lib/scheduling/types";
 import { Separator } from "@/components/ui/separator";
 
 interface SessionDetailsDisplayProps {

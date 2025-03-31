@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -10,7 +9,7 @@ import {
 } from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { WeeklyAvailability } from "@/lib/scheduling";
+import { WeeklyAvailability } from "@/lib/scheduling/types";
 
 // Generate time slots in 30-minute increments
 const TIME_SLOTS = Array.from({ length: 24 * 2 }, (_, i) => {

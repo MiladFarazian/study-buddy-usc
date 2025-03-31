@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
-import { WeeklyAvailability, AvailabilitySlot } from "@/lib/scheduling";
+import { WeeklyAvailability, AvailabilitySlot } from "@/lib/scheduling/types";
 import { DaySlotsList } from "./availability/DaySlotsList";
 import { TimeSlotForm } from "./availability/TimeSlotForm";
 

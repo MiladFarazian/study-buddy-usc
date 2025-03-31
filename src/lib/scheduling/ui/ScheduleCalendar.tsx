@@ -1,57 +1,55 @@
 
-import { useState } from "react";
-import { format } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { User, Star, ArrowRight } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
 import { Session } from "@/types/session";
+import { format } from 'date-fns';
 
 interface ScheduleCalendarProps {
   sessions: Session[];
 }
 
 export function ScheduleCalendar({ sessions }: ScheduleCalendarProps) {
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  // Function to highlight dates with sessions
+  const sessionsDateClass = (date: Date) => {
+    const hasSession = sessions.some(session => {
+      const sessionDate = new Date(session.startTime);
+      return (
+        date.getDate() === sessionDate.getDate() &&
+        date.getMonth() === sessionDate.getMonth() &&
+        date.getFullYear() === sessionDate.getFullYear()
+      );
+    });
 
-  // Get calendar dates with sessions
-  const calendarDates = sessions
-    .filter(session => session.status !== 'cancelled')
-    .map(session => ({
-      date: format(new Date(session.start_time), 'yyyy-MM-dd'),
-      title: session.course?.course_number || 'Tutoring Session'
-    }));
+    return hasSession ? 'bg-usc-cardinal/10 text-usc-cardinal font-bold' : '';
+  };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Calendar</CardTitle>
-        <CardDescription>View your schedule</CardDescription>
+        <CardDescription>Overview of your scheduled sessions</CardDescription>
       </CardHeader>
       <CardContent>
-        <Calendar
+        <Calendar 
           mode="single"
-          selected={date}
-          onSelect={setDate}
+          disabled={date => 
+            date < new Date(new Date().setHours(0, 0, 0, 0))
+          }
+          modifiersClassNames={{
+            selected: 'bg-usc-cardinal text-white',
+          }}
+          modifiersStyles={{
+            selected: { backgroundColor: '#990000' }
+          }}
           className="rounded-md border"
+          classNames={{
+            day_today: "bg-muted font-bold text-usc-cardinal",
+            day_selected: "bg-usc-cardinal text-primary-foreground hover:bg-usc-cardinal/90 focus:bg-usc-cardinal/90",
+            day: sessionsDateClass,
+          }}
         />
-        {calendarDates.length > 0 && (
-          <div className="mt-4">
-            <p className="text-sm text-gray-500 mb-2">Upcoming Sessions:</p>
-            <div className="space-y-2">
-              {calendarDates
-                .filter((value, index, self) => index === self.findIndex(t => t.date === value.date))
-                .sort((a, b) => a.date.localeCompare(b.date))
-                .slice(0, 5)
-                .map((item, i) => (
-                  <div key={i} className="flex items-center gap-2 text-sm">
-                    <div className="h-2 w-2 bg-usc-cardinal rounded-full"></div>
-                    <span>{format(new Date(item.date), 'MMM d')} - {item.title}</span>
-                  </div>
-                ))}
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
-}
+};

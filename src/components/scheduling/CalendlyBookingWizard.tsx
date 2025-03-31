@@ -8,7 +8,8 @@ import { useAvailabilityData } from "@/hooks/useAvailabilityData";
 import { CalendlyDateSelector } from "./CalendlyDateSelector";
 import { CalendlyTimeSlots } from "./CalendlyTimeSlots";
 import { format, addDays, parseISO, isAfter, startOfDay } from 'date-fns';
-import { BookingSlot, createSessionBooking } from "@/lib/scheduling";
+import { BookingSlot } from "@/lib/scheduling/types";
+import { createSessionBooking } from "@/lib/scheduling";
 import { Loader2 } from "lucide-react";
 
 interface CalendlyBookingWizardProps {

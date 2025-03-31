@@ -1,77 +1,63 @@
-
 import React from 'react';
-import { useNavigate } from "react-router-dom";
 import { useTutors } from "@/hooks/useTutors";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ChevronRight } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 export function RecommendedTutors() {
-  const navigate = useNavigate();
   const { tutors, loading } = useTutors();
-  
-  const handleTutorClick = (tutorId: string) => {
-    navigate(`/tutor/${tutorId}`);
-  };
-  
-  // Filter tutors with high ratings (4.0+)
-  const recommendedTutors = tutors
-    .filter(tutor => tutor.rating >= 4.0)
-    .slice(0, 5); // Show top 5
-  
+
   if (loading) {
     return (
-      <div className="space-y-4 mt-8">
-        <h2 className="text-2xl font-bold">Recommended Tutors</h2>
-        {[1, 2].map(index => (
-          <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-            <div className="flex items-center">
-              <Skeleton className="h-12 w-12 rounded-full" />
-              <div className="ml-3">
-                <Skeleton className="h-4 w-32 mb-2" />
-                <Skeleton className="h-3 w-16" />
-              </div>
-            </div>
-            <Skeleton className="h-8 w-8 rounded-full" />
-          </div>
-        ))}
-      </div>
+      <Card>
+        <CardContent className="flex justify-center items-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-usc-cardinal mr-2" />
+          <span>Loading recommended tutors...</span>
+        </CardContent>
+      </Card>
     );
   }
-  
-  if (recommendedTutors.length === 0) {
-    return null;
+
+  if (!tutors || tutors.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-6 text-center">
+          <p className="text-muted-foreground">No tutors available at the moment.</p>
+        </CardContent>
+      </Card>
+    );
   }
-  
+
   return (
-    <div className="space-y-4 mt-8">
-      <h2 className="text-2xl font-bold">Recommended Tutors</h2>
-      
-      {recommendedTutors.map(tutor => (
-        <div 
-          key={tutor.id} 
-          className="flex items-center justify-between p-4 border rounded-lg cursor-pointer hover:bg-gray-50"
-          onClick={() => handleTutorClick(tutor.id)}
-        >
-          <div className="flex items-center">
-            <Avatar className="h-12 w-12">
-              <AvatarImage src={tutor.avatar} alt={tutor.name} />
-              <AvatarFallback>
-                {tutor.name.split(' ').map(n => n[0]).join('')}
-              </AvatarFallback>
-            </Avatar>
-            <div className="ml-3">
-              <h3 className="font-medium">{tutor.name}</h3>
-              <div className="flex items-center">
-                <span className="text-yellow-500">★</span>
-                <span className="ml-1 text-sm">{tutor.rating.toFixed(1)}</span>
+    <Card>
+      <CardContent className="p-0">
+        <h2 className="text-xl font-bold mb-4 px-6 pt-6">Explore More Tutors</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4 p-6">
+          {tutors.slice(0, 3).map((tutor) => {
+            // Update the part that references avatar to use avatarUrl instead
+            const tutorImage = tutor.avatarUrl || 'https://example.com/placeholder.jpg';
+            return (
+              <div key={tutor.id} className="flex items-center space-x-4">
+                <Avatar>
+                  <AvatarImage src={tutorImage} alt={tutor.name} />
+                  <AvatarFallback>{tutor.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="text-lg font-semibold">{tutor.name}</h3>
+                  <p className="text-sm text-muted-foreground">{tutor.field}</p>
+                  <Link to={`/tutors/${tutor.id}`}>
+                    <Button variant="secondary" size="sm">
+                      View Profile
+                    </Button>
+                  </Link>
+                </div>
               </div>
-            </div>
-          </div>
-          
-          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            );
+          })}
         </div>
-      ))}
-    </div>
+      </CardContent>
+    </Card>
   );
 }
