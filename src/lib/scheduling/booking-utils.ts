@@ -65,11 +65,11 @@ export function generateAvailableSlots(
       
       // Start time in minutes
       let slotStartMinutes = startHour * 60 + startMinute;
-      const slotEndMinutes = endHour * 60 + endMinute;
+      const endMinutes = endHour * 60 + endMinute;
       
       // Generate 30-minute slots
-      while (slotStartMinutes < slotEndMinutes) {
-        const slotEndMinutes = Math.min(slotStartMinutes + 30, slotEndMinutes);
+      while (slotStartMinutes < endMinutes) {
+        const slotEndMinutes = Math.min(slotStartMinutes + 30, endMinutes);
         
         // Format as HH:MM
         const startTime = `${Math.floor(slotStartMinutes / 60).toString().padStart(2, '0')}:${(slotStartMinutes % 60).toString().padStart(2, '0')}`;
@@ -148,6 +148,42 @@ export async function bookSession(
       success: false,
       error: error instanceof Error ? error.message : "Failed to book session"
     };
+  }
+}
+
+// Create a session booking
+export async function createSessionBooking(
+  studentId: string,
+  tutorId: string,
+  courseId: string | null,
+  startTime: string,
+  endTime: string,
+  location: string | null,
+  notes: string | null
+) {
+  try {
+    const { data, error } = await supabase
+      .from('sessions')
+      .insert({
+        student_id: studentId,
+        tutor_id: tutorId,
+        course_id: courseId,
+        start_time: startTime,
+        end_time: endTime,
+        location: location,
+        notes: notes,
+        status: 'pending',
+        payment_status: 'unpaid'
+      })
+      .select()
+      .single();
+      
+    if (error) throw error;
+    
+    return data;
+  } catch (error) {
+    console.error("Error creating session booking:", error);
+    throw error;
   }
 }
 
