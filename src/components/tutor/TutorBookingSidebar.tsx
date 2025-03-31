@@ -7,6 +7,7 @@ import MessageButton from "@/components/messaging/MessageButton";
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { SimpleBookingWizard } from "@/components/scheduling/SimpleBookingWizard";
+import { SchedulingProvider } from "@/contexts/SchedulingContext";
 
 interface TutorBookingSidebarProps {
   tutor: Tutor;
@@ -15,7 +16,7 @@ interface TutorBookingSidebarProps {
 export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
   const [showBookingModal, setShowBookingModal] = useState(false);
 
-  // Format hourly rate with two decimal places
+  // Format hourly rate with two decimal places from tutor profile
   const formattedHourlyRate = tutor.hourlyRate ? `$${tutor.hourlyRate.toFixed(2)}` : "$25.00";
 
   return (
@@ -74,10 +75,12 @@ export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
         onOpenChange={setShowBookingModal}
       >
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          <SimpleBookingWizard 
-            tutor={tutor}
-            onClose={() => setShowBookingModal(false)}
-          />
+          <SchedulingProvider>
+            <SimpleBookingWizard 
+              tutor={tutor}
+              onClose={() => setShowBookingModal(false)}
+            />
+          </SchedulingProvider>
         </DialogContent>
       </Dialog>
     </>

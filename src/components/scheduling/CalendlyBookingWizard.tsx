@@ -21,12 +21,11 @@ interface CalendlyBookingWizardProps {
 export function CalendlyBookingWizard({ tutor, onClose }: CalendlyBookingWizardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState<BookingSlot | null>(null);
   const [isBooking, setIsBooking] = useState(false);
   
   // Set the tutor in the SchedulingContext
-  const { setTutor } = useScheduling();
+  const { state, dispatch, setTutor } = useScheduling();
+  const { selectedDate, selectedTimeSlot } = state;
   
   useEffect(() => {
     setTutor(tutor);
@@ -47,11 +46,6 @@ export function CalendlyBookingWizard({ tutor, onClose }: CalendlyBookingWizardP
         d.getFullYear() === date.getFullYear()
       )
     );
-  
-  // Handle selecting a time slot
-  const handleSelectTimeSlot = (slot: BookingSlot) => {
-    setSelectedTimeSlot(slot);
-  };
   
   // Handle booking session
   const handleBookSession = async () => {
@@ -119,6 +113,10 @@ export function CalendlyBookingWizard({ tutor, onClose }: CalendlyBookingWizardP
     );
   }
   
+  // Calculate session price based on tutor's hourly rate
+  const hourlyRate = tutor.hourlyRate || 25;
+  const sessionPrice = (hourlyRate / 2).toFixed(2); // 30-minute session
+  
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-center mb-6">
@@ -143,7 +141,7 @@ export function CalendlyBookingWizard({ tutor, onClose }: CalendlyBookingWizardP
             </div>
             <div className="text-right">
               <p className="text-sm text-muted-foreground">Price</p>
-              <p className="font-medium">${((tutor.hourlyRate || 25) / 2).toFixed(2)}</p>
+              <p className="font-medium">${sessionPrice}</p>
             </div>
           </div>
           

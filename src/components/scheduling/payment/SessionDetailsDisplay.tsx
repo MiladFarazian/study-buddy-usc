@@ -1,3 +1,4 @@
+
 import { format, differenceInMinutes, parseISO } from "date-fns";
 import { CalendarDays, Clock, DollarSign } from "lucide-react";
 import { Tutor } from "@/types/tutor";
@@ -18,7 +19,10 @@ export const SessionDetailsDisplay = ({
   const endTime = parseISO(`2000-01-01T${selectedSlot.end}`);
   const durationMinutes = differenceInMinutes(endTime, startTime);
   const durationHours = durationMinutes / 60;
-  const sessionCost = tutor.hourlyRate * durationHours;
+  
+  // Use the tutor's hourly rate from their profile
+  const hourlyRate = tutor.hourlyRate || 25; // Default to $25 if not set
+  const sessionCost = hourlyRate * durationHours;
   
   return (
     <div className="space-y-4 mb-6">
@@ -44,7 +48,7 @@ export const SessionDetailsDisplay = ({
         <div className="flex items-center">
           <DollarSign className="h-4 w-4 mr-2 text-muted-foreground" />
           <span className="text-sm">
-            ${tutor.hourlyRate.toFixed(2)}/hour • {durationHours.toFixed(1)} hours
+            ${hourlyRate.toFixed(2)}/hour • {durationHours.toFixed(1)} hours
           </span>
         </div>
       </div>

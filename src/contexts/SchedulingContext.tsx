@@ -99,7 +99,7 @@ export const SchedulingProvider: React.FC<{ children: ReactNode }> = ({ children
     if (!tutor) return 0;
     
     // Calculate price based on tutor's hourly rate and duration
-    const hourlyRate = tutor.hourlyRate || 25; // Default $25/hour
+    const hourlyRate = tutor.hourlyRate || 25; // Use tutor's rate or default to $25
     return (hourlyRate / 60) * durationMinutes;
   };
 

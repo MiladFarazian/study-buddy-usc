@@ -41,10 +41,12 @@ export async function getTutorAvailability(tutorId: string): Promise<WeeklyAvail
     if (data?.availability) {
       // Check if it's a valid object with day properties
       const avail = data.availability as WeeklyAvailability;
+      
+      // Initialize with empty arrays if undefined
       const weekDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+      const cleanAvailability: WeeklyAvailability = {};
       
       // Ensure all days exist in the availability object
-      const cleanAvailability: WeeklyAvailability = {};
       weekDays.forEach(day => {
         cleanAvailability[day] = avail[day] || [];
       });
@@ -52,10 +54,21 @@ export async function getTutorAvailability(tutorId: string): Promise<WeeklyAvail
       return cleanAvailability;
     }
     
-    return null;
+    // If tutor has no availability set yet, return a default structure
+    const defaultAvailability: WeeklyAvailability = {
+      monday: [],
+      tuesday: [],
+      wednesday: [],
+      thursday: [],
+      friday: [],
+      saturday: [],
+      sunday: []
+    };
+    
+    return defaultAvailability;
   } catch (error) {
     console.error("Error fetching tutor availability:", error);
-    throw error; // Re-throw to allow for more specific error handling
+    return null;
   }
 }
 

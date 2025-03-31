@@ -15,6 +15,9 @@ export function SessionDurationSelector() {
     dispatch({ type: 'SET_DURATION', payload: duration });
   };
   
+  // Use the tutor's hourly rate from their profile
+  const hourlyRate = tutor?.hourlyRate || 25; // Default to $25 if not set
+  
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold mb-4">Select Session Duration</h2>
@@ -43,7 +46,7 @@ export function SessionDurationSelector() {
       </div>
       
       <p className="text-sm text-muted-foreground mt-2">
-        Rate: ${tutor?.hourlyRate || 25}/hour
+        Rate: ${hourlyRate}/hour
       </p>
     </div>
   );

@@ -18,6 +18,14 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const loadAvailability = useCallback(async () => {
+    if (!tutor || !tutor.id) {
+      console.log("No valid tutor provided to useAvailabilityData");
+      setLoading(false);
+      setHasAvailability(false);
+      setErrorMessage("No tutor information available");
+      return;
+    }
+    
     setLoading(true);
     try {
       console.log("Loading availability for tutor:", tutor.id);
@@ -33,7 +41,7 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
       }
       
       // Check if there's any actual availability set
-      const hasAnySlots = Object.values(availability).some(daySlots => daySlots.length > 0);
+      const hasAnySlots = Object.values(availability).some(daySlots => daySlots && daySlots.length > 0);
       
       if (!hasAnySlots) {
         console.log("Tutor has no availability slots set:", tutor.id);
@@ -78,13 +86,13 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
     } finally {
       setLoading(false);
     }
-  }, [tutor.id, startDate, toast]);
+  }, [tutor, startDate, toast]);
 
   useEffect(() => {
-    if (tutor.id) {
+    if (tutor && tutor.id) {
       loadAvailability();
     }
-  }, [tutor.id, loadAvailability]);
+  }, [tutor, loadAvailability]);
 
   const refreshAvailability = useCallback(() => {
     loadAvailability();
