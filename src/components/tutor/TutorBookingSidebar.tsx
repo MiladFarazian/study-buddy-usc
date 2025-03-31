@@ -15,6 +15,9 @@ interface TutorBookingSidebarProps {
 export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
   const [showBookingModal, setShowBookingModal] = useState(false);
 
+  // Format hourly rate with two decimal places
+  const formattedHourlyRate = tutor.hourlyRate ? `$${tutor.hourlyRate.toFixed(2)}` : "$25.00";
+
   return (
     <>
       <Card>
@@ -24,7 +27,7 @@ export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
         <CardContent>
           <div className="mb-4">
             <p className="font-bold text-2xl text-usc-cardinal">
-              ${tutor.hourlyRate?.toFixed(2) || "25.00"}/hour
+              {formattedHourlyRate}/hour
             </p>
           </div>
 

@@ -1,3 +1,4 @@
+
 import { useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -53,6 +54,9 @@ const TutorProfile = () => {
       .join("");
   };
 
+  // Format hourly rate with two decimal places
+  const formattedHourlyRate = tutor.hourlyRate ? `$${tutor.hourlyRate.toFixed(2)}` : "$25.00";
+
   return (
     <div className="container py-8">
       <div className="mb-6">
@@ -88,7 +92,7 @@ const TutorProfile = () => {
                   <div className="flex items-start">
                     <DollarSign className="h-5 w-5 mr-3 mt-0.5 text-muted-foreground" />
                     <div>
-                      <p className="font-medium">${tutor.hourlyRate}/hour</p>
+                      <p className="font-medium">{formattedHourlyRate}/hour</p>
                     </div>
                   </div>
                   

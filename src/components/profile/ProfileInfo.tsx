@@ -1,4 +1,6 @@
 
+import { DollarSign } from "lucide-react";
+
 interface ProfileInfoProps {
   firstName: string;
   lastName: string;
@@ -14,6 +16,11 @@ export const ProfileInfo = ({
   userRole, 
   profile 
 }: ProfileInfoProps) => {
+  // Format hourly rate with two decimal places if it exists
+  const formattedHourlyRate = profile?.hourly_rate 
+    ? `$${profile.hourly_rate.toFixed(2)}` 
+    : "$25.00";
+
   return (
     <>
       <h2 className="text-xl font-semibold mt-4">
@@ -33,9 +40,14 @@ export const ProfileInfo = ({
               <p className="text-sm text-muted-foreground">Rating</p>
               <p className="font-medium">{profile?.average_rating?.toFixed(1) || "N/A"}/5.0</p>
             </div>
-            <div className="p-3 border rounded-md">
-              <p className="text-sm text-muted-foreground">Hourly Rate</p>
-              <p className="font-medium">${profile?.hourly_rate || "25"}/hour</p>
+            <div className="p-3 border rounded-md flex items-center">
+              <div className="flex-1">
+                <p className="text-sm text-muted-foreground">Hourly Rate</p>
+                <p className="font-medium flex items-center">
+                  <DollarSign className="h-4 w-4 mr-1 text-gray-500" />
+                  {formattedHourlyRate}/hour
+                </p>
+              </div>
             </div>
           </>
         )}

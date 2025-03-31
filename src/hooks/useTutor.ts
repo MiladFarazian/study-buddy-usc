@@ -100,7 +100,7 @@ export function useTutor(id: string) {
         });
       }
 
-      // Create tutor object
+      // Create tutor object with properly formatted hourly rate
       const tutorData: Tutor = {
         id: profile.id,
         name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),

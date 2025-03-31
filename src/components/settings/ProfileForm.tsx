@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2 } from "lucide-react";
+import { Loader2, DollarSign } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
 import { Profile } from "@/integrations/supabase/types-extension";
 
@@ -137,14 +137,23 @@ export const ProfileForm = ({
         {isTutor && (
           <div className="space-y-2">
             <Label htmlFor="hourly_rate">Hourly Rate ($)</Label>
-            <Input 
-              id="hourly_rate" 
-              name="hourly_rate"
-              type="number"
-              value={formData.hourly_rate}
-              onChange={handleInputChange}
-              placeholder="25" 
-            />
+            <div className="relative">
+              <DollarSign className="absolute left-3 top-2.5 h-5 w-5 text-gray-500" />
+              <Input 
+                id="hourly_rate" 
+                name="hourly_rate"
+                type="number"
+                value={formData.hourly_rate}
+                onChange={handleInputChange}
+                placeholder="25" 
+                className="pl-10"
+                min="1"
+                step="0.01"
+              />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Set your hourly tutoring rate - this will be displayed on your profile
+            </p>
           </div>
         )}
         
