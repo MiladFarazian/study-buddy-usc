@@ -1,5 +1,9 @@
 
-// This file will serve as the entry point for the new scheduling system
-// We'll rebuild scheduling components from scratch
+// This file serves as the entry point for the new scheduling system
 
-export {}; // Empty export to satisfy TypeScript module requirements
+// Export our main components
+export { TutorAvailabilityCard } from './TutorAvailabilityCard';
+export { AvailabilitySettings } from './AvailabilitySettings';
+export { DragSelectCalendar } from './DragSelectCalendar';
+
+// Calendar components will be added as they are developed
