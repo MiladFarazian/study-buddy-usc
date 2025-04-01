@@ -189,16 +189,15 @@ url = ""
 # Whether to enforce protection measures against unauthorized use of the Functions.
 verify_jwt = true
 
+# Individual functions can have their JWT verification disabled
 [functions.create-payment-intent]
 verify_jwt = false
 
 [functions.stripe-webhook]
 verify_jwt = false
 
+# Analytics configuration - using proper format
 [analytics]
 enabled = false
 port = 54327
 vector_port = 54328
-# Setup BigQuery project to enable log viewer on local development stack.
-project_id = ""
-dataset_id = ""
