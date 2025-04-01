@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { createPaymentIntent, processPayment, initializeStripe } from "@/lib/stripe-utils";
@@ -17,8 +17,8 @@ export function usePaymentForm({
   studentEmail,
   onPaymentComplete
 }: {
-  tutor: Tutor;
-  selectedSlot: BookingSlot;
+  tutor: Tutor | null;
+  selectedSlot: BookingSlot | null;
   sessionId: string;
   studentId: string;
   studentName: string;
@@ -38,11 +38,12 @@ export function usePaymentForm({
   const [retryCount, setRetryCount] = useState(0);
   
   // Calculate session duration and cost
-  const startTime = new Date(`2000-01-01T${selectedSlot.start || '00:00'}`);
-  const endTime = new Date(`2000-01-01T${selectedSlot.end || '00:00'}`);
-  const durationHours = selectedSlot.start && selectedSlot.end ? 
+  const startTime = selectedSlot?.start ? new Date(`2000-01-01T${selectedSlot.start || '00:00'}`) : new Date();
+  const endTime = selectedSlot?.end ? new Date(`2000-01-01T${selectedSlot.end || '00:00'}`) : new Date();
+  const durationHours = selectedSlot?.start && selectedSlot?.end ? 
     (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60) : 0;
-  const sessionCost = tutor.hourlyRate ? tutor.hourlyRate * durationHours : 25 * durationHours;
+  const hourlyRate = tutor?.hourlyRate || 25;
+  const sessionCost = hourlyRate * durationHours;
   
   // Load Stripe.js
   useEffect(() => {
@@ -67,13 +68,14 @@ export function usePaymentForm({
   // Create payment transaction when component mounts
   useEffect(() => {
     const setupPayment = async () => {
+      // Skip if not all required data is available
+      if (!sessionId || !studentId || !tutor?.id || !stripeLoaded || 
+          !selectedSlot.day || !selectedSlot.start) {
+        return;
+      }
+      
       try {
         setLoading(true);
-        
-        // Skip if not all data is available
-        if (!selectedSlot.day || !selectedSlot.start) {
-          return;
-        }
         
         // Create a payment intent with Stripe
         const formattedDate = format(new Date(selectedSlot.day), 'MMM dd, yyyy');
@@ -118,19 +120,19 @@ export function usePaymentForm({
       }
     };
     
-    if (sessionId && studentId && tutor.id && stripeLoaded && selectedSlot.day) {
+    if (sessionId && studentId && tutor?.id && stripeLoaded && selectedSlot?.day) {
       setupPayment();
     }
-  }, [sessionId, studentId, tutor.id, tutor.name, selectedSlot, sessionCost, toast, stripeLoaded, retryCount]);
+  }, [sessionId, studentId, tutor?.id, tutor?.name, selectedSlot, sessionCost, toast, stripeLoaded, retryCount]);
   
-  const handleCardElementReady = (element: any) => {
+  const handleCardElementReady = useCallback((element: any) => {
     setCardElement(element);
     
     // Add event listener for card errors
     element.on('change', (event: any) => {
       setCardError(event.error ? event.error.message : '');
     });
-  };
+  }, []);
   
   const handleSubmitPayment = async (e: React.FormEvent) => {
     e.preventDefault();

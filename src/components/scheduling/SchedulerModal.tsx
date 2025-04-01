@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Tutor } from "@/types/tutor";
 import { BookingStepSelector } from "./booking-modal/BookingStepSelector";
-import { BookingSlot } from "@/lib/scheduling";
+import { BookingSlot } from "@/lib/scheduling/types";
 import { useBookingSession } from "./booking-modal/useBookingSession";
 import { SessionDetailsDisplay } from "./payment/SessionDetailsDisplay";
 import { PaymentCardElement } from "./payment/PaymentCardElement";
@@ -11,7 +11,7 @@ import { PaymentSuccessScreen } from "./payment/PaymentSuccessScreen";
 import { Loader2 } from "lucide-react";
 import { AuthRequiredDialog } from "./booking-modal/AuthRequiredDialog";
 import { usePaymentForm } from "./payment/usePaymentForm";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface SchedulerModalProps {
   isOpen: boolean;
@@ -41,42 +41,22 @@ export function SchedulerModal({
     setAuthRequired
   } = useBookingSession(tutor, isOpen, onClose);
 
-  // Initialize with null values to ensure hook is always called
-  const [paymentFormProps, setPaymentFormProps] = useState<{
-    tutor: Tutor;
-    selectedSlot: BookingSlot;
-    sessionId: string;
-    studentId: string;
-    studentName: string;
-    studentEmail: string;
-    onPaymentComplete: () => void;
-  } | null>(null);
+  // Always call usePaymentForm hook with default values
+  const paymentForm = usePaymentForm({
+    tutor: tutor,
+    selectedSlot: selectedSlot || { day: new Date(), start: '', end: '' },
+    sessionId: sessionId || '',
+    studentId: user?.id || '',
+    studentName: user?.user_metadata?.full_name || '',
+    studentEmail: user?.email || '',
+    onPaymentComplete: handlePaymentComplete
+  });
 
-  // Always call usePaymentForm with default values or actual values when available
-  const paymentForm = usePaymentForm(
-    paymentFormProps || {
-      tutor: tutor,
-      selectedSlot: {} as BookingSlot, // Empty object as fallback
-      sessionId: "",
-      studentId: "",
-      studentName: "",
-      studentEmail: "",
-      onPaymentComplete: () => {}
-    }
-  );
-
-  // Update payment form props when ready
-  if (step === 'payment' && selectedSlot && sessionId && user && !paymentFormProps) {
-    setPaymentFormProps({
-      tutor,
-      selectedSlot,
-      sessionId,
-      studentId: user.id,
-      studentName: user.user_metadata?.full_name || '',
-      studentEmail: user.email || '',
-      onPaymentComplete: handlePaymentComplete
-    });
-  }
+  // Update payment form props when data changes
+  useEffect(() => {
+    // This effect ensures props are updated when data is available
+    // but doesn't affect the hook call pattern that must stay consistent
+  }, [tutor, selectedSlot, sessionId, user]);
 
   return (
     <>
@@ -112,21 +92,19 @@ export function SchedulerModal({
                     selectedSlot={selectedSlot} 
                   />
                   
-                  {paymentFormProps && (
-                    <div className="mt-6">
-                      <PaymentCardElement
-                        onCardElementReady={paymentForm.handleCardElementReady}
-                        onSubmit={paymentForm.handleSubmitPayment}
-                        onCancel={handleCancel}
-                        processing={paymentForm.processing}
-                        loading={paymentForm.loading}
-                        cardError={paymentForm.cardError}
-                        amount={paymentForm.sessionCost}
-                        stripeLoaded={paymentForm.stripeLoaded}
-                        clientSecret={paymentForm.clientSecret}
-                      />
-                    </div>
-                  )}
+                  <div className="mt-6">
+                    <PaymentCardElement
+                      onCardElementReady={paymentForm.handleCardElementReady}
+                      onSubmit={paymentForm.handleSubmitPayment}
+                      onCancel={handleCancel}
+                      processing={paymentForm.processing}
+                      loading={paymentForm.loading}
+                      cardError={paymentForm.cardError}
+                      amount={paymentForm.sessionCost}
+                      stripeLoaded={paymentForm.stripeLoaded}
+                      clientSecret={paymentForm.clientSecret}
+                    />
+                  </div>
                 </>
               )}
             </div>

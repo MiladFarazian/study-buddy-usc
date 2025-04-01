@@ -33,6 +33,7 @@ export const PaymentCardElement = ({
   const [cardComplete, setCardComplete] = useState(false);
   const [cardElementMounted, setCardElementMounted] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [mountAttempts, setMountAttempts] = useState(0);
 
   // Load Stripe.js and create Elements instance
   useEffect(() => {
@@ -72,7 +73,7 @@ export const PaymentCardElement = ({
 
   // Create and mount the Card Element
   useEffect(() => {
-    if (elements && !cardElementMounted) {
+    if (elements && !cardElementMounted && mountAttempts < 3) {
       try {
         const cardElement = elements.create('card', {
           style: {
@@ -104,6 +105,12 @@ export const PaymentCardElement = ({
           });
           
           onCardElementReady(cardElement);
+        } else {
+          console.warn('Card container not found, will retry mounting');
+          // Set a short timeout to retry mount if container isn't ready
+          setTimeout(() => {
+            setMountAttempts(prev => prev + 1);
+          }, 500);
         }
         
         // Cleanup function
@@ -117,7 +124,7 @@ export const PaymentCardElement = ({
         setLoadError('Could not create payment form. Please refresh and try again.');
       }
     }
-  }, [elements, cardElementMounted, onCardElementReady]);
+  }, [elements, cardElementMounted, onCardElementReady, mountAttempts]);
 
   return (
     <form onSubmit={onSubmit} className="space-y-6">
