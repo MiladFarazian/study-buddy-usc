@@ -5,7 +5,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Tutor } from "@/types/tutor";
 import { BookingSlot } from "@/lib/scheduling/types";
 import { createSessionBooking } from "@/lib/scheduling";
-import { createPaymentIntent } from "@/lib/stripe-utils";
 import { supabase } from "@/integrations/supabase/client";
 
 export const useBookingSession = (tutor: Tutor, isOpen: boolean, onClose: () => void) => {
@@ -68,18 +67,6 @@ export const useBookingSession = (tutor: Tutor, isOpen: boolean, onClose: () => 
       
       if (bookingResult && bookingResult.id) {
         setSessionId(bookingResult.id);
-        
-        // Create payment intent
-        const amountInCents = Math.round(cost * 100);
-        const paymentIntent = await createPaymentIntent(
-          bookingResult.id,
-          amountInCents,
-          tutor.id,
-          user.id,
-          `Tutoring session with ${tutor.name}`
-        );
-        
-        setClientSecret(paymentIntent.client_secret);
         setStep('payment');
       }
     } catch (error) {
@@ -96,7 +83,7 @@ export const useBookingSession = (tutor: Tutor, isOpen: boolean, onClose: () => 
   
   const handlePaymentComplete = useCallback(() => {
     toast({
-      title: "Payment Successful!",
+      title: "Booking Successful!",
       description: `Your session with ${tutor.name} has been scheduled.`,
     });
     

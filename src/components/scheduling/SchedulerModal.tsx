@@ -1,5 +1,6 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Tutor } from "@/types/tutor";
 import { BookingStepSelector } from "./booking-modal/BookingStepSelector";
 import { BookingSlot } from "@/lib/scheduling";
