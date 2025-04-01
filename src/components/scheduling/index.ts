@@ -1,12 +1,5 @@
 
-// Export main scheduler components
-export * from './Calendar';
-export * from './TimeSlots';
-export * from './SessionDurationSelector';
-export * from './BookingForm';
-export * from './ConfirmationStep';
-export * from './DateSelectionStep';
-export * from './PaymentStep';
-export * from './SimpleBookingWizard';
-export * from './CalendlyBookingWizard';
-export * from './DurationSelector';
+// This file will serve as the entry point for the new scheduling system
+// We'll rebuild scheduling components from scratch
+
+export {}; // Empty export to satisfy TypeScript module requirements
