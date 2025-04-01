@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useScheduling } from '@/contexts/SchedulingContext';
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { formatTimeDisplay } from "@/lib/scheduling/time-utils";
 import { format } from 'date-fns';
 import { useForm } from 'react-hook-form';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface BookingFormData {
   name: string;
@@ -17,14 +18,26 @@ interface BookingFormData {
 export function BookingForm() {
   const { state, dispatch, calculatePrice } = useScheduling();
   const { selectedDate, selectedTimeSlot, selectedDuration, notes, studentName, studentEmail } = state;
+  const { user } = useAuth();
   
-  const { register, handleSubmit, formState: { errors } } = useForm<BookingFormData>({
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<BookingFormData>({
     defaultValues: {
       name: studentName,
       email: studentEmail,
       notes: notes
     }
   });
+  
+  // Auto-fill email if user is logged in and email is empty
+  useEffect(() => {
+    if (user?.email && !studentEmail) {
+      setValue('email', user.email);
+      dispatch({ 
+        type: 'SET_STUDENT_INFO', 
+        payload: { name: studentName, email: user.email } 
+      });
+    }
+  }, [user, studentEmail, studentName, setValue, dispatch]);
   
   const onSubmit = (data: BookingFormData) => {
     dispatch({ 

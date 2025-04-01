@@ -2,7 +2,8 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent, useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface StudentInfoFormProps {
   email: string;
@@ -14,7 +15,20 @@ export const StudentInfoForm = ({
   onEmailChange
 }: StudentInfoFormProps) => {
   const [notes, setNotes] = useState("");
+  const { user } = useAuth();
   
+  // Auto-fill the email field with the user's email if available and email is empty
+  useEffect(() => {
+    if (user?.email && !email) {
+      // Create a synthetic event to simulate user input
+      const syntheticEvent = {
+        target: { value: user.email }
+      } as ChangeEvent<HTMLInputElement>;
+      
+      onEmailChange(syntheticEvent);
+    }
+  }, [user, email, onEmailChange]);
+
   return (
     <div className="space-y-4">
       <div>
