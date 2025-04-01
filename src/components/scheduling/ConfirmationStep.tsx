@@ -49,9 +49,9 @@ export function ConfirmationStep({ onClose, onReset }: ConfirmationStepProps) {
         <div className="border-b py-5">
           <h3 className="text-gray-500">Tutor</h3>
           <div className="flex items-center mt-2">
-            {tutor.avatarUrl ? (
+            {tutor.imageUrl ? (
               <img 
-                src={tutor.avatarUrl} 
+                src={tutor.imageUrl} 
                 alt={tutor.name} 
                 className="h-12 w-12 rounded-full mr-3"
               />
@@ -60,7 +60,10 @@ export function ConfirmationStep({ onClose, onReset }: ConfirmationStepProps) {
             )}
             <div>
               <p className="text-xl font-bold">{tutor.name}</p>
-              <p className="text-gray-500">{tutor.subjects?.[0] || "Computer Science"}</p>
+              <p className="text-gray-500">{tutor.subjects && tutor.subjects.length > 0 
+                ? tutor.subjects[0].name || tutor.subjects[0].code 
+                : "Computer Science"}
+              </p>
             </div>
           </div>
         </div>

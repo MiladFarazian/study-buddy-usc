@@ -5,8 +5,9 @@ import { useScheduling, BookingStep } from "@/contexts/SchedulingContext";
 import { format, isSameDay } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { Loader2 } from "lucide-react";
 
-interface DateSelectionStepProps {
+export interface DateSelectionStepProps {
   availableSlots: BookingSlot[];
   isLoading: boolean;
 }
@@ -58,7 +59,7 @@ export function DateSelectionStep({ availableSlots, isLoading }: DateSelectionSt
   // Handle continue button click
   const handleContinue = () => {
     if (selectedDate) {
-      dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_DATE_TIME });
+      dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_DURATION });
     }
   };
 
@@ -66,6 +67,15 @@ export function DateSelectionStep({ availableSlots, isLoading }: DateSelectionSt
   const handleBack = () => {
     dispatch({ type: 'RESET' });
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal" />
+        <span className="ml-2">Loading available dates...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

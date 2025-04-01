@@ -21,19 +21,6 @@ export function TimeSelector({ availableTimeSlots, selectedTime, onSelectTime }:
     return format(timeObj, 'h:mm a');
   };
 
-  // Group time slots into logical sections for a more organized display
-  const morningSlots = availableTimeSlots.filter(
-    slot => parseInt(slot.time.split(':')[0]) < 12
-  );
-  
-  const afternoonSlots = availableTimeSlots.filter(
-    slot => parseInt(slot.time.split(':')[0]) >= 12 && parseInt(slot.time.split(':')[0]) < 17
-  );
-  
-  const eveningSlots = availableTimeSlots.filter(
-    slot => parseInt(slot.time.split(':')[0]) >= 17
-  );
-
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">Select a Time</h2>

@@ -1,11 +1,14 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { DateSelectionStep } from "./DateSelectionStep";
 import { SessionDurationSelector } from "./SessionDurationSelector";
 import { PaymentStep } from "./PaymentStep";
 import { ConfirmationStep } from "./ConfirmationStep";
 import { useScheduling, BookingStep } from "@/contexts/SchedulingContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { BookingSlot } from "@/lib/scheduling";
+import { startOfDay } from "date-fns";
+import { useAvailabilityData } from "@/hooks/useAvailabilityData";
 
 interface SimpleBookingWizardProps {
   tutor: any;
@@ -16,8 +19,13 @@ export function SimpleBookingWizard({ tutor, onClose }: SimpleBookingWizardProps
   const { state, dispatch, setTutor } = useScheduling();
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   
+  // Get availability data for the tutor
+  const today = startOfDay(new Date());
+  const { loading: isLoading, availableSlots } = 
+    tutor ? useAvailabilityData(tutor, today) : { loading: false, availableSlots: [] };
+  
   // Set the tutor in the scheduling context
-  React.useEffect(() => {
+  useEffect(() => {
     if (tutor) {
       setTutor(tutor);
     }
@@ -31,7 +39,7 @@ export function SimpleBookingWizard({ tutor, onClose }: SimpleBookingWizardProps
   const renderStep = () => {
     switch (state.bookingStep) {
       case BookingStep.SELECT_DATE_TIME:
-        return <DateSelectionStep />;
+        return <DateSelectionStep availableSlots={availableSlots} isLoading={isLoading} />;
       case BookingStep.SELECT_DURATION:
         return <SessionDurationSelector />;
       case BookingStep.FILL_FORM:
@@ -49,7 +57,7 @@ export function SimpleBookingWizard({ tutor, onClose }: SimpleBookingWizardProps
           />
         );
       default:
-        return <DateSelectionStep />;
+        return <DateSelectionStep availableSlots={availableSlots} isLoading={isLoading} />;
     }
   };
   
