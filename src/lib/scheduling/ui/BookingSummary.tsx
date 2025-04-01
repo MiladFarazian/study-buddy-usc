@@ -1,10 +1,16 @@
 
-import React from 'react';
+import { format } from "date-fns";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
-import { format } from 'date-fns';
-import { CalendarIcon, Clock, DollarSign, MessageSquare } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface BookingSummaryProps {
   selectedDate: Date;
@@ -15,86 +21,74 @@ interface BookingSummaryProps {
   onNotesChange: (notes: string) => void;
 }
 
-export const BookingSummary: React.FC<BookingSummaryProps> = ({
+export function BookingSummary({ 
   selectedDate,
   selectedTime,
   durationMinutes,
   cost,
   notes,
   onNotesChange
-}) => {
-  // Format date and time
-  const formattedDate = format(selectedDate, 'EEEE, MMMM d, yyyy');
-  
-  // Convert time to 12-hour format
-  const formatTime = (timeStr: string) => {
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    const period = hours >= 12 ? 'PM' : 'AM';
-    const hours12 = hours % 12 || 12;
-    return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+}: BookingSummaryProps) {
+  // Format the time for display
+  const formatTimeDisplay = (time24: string): string => {
+    try {
+      const [hours, minutes] = time24.split(':').map(Number);
+      const date = new Date();
+      date.setHours(hours, minutes);
+      return format(date, 'h:mm a');
+    } catch (e) {
+      return time24;
+    }
   };
-  
-  // Calculate end time
-  const calculateEndTime = () => {
-    const [hours, minutes] = selectedTime.split(':').map(Number);
-    const startMinutes = hours * 60 + minutes;
-    const endMinutes = startMinutes + durationMinutes;
-    
-    const endHours = Math.floor(endMinutes / 60);
-    const endMins = endMinutes % 60;
-    
-    return `${endHours.toString().padStart(2, '0')}:${endMins.toString().padStart(2, '0')}`;
-  };
-  
+
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold">Booking Summary</h2>
+      <h2 className="text-2xl font-bold">Complete Your Booking</h2>
       
-      <Card>
-        <CardContent className="p-4 space-y-4">
-          <div className="flex items-start">
-            <CalendarIcon className="h-5 w-5 mr-3 mt-0.5 text-muted-foreground" />
-            <div>
-              <p className="font-medium">Date</p>
-              <p className="text-muted-foreground">{formattedDate}</p>
-            </div>
-          </div>
-          
-          <div className="flex items-start">
-            <Clock className="h-5 w-5 mr-3 mt-0.5 text-muted-foreground" />
-            <div>
-              <p className="font-medium">Time</p>
-              <p className="text-muted-foreground">
-                {formatTime(selectedTime)} - {formatTime(calculateEndTime())} ({durationMinutes} minutes)
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex items-start">
-            <DollarSign className="h-5 w-5 mr-3 mt-0.5 text-muted-foreground" />
-            <div>
-              <p className="font-medium">Price</p>
-              <p className="text-muted-foreground">${cost.toFixed(2)}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="bg-gray-50 p-6 rounded-md">
+        <h3 className="text-sm font-medium text-muted-foreground mb-2">Selected Time:</h3>
+        <p className="text-xl font-medium">
+          {format(selectedDate, 'MMMM d, yyyy')} at {formatTimeDisplay(selectedTime)}
+        </p>
+      </div>
       
-      <div className="space-y-2">
-        <div className="flex items-center">
-          <MessageSquare className="h-4 w-4 mr-2 text-muted-foreground" />
-          <Label htmlFor="notes" className="font-medium">
-            Notes for the tutor (optional)
-          </Label>
-        </div>
+      <div>
+        <Label htmlFor="duration">Session Duration</Label>
+        <Select defaultValue={`${durationMinutes}`} disabled>
+          <SelectTrigger id="duration" className="mt-1">
+            <SelectValue placeholder="Select duration" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={`${durationMinutes}`}>
+              {durationMinutes} minutes (${cost})
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      
+      <div>
+        <Label htmlFor="notes">Notes (Optional)</Label>
         <Textarea
           id="notes"
-          placeholder="Any specific topics you want to focus on..."
+          placeholder="Any specific topics you'd like to cover?"
+          className="mt-1 resize-none h-32"
           value={notes}
           onChange={(e) => onNotesChange(e.target.value)}
-          className="min-h-24"
         />
+      </div>
+      
+      <Separator />
+      
+      <div className="flex justify-between items-center">
+        <div>
+          <p className="text-muted-foreground">Session duration</p>
+          <p className="text-muted-foreground">Total</p>
+        </div>
+        <div className="text-right">
+          <p>{durationMinutes} minutes</p>
+          <p className="font-bold text-lg">${cost}</p>
+        </div>
       </div>
     </div>
   );
-};
+}

@@ -1,96 +1,116 @@
 
 import React from 'react';
-import { Card, CardContent } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { useScheduling } from '@/contexts/SchedulingContext';
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { formatTimeDisplay } from "@/lib/scheduling/time-utils";
 import { format } from 'date-fns';
-import { useScheduling } from '@/contexts/SchedulingContext';
-import { useAuth } from "@/contexts/AuthContext";
+import { useForm } from 'react-hook-form';
 
-export const BookingForm: React.FC = () => {
-  const { user, profile } = useAuth();
-  const { state, dispatch, tutor, calculatePrice } = useScheduling();
-  const { selectedDate, selectedTimeSlot, sessionDuration, notes } = state;
+interface BookingFormData {
+  name: string;
+  email: string;
+  notes: string;
+}
+
+export function BookingForm() {
+  const { state, dispatch, calculatePrice } = useScheduling();
+  const { selectedDate, selectedTimeSlot, selectedDuration, notes, studentName, studentEmail } = state;
   
-  const totalCost = sessionDuration ? calculatePrice(sessionDuration) : 0;
+  const { register, handleSubmit, formState: { errors } } = useForm<BookingFormData>({
+    defaultValues: {
+      name: studentName,
+      email: studentEmail,
+      notes: notes
+    }
+  });
   
-  // Format selected date and time for display
-  const formattedDate = selectedDate ? format(selectedDate, 'EEEE, MMMM d, yyyy') : '';
-  const formattedStartTime = selectedTimeSlot?.start || '';
-  
-  // Calculate end time based on duration
-  const calculateEndTime = () => {
-    if (!selectedTimeSlot?.start || !sessionDuration) return '';
-    
-    const [hours, minutes] = selectedTimeSlot.start.split(':').map(Number);
-    const startMinutes = hours * 60 + minutes;
-    const endMinutes = startMinutes + sessionDuration;
-    
-    const endHours = Math.floor(endMinutes / 60);
-    const endMins = endMinutes % 60;
-    
-    return `${endHours.toString().padStart(2, '0')}:${endMins.toString().padStart(2, '0')}`;
+  const onSubmit = (data: BookingFormData) => {
+    dispatch({ 
+      type: 'SET_STUDENT_INFO', 
+      payload: { name: data.name, email: data.email } 
+    });
+    dispatch({ type: 'SET_NOTES', payload: data.notes });
   };
   
-  const formattedEndTime = calculateEndTime();
+  if (!selectedDate || !selectedTimeSlot) {
+    return null;
+  }
   
-  // Format time to 12-hour format
-  const formatTime = (timeStr: string) => {
-    if (!timeStr) return '';
-    
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    const period = hours >= 12 ? 'PM' : 'AM';
-    const hours12 = hours % 12 || 12;
-    return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
-  };
-  
-  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    dispatch({ type: 'SET_NOTES', payload: e.target.value });
-  };
+  const formattedDate = format(selectedDate, 'EEEE, MMMM d, yyyy');
+  const formattedTimeStart = formatTimeDisplay(selectedTimeSlot.start);
+  const price = calculatePrice(selectedDuration);
   
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold">Session Details</h2>
+      <h2 className="text-xl font-semibold">Complete Your Booking</h2>
       
-      <Card>
-        <CardContent className="p-6 space-y-4">
-          <div>
-            <p className="font-medium">Date & Time:</p>
-            <p className="text-muted-foreground">
-              {formattedDate} at {formatTime(formattedStartTime)} - {formatTime(formattedEndTime)}
-            </p>
-          </div>
-          
-          <div>
-            <p className="font-medium">Duration:</p>
-            <p className="text-muted-foreground">{sessionDuration} minutes</p>
-          </div>
-          
-          <div>
-            <p className="font-medium">Tutor:</p>
-            <p className="text-muted-foreground">{tutor?.name}</p>
-          </div>
-          
-          <div>
-            <p className="font-medium">Cost:</p>
-            <p className="text-muted-foreground">${totalCost.toFixed(2)}</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="bg-gray-50 p-4 rounded-md text-sm">
+        <h3 className="font-medium mb-2">Booking Summary</h3>
+        <ul className="space-y-1">
+          <li className="flex justify-between">
+            <span className="text-muted-foreground">Date:</span>
+            <span>{formattedDate}</span>
+          </li>
+          <li className="flex justify-between">
+            <span className="text-muted-foreground">Time:</span>
+            <span>{formattedTimeStart}</span>
+          </li>
+          <li className="flex justify-between">
+            <span className="text-muted-foreground">Duration:</span>
+            <span>{selectedDuration} minutes</span>
+          </li>
+          <li className="flex justify-between font-medium">
+            <span>Total:</span>
+            <span>${price.toFixed(2)}</span>
+          </li>
+        </ul>
+      </div>
       
       <div className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="notes">Notes for the tutor (optional)</Label>
-          <Textarea
+        <div>
+          <Label htmlFor="name">Name</Label>
+          <Input 
+            id="name"
+            value={studentName}
+            onChange={(e) => dispatch({ 
+              type: 'SET_STUDENT_INFO', 
+              payload: { name: e.target.value, email: studentEmail } 
+            })}
+            placeholder="Your name"
+            required
+          />
+          {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
+        </div>
+        
+        <div>
+          <Label htmlFor="email">Email</Label>
+          <Input 
+            id="email"
+            type="email"
+            value={studentEmail}
+            onChange={(e) => dispatch({ 
+              type: 'SET_STUDENT_INFO', 
+              payload: { name: studentName, email: e.target.value } 
+            })}
+            placeholder="Your email address"
+            required
+          />
+          {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
+        </div>
+        
+        <div>
+          <Label htmlFor="notes">Additional Notes (Optional)</Label>
+          <Textarea 
             id="notes"
-            placeholder="Any specific topics you want to focus on..."
             value={notes}
-            onChange={handleNotesChange}
-            className="min-h-24"
+            onChange={(e) => dispatch({ type: 'SET_NOTES', payload: e.target.value })}
+            placeholder="Any specific topics or questions you'd like to cover"
+            rows={3}
           />
         </div>
       </div>
     </div>
   );
-};
+}

@@ -1,50 +1,66 @@
 
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { AlertCircle, RefreshCw } from "lucide-react";
+import { AlertCircle, UserX, Clock } from "lucide-react";
+import { Button } from '@/components/ui/button';
+import { useAuth } from "@/contexts/AuthContext";
 
 interface NoAvailabilityDisplayProps {
-  reason: string;
+  reason?: string;
   onRetry?: () => void;
   onLogin?: () => void;
 }
 
-export const NoAvailabilityDisplay: React.FC<NoAvailabilityDisplayProps> = ({
+export const NoAvailabilityDisplay: React.FC<NoAvailabilityDisplayProps> = ({ 
   reason,
   onRetry,
   onLogin
 }) => {
+  const { user } = useAuth();
+  const isAuthError = reason?.includes("Authentication error") || reason?.includes("sign in");
+  const isNoSlotsError = reason?.includes("No available booking slots");
+  
   return (
     <Card className="w-full">
       <CardContent className="pt-6">
         <div className="flex flex-col justify-center items-center h-64 text-center">
-          <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium mb-2">No Availability</h3>
-          <p className="text-muted-foreground max-w-md mb-4">{reason}</p>
+          {isAuthError ? (
+            <UserX className="h-12 w-12 text-muted-foreground mb-4" />
+          ) : isNoSlotsError ? (
+            <Clock className="h-12 w-12 text-muted-foreground mb-4" />
+          ) : (
+            <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+          )}
           
-          <div className="flex space-x-4">
-            {onRetry && (
-              <Button 
-                variant="outline" 
-                onClick={onRetry}
-                className="flex items-center"
-              >
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Try Again
-              </Button>
-            )}
-            
-            {onLogin && (
-              <Button 
-                variant="outline" 
-                onClick={onLogin}
-                className="flex items-center"
-              >
-                Log In
-              </Button>
-            )}
-          </div>
+          <h3 className="text-lg font-medium mb-2">
+            {isAuthError ? "Authentication Required" : 
+             isNoSlotsError ? "No Available Times" : 
+             "No Availability Set"}
+          </h3>
+          
+          <p className="text-muted-foreground max-w-md mb-4">
+            {reason || "This tutor hasn't set their availability yet. Please check back later or try another tutor."}
+          </p>
+          
+          {isAuthError && !user && onLogin && (
+            <Button 
+              variant="default" 
+              onClick={onLogin}
+              className="mt-2"
+            >
+              Sign In
+            </Button>
+          )}
+          
+          {onRetry && (
+            <Button 
+              variant="outline" 
+              onClick={onRetry}
+              className="mt-2"
+            >
+              Retry Loading
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

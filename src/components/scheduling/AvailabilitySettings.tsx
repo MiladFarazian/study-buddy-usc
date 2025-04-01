@@ -1,102 +1,76 @@
 
-import React, { useState, useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Save } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { WeeklyAvailability } from "@/types/scheduling";
-import { DragSelectCalendar } from "./DragSelectCalendar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { WeeklyAvailabilityCalendar } from './calendar/WeeklyAvailabilityCalendar';
+import { AvailabilityCalendar } from './AvailabilityCalendar';
+import { WeeklyAvailability } from '@/lib/scheduling/types';
+import { useToast } from '@/hooks/use-toast';
+import { updateTutorAvailability } from '@/lib/scheduling';
+import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const AvailabilitySettings = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
+  const [availability, setAvailability] = useState<WeeklyAvailability>({
+    monday: [],
+    tuesday: [],
+    wednesday: [],
+    thursday: [],
+    friday: [],
+    saturday: [],
+    sunday: []
+  });
   const [saving, setSaving] = useState(false);
-  const [availability, setAvailability] = useState<WeeklyAvailability>({});
+  const [loading, setLoading] = useState(true);
 
-  // Load current availability
   useEffect(() => {
-    if (user?.id) {
-      loadAvailability();
+    // Load availability from profile if available
+    if (profile?.availability) {
+      setAvailability(profile.availability as WeeklyAvailability);
     }
-  }, [user?.id]);
+    setLoading(false);
+  }, [profile]);
 
-  const loadAvailability = async () => {
-    if (!user?.id) return;
-    
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('tutor_availability')
-        .select('availability')
-        .eq('tutor_id', user.id)
-        .single();
-        
-      if (error) {
-        console.error("Error fetching availability:", error);
-        // If no record exists, we'll create an empty one
-        if (error.code === 'PGRST116') {
-          setAvailability({});
-        }
-        return;
-      }
-      
-      setAvailability(data?.availability || {});
-    } catch (error) {
-      console.error("Error in loadAvailability:", error);
-    } finally {
-      setLoading(false);
-    }
+  const handleAvailabilityChange = (newAvailability: WeeklyAvailability) => {
+    setAvailability(newAvailability);
   };
-  
-  const saveAvailability = async () => {
+
+  const handleSaveAvailability = async () => {
     if (!user?.id) return;
     
     setSaving(true);
     try {
-      const { data, error } = await supabase
-        .from('tutor_availability')
-        .upsert({
-          tutor_id: user.id,
-          availability: availability,
-          updated_at: new Date().toISOString()
-        })
-        .select();
-        
-      if (error) {
-        throw error;
-      }
+      const success = await updateTutorAvailability(user.id, availability);
       
-      toast({
-        title: "Availability saved",
-        description: "Your availability has been updated successfully."
-      });
+      if (success) {
+        toast({
+          title: "Availability Saved",
+          description: "Your availability has been updated successfully.",
+        });
+      } else {
+        throw new Error("Failed to update availability");
+      }
     } catch (error) {
       console.error("Error saving availability:", error);
       toast({
         title: "Error",
         description: "Failed to save your availability. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setSaving(false);
     }
   };
-  
-  const handleAvailabilityChange = (newAvailability: WeeklyAvailability) => {
-    setAvailability(newAvailability);
-  };
 
   if (loading) {
     return (
       <Card>
-        <CardContent className="py-6">
-          <div className="flex justify-center items-center h-32">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            <span className="ml-2">Loading availability settings...</span>
-          </div>
+        <CardContent className="flex justify-center items-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal" />
+          <span className="ml-2">Loading availability settings...</span>
         </CardContent>
       </Card>
     );
@@ -105,25 +79,38 @@ export const AvailabilitySettings = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Availability Settings</CardTitle>
+        <CardTitle>Tutor Availability</CardTitle>
         <CardDescription>
-          Set your weekly availability for tutoring sessions. Click or drag to select time slots.
+          Set your weekly availability to let students know when they can book sessions with you
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-6">
-          <div className="border rounded-md overflow-hidden">
-            <DragSelectCalendar
+        <Tabs defaultValue="calendar">
+          <TabsList className="mb-4">
+            <TabsTrigger value="calendar">Calendar View</TabsTrigger>
+            <TabsTrigger value="list">List View</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="calendar">
+            <WeeklyAvailabilityCalendar 
               availability={availability}
               onChange={handleAvailabilityChange}
-              className="max-h-[600px] overflow-y-auto"
             />
-          </div>
+          </TabsContent>
           
-          <Button 
-            onClick={saveAvailability} 
-            className="bg-usc-cardinal hover:bg-usc-cardinal-dark"
+          <TabsContent value="list">
+            <AvailabilityCalendar 
+              availability={availability}
+              onChange={handleAvailabilityChange}
+            />
+          </TabsContent>
+        </Tabs>
+        
+        <div className="flex justify-end mt-6">
+          <Button
+            onClick={handleSaveAvailability}
             disabled={saving}
+            className="bg-usc-cardinal hover:bg-usc-cardinal-dark"
           >
             {saving ? (
               <>
@@ -131,10 +118,7 @@ export const AvailabilitySettings = () => {
                 Saving...
               </>
             ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                Save Availability
-              </>
+              'Save Availability'
             )}
           </Button>
         </div>

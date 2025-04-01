@@ -1,11 +1,12 @@
 
-import React from 'react';
-import { Card, CardContent } from "@/components/ui/card";
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { format, parse } from 'date-fns';
 import { Clock } from "lucide-react";
-import { getFormattedTime } from '@/lib/scheduling';
 
 export interface TimeSlot {
-  time: string;
+  time: string; // Format: "HH:mm" (24-hour)
   available: boolean;
 }
 
@@ -13,47 +14,56 @@ interface TimeSelectorProps {
   availableTimeSlots: TimeSlot[];
   selectedTime: string | null;
   onSelectTime: (time: string) => void;
+  className?: string;
 }
 
-export const TimeSelector: React.FC<TimeSelectorProps> = ({
-  availableTimeSlots,
-  selectedTime,
-  onSelectTime
-}) => {
-  if (availableTimeSlots.length === 0) {
-    return (
-      <div className="p-4 text-center bg-muted/30 rounded-md">
-        <p className="text-muted-foreground">No available time slots for the selected date.</p>
-        <p className="text-sm text-muted-foreground mt-1">Please select another date.</p>
-      </div>
-    );
-  }
+export function TimeSelector({ 
+  availableTimeSlots, 
+  selectedTime, 
+  onSelectTime,
+  className 
+}: TimeSelectorProps) {
+  // Function to format time from 24-hour to 12-hour format
+  const formatTimeDisplay = (time24: string): string => {
+    try {
+      const timeObj = parse(time24, 'HH:mm', new Date());
+      return format(timeObj, 'h:mm a');
+    } catch (error) {
+      console.error("Error formatting time:", error);
+      return time24; // Return original format if parsing fails
+    }
+  };
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-medium">Available Times</h3>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-        {availableTimeSlots.map((slot, index) => {
-          const isSelected = selectedTime === slot.time;
-          
-          return (
-            <Card
-              key={`${slot.time}-${index}`}
-              className={`cursor-pointer transition-all border-2 ${
-                isSelected 
-                  ? 'border-usc-cardinal bg-red-50' 
-                  : 'hover:border-usc-cardinal/50'
-              }`}
+    <div className={cn("space-y-2", className)}>
+      {availableTimeSlots.length === 0 ? (
+        <div className="flex flex-col items-center justify-center p-8 border rounded-md bg-gray-50">
+          <Clock className="h-6 w-6 text-muted-foreground mb-2" />
+          <p className="text-gray-500 text-center">
+            No available time slots for this date. Please select another date.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+          {availableTimeSlots.map((slot) => (
+            <Button
+              key={slot.time}
+              variant="outline"
+              className={cn(
+                "h-14 w-full justify-center text-base",
+                selectedTime === slot.time 
+                  ? "bg-usc-cardinal text-white border-usc-cardinal" 
+                  : "bg-white",
+                !slot.available && "opacity-50 cursor-not-allowed"
+              )}
+              disabled={!slot.available}
               onClick={() => onSelectTime(slot.time)}
             >
-              <CardContent className="p-3 flex justify-center items-center">
-                <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
-                <span>{getFormattedTime(slot.time)}</span>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+              {formatTimeDisplay(slot.time)}
+            </Button>
+          ))}
+        </div>
+      )}
     </div>
   );
-};
+}

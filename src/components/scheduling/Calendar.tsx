@@ -1,45 +1,57 @@
 
 import React from 'react';
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { format } from 'date-fns';
+import { format, isSameDay, isBefore, addDays } from 'date-fns';
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import { useScheduling } from '@/contexts/SchedulingContext';
 
 interface CalendarProps {
-  availableDates: Date[];
+  availableDates?: Date[];
 }
 
-export const Calendar: React.FC<CalendarProps> = ({ availableDates }) => {
+export function Calendar({ availableDates }: CalendarProps) {
   const { state, dispatch } = useScheduling();
   const { selectedDate } = state;
+  
+  // Helper function to check if a date has available slots
+  const isDateAvailable = (date: Date) => {
+    if (!availableDates || availableDates.length === 0) {
+      // If no specific available dates, allow any date that's not in the past
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return !isBefore(date, today);
+    }
+    
+    return availableDates.some(availableDate => 
+      isSameDay(availableDate, date)
+    );
+  };
 
-  const handleSelect = (date: Date | undefined) => {
-    if (date) {
+  // Handle date selection
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date && isDateAvailable(date)) {
       dispatch({ type: 'SELECT_DATE', payload: date });
     }
   };
 
   return (
-    <div className="space-y-2">
-      <h3 className="text-lg font-medium">Select a Date</h3>
-      <div className="border rounded-md p-3">
-        <CalendarComponent
+    <div className="space-y-4">
+      <h2 className="text-xl font-semibold">Select a Date</h2>
+      
+      <div className="flex justify-center">
+        <CalendarUI
           mode="single"
           selected={selectedDate || undefined}
-          onSelect={handleSelect}
+          onSelect={handleDateSelect}
           disabled={(date) => {
-            // Disable dates before today
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            if (date < today) return true;
-            
-            // Check if date has available slots
-            return !availableDates.some(availableDate => 
-              format(availableDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
-            );
+            return isBefore(date, today) || !isDateAvailable(date);
           }}
-          initialFocus
+          className="rounded-md border"
         />
       </div>
     </div>
   );
-};
+}

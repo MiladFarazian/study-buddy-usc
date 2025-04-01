@@ -1,77 +1,77 @@
 
-import React, { createContext, useContext, useReducer, useState } from 'react';
-import { Tutor } from '@/types/tutor';
-import { BookingSlot } from '@/types/scheduling';
+import React, { createContext, useContext, useState, useReducer, ReactNode, useCallback } from 'react';
+import { Tutor } from "@/types/tutor";
+import { BookingSlot } from "@/lib/scheduling/types";
+import { toast } from "sonner";
 
-// Define the booking steps
+// Define the booking steps enum
 export enum BookingStep {
-  SELECT_DATE_TIME = 'SELECT_DATE_TIME',
-  SELECT_DURATION = 'SELECT_DURATION',
-  FILL_FORM = 'FILL_FORM',
-  CONFIRMATION = 'CONFIRMATION'
+  SELECT_DATE_TIME = 0,
+  SELECT_DURATION = 1,
+  FILL_FORM = 2,
+  CONFIRMATION = 3,
 }
 
-// Define the state interface
+// Define the scheduling state
 interface SchedulingState {
-  bookingStep: BookingStep;
   selectedDate: Date | null;
   selectedTimeSlot: BookingSlot | null;
-  sessionDuration: number;
-  sessionCost: number;
+  selectedDuration: number;
+  bookingStep: BookingStep;
   notes: string;
   studentName: string;
   studentEmail: string;
 }
 
-// Define the action types
-type SchedulingAction =
-  | { type: 'SET_STEP'; payload: BookingStep }
+// Define the scheduling actions
+type SchedulingAction = 
   | { type: 'SELECT_DATE'; payload: Date }
   | { type: 'SELECT_TIME_SLOT'; payload: BookingSlot }
   | { type: 'SET_DURATION'; payload: number }
-  | { type: 'SET_COST'; payload: number }
+  | { type: 'SET_STEP'; payload: BookingStep }
   | { type: 'SET_NOTES'; payload: string }
-  | { type: 'SET_STUDENT_NAME'; payload: string }
-  | { type: 'SET_STUDENT_EMAIL'; payload: string }
+  | { type: 'SET_STUDENT_INFO'; payload: { name: string; email: string } }
   | { type: 'RESET' };
 
-// Define the initial state
+// Initial state
 const initialState: SchedulingState = {
-  bookingStep: BookingStep.SELECT_DATE_TIME,
   selectedDate: null,
   selectedTimeSlot: null,
-  sessionDuration: 60, // Default to 60 minutes
-  sessionCost: 0,
+  selectedDuration: 60, // Default 1 hour
+  bookingStep: BookingStep.SELECT_DATE_TIME,
   notes: '',
   studentName: '',
-  studentEmail: ''
+  studentEmail: '',
 };
 
-// Create the reducer function
-const schedulingReducer = (state: SchedulingState, action: SchedulingAction): SchedulingState => {
+// Reducer function
+function schedulingReducer(state: SchedulingState, action: SchedulingAction): SchedulingState {
   switch (action.type) {
-    case 'SET_STEP':
-      return { ...state, bookingStep: action.payload };
     case 'SELECT_DATE':
       return { ...state, selectedDate: action.payload };
     case 'SELECT_TIME_SLOT':
       return { ...state, selectedTimeSlot: action.payload };
     case 'SET_DURATION':
-      return { ...state, sessionDuration: action.payload };
-    case 'SET_COST':
-      return { ...state, sessionCost: action.payload };
+      return { ...state, selectedDuration: action.payload };
+    case 'SET_STEP':
+      return { ...state, bookingStep: action.payload };
     case 'SET_NOTES':
       return { ...state, notes: action.payload };
-    case 'SET_STUDENT_NAME':
-      return { ...state, studentName: action.payload };
-    case 'SET_STUDENT_EMAIL':
-      return { ...state, studentEmail: action.payload };
+    case 'SET_STUDENT_INFO':
+      return { 
+        ...state, 
+        studentName: action.payload.name, 
+        studentEmail: action.payload.email 
+      };
     case 'RESET':
-      return initialState;
+      return { 
+        ...initialState,
+        bookingStep: BookingStep.SELECT_DATE_TIME 
+      };
     default:
       return state;
   }
-};
+}
 
 // Create the context
 interface SchedulingContextType {
@@ -79,80 +79,90 @@ interface SchedulingContextType {
   dispatch: React.Dispatch<SchedulingAction>;
   tutor: Tutor | null;
   setTutor: (tutor: Tutor) => void;
+  calculatePrice: (durationMinutes: number) => number;
   continueToNextStep: () => void;
   goToPreviousStep: () => void;
-  calculatePrice: (durationMinutes: number) => number;
 }
 
 const SchedulingContext = createContext<SchedulingContextType | undefined>(undefined);
 
-// Create the provider component
-export const SchedulingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// Provider component
+export const SchedulingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(schedulingReducer, initialState);
-  const [tutor, setTutor] = useState<Tutor | null>(null);
+  const [tutor, setTutorState] = useState<Tutor | null>(null);
 
-  const continueToNextStep = () => {
+  const setTutor = (newTutor: Tutor) => {
+    setTutorState(newTutor);
+  };
+
+  const calculatePrice = useCallback((durationMinutes: number): number => {
+    if (!tutor) return 0;
+    
+    // Calculate price based on tutor's hourly rate and duration
+    const hourlyRate = tutor.hourlyRate || 25; // Use tutor's rate or default to $25
+    return (hourlyRate / 60) * durationMinutes;
+  }, [tutor]);
+
+  const continueToNextStep = useCallback(() => {
+    // Validation before moving to the next step
     switch (state.bookingStep) {
       case BookingStep.SELECT_DATE_TIME:
-        dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_DURATION });
+        if (!state.selectedDate || !state.selectedTimeSlot) {
+          toast.error("Please select both a date and time to continue");
+          return;
+        }
         break;
       case BookingStep.SELECT_DURATION:
-        dispatch({ type: 'SET_STEP', payload: BookingStep.FILL_FORM });
+        if (!state.selectedDuration) {
+          toast.error("Please select a session duration");
+          return;
+        }
         break;
       case BookingStep.FILL_FORM:
-        dispatch({ type: 'SET_STEP', payload: BookingStep.CONFIRMATION });
-        break;
-      default:
-        break;
-    }
-  };
-
-  const goToPreviousStep = () => {
-    switch (state.bookingStep) {
-      case BookingStep.SELECT_DURATION:
-        dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_DATE_TIME });
-        break;
-      case BookingStep.FILL_FORM:
-        dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_DURATION });
-        break;
-      case BookingStep.CONFIRMATION:
-        dispatch({ type: 'SET_STEP', payload: BookingStep.FILL_FORM });
-        break;
-      default:
+        if (!state.studentName || !state.studentEmail) {
+          toast.error("Please fill in all required fields");
+          return;
+        }
+        // Simple email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(state.studentEmail)) {
+          toast.error("Please enter a valid email address");
+          return;
+        }
         break;
     }
-  };
 
-  // Calculate price based on tutor's hourly rate and session duration
-  const calculatePrice = (durationMinutes: number): number => {
-    if (!tutor || !tutor.hourlyRate) return 0;
-    
-    const hourlyRate = tutor.hourlyRate;
-    const durationHours = durationMinutes / 60;
-    return Math.round(hourlyRate * durationHours);
-  };
+    // Move to the next step
+    const nextStep = state.bookingStep + 1;
+    dispatch({ type: 'SET_STEP', payload: nextStep as BookingStep });
+  }, [state]);
+
+  const goToPreviousStep = useCallback(() => {
+    if (state.bookingStep > 0) {
+      const prevStep = state.bookingStep - 1;
+      dispatch({ type: 'SET_STEP', payload: prevStep as BookingStep });
+    }
+  }, [state.bookingStep]);
 
   return (
-    <SchedulingContext.Provider
-      value={{
-        state,
-        dispatch,
-        tutor,
-        setTutor,
-        continueToNextStep,
-        goToPreviousStep,
-        calculatePrice
-      }}
-    >
+    <SchedulingContext.Provider value={{ 
+      state, 
+      dispatch, 
+      tutor, 
+      setTutor, 
+      calculatePrice,
+      continueToNextStep,
+      goToPreviousStep
+    }}>
       {children}
     </SchedulingContext.Provider>
   );
 };
 
-// Create a hook to use the scheduling context
-export const useScheduling = (): SchedulingContextType => {
+// Hook for using the scheduling context
+export const useScheduling = () => {
   const context = useContext(SchedulingContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useScheduling must be used within a SchedulingProvider');
   }
   return context;

@@ -1,128 +1,94 @@
-
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { format } from 'date-fns';
-import { getTutorAvailability } from '@/lib/scheduling-utils';
-import { WeeklyAvailability } from '@/types/scheduling';
-import { Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Calendar } from "@/components/ui/calendar";
+import { format, startOfWeek, addDays, isSameDay, isWithinInterval } from 'date-fns';
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { WeeklyAvailability } from "@/lib/scheduling/types";
+import { getTutorAvailability } from "@/lib/scheduling";
 
 interface TutorAvailabilityCardProps {
-  tutorId: string | undefined;
-  readOnly: boolean;
+  tutorId?: string;
+  readOnly?: boolean;
 }
 
-export const TutorAvailabilityCard: React.FC<TutorAvailabilityCardProps> = ({ 
-  tutorId, 
-  readOnly 
-}) => {
-  const [loading, setLoading] = useState(true);
-  const [availability, setAvailability] = useState<WeeklyAvailability | null>(null);
+export const TutorAvailabilityCard = ({ tutorId, readOnly = false }: TutorAvailabilityCardProps) => {
+  const [availability, setAvailability] = useState<WeeklyAvailability>({
+    monday: [],
+    tuesday: [],
+    wednesday: [],
+    thursday: [],
+    friday: [],
+    saturday: [],
+    sunday: []
+  });
+  const [weekStart, setWeekStart] = useState(startOfWeek(new Date()));
 
   useEffect(() => {
-    if (tutorId) {
-      loadAvailability();
-    }
+    const loadAvailability = async () => {
+      if (!tutorId) return;
+      
+      const loadedAvailability = await getTutorAvailability(tutorId);
+      if (loadedAvailability) {
+        setAvailability(loadedAvailability);
+      }
+    };
+
+    loadAvailability();
   }, [tutorId]);
 
-  const loadAvailability = async () => {
-    if (!tutorId) return;
-    
-    setLoading(true);
-    try {
-      const data = await getTutorAvailability(tutorId);
-      setAvailability(data);
-    } catch (error) {
-      console.error("Error loading availability:", error);
-    } finally {
-      setLoading(false);
-    }
+  const goToPreviousWeek = () => {
+    setWeekStart(addDays(weekStart, -7));
   };
 
-  // Helper function to format time 
-  const formatTime = (time: string) => {
-    try {
-      const [hours, minutes] = time.split(':');
-      const date = new Date();
-      date.setHours(parseInt(hours, 10));
-      date.setMinutes(parseInt(minutes, 10));
-      return format(date, 'h:mm a');
-    } catch (e) {
-      return time;
-    }
+  const goToNextWeek = () => {
+    setWeekStart(addDays(weekStart, 7));
   };
 
-  if (loading) {
-    return (
-      <Card>
-        <CardContent className="py-6">
-          <div className="flex justify-center items-center h-32">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            <span className="ml-2">Loading availability...</span>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (!availability) {
-    return (
-      <Card>
-        <CardContent className="py-6">
-          <div className="text-center text-muted-foreground">
-            No availability information found.
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Check if there's any availability set
-  const hasAvailability = Object.values(availability).some(slots => 
-    Array.isArray(slots) && slots.length > 0
-  );
-
-  if (!hasAvailability) {
-    return (
-      <Card>
-        <CardContent className="py-6">
-          <div className="text-center text-muted-foreground">
-            {readOnly ? 
-              "This tutor has not set their availability yet." :
-              "You haven't set your availability yet."
-            }
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Weekly Availability</CardTitle>
+        <CardDescription>View the tutor's availability for the week</CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => {
-            const daySlots = availability[day] || [];
+      <CardContent className="space-y-4">
+        <div className="flex justify-between items-center mb-2">
+          <Button variant="outline" size="icon" onClick={goToPreviousWeek}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <h2>{format(weekStart, 'MMMM dd, yyyy')} - {format(addDays(weekStart, 6), 'MMMM dd, yyyy')}</h2>
+          <Button variant="outline" size="icon" onClick={goToNextWeek}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="grid grid-cols-7 gap-2">
+          {days.map((day, index) => {
+            const currentDate = addDays(weekStart, index);
+            const formattedDate = format(currentDate, 'yyyy-MM-dd');
+            const dayKey = day.toLowerCase();
+            const slots = availability[dayKey] || [];
+
             return (
-              <div key={day} className="border rounded-md overflow-hidden">
-                <div className="bg-muted px-3 py-2 font-medium capitalize">
-                  {day}
-                </div>
-                <div className="p-3">
-                  {daySlots.length === 0 ? (
-                    <div className="text-sm text-muted-foreground text-center py-2">
-                      Not available
-                    </div>
+              <div key={day} className="text-center">
+                <p className="font-semibold">{day.substring(0, 3)}</p>
+                <div
+                  className={cn(
+                    "rounded-md border p-2 w-full",
+                    isSameDay(currentDate, new Date()) ? "bg-usc-cardinal text-white" : "bg-secondary",
+                    slots.length > 0 ? "cursor-pointer" : "cursor-not-allowed"
+                  )}
+                >
+                  {slots.length > 0 ? (
+                    slots.map((slot, slotIndex) => (
+                      <p key={slotIndex} className="text-sm">
+                        {slot.start} - {slot.end}
+                      </p>
+                    ))
                   ) : (
-                    <ul className="space-y-1">
-                      {daySlots.map((slot, index) => (
-                        <li key={index} className="text-sm">
-                          {formatTime(slot.start)} - {formatTime(slot.end)}
-                        </li>
-                      ))}
-                    </ul>
+                    <p className="text-sm">No slots</p>
                   )}
                 </div>
               </div>
