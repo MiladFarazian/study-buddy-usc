@@ -154,6 +154,6 @@ export function useBookingState(initialDate?: Date, initialTime?: string) {
     getMaxDuration,
     getFinalBookingSlot,
     getSessionTimeRange,
-    formatTimeForDisplay
+    formatTimeForDisplay: formatTimeDisplay // Alias the function to match the expected name
   };
 }
