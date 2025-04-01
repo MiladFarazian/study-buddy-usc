@@ -123,6 +123,72 @@ serve(async (req) => {
               console.error('Error creating student notification:', studentNotifyError);
             }
           }
+
+          // Fetch session details to send confirmation emails
+          try {
+            const { data: session, error: sessionFetchError } = await supabaseAdmin
+              .from('sessions')
+              .select(`
+                *,
+                tutor:profiles!tutor_id(id, first_name, last_name, email, hourly_rate),
+                student:profiles!student_id(id, first_name, last_name, email)
+              `)
+              .eq('id', paymentIntent.metadata.sessionId)
+              .single();
+
+            if (sessionFetchError) {
+              console.error('Error fetching session details:', sessionFetchError);
+            } else if (session) {
+              // Calculate session duration in hours for price
+              const startTime = new Date(session.start_time);
+              const endTime = new Date(session.end_time);
+              const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+              const price = session.tutor.hourly_rate ? session.tutor.hourly_rate * durationHours : paymentIntent.amount / 100;
+              
+              // Get tutor and student details
+              const tutorName = `${session.tutor.first_name || ''} ${session.tutor.last_name || ''}`.trim();
+              const studentName = `${session.student.first_name || ''} ${session.student.last_name || ''}`.trim();
+              const tutorEmail = session.tutor.email;
+              const studentEmail = session.student.email;
+              
+              // Send confirmation emails
+              if (tutorEmail && studentEmail) {
+                try {
+                  // Call the send-session-emails function
+                  const emailResponse = await fetch(
+                    `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-session-emails`,
+                    {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+                      },
+                      body: JSON.stringify({
+                        sessionId: session.id,
+                        tutorEmail,
+                        tutorName,
+                        studentEmail,
+                        studentName,
+                        startTime: session.start_time,
+                        endTime: session.end_time,
+                        location: session.location,
+                        notes: session.notes,
+                        price,
+                        emailType: 'confirmation'
+                      }),
+                    }
+                  );
+                  
+                  const emailResult = await emailResponse.json();
+                  console.log('Email notification result:', emailResult);
+                } catch (emailError) {
+                  console.error('Error sending confirmation emails:', emailError);
+                }
+              }
+            }
+          } catch (detailsError) {
+            console.error('Error processing session details:', detailsError);
+          }
         }
         break;
         

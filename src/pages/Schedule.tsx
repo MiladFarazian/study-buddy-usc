@@ -8,8 +8,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Session } from "@/types/session";
 import { SessionList } from "@/components/scheduling/SessionList";
-import { ScheduleCalendar } from "@/components/scheduling/ScheduleCalendar"; // Changed from @/lib/scheduling
+import { ScheduleCalendar } from "@/components/scheduling/ScheduleCalendar"; 
 import { TutorAvailabilityCard } from "@/components/scheduling/TutorAvailabilityCard";
+import { sendSessionCancellationEmails } from "@/lib/scheduling/email-utils";
 
 const Schedule = () => {
   const { user, profile, isTutor } = useAuth();
@@ -84,6 +85,13 @@ const Schedule = () => {
             : session
         )
       );
+      
+      // Send cancellation emails
+      const emailResult = await sendSessionCancellationEmails(sessionId);
+      if (!emailResult.success) {
+        console.warn("Email notification failed:", emailResult.error);
+        // We continue anyway since the cancellation was successful
+      }
       
       toast({
         title: "Session Cancelled",

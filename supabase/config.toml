@@ -1,1 +1,7 @@
-project_id = "fzcyzjruixuriqzryppz"
+
+project_id = "fzcyzjruixuriqzryppz" 
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.send-session-emails]
+verify_jwt = false
