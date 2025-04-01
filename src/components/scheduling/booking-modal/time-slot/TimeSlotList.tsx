@@ -133,6 +133,37 @@ export const TimeSlotList = ({
     }
   };
   
+  // Ensure any slot selection updates maintain consistent duration
+  useEffect(() => {
+    if (selectedTimeSlot && selectedDuration > 0) {
+      // Find the starting slot
+      const startSlot = availableTimeSlots.find(slot => 
+        slot.day.toString() === selectedTimeSlot.day.toString() &&
+        slot.start === selectedTimeSlot.start
+      );
+      
+      if (startSlot) {
+        // Get consecutive slots for current duration
+        const slots = findConsecutiveSlots(startSlot, selectedDuration);
+        setConsecutiveSlots(slots);
+        
+        // Update the merged slot if the consecutive slots changed
+        if (slots.length > 0 && 
+            (slots[slots.length - 1].end !== selectedTimeSlot.end)) {
+          const firstSlot = slots[0];
+          const lastSlot = slots[slots.length - 1];
+          
+          const mergedSlot: BookingSlot = {
+            ...firstSlot,
+            end: lastSlot.end
+          };
+          
+          onSelectTimeSlot(mergedSlot);
+        }
+      }
+    }
+  }, [selectedDuration, availableTimeSlots]);
+  
   // Render a time slot group
   const renderTimeGroup = (slots: BookingSlot[], title: string) => {
     if (slots.length === 0) return null;

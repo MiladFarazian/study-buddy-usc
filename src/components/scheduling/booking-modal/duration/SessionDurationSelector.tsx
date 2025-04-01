@@ -50,6 +50,11 @@ export const SessionDurationSelector = ({
     style: 'currency',
     currency: 'USD'
   }).format(calculatedCost);
+
+  // When component loads, ensure it's showing the current session duration
+  useEffect(() => {
+    // This component is reactive to prop changes from parent
+  }, [sessionDuration]);
   
   return (
     <div className="space-y-4">

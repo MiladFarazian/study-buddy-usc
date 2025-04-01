@@ -68,14 +68,13 @@ export function useBookingState(initialDate?: Date, initialTime?: string) {
     // Reset start time to the beginning of the slot
     setSelectedStartTime(slot.start);
     
-    // Set initial duration based on slot length
+    // Calculate duration based on slot length
     const slotStart = convertTimeToMinutes(slot.start);
     const slotEnd = convertTimeToMinutes(slot.end);
-    const availableDuration = slotEnd - slotStart;
+    const slotDuration = slotEnd - slotStart;
     
-    // Default to 60 minutes unless the slot is shorter
-    const defaultDuration = Math.min(60, availableDuration);
-    setSessionDuration(defaultDuration);
+    // Update session duration to match selected slot duration
+    setSessionDuration(slotDuration);
   };
   
   // Handle start time change
@@ -85,6 +84,15 @@ export function useBookingState(initialDate?: Date, initialTime?: string) {
     const hourlyFraction = sessionDuration / 60;
     const cost = hourlyFraction * hourlyRate;
     setCalculatedCost(cost);
+    
+    // If we have a selected time slot, we need to update its start time
+    if (selectedTimeSlot) {
+      setSelectedTimeSlot({
+        ...selectedTimeSlot,
+        start: time,
+        end: convertMinutesToTime(convertTimeToMinutes(time) + sessionDuration)
+      });
+    }
   };
   
   // Handle duration change
@@ -94,6 +102,18 @@ export function useBookingState(initialDate?: Date, initialTime?: string) {
     const hourlyFraction = durationMinutes / 60;
     const cost = hourlyFraction * hourlyRate;
     setCalculatedCost(cost);
+    
+    // If we have a selected time slot, we need to update its end time based on the new duration
+    if (selectedTimeSlot && selectedStartTime) {
+      const newEndMinutes = convertTimeToMinutes(selectedStartTime) + durationMinutes;
+      const newEndTime = convertMinutesToTime(newEndMinutes);
+      
+      setSelectedTimeSlot({
+        ...selectedTimeSlot,
+        start: selectedStartTime,
+        end: newEndTime
+      });
+    }
   };
   
   // Get max possible duration based on selected slot and start time
