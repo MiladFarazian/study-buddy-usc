@@ -15,11 +15,21 @@ import Layout from "@/components/layout/Layout";
 import PrivateRoute from "@/components/auth/PrivateRoute";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Schedule from "@/pages/Schedule";
+import { Outlet } from "react-router-dom";
+
+// Create a wrapper component that provides children to Layout
+const LayoutWrapper = () => {
+  return (
+    <Layout>
+      <Outlet />
+    </Layout>
+  );
+};
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Layout />,
+    element: <LayoutWrapper />,
     children: [
       {
         index: true,
