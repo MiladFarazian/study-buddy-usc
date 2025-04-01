@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format, isToday, isSameDay, startOfMonth, addMonths, subMonths } from "date-fns";
 import { cn } from "@/lib/utils";
 import { BookingSlot } from "@/lib/scheduling";
-import { DayContent, DayClickEventHandler } from "react-day-picker";
+import { DayContent } from "react-day-picker";
 
 interface DateSelectorProps {
   date: Date | undefined;
@@ -71,10 +71,9 @@ export const DateSelector = ({
           available: (day) => hasAvailableSlots(day)
         }}
         components={{
-          Day: (props) => {
-            // Extract needed props safely
-            const date = props.date;
-            const isAvailable = hasAvailableSlots(date);
+          Day: ({ date: dayDate, selected, disabled, ...dayProps }) => {
+            // Check if this date has available slots
+            const isAvailable = hasAvailableSlots(dayDate);
             
             return (
               <div
@@ -87,13 +86,15 @@ export const DateSelector = ({
                   type="button"
                   className={cn(
                     "h-10 w-10 p-0 font-normal aria-selected:opacity-100",
-                    isAvailable && !isSameDay(date, date) && "hover:bg-usc-cardinal/10",
+                    isAvailable && !selected && "hover:bg-usc-cardinal/10",
                     isAvailable ? "cursor-pointer" : "cursor-not-allowed"
                   )}
-                  onClick={isAvailable ? () => props.onClick?.(date) : undefined}
-                  disabled={!isAvailable}
+                  onClick={isAvailable ? () => onDateChange(dayDate) : undefined}
+                  disabled={!isAvailable || disabled}
                 >
-                  <time dateTime={format(date, 'yyyy-MM-dd')}>{props.children}</time>
+                  <time dateTime={format(dayDate, 'yyyy-MM-dd')}>
+                    {dayDate.getDate()}
+                  </time>
                 </button>
                 {isAvailable && (
                   <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-usc-cardinal" />
