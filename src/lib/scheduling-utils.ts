@@ -183,7 +183,7 @@ export const createPaymentTransaction = async (
 ): Promise<boolean> => {
   try {
     const { error } = await supabase
-      .from('payments')
+      .from('payment_transactions')
       .insert({
         session_id: sessionId,
         student_id: studentId,

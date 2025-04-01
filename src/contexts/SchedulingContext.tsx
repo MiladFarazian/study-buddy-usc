@@ -19,6 +19,8 @@ interface SchedulingState {
   sessionDuration: number;
   sessionCost: number;
   notes: string;
+  studentName: string;
+  studentEmail: string;
 }
 
 // Define the action types
@@ -29,6 +31,8 @@ type SchedulingAction =
   | { type: 'SET_DURATION'; payload: number }
   | { type: 'SET_COST'; payload: number }
   | { type: 'SET_NOTES'; payload: string }
+  | { type: 'SET_STUDENT_NAME'; payload: string }
+  | { type: 'SET_STUDENT_EMAIL'; payload: string }
   | { type: 'RESET' };
 
 // Define the initial state
@@ -38,7 +42,9 @@ const initialState: SchedulingState = {
   selectedTimeSlot: null,
   sessionDuration: 60, // Default to 60 minutes
   sessionCost: 0,
-  notes: ''
+  notes: '',
+  studentName: '',
+  studentEmail: ''
 };
 
 // Create the reducer function
@@ -56,6 +62,10 @@ const schedulingReducer = (state: SchedulingState, action: SchedulingAction): Sc
       return { ...state, sessionCost: action.payload };
     case 'SET_NOTES':
       return { ...state, notes: action.payload };
+    case 'SET_STUDENT_NAME':
+      return { ...state, studentName: action.payload };
+    case 'SET_STUDENT_EMAIL':
+      return { ...state, studentEmail: action.payload };
     case 'RESET':
       return initialState;
     default:
@@ -71,6 +81,7 @@ interface SchedulingContextType {
   setTutor: (tutor: Tutor) => void;
   continueToNextStep: () => void;
   goToPreviousStep: () => void;
+  calculatePrice: (durationMinutes: number) => number;
 }
 
 const SchedulingContext = createContext<SchedulingContextType | undefined>(undefined);
@@ -112,6 +123,15 @@ export const SchedulingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   };
 
+  // Calculate price based on tutor's hourly rate and session duration
+  const calculatePrice = (durationMinutes: number): number => {
+    if (!tutor || !tutor.hourlyRate) return 0;
+    
+    const hourlyRate = tutor.hourlyRate;
+    const durationHours = durationMinutes / 60;
+    return Math.round(hourlyRate * durationHours);
+  };
+
   return (
     <SchedulingContext.Provider
       value={{
@@ -120,7 +140,8 @@ export const SchedulingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         tutor,
         setTutor,
         continueToNextStep,
-        goToPreviousStep
+        goToPreviousStep,
+        calculatePrice
       }}
     >
       {children}

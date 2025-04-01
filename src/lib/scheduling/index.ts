@@ -1,20 +1,12 @@
 
 import { format, parseISO, addMinutes } from 'date-fns';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
-import { Button } from "@/components/ui/button";
-import { Session } from "@/types/session";
-import { BookingSlot, SessionBooking } from "@/types/scheduling";
+import { BookingSlot } from '@/types/scheduling';
 
 // Export booking types
 export type { BookingSlot };
 
-// Re-export UI components
-export { DateSelector } from './ui/DateSelector';
-export { TimeSelector } from './ui/TimeSelector';
-export { DurationSelector } from './ui/DurationSelector';
-export { BookingSummary } from './ui/BookingSummary';
-export { ScheduleCalendar } from './ui/ScheduleCalendar';
+// Export from scheduling-utils
+export { mapDateToDayOfWeek, getTutorAvailability, getTutorBookedSessions, generateAvailableSlots, createSessionBooking, createPaymentTransaction } from '@/lib/scheduling-utils';
 
 // Helper function to convert time string to minutes
 export const convertTimeToMinutes = (time: string): number => {
@@ -40,12 +32,6 @@ export const getFormattedTime = (timeStr: string): string => {
     console.error('Error formatting time:', e);
     return timeStr;
   }
-};
-
-// Function to map a Date to day of week string
-export const mapDateToDayOfWeek = (date: Date): string => {
-  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  return days[date.getDay()];
 };
 
 // Format date for display (e.g., "Monday, June 1, 2023")

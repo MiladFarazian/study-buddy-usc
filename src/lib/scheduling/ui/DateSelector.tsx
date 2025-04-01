@@ -1,11 +1,11 @@
 
 import React from 'react';
-import { format } from 'date-fns';
 import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { format } from 'date-fns';
+import { Card, CardContent } from "@/components/ui/card";
 
 interface DateSelectorProps {
-  selectedDate?: Date;
+  selectedDate: Date | undefined;
   onSelectDate: (date: Date) => void;
   availableDates: Date[];
 }
@@ -16,12 +16,10 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
   availableDates
 }) => {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Select a Date</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-col items-center">
+    <div className="space-y-4">
+      <h3 className="text-lg font-medium">Select a Date</h3>
+      <Card>
+        <CardContent className="p-4">
           <Calendar
             mode="single"
             selected={selectedDate}
@@ -32,20 +30,16 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
               today.setHours(0, 0, 0, 0);
               if (date < today) return true;
               
-              // Disable dates not in the available dates list
-              return !availableDates.some(d => format(d, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd'));
+              // Check if date has available slots
+              return !availableDates.some(availableDate => 
+                format(availableDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+              );
             }}
-            className="rounded-md border shadow-sm"
+            className="rounded-md"
+            initialFocus
           />
-          
-          {selectedDate && (
-            <div className="mt-4 text-center">
-              <p className="font-medium">Selected Date:</p>
-              <p>{format(selectedDate, 'EEEE, MMMM d, yyyy')}</p>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };

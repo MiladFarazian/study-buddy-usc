@@ -7,15 +7,15 @@ interface LoadingDisplayProps {
   message?: string;
 }
 
-export const LoadingDisplay: React.FC<LoadingDisplayProps> = ({
-  message = "Loading..."
+export const LoadingDisplay: React.FC<LoadingDisplayProps> = ({ 
+  message = "Loading..." 
 }) => {
   return (
     <Card className="w-full">
-      <CardContent className="pt-6">
-        <div className="flex flex-col justify-center items-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal mb-4" />
-          <p className="text-center text-gray-600">{message}</p>
+      <CardContent className="py-6">
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <span className="ml-2">{message}</span>
         </div>
       </CardContent>
     </Card>

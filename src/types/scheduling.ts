@@ -1,7 +1,5 @@
 
 // Basic scheduling type definitions
-// These will be expanded upon as we rebuild the scheduling system
-
 export interface AvailabilitySlot {
   day: string;
   start: string;
@@ -27,4 +25,16 @@ export interface SessionBooking {
   startTime: Date;
   endTime: Date;
   status: 'pending' | 'confirmed' | 'cancelled';
+}
+
+// Time slot type for UI components
+export interface TimeSlot {
+  time: string;
+  available: boolean;
+}
+
+// Duration option for UI components
+export interface DurationOption {
+  minutes: number;
+  cost: number;
 }

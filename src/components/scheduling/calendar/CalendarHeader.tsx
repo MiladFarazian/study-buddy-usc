@@ -1,8 +1,8 @@
 
 import React from 'react';
-import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { format } from 'date-fns';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface CalendarHeaderProps {
   startDate: Date;
@@ -17,26 +17,33 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   onPrevWeek,
   onNextWeek
 }) => {
-  const startMonth = format(weekDays[0], 'MMMM');
-  const endMonth = format(weekDays[weekDays.length - 1], 'MMMM');
-  const startYear = format(weekDays[0], 'yyyy');
-  const endYear = format(weekDays[weekDays.length - 1], 'yyyy');
-  
-  const dateRangeText = startMonth === endMonth
-    ? `${startMonth} ${format(weekDays[0], 'd')} - ${format(weekDays[weekDays.length - 1], 'd')}, ${startYear}`
-    : `${startMonth} ${format(weekDays[0], 'd')} - ${endMonth} ${format(weekDays[weekDays.length - 1], 'd')}, ${endYear}`;
+  // Format the date range for display
+  const formatDateRange = () => {
+    if (weekDays.length === 0) return '';
+    
+    const firstDay = weekDays[0];
+    const lastDay = weekDays[weekDays.length - 1];
+    
+    // If the days are in the same month
+    if (firstDay.getMonth() === lastDay.getMonth()) {
+      return `${format(firstDay, 'MMMM d')} - ${format(lastDay, 'd, yyyy')}`;
+    }
+    
+    // If the days span different months
+    return `${format(firstDay, 'MMM d')} - ${format(lastDay, 'MMM d, yyyy')}`;
+  };
   
   return (
     <div className="flex justify-between items-center mb-4">
-      <h3 className="text-lg font-medium">{dateRangeText}</h3>
+      <h3 className="font-medium">{formatDateRange()}</h3>
       <div className="flex space-x-2">
-        <Button variant="outline" size="icon" onClick={onPrevWeek}>
+        <Button variant="outline" size="sm" onClick={onPrevWeek}>
           <ChevronLeft className="h-4 w-4" />
-          <span className="sr-only">Previous week</span>
+          <span className="sr-only">Previous Week</span>
         </Button>
-        <Button variant="outline" size="icon" onClick={onNextWeek}>
+        <Button variant="outline" size="sm" onClick={onNextWeek}>
           <ChevronRight className="h-4 w-4" />
-          <span className="sr-only">Next week</span>
+          <span className="sr-only">Next Week</span>
         </Button>
       </div>
     </div>

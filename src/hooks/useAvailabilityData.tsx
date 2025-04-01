@@ -1,7 +1,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Tutor } from '@/types/tutor';
-import { BookingSlot, getTutorAvailability, getTutorBookedSessions, generateAvailableSlots } from '@/lib/scheduling-utils';
+import { BookingSlot } from '@/types/scheduling';
+import { 
+  getTutorAvailability, 
+  getTutorBookedSessions, 
+  generateAvailableSlots 
+} from '@/lib/scheduling-utils';
 import { addDays } from 'date-fns';
 
 export function useAvailabilityData(tutor: Tutor | null, startDate: Date) {
