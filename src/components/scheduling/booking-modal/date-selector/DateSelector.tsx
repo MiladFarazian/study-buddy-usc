@@ -1,53 +1,115 @@
 
-import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { format, isToday, isSameDay, startOfMonth, addMonths, subMonths } from "date-fns";
+import { cn } from "@/lib/utils";
 import { BookingSlot } from "@/lib/scheduling";
 
 interface DateSelectorProps {
   date: Date | undefined;
-  onDateChange: (date: Date | undefined) => void;
+  onDateChange: (date: Date) => void;
   availableSlots: BookingSlot[];
 }
 
-export const DateSelector = ({ date, onDateChange, availableSlots }: DateSelectorProps) => {
+export const DateSelector = ({ 
+  date, 
+  onDateChange, 
+  availableSlots 
+}: DateSelectorProps) => {
+  const [month, setMonth] = useState<Date>(date || new Date());
+  
+  // Function to check if a date has any available slots
+  const hasAvailableSlots = (day: Date) => {
+    return availableSlots.some(slot => 
+      isSameDay(new Date(slot.day), day) && slot.available
+    );
+  };
+  
+  // Handle month navigation
+  const handlePrevMonth = () => {
+    setMonth(prevMonth => subMonths(prevMonth, 1));
+  };
+  
+  const handleNextMonth = () => {
+    setMonth(prevMonth => addMonths(prevMonth, 1));
+  };
+  
   return (
-    <div className="space-y-2">
-      <Label>1. Select Date</Label>
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            className={cn(
-              "w-full justify-start text-left font-normal",
-              !date && "text-muted-foreground"
-            )}
-          >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {date ? format(date, "EEEE, MMMM do, yyyy") : <span>Select a date</span>}
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold">Select a Date</h3>
+        <div className="flex gap-2">
+          <Button variant="outline" size="icon" onClick={handlePrevMonth}>
+            <ChevronLeft className="h-4 w-4" />
           </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            mode="single"
-            selected={date}
-            onSelect={onDateChange}
-            initialFocus
-            className="p-3 pointer-events-auto"
-            disabled={(date) => {
-              // Disable dates that don't have available slots
-              return !availableSlots.some(slot => {
-                const slotDate = new Date(slot.day);
-                return slotDate.toDateString() === date.toDateString() && slot.available;
-              });
-            }}
-          />
-        </PopoverContent>
-      </Popover>
+          <Button variant="outline" size="icon" onClick={handleNextMonth}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      
+      <Calendar
+        mode="single"
+        selected={date}
+        onSelect={onDateChange}
+        month={month}
+        onMonthChange={setMonth}
+        className="rounded-md border"
+        classNames={{
+          day_today: "bg-muted",
+          day_selected: "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark focus:bg-usc-cardinal-dark",
+          day_disabled: "text-muted-foreground opacity-50"
+        }}
+        modifiersClassNames={{
+          today: "text-usc-gold font-bold",
+          selected: "bg-usc-cardinal text-white",
+        }}
+        modifiers={{
+          available: (day) => hasAvailableSlots(day)
+        }}
+        components={{
+          Day: ({ day, displayValue, onClick, ...props }) => {
+            const isAvailable = hasAvailableSlots(day);
+            return (
+              <div
+                className={cn(
+                  "relative p-0",
+                  !isAvailable && "opacity-50"
+                )}
+                {...props}
+              >
+                <button
+                  type="button"
+                  className={cn(
+                    "h-10 w-10 p-0 font-normal aria-selected:opacity-100",
+                    isAvailable && !isSameDay(day, date) && "hover:bg-usc-cardinal/10",
+                    isAvailable ? "cursor-pointer" : "cursor-not-allowed"
+                  )}
+                  onClick={isAvailable ? onClick : undefined}
+                  disabled={!isAvailable}
+                >
+                  <time dateTime={format(day, 'yyyy-MM-dd')}>{displayValue}</time>
+                </button>
+                {isAvailable && (
+                  <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-usc-cardinal" />
+                )}
+              </div>
+            );
+          }
+        }}
+      />
+      
+      {date && (
+        <div className="text-center mt-4">
+          <p className="text-muted-foreground">
+            {isToday(date) 
+              ? "Selected date: Today" 
+              : `Selected date: ${format(date, 'EEEE, MMMM d, yyyy')}`}
+          </p>
+        </div>
+      )}
     </div>
   );
 };

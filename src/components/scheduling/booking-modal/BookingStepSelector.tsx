@@ -11,7 +11,7 @@ import { SlotSelectionFooter } from "./SlotSelectionFooter";
 import { useBookingState } from "./useBookingState";
 import { LoadingState } from "./LoadingState";
 import { ErrorDisplay } from "./ErrorDisplay";
-import { formatTimeDisplay } from "@/lib/scheduling/time-utils";
+import { startOfDay, format } from "date-fns";
 
 interface BookingStepSelectorProps {
   tutor: Tutor;
@@ -49,7 +49,7 @@ export const BookingStepSelector = ({
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const startDate = date || new Date();
+  const startDate = date || startOfDay(new Date());
   const { loading, availableSlots, hasAvailability, errorMessage } = useAvailabilityData(tutor, startDate);
   
   // Filter available slots for the selected date
@@ -76,7 +76,7 @@ export const BookingStepSelector = ({
         handleTimeSlotSelect(matchingSlot);
       }
     }
-  }, [initialDate, initialTime, availableTimeSlotsForDate, selectedTimeSlot]);
+  }, [initialDate, initialTime, availableTimeSlotsForDate, selectedTimeSlot, handleTimeSlotSelect]);
   
   // Handle confirming the session booking
   const handleConfirmBooking = () => {

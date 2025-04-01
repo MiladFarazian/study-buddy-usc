@@ -16,7 +16,7 @@ export const SlotSelectionFooter = ({
   isDisabled
 }: SlotSelectionFooterProps) => {
   return (
-    <div className="flex justify-between pt-4 border-t">
+    <div className="flex justify-between items-center pt-4 mt-4 border-t">
       <Button
         variant="outline"
         onClick={onCancel}
@@ -33,7 +33,7 @@ export const SlotSelectionFooter = ({
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Processing...
+            Processing
           </>
         ) : (
           "Book Session"

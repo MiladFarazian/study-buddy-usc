@@ -33,6 +33,7 @@ export const TutorAvailabilityCard = ({
   });
   const [weekStart, setWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [loading, setLoading] = useState(true);
+  const [selectedCell, setSelectedCell] = useState<string | null>(null);
 
   useEffect(() => {
     const loadAvailability = async () => {
@@ -94,6 +95,10 @@ export const TutorAvailabilityCard = ({
       
       if (hour >= startHour && hour < endHour) {
         // This slot contains the selected hour
+        const cellId = `${format(day, 'yyyy-MM-dd')}-${hour}`;
+        setSelectedCell(cellId);
+        
+        // Call the callback with a full hour slot
         onSelectTimeSlot(day, `${hour}:00`, `${hour + 1}:00`);
         return;
       }
@@ -109,6 +114,12 @@ export const TutorAvailabilityCard = ({
       const endHour = parseInt(slot.end.split(':')[0]);
       return hour >= startHour && hour < endHour;
     });
+  };
+
+  // Check if a cell is selected
+  const isCellSelected = (day: Date, hour: number) => {
+    const cellId = `${format(day, 'yyyy-MM-dd')}-${hour}`;
+    return cellId === selectedCell;
   };
 
   if (loading) {
@@ -168,17 +179,18 @@ export const TutorAvailabilityCard = ({
               </div>
               {weekDays.map((day) => {
                 const isAvailable = isTimeAvailable(day.key, hour);
+                const isSelected = isCellSelected(day.date, hour);
                 return (
                   <div
                     key={`${day.key}-${hour}`}
                     className={cn(
                       "p-2 border-b border-r h-10 transition-colors",
-                      isAvailable 
-                        ? "bg-usc-cardinal/90 hover:bg-usc-cardinal cursor-pointer" 
-                        : "bg-gray-100",
-                      readOnly && isAvailable && "cursor-default"
+                      isAvailable && !isSelected && !readOnly && "bg-usc-cardinal/70 hover:bg-usc-cardinal cursor-pointer",
+                      isAvailable && readOnly && "bg-usc-cardinal/90",
+                      isSelected && "bg-usc-gold text-gray-900",
+                      !isAvailable && "bg-gray-100"
                     )}
-                    onClick={() => handleCellClick(day.date, hour)}
+                    onClick={() => isAvailable && handleCellClick(day.date, hour)}
                   />
                 );
               })}

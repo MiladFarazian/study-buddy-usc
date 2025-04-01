@@ -3,13 +3,11 @@ import { useState } from "react";
 import { TutorAvailabilityCard } from "../scheduling/TutorAvailabilityCard";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CalendlyBookingWizard } from "../scheduling/CalendlyBookingWizard";
 import { Tutor } from "@/types/tutor";
-import { SchedulingProvider } from "@/contexts/SchedulingContext";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { SchedulerModal } from "@/components/scheduling/SchedulerModal";
+import { Badge } from "@/components/ui/badge";
 
 interface TutorAvailabilitySectionProps {
   tutor: Tutor;
@@ -56,17 +54,44 @@ export const TutorAvailabilitySection = ({ tutor }: TutorAvailabilitySectionProp
       />
 
       {selectedDate && selectedTime && (
-        <div className="bg-usc-gold/20 p-4 rounded-md mt-4">
-          <h3 className="font-medium mb-2">Selected Time Slot</h3>
-          <p>
-            {format(selectedDate, 'EEEE, MMMM d, yyyy')} from {selectedTime.start} to {selectedTime.end}
-          </p>
-          <Button 
-            className="mt-3 bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
-            onClick={() => setShowBookingModal(true)}
-          >
-            Book This Time
-          </Button>
+        <div className="bg-muted p-6 rounded-lg border shadow-sm">
+          <h3 className="text-lg font-semibold mb-3">Selected Time Slot</h3>
+          <div className="space-y-2 mb-4">
+            <div className="flex items-center">
+              <span className="font-medium w-24">Date:</span>
+              <span>{format(selectedDate, 'EEEE, MMMM d, yyyy')}</span>
+            </div>
+            <div className="flex items-center">
+              <span className="font-medium w-24">Time:</span>
+              <span>{selectedTime.start} to {selectedTime.end}</span>
+            </div>
+            <div className="flex items-center">
+              <span className="font-medium w-24">Duration:</span>
+              <span>1 hour</span>
+            </div>
+            <div className="flex items-center">
+              <span className="font-medium w-24">Rate:</span>
+              <span>${tutor.hourlyRate || 25}/hour</span>
+            </div>
+          </div>
+          
+          <div className="flex gap-3 mt-4">
+            <Button 
+              className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
+              onClick={() => setShowBookingModal(true)}
+            >
+              Book This Time
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => {
+                setSelectedDate(null);
+                setSelectedTime(null);
+              }}
+            >
+              Clear Selection
+            </Button>
+          </div>
         </div>
       )}
 
