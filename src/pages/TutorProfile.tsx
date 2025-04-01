@@ -1,3 +1,4 @@
+
 import { useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,7 +14,6 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useState } from "react";
 import MessageButton from "@/components/messaging/MessageButton";
 import { TutorAvailabilitySection } from "@/components/tutor/TutorAvailabilitySection";
-import { SchedulingProvider } from "@/contexts/SchedulingContext";
 
 const TutorProfile = () => {
   const { id } = useParams<{ id: string }>();
@@ -209,6 +209,15 @@ const TutorProfile = () => {
         onOpenChange={setShowBookingModal}
       >
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <div className="p-6 text-center">
+            <p>Booking functionality will be available soon.</p>
+            <Button 
+              className="mt-4"
+              onClick={() => setShowBookingModal(false)}
+            >
+              Close
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

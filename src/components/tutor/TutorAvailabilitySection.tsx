@@ -1,12 +1,9 @@
 
-import { useEffect, useState } from "react";
-import { TutorAvailabilityCard } from "../scheduling/TutorAvailabilityCard";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CalendlyBookingWizard } from "../scheduling/CalendlyBookingWizard";
 import { Tutor } from "@/types/tutor";
-import { SchedulingProvider } from "@/contexts/SchedulingContext";
 
 interface TutorAvailabilitySectionProps {
   tutor: Tutor;
@@ -33,19 +30,20 @@ export const TutorAvailabilitySection = ({ tutor }: TutorAvailabilitySectionProp
         </Button>
       </div>
 
-      <TutorAvailabilityCard tutorId={tutor.id} readOnly={true} />
+      <div className="p-6 bg-gray-50 rounded-lg border border-gray-200">
+        <p className="text-center text-gray-500">
+          Availability information will be shown here in the future.
+        </p>
+      </div>
 
       <Dialog open={showBookingModal} onOpenChange={setShowBookingModal}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Book a Session with {tutor.name}</DialogTitle>
           </DialogHeader>
-          <SchedulingProvider>
-            <CalendlyBookingWizard 
-              tutor={tutor}
-              onClose={() => setShowBookingModal(false)}
-            />
-          </SchedulingProvider>
+          <div className="p-6 text-center">
+            <p>Booking functionality will be available soon.</p>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

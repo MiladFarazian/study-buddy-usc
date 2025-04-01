@@ -6,8 +6,6 @@ import { Tutor } from "@/types/tutor";
 import MessageButton from "@/components/messaging/MessageButton";
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { SimpleBookingWizard } from "@/components/scheduling/SimpleBookingWizard";
-import { SchedulingProvider } from "@/contexts/SchedulingContext";
 
 interface TutorBookingSidebarProps {
   tutor: Tutor;
@@ -75,12 +73,15 @@ export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
         onOpenChange={setShowBookingModal}
       >
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          <SchedulingProvider>
-            <SimpleBookingWizard 
-              tutor={tutor}
-              onClose={() => setShowBookingModal(false)}
-            />
-          </SchedulingProvider>
+          <div className="p-6 text-center">
+            <p>Booking functionality will be available soon.</p>
+            <Button 
+              className="mt-4"
+              onClick={() => setShowBookingModal(false)}
+            >
+              Close
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </>

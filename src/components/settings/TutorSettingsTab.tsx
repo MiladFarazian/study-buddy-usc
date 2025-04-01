@@ -8,7 +8,6 @@ import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { AvailabilitySettings } from "../scheduling/AvailabilitySettings";
 
 export const TutorSettingsTab = () => {
   const { profile, updateProfile } = useAuth();
@@ -105,8 +104,19 @@ export const TutorSettingsTab = () => {
         </CardContent>
       </Card>
 
-      {/* Availability Settings */}
-      <AvailabilitySettings />
+      <Card>
+        <CardHeader>
+          <CardTitle>Availability</CardTitle>
+          <CardDescription>
+            Manage your availability for tutoring sessions
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground mb-4">
+            The availability settings feature will be available soon.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 };
