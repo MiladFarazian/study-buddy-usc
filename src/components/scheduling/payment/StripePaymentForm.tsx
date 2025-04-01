@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 import { initializeStripe } from "@/lib/stripe-utils";
 
 interface StripePaymentFormProps {
-  clientSecret: string | null;
+  clientSecret: string;
   amount: number;
   onSuccess: () => void;
   onCancel: () => void;
@@ -26,6 +26,7 @@ export function StripePaymentForm({
   const [cardElement, setCardElement] = useState<any>(null);
   const [cardError, setCardError] = useState<string | null>(null);
   const [cardComplete, setCardComplete] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // Initialize Stripe
   useEffect(() => {
@@ -112,6 +113,8 @@ export function StripePaymentForm({
     }
 
     try {
+      setIsSubmitting(true);
+      
       const result = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
           card: cardElement,
@@ -144,6 +147,8 @@ export function StripePaymentForm({
         description: 'An unexpected error occurred during payment processing.',
         variant: 'destructive',
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -189,7 +194,7 @@ export function StripePaymentForm({
                 type="button"
                 variant="outline"
                 onClick={onCancel}
-                disabled={processing}
+                disabled={processing || isSubmitting}
               >
                 Cancel
               </Button>
@@ -197,9 +202,9 @@ export function StripePaymentForm({
               <Button
                 type="submit"
                 className="bg-usc-cardinal text-white hover:bg-usc-cardinal-dark"
-                disabled={!stripe || !cardComplete || processing}
+                disabled={!stripe || !cardComplete || processing || isSubmitting}
               >
-                {processing ? (
+                {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Processing...

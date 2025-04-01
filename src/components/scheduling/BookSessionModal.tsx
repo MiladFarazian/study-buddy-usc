@@ -7,12 +7,13 @@ import { BookingSlot } from "@/lib/scheduling/types";
 import { BookingStepSelector } from "./booking-modal/BookingStepSelector";
 import { useBookingSession } from "./booking-modal/useBookingSession";
 import { PaymentSuccessScreen } from "./payment/PaymentSuccessScreen";
+import { StripePaymentForm } from "./payment/StripePaymentForm"; 
 import { SessionDetailsDisplay } from "./payment/SessionDetailsDisplay";
-import { PaymentCardElement } from "./payment/PaymentCardElement";
 import { BookingComponent } from "./BookingComponent";
 import { AuthRequiredDialog } from "./booking-modal/AuthRequiredDialog";
 import { useAvailabilityData } from "./calendar/useAvailabilityData";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Loader2 } from "lucide-react";
 
 interface BookSessionModalProps {
   tutor: Tutor;
@@ -23,13 +24,13 @@ interface BookSessionModalProps {
 export function BookSessionModal({ tutor, isOpen, onClose }: BookSessionModalProps) {
   const {
     user,
-    profile,
     step,
     selectedSlot,
     creatingSession,
     authRequired,
+    clientSecret,
+    paymentAmount,
     handleSlotSelect,
-    handleProceedToPayment,
     handlePaymentComplete,
     handleCancel,
     setAuthRequired
@@ -46,7 +47,7 @@ export function BookSessionModal({ tutor, isOpen, onClose }: BookSessionModalPro
   
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DialogContent className="sm:max-w-[600px] p-0 max-h-[90vh] overflow-hidden">
           <DialogHeader className="p-6 pb-2">
             <DialogTitle>Book a Session with {tutor.firstName || tutor.name.split(' ')[0]}</DialogTitle>
@@ -89,22 +90,35 @@ export function BookSessionModal({ tutor, isOpen, onClose }: BookSessionModalPro
           
           {step === 'payment' && selectedSlot && (
             <ScrollArea className="max-h-[70vh]">
-              <div className="p-6">
-                <SessionDetailsDisplay tutor={tutor} selectedSlot={selectedSlot} />
-                <PaymentCardElement 
-                  onCardElementReady={() => {}}
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    handlePaymentComplete();
-                  }}
-                  onCancel={handleCancel}
-                  processing={creatingSession}
-                  loading={false}
-                  cardError={null}
-                  amount={0}
-                  stripeLoaded={true}
-                  clientSecret={null}
-                />
+              <div className="p-6 space-y-6">
+                {creatingSession ? (
+                  <div className="flex flex-col items-center justify-center py-10">
+                    <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal mb-4" />
+                    <p className="text-center text-muted-foreground">Setting up your booking...</p>
+                  </div>
+                ) : (
+                  <>
+                    <SessionDetailsDisplay 
+                      tutor={tutor} 
+                      selectedSlot={selectedSlot} 
+                    />
+                    
+                    {clientSecret ? (
+                      <StripePaymentForm
+                        clientSecret={clientSecret}
+                        amount={paymentAmount}
+                        onSuccess={handlePaymentComplete}
+                        onCancel={handleCancel}
+                        processing={false}
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-10">
+                        <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal mb-4" />
+                        <p className="text-center text-muted-foreground">Preparing payment...</p>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </ScrollArea>
           )}
