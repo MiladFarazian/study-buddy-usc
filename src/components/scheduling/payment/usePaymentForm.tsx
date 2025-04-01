@@ -2,10 +2,10 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { createPaymentIntent, processPayment } from "@/lib/stripe-utils";
+import { createPaymentIntent, processPayment, initializeStripe } from "@/lib/stripe-utils";
 import { Tutor } from "@/types/tutor";
 import { BookingSlot } from "@/lib/scheduling/types";
-import { createPaymentTransaction } from "@/lib/scheduling/payment-utils";
+import { createPaymentTransaction, updatePaymentTransactionWithStripe, markPaymentComplete } from "@/lib/scheduling/payment-utils";
 import { supabase } from "@/integrations/supabase/client";
 
 export function usePaymentForm({
@@ -34,12 +34,33 @@ export function usePaymentForm({
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [cardError, setCardError] = useState<string | null>(null);
   const [transactionId, setTransactionId] = useState<string | null>(null);
+  const [stripe, setStripe] = useState<any>(null);
   
   // Calculate session duration and cost
   const startTime = new Date(`2000-01-01T${selectedSlot.start}`);
   const endTime = new Date(`2000-01-01T${selectedSlot.end}`);
   const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-  const sessionCost = tutor.hourlyRate * durationHours;
+  const sessionCost = tutor.hourlyRate ? tutor.hourlyRate * durationHours : 25 * durationHours;
+  
+  // Load Stripe.js
+  useEffect(() => {
+    const loadStripe = async () => {
+      try {
+        const stripeInstance = await initializeStripe();
+        setStripe(stripeInstance);
+        setStripeLoaded(true);
+      } catch (error) {
+        console.error('Error loading Stripe:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load payment processor. Please try again.',
+          variant: 'destructive',
+        });
+      }
+    };
+    
+    loadStripe();
+  }, [toast]);
   
   // Create payment transaction when component mounts
   useEffect(() => {
@@ -47,32 +68,20 @@ export function usePaymentForm({
       try {
         setLoading(true);
         
-        // First, create a payment transaction record in the database
-        const transaction = await createPaymentTransaction(
+        // Create a payment intent with Stripe
+        const formattedDate = format(new Date(selectedSlot.day), 'MMM dd, yyyy');
+        const description = `Tutoring session with ${tutor.name} on ${formattedDate} at ${selectedSlot.start}`;
+        
+        const paymentIntent = await createPaymentIntent(
           sessionId,
-          studentId,
+          sessionCost,
           tutor.id,
-          sessionCost
+          studentId,
+          description
         );
         
-        if (transaction) {
-          setTransactionId(transaction.id);
-          
-          // Then create a payment intent with Stripe
-          const formattedDate = format(selectedSlot.day, 'MMM dd, yyyy');
-          const description = `Tutoring session with ${tutor.name} on ${formattedDate} at ${selectedSlot.start}`;
-          
-          const paymentIntent = await createPaymentIntent(
-            sessionId,
-            sessionCost,
-            tutor.id,
-            studentId,
-            description
-          );
-          
-          console.log("Received payment intent:", paymentIntent);
-          setClientSecret(paymentIntent.client_secret);
-        }
+        console.log("Received payment intent:", paymentIntent);
+        setClientSecret(paymentIntent.client_secret);
       } catch (error) {
         console.error('Error setting up payment:', error);
         toast({
@@ -85,14 +94,13 @@ export function usePaymentForm({
       }
     };
     
-    if (sessionId && studentId && tutor.id) {
+    if (sessionId && studentId && tutor.id && stripeLoaded) {
       setupPayment();
     }
-  }, [sessionId, studentId, tutor.id, toast, selectedSlot, sessionCost, tutor.name]);
+  }, [sessionId, studentId, tutor.id, tutor.name, selectedSlot, sessionCost, toast, stripeLoaded]);
   
   const handleCardElementReady = (element: any) => {
     setCardElement(element);
-    setStripeLoaded(true);
     
     // Add event listener for card errors
     element.on('change', (event: any) => {
@@ -103,7 +111,7 @@ export function usePaymentForm({
   const handleSubmitPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!cardElement || !clientSecret) {
+    if (!stripe || !cardElement || !clientSecret) {
       toast({
         title: 'Payment Error',
         description: 'Payment system not fully loaded. Please try again.',
@@ -116,27 +124,21 @@ export function usePaymentForm({
     
     try {
       // Process the payment with Stripe
-      const paymentResult = await processPayment(
-        clientSecret,
-        cardElement,
-        studentName || 'Unknown Student',
-        studentEmail || 'unknown@example.com'
-      );
-      
-      if (paymentResult) {
-        // Update session status and payment status
-        const { error: sessionError } = await supabase
-          .from('sessions')
-          .update({
-            payment_status: 'paid',
-            status: 'confirmed'
-          })
-          .eq('id', sessionId);
-          
-        if (sessionError) {
-          console.error("Error updating session status:", sessionError);
+      const result = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: cardElement,
+          billing_details: {
+            name: studentName || 'Unknown Student',
+            email: studentEmail || 'unknown@example.com'
+          }
         }
-        
+      });
+      
+      if (result.error) {
+        throw new Error(result.error.message || 'Payment failed');
+      }
+      
+      if (result.paymentIntent.status === 'succeeded') {
         // Show success message
         toast({
           title: 'Payment Successful',
@@ -147,6 +149,18 @@ export function usePaymentForm({
         
         // Call the onPaymentComplete callback
         onPaymentComplete();
+      } else if (result.paymentIntent.status === 'requires_action') {
+        // Handle any required actions like 3D Secure authentication
+        toast({
+          title: 'Additional Authentication Required',
+          description: 'Please complete the authentication process to finalize your payment.',
+        });
+      } else {
+        // Handle other potential statuses
+        toast({
+          title: 'Payment Processing',
+          description: 'Your payment is being processed. We'll notify you when it completes.',
+        });
       }
     } catch (error) {
       console.error('Payment error:', error);

@@ -28,53 +28,96 @@ export const PaymentCardElement = ({
   stripeLoaded,
   clientSecret
 }: PaymentCardElementProps) => {
+  const [stripe, setStripe] = useState<any>(null);
+  const [elements, setElements] = useState<any>(null);
+  const [cardComplete, setCardComplete] = useState(false);
   const [cardElementMounted, setCardElementMounted] = useState(false);
 
+  // Load Stripe.js and create Elements instance
   useEffect(() => {
-    const loadStripeCard = async () => {
+    const loadStripe = async () => {
       try {
-        if (!cardElementMounted && window.document.getElementById('card-element')) {
-          const stripe = await initializeStripe();
-          const elements = stripe.elements();
+        if (!stripe && clientSecret) {
+          const stripeInstance = await initializeStripe();
+          setStripe(stripeInstance);
           
-          const cardElement = elements.create('card', {
-            style: {
-              base: {
-                color: '#32325d',
-                fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
-                fontSmoothing: 'antialiased',
-                fontSize: '16px',
-                '::placeholder': {
-                  color: '#aab7c4'
-                }
+          const elementsInstance = stripeInstance.elements({
+            clientSecret,
+            appearance: {
+              theme: 'stripe',
+              variables: {
+                colorPrimary: '#990000', // USC Cardinal
+                colorBackground: '#ffffff',
+                colorText: '#1a1a1a',
+                colorDanger: '#ff5555',
+                fontFamily: 'system-ui, sans-serif',
+                borderRadius: '8px',
               },
-              invalid: {
-                color: '#fa755a',
-                iconColor: '#fa755a'
-              }
-            }
+            },
           });
           
-          cardElement.mount('#card-element');
-          setCardElementMounted(true);
-          onCardElementReady(cardElement);
+          setElements(elementsInstance);
         }
       } catch (error) {
-        console.error('Error setting up card element:', error);
+        console.error('Error setting up Stripe:', error);
       }
     };
     
-    if (clientSecret && !cardElementMounted) {
-      loadStripeCard();
+    if (clientSecret && !stripe) {
+      loadStripe();
     }
-  }, [clientSecret, cardElementMounted, onCardElementReady]);
+  }, [clientSecret, stripe]);
+
+  // Create and mount the Card Element
+  useEffect(() => {
+    if (elements && !cardElementMounted) {
+      const cardElement = elements.create('card', {
+        style: {
+          base: {
+            fontSize: '16px',
+            fontFamily: 'system-ui, sans-serif',
+            color: '#32325d',
+            '::placeholder': {
+              color: '#aab7c4',
+            },
+          },
+          invalid: {
+            color: '#fa755a',
+            iconColor: '#fa755a',
+          },
+        },
+      });
+      
+      const cardContainer = document.getElementById('card-element');
+      if (cardContainer) {
+        cardElement.mount('#card-element');
+        setCardElementMounted(true);
+        
+        cardElement.on('change', (event: any) => {
+          setCardComplete(event.complete);
+          if (event.error) {
+            console.error('Card element error:', event.error.message);
+          }
+        });
+        
+        onCardElementReady(cardElement);
+      }
+      
+      // Cleanup function
+      return () => {
+        if (cardElementMounted) {
+          cardElement.unmount();
+        }
+      };
+    }
+  }, [elements, cardElementMounted, onCardElementReady]);
 
   return (
     <form onSubmit={onSubmit} className="space-y-6">
       <div>
         <Label htmlFor="card-element" className="font-semibold mb-2 block">Payment Method</Label>
         <div className="mt-1 border rounded-md p-4 bg-white">
-          {loading ? (
+          {loading || !stripeLoaded ? (
             <div className="h-10 flex items-center justify-center">
               <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
             </div>
@@ -96,7 +139,7 @@ export const PaymentCardElement = ({
         <Button
           type="submit"
           className="w-full bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
-          disabled={loading || processing || !stripeLoaded || !clientSecret}
+          disabled={loading || processing || !stripeLoaded || !clientSecret || !cardComplete}
         >
           {processing ? (
             <>

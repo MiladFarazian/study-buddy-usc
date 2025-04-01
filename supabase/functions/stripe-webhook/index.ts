@@ -27,6 +27,7 @@ serve(async (req) => {
     try {
       event = stripe.webhooks.constructEvent(body, signature, endpointSecret);
     } catch (err) {
+      console.error('Webhook signature verification failed:', err.message);
       return new Response(JSON.stringify({ error: `Webhook signature verification failed: ${err.message}` }), {
         status: 400,
       });
@@ -38,158 +39,127 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
     );
 
+    console.log(`Processing webhook event: ${event.type}`);
+
     // Handle the event
     switch (event.type) {
       case 'payment_intent.succeeded':
         const paymentIntent = event.data.object;
-        console.log(`PaymentIntent ${paymentIntent.id} was successful!`);
+        console.log(`Payment successful! PaymentIntent ID: ${paymentIntent.id}`);
         
-        // Update session and payment status
-        if (paymentIntent.metadata.sessionId) {
-          // Update the session status
-          const { error: sessionError } = await supabaseAdmin
-            .from('sessions')
+        // Extract metadata
+        const { sessionId, tutorId, studentId } = paymentIntent.metadata || {};
+        
+        if (!sessionId) {
+          console.error('No sessionId found in payment metadata');
+          return new Response(JSON.stringify({ error: 'No sessionId in metadata' }), { status: 400 });
+        }
+        
+        // Update the session status
+        const { error: sessionError } = await supabaseAdmin
+          .from('sessions')
+          .update({
+            status: 'confirmed',
+            payment_status: 'paid',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', sessionId);
+          
+        if (sessionError) {
+          console.error('Error updating session:', sessionError);
+        } else {
+          console.log(`Session ${sessionId} marked as confirmed and paid`);
+        }
+        
+        // Find and update the payment transaction
+        const { data: transactions, error: txError } = await supabaseAdmin
+          .from('payment_transactions')
+          .select('id')
+          .eq('stripe_payment_intent_id', paymentIntent.id)
+          .single();
+          
+        if (txError) {
+          console.error('Error finding payment transaction:', txError);
+        } else if (transactions) {
+          // Update payment transaction status
+          const { error: updateError } = await supabaseAdmin
+            .from('payment_transactions')
             .update({
-              status: 'confirmed',
-              payment_status: 'paid',
+              status: 'completed',
               updated_at: new Date().toISOString()
             })
-            .eq('id', paymentIntent.metadata.sessionId);
+            .eq('id', transactions.id);
             
-          if (sessionError) {
-            console.error('Error updating session:', sessionError);
+          if (updateError) {
+            console.error('Error updating payment transaction:', updateError);
+          } else {
+            console.log(`Payment transaction ${transactions.id} marked as completed`);
           }
+        } else {
+          console.log('No matching transaction found, creating a new record');
           
-          // Find and update the payment transaction
-          const { data: transactions, error: txError } = await supabaseAdmin
+          // Create a new transaction record if one doesn't exist
+          const { error: createError } = await supabaseAdmin
             .from('payment_transactions')
-            .select('id')
-            .eq('stripe_payment_intent_id', paymentIntent.id)
-            .single();
+            .insert({
+              session_id: sessionId,
+              stripe_payment_intent_id: paymentIntent.id,
+              amount: paymentIntent.amount / 100, // Convert from cents to dollars
+              status: 'completed',
+              tutor_id: tutorId,
+              student_id: studentId,
+            });
             
-          if (txError) {
-            console.error('Error finding payment transaction:', txError);
-          } else if (transactions) {
-            // Update payment transaction status
-            const { error: updateError } = await supabaseAdmin
-              .from('payment_transactions')
-              .update({
-                status: 'completed',
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', transactions.id);
-              
-            if (updateError) {
-              console.error('Error updating payment transaction:', updateError);
-            }
-          }
-          
-          // Create notification for the tutor
-          if (paymentIntent.metadata.tutorId) {
-            const { error: notifyError } = await supabaseAdmin
-              .from('notifications')
-              .insert({
-                user_id: paymentIntent.metadata.tutorId,
-                type: 'booking_confirmed',
-                title: 'New Booking Confirmed',
-                message: `A new session has been booked and paid for.`,
-                metadata: {
-                  sessionId: paymentIntent.metadata.sessionId,
-                  amount: paymentIntent.amount / 100
-                }
-              });
-              
-            if (notifyError) {
-              console.error('Error creating tutor notification:', notifyError);
-            }
-          }
-          
-          // Create confirmation notification for the student
-          if (paymentIntent.metadata.studentId) {
-            const { error: studentNotifyError } = await supabaseAdmin
-              .from('notifications')
-              .insert({
-                user_id: paymentIntent.metadata.studentId,
-                type: 'payment_success',
-                title: 'Payment Successful',
-                message: `Your payment for the tutoring session has been processed.`,
-                metadata: {
-                  sessionId: paymentIntent.metadata.sessionId,
-                  amount: paymentIntent.amount / 100
-                }
-              });
-              
-            if (studentNotifyError) {
-              console.error('Error creating student notification:', studentNotifyError);
-            }
-          }
-
-          // Fetch session details to send confirmation emails
-          try {
-            const { data: session, error: sessionFetchError } = await supabaseAdmin
-              .from('sessions')
-              .select(`
-                *,
-                tutor:profiles!tutor_id(id, first_name, last_name, email, hourly_rate),
-                student:profiles!student_id(id, first_name, last_name, email)
-              `)
-              .eq('id', paymentIntent.metadata.sessionId)
-              .single();
-
-            if (sessionFetchError) {
-              console.error('Error fetching session details:', sessionFetchError);
-            } else if (session) {
-              // Calculate session duration in hours for price
-              const startTime = new Date(session.start_time);
-              const endTime = new Date(session.end_time);
-              const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-              const price = session.tutor.hourly_rate ? session.tutor.hourly_rate * durationHours : paymentIntent.amount / 100;
-              
-              // Get tutor and student details
-              const tutorName = `${session.tutor.first_name || ''} ${session.tutor.last_name || ''}`.trim();
-              const studentName = `${session.student.first_name || ''} ${session.student.last_name || ''}`.trim();
-              const tutorEmail = session.tutor.email;
-              const studentEmail = session.student.email;
-              
-              // Send confirmation emails
-              if (tutorEmail && studentEmail) {
-                try {
-                  // Call the send-session-emails function
-                  const emailResponse = await fetch(
-                    `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-session-emails`,
-                    {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
-                      },
-                      body: JSON.stringify({
-                        sessionId: session.id,
-                        tutorEmail,
-                        tutorName,
-                        studentEmail,
-                        studentName,
-                        startTime: session.start_time,
-                        endTime: session.end_time,
-                        location: session.location,
-                        notes: session.notes,
-                        price,
-                        emailType: 'confirmation'
-                      }),
-                    }
-                  );
-                  
-                  const emailResult = await emailResponse.json();
-                  console.log('Email notification result:', emailResult);
-                } catch (emailError) {
-                  console.error('Error sending confirmation emails:', emailError);
-                }
-              }
-            }
-          } catch (detailsError) {
-            console.error('Error processing session details:', detailsError);
+          if (createError) {
+            console.error('Error creating payment transaction:', createError);
+          } else {
+            console.log('Created new payment transaction record');
           }
         }
+        
+        // Create notifications for both parties
+        if (tutorId) {
+          try {
+            await supabaseAdmin
+              .from('notifications')
+              .insert({
+                user_id: tutorId,
+                type: 'payment_received',
+                title: 'Payment Received',
+                message: `You have received a payment for session #${sessionId.slice(0, 8)}`,
+                metadata: {
+                  sessionId,
+                  amount: paymentIntent.amount / 100
+                }
+              });
+              
+            console.log(`Notification sent to tutor ${tutorId}`);
+          } catch (notifyError) {
+            console.error('Error creating tutor notification:', notifyError);
+          }
+        }
+        
+        if (studentId) {
+          try {
+            await supabaseAdmin
+              .from('notifications')
+              .insert({
+                user_id: studentId,
+                type: 'payment_success',
+                title: 'Payment Successful',
+                message: `Your payment for session #${sessionId.slice(0, 8)} has been processed successfully.`,
+                metadata: {
+                  sessionId,
+                  amount: paymentIntent.amount / 100
+                }
+              });
+              
+            console.log(`Notification sent to student ${studentId}`);
+          } catch (notifyError) {
+            console.error('Error creating student notification:', notifyError);
+          }
+        }
+        
         break;
         
       case 'payment_intent.payment_failed':
@@ -197,41 +167,59 @@ serve(async (req) => {
         console.log(`Payment failed for PaymentIntent ${failedPayment.id}`);
         
         // Update payment transaction status
-        const { error: paymentError } = await supabaseAdmin
+        const { data: failedTx, error: failedTxError } = await supabaseAdmin
           .from('payment_transactions')
-          .update({
-            status: 'failed',
-            updated_at: new Date().toISOString()
-          })
-          .eq('stripe_payment_intent_id', failedPayment.id);
+          .select('id, session_id')
+          .eq('stripe_payment_intent_id', failedPayment.id)
+          .single();
           
-        if (paymentError) {
-          console.error('Error updating payment transaction:', paymentError);
+        if (failedTxError) {
+          console.error('Error finding failed payment transaction:', failedTxError);
+        } else if (failedTx) {
+          // Update transaction status
+          await supabaseAdmin
+            .from('payment_transactions')
+            .update({
+              status: 'failed',
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', failedTx.id);
+            
+          // Update session status
+          if (failedTx.session_id) {
+            await supabaseAdmin
+              .from('sessions')
+              .update({
+                payment_status: 'failed',
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', failedTx.session_id);
+          }
         }
         
         // Create notification for the student about failed payment
-        if (failedPayment.metadata.studentId) {
-          const { error: notifyError } = await supabaseAdmin
-            .from('notifications')
-            .insert({
-              user_id: failedPayment.metadata.studentId,
-              type: 'payment_failed',
-              title: 'Payment Failed',
-              message: `Your payment for the tutoring session could not be processed.`,
-              metadata: {
-                sessionId: failedPayment.metadata.sessionId,
-                error: failedPayment.last_payment_error?.message || 'Unknown error'
-              }
-            });
-            
-          if (notifyError) {
+        if (failedPayment.metadata?.studentId) {
+          try {
+            await supabaseAdmin
+              .from('notifications')
+              .insert({
+                user_id: failedPayment.metadata.studentId,
+                type: 'payment_failed',
+                title: 'Payment Failed',
+                message: `Your payment could not be processed. ${failedPayment.last_payment_error?.message || 'Please try again or use a different payment method.'}`,
+                metadata: {
+                  sessionId: failedPayment.metadata.sessionId,
+                  error: failedPayment.last_payment_error?.message || 'Unknown error'
+                }
+              });
+          } catch (notifyError) {
             console.error('Error creating payment failure notification:', notifyError);
           }
         }
         break;
 
       default:
-        console.log(`Unhandled event type ${event.type}`);
+        console.log(`Unhandled event type: ${event.type}`);
     }
 
     return new Response(JSON.stringify({ received: true }), {

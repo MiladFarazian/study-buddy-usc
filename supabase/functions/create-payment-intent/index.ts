@@ -45,34 +45,117 @@ serve(async (req) => {
       });
     }
 
+    console.log(`Creating payment intent for session ${sessionId} with amount ${amount}`);
+
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
       apiVersion: '2023-10-16',
     });
 
-    // Create a payment intent
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount, // Amount in cents
-      currency: 'usd',
-      metadata: {
-        sessionId,
-        tutorId,
-        studentId,
-      },
-      description: description || `Tutoring session payment`,
-    });
-
-    // Update payment transaction with Stripe payment intent ID
-    const { error: dbError } = await supabaseClient
+    // Check if there's an existing payment intent for this session
+    const { data: existingTransactions } = await supabaseClient
       .from('payment_transactions')
-      .update({
-        stripe_payment_intent_id: paymentIntent.id,
-        status: 'processing',
-      })
-      .eq('session_id', sessionId);
+      .select('stripe_payment_intent_id, status')
+      .eq('session_id', sessionId)
+      .order('created_at', { ascending: false })
+      .limit(1);
 
-    if (dbError) {
-      console.error('Error updating payment transaction:', dbError);
+    let paymentIntent;
+    
+    if (existingTransactions && existingTransactions.length > 0 && 
+        existingTransactions[0].status !== 'failed' && 
+        existingTransactions[0].stripe_payment_intent_id) {
+      
+      console.log(`Found existing payment intent: ${existingTransactions[0].stripe_payment_intent_id}`);
+      
+      try {
+        // Retrieve existing payment intent
+        paymentIntent = await stripe.paymentIntents.retrieve(
+          existingTransactions[0].stripe_payment_intent_id
+        );
+        
+        // If payment intent is not in a terminal state, we can reuse it
+        if (paymentIntent.status !== 'succeeded' && 
+            paymentIntent.status !== 'canceled') {
+          
+          console.log(`Reusing existing payment intent in state: ${paymentIntent.status}`);
+          
+          // Update the payment intent if necessary
+          if (paymentIntent.amount !== Math.round(amount * 100)) {
+            paymentIntent = await stripe.paymentIntents.update(
+              paymentIntent.id,
+              { amount: Math.round(amount * 100) }
+            );
+          }
+        } else {
+          // Create a new one if the existing one is in a terminal state
+          console.log(`Creating new payment intent as existing one is in terminal state: ${paymentIntent.status}`);
+          paymentIntent = null;
+        }
+      } catch (error) {
+        console.error('Error retrieving payment intent:', error);
+        paymentIntent = null;
+      }
+    }
+    
+    // Create a new payment intent if we don't have a valid existing one
+    if (!paymentIntent) {
+      console.log('Creating new payment intent');
+      
+      paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(amount * 100), // Convert to cents and ensure it's an integer
+        currency: 'usd',
+        metadata: {
+          sessionId,
+          tutorId,
+          studentId,
+        },
+        description: description || `Tutoring session payment`,
+      });
+      
+      console.log(`Created new payment intent: ${paymentIntent.id}`);
+      
+      // Create a new payment transaction record
+      const { error: txError } = await supabaseClient
+        .from('payment_transactions')
+        .insert({
+          session_id: sessionId,
+          student_id: studentId,
+          tutor_id: tutorId,
+          amount: amount,
+          status: 'processing',
+          stripe_payment_intent_id: paymentIntent.id,
+        });
+
+      if (txError) {
+        console.error('Error creating payment transaction:', txError);
+      }
+    } else {
+      // Update existing payment transaction record
+      const { error: updateError } = await supabaseClient
+        .from('payment_transactions')
+        .update({
+          status: 'processing',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('stripe_payment_intent_id', paymentIntent.id);
+
+      if (updateError) {
+        console.error('Error updating payment transaction:', updateError);
+      }
+    }
+
+    // Update session status to processing payment
+    const { error: sessionError } = await supabaseClient
+      .from('sessions')
+      .update({
+        payment_status: 'processing',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', sessionId);
+
+    if (sessionError) {
+      console.error('Error updating session status:', sessionError);
     }
 
     // Return the client secret to the client
@@ -80,7 +163,7 @@ serve(async (req) => {
       JSON.stringify({
         id: paymentIntent.id,
         client_secret: paymentIntent.client_secret,
-        amount: amount / 100, // Convert back to dollars for display
+        amount,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

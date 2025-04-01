@@ -6,10 +6,11 @@ import { BookingStepSelector } from "./booking-modal/BookingStepSelector";
 import { BookingSlot } from "@/lib/scheduling";
 import { useBookingSession } from "./booking-modal/useBookingSession";
 import { SessionDetailsDisplay } from "./payment/SessionDetailsDisplay";
-import { StripePaymentForm } from "./payment/StripePaymentForm";
+import { PaymentCardElement } from "./payment/PaymentCardElement";
 import { PaymentSuccessScreen } from "./payment/PaymentSuccessScreen";
 import { Loader2 } from "lucide-react";
 import { AuthRequiredDialog } from "./booking-modal/AuthRequiredDialog";
+import { usePaymentForm } from "./payment/usePaymentForm";
 
 interface SchedulerModalProps {
   isOpen: boolean;
@@ -32,14 +33,24 @@ export function SchedulerModal({
     selectedSlot,
     creatingSession,
     authRequired,
-    clientSecret,
-    paymentAmount,
     sessionId,
     handleSlotSelect,
     handlePaymentComplete,
     handleCancel,
     setAuthRequired
   } = useBookingSession(tutor, isOpen, onClose);
+
+  // If we're in payment step and have all the necessary info, use the payment form hook
+  const paymentForm = step === 'payment' && selectedSlot && sessionId && user ? 
+    usePaymentForm({
+      tutor,
+      selectedSlot,
+      sessionId,
+      studentId: user.id,
+      studentName: user.user_metadata?.full_name || '',
+      studentEmail: user.email || '',
+      onPaymentComplete: handlePaymentComplete
+    }) : null;
 
   return (
     <>
@@ -75,18 +86,21 @@ export function SchedulerModal({
                     selectedSlot={selectedSlot} 
                   />
                   
-                  {/* Temporarily provide direct access to payment success while we setup Stripe */}
-                  <div className="mt-8">
-                    <p className="text-center text-sm text-muted-foreground mb-6">
-                      We're currently setting up our payment system. Click below to proceed with your booking request.
-                    </p>
-                    <Button 
-                      onClick={handlePaymentComplete}
-                      className="w-full bg-usc-cardinal hover:bg-usc-cardinal-dark"
-                    >
-                      Submit Booking Request
-                    </Button>
-                  </div>
+                  {paymentForm && (
+                    <div className="mt-6">
+                      <PaymentCardElement
+                        onCardElementReady={paymentForm.handleCardElementReady}
+                        onSubmit={paymentForm.handleSubmitPayment}
+                        onCancel={handleCancel}
+                        processing={paymentForm.processing}
+                        loading={paymentForm.loading}
+                        cardError={paymentForm.cardError}
+                        amount={paymentForm.sessionCost}
+                        stripeLoaded={paymentForm.stripeLoaded}
+                        clientSecret={paymentForm.clientSecret}
+                      />
+                    </div>
+                  )}
                 </>
               )}
             </div>
