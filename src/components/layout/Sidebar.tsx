@@ -1,8 +1,8 @@
+
 import { Link, useLocation } from "react-router-dom";
 import { 
   BarChart, 
-  BookOpen, 
-  Calendar, 
+  BookOpen,
   FileText, 
   LayoutDashboard, 
   MessageSquare, 
@@ -44,12 +44,6 @@ const Sidebar = () => {
       icon: Users,
       path: "/students",
       showWhen: isTutor // Only for tutors
-    },
-    {
-      title: "Schedule",
-      icon: Calendar,
-      path: "/schedule",
-      showWhen: !!user // Only for authenticated users
     },
     {
       title: "Messages",

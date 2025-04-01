@@ -9,7 +9,6 @@ import { AuthProvider } from "./contexts/AuthContext";
 import Index from "./pages/Index";
 import Courses from "./pages/Courses";
 import Tutors from "./pages/Tutors";
-import Schedule from "./pages/Schedule";
 import Resources from "./pages/Resources";
 import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
@@ -55,13 +54,6 @@ function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
-              <Route path="/schedule" element={
-                <PrivateRoute>
-                  <RequireProfileCompletion>
-                    <Layout><Schedule /></Layout>
-                  </RequireProfileCompletion>
-                </PrivateRoute>
-              } />
               <Route path="/resources" element={
                 <PrivateRoute>
                   <RequireProfileCompletion>
