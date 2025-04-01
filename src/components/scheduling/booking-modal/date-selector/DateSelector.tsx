@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format, isToday, isSameDay, startOfMonth, addMonths, subMonths } from "date-fns";
 import { cn } from "@/lib/utils";
 import { BookingSlot } from "@/lib/scheduling";
-import { DayContent } from "react-day-picker";
+import type { DayContentProps } from "react-day-picker";
 
 interface DateSelectorProps {
   date: Date | undefined;
@@ -71,9 +71,13 @@ export const DateSelector = ({
           available: (day) => hasAvailableSlots(day)
         }}
         components={{
-          Day: ({ date: dayDate, selected, disabled, ...dayProps }) => {
+          Day: (props) => {
+            // Get the date from props
+            const dayDate = props.date;
             // Check if this date has available slots
             const isAvailable = hasAvailableSlots(dayDate);
+            // Check if this date is selected
+            const isSelected = date ? isSameDay(dayDate, date) : false;
             
             return (
               <div
@@ -86,11 +90,11 @@ export const DateSelector = ({
                   type="button"
                   className={cn(
                     "h-10 w-10 p-0 font-normal aria-selected:opacity-100",
-                    isAvailable && !selected && "hover:bg-usc-cardinal/10",
+                    isAvailable && !isSelected && "hover:bg-usc-cardinal/10",
                     isAvailable ? "cursor-pointer" : "cursor-not-allowed"
                   )}
                   onClick={isAvailable ? () => onDateChange(dayDate) : undefined}
-                  disabled={!isAvailable || disabled}
+                  disabled={!isAvailable}
                 >
                   <time dateTime={format(dayDate, 'yyyy-MM-dd')}>
                     {dayDate.getDate()}
