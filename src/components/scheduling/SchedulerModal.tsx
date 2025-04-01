@@ -28,8 +28,6 @@ export function SchedulerModal({
     creatingSession,
     authRequired,
     handleSlotSelect,
-    handleProceedToPayment,
-    handlePaymentComplete,
     handleCancel,
     setAuthRequired
   } = useBookingSession(tutor, isOpen, onClose);
