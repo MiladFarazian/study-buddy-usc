@@ -4,6 +4,7 @@ import { Tutor } from "@/types/tutor";
 import { BookingStepSelector } from "./booking-modal/BookingStepSelector";
 import { BookingSlot } from "@/lib/scheduling";
 import { useBookingSession } from "./booking-modal/useBookingSession";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface SchedulerModalProps {
   isOpen: boolean;
@@ -35,8 +36,8 @@ export function SchedulerModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden p-0">
+        <DialogHeader className="p-6 pb-2">
           <DialogTitle>Book a Session with {tutor.name}</DialogTitle>
         </DialogHeader>
         

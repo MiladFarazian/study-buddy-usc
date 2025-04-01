@@ -117,11 +117,58 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
     setFetchTrigger(prev => prev + 1);
   }, []);
 
+  // Function to get consecutive available slots
+  const getConsecutiveSlots = useCallback((startSlot: BookingSlot, durationMinutes: number) => {
+    // Calculate how many 30-minute slots we need
+    const slotsNeeded = Math.ceil(durationMinutes / 30);
+    
+    if (slotsNeeded <= 1) return [startSlot];
+    
+    // Get all slots for the same day
+    const sameDay = availableSlots.filter(slot => 
+      new Date(slot.day).toDateString() === new Date(startSlot.day).toDateString()
+    );
+    
+    // Sort by start time
+    sameDay.sort((a, b) => a.start.localeCompare(b.start));
+    
+    // Find the index of our starting slot
+    const startIndex = sameDay.findIndex(slot => 
+      slot.start === startSlot.start && slot.end === startSlot.end
+    );
+    
+    if (startIndex === -1) return [startSlot];
+    
+    // Check if we have enough consecutive slots
+    const consecutiveSlots = [];
+    let currentSlot = startSlot;
+    
+    for (let i = 0; i < slotsNeeded; i++) {
+      if (i === 0) {
+        consecutiveSlots.push(currentSlot);
+        continue;
+      }
+      
+      // Find the next slot that starts when the current one ends
+      const nextSlot = sameDay.find(slot => 
+        slot.start === currentSlot.end && slot.available
+      );
+      
+      if (!nextSlot) break;
+      
+      consecutiveSlots.push(nextSlot);
+      currentSlot = nextSlot;
+    }
+    
+    return consecutiveSlots;
+  }, [availableSlots]);
+
   return { 
     loading, 
     availableSlots, 
     hasAvailability, 
     errorMessage, 
-    refreshAvailability 
+    refreshAvailability,
+    getConsecutiveSlots
   };
 }

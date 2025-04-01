@@ -11,7 +11,8 @@ import { SlotSelectionFooter } from "./SlotSelectionFooter";
 import { useBookingState } from "./useBookingState";
 import { LoadingState } from "./LoadingState";
 import { ErrorDisplay } from "./ErrorDisplay";
-import { startOfDay, format } from "date-fns";
+import { startOfDay, format, isSameDay } from "date-fns";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface BookingStepSelectorProps {
   tutor: Tutor;
@@ -99,15 +100,6 @@ export const BookingStepSelector = ({
     }
   };
   
-  // Use isSameDay helper function
-  function isSameDay(date1: Date, date2: Date): boolean {
-    return (
-      date1.getFullYear() === date2.getFullYear() &&
-      date1.getMonth() === date2.getMonth() &&
-      date1.getDate() === date2.getDate()
-    );
-  }
-  
   if (loading && availableSlots.length === 0) {
     return <LoadingState />;
   }
@@ -122,50 +114,52 @@ export const BookingStepSelector = ({
   }
   
   return (
-    <div className="space-y-6 py-2 w-full">
-      <DateSelector 
-        date={date} 
-        onDateChange={setDate} 
-        availableSlots={availableSlots}
-        isLoading={loading}
-      />
-      
-      {date && (
-        <TimeSlotList 
-          availableTimeSlots={timeSlotsForSelectedDate}
-          selectedTimeSlot={selectedTimeSlot}
-          onSelectTimeSlot={handleTimeSlotSelect}
-          formatTimeForDisplay={formatTimeForDisplay}
+    <ScrollArea className="max-h-[80vh]">
+      <div className="space-y-6 py-2 w-full px-6">
+        <DateSelector 
+          date={date} 
+          onDateChange={setDate} 
+          availableSlots={availableSlots}
           isLoading={loading}
         />
-      )}
-      
-      {selectedTimeSlot && (
-        <SessionDurationSelector
-          sessionTimeRange={getSessionTimeRange()}
-          calculatedCost={calculatedCost}
-          sessionDuration={sessionDuration}
-          onDurationChange={(values) => handleDurationChange(values, tutor.hourlyRate || 25)}
-          onStartTimeChange={(time) => handleStartTimeChange(time, tutor.hourlyRate || 25)}
-          maxDuration={getMaxDuration()}
-          hourlyRate={tutor.hourlyRate || 25}
-          availableStartTimes={availableStartTimes}
-          selectedStartTime={selectedStartTime}
-          formatTimeForDisplay={formatTimeForDisplay}
+        
+        {date && (
+          <TimeSlotList 
+            availableTimeSlots={timeSlotsForSelectedDate}
+            selectedTimeSlot={selectedTimeSlot}
+            onSelectTimeSlot={handleTimeSlotSelect}
+            formatTimeForDisplay={formatTimeForDisplay}
+            isLoading={loading}
+          />
+        )}
+        
+        {selectedTimeSlot && (
+          <SessionDurationSelector
+            sessionTimeRange={getSessionTimeRange()}
+            calculatedCost={calculatedCost}
+            sessionDuration={sessionDuration}
+            onDurationChange={(values) => handleDurationChange(values, tutor.hourlyRate || 25)}
+            onStartTimeChange={(time) => handleStartTimeChange(time, tutor.hourlyRate || 25)}
+            maxDuration={getMaxDuration()}
+            hourlyRate={tutor.hourlyRate || 25}
+            availableStartTimes={availableStartTimes}
+            selectedStartTime={selectedStartTime}
+            formatTimeForDisplay={formatTimeForDisplay}
+          />
+        )}
+        
+        <StudentInfoForm 
+          email={email}
+          onEmailChange={(e) => setEmail(e.target.value)}
         />
-      )}
-      
-      <StudentInfoForm 
-        email={email}
-        onEmailChange={(e) => setEmail(e.target.value)}
-      />
-      
-      <SlotSelectionFooter
-        onProceed={handleConfirmBooking}
-        onCancel={onClose}
-        isLoading={isSubmitting || loading}
-        isDisabled={!selectedTimeSlot || !email}
-      />
-    </div>
+        
+        <SlotSelectionFooter
+          onProceed={handleConfirmBooking}
+          onCancel={onClose}
+          isLoading={isSubmitting || loading}
+          isDisabled={!selectedTimeSlot || !email}
+        />
+      </div>
+    </ScrollArea>
   );
 };

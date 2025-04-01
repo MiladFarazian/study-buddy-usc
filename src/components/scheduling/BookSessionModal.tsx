@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,6 +12,7 @@ import { PaymentCardElement } from "./payment/PaymentCardElement";
 import { BookingComponent } from "./BookingComponent";
 import { AuthRequiredDialog } from "./booking-modal/AuthRequiredDialog";
 import { useAvailabilityData } from "./calendar/useAvailabilityData";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface BookSessionModalProps {
   tutor: Tutor;
@@ -45,7 +47,7 @@ export function BookSessionModal({ tutor, isOpen, onClose }: BookSessionModalPro
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden">
+        <DialogContent className="sm:max-w-[600px] p-0 max-h-[90vh] overflow-hidden">
           <DialogHeader className="p-6 pb-2">
             <DialogTitle>Book a Session with {tutor.firstName || tutor.name.split(' ')[0]}</DialogTitle>
           </DialogHeader>
@@ -58,43 +60,53 @@ export function BookSessionModal({ tutor, isOpen, onClose }: BookSessionModalPro
               </TabsList>
               
               <TabsContent value="calendar" className="py-4">
-                <BookingStepSelector 
-                  tutor={tutor} 
-                  onSelectSlot={handleSlotSelect} 
-                  onClose={handleCancel} 
-                />
+                <ScrollArea className="max-h-[70vh]">
+                  <div className="pr-4">
+                    <BookingStepSelector 
+                      tutor={tutor} 
+                      onSelectSlot={handleSlotSelect} 
+                      onClose={handleCancel} 
+                    />
+                  </div>
+                </ScrollArea>
               </TabsContent>
               
               <TabsContent value="wizard" className="py-4">
-                <BookingComponent
-                  tutor={tutor}
-                  availableSlots={availableSlots}
-                  onSelectSlot={handleSlotSelect}
-                  onCancel={handleCancel}
-                  loading={loading}
-                />
+                <ScrollArea className="max-h-[70vh]">
+                  <div className="pr-4">
+                    <BookingComponent
+                      tutor={tutor}
+                      availableSlots={availableSlots}
+                      onSelectSlot={handleSlotSelect}
+                      onCancel={handleCancel}
+                      loading={loading}
+                    />
+                  </div>
+                </ScrollArea>
               </TabsContent>
             </Tabs>
           )}
           
           {step === 'payment' && selectedSlot && (
-            <div className="p-6">
-              <SessionDetailsDisplay tutor={tutor} selectedSlot={selectedSlot} />
-              <PaymentCardElement 
-                onCardElementReady={() => {}}
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handlePaymentComplete();
-                }}
-                onCancel={handleCancel}
-                processing={creatingSession}
-                loading={false}
-                cardError={null}
-                amount={0}
-                stripeLoaded={true}
-                clientSecret={null}
-              />
-            </div>
+            <ScrollArea className="max-h-[70vh]">
+              <div className="p-6">
+                <SessionDetailsDisplay tutor={tutor} selectedSlot={selectedSlot} />
+                <PaymentCardElement 
+                  onCardElementReady={() => {}}
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handlePaymentComplete();
+                  }}
+                  onCancel={handleCancel}
+                  processing={creatingSession}
+                  loading={false}
+                  cardError={null}
+                  amount={0}
+                  stripeLoaded={true}
+                  clientSecret={null}
+                />
+              </div>
+            </ScrollArea>
           )}
           
           {step === 'processing' && (

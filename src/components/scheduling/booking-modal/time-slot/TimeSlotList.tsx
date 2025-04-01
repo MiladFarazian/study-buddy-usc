@@ -3,6 +3,7 @@ import { BookingSlot } from "@/lib/scheduling";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Clock, Loader2 } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface TimeSlotListProps {
   availableTimeSlots: BookingSlot[];
@@ -75,27 +76,31 @@ export const TimeSlotList = ({
         <h3 className="text-lg font-semibold">Select a Time</h3>
       </div>
       
-      {isLoading ? (
-        <div className="flex flex-col items-center justify-center p-6 border rounded-md bg-muted/30">
-          <Loader2 className="h-6 w-6 text-muted-foreground mb-2 animate-spin" />
-          <p className="text-muted-foreground text-center">
-            Loading available time slots...
-          </p>
+      <ScrollArea className="max-h-[40vh]">
+        <div className="pr-4">
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center p-6 border rounded-md bg-muted/30">
+              <Loader2 className="h-6 w-6 text-muted-foreground mb-2 animate-spin" />
+              <p className="text-muted-foreground text-center">
+                Loading available time slots...
+              </p>
+            </div>
+          ) : availableTimeSlots.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-6 border rounded-md bg-muted/30">
+              <Clock className="h-6 w-6 text-muted-foreground mb-2" />
+              <p className="text-muted-foreground text-center">
+                No available time slots for this date. Please select another date.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3 w-full">
+              {renderTimeGroup(morningSlots, "Morning")}
+              {renderTimeGroup(afternoonSlots, "Afternoon")}
+              {renderTimeGroup(eveningSlots, "Evening")}
+            </div>
+          )}
         </div>
-      ) : availableTimeSlots.length === 0 ? (
-        <div className="flex flex-col items-center justify-center p-6 border rounded-md bg-muted/30">
-          <Clock className="h-6 w-6 text-muted-foreground mb-2" />
-          <p className="text-muted-foreground text-center">
-            No available time slots for this date. Please select another date.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3 w-full">
-          {renderTimeGroup(morningSlots, "Morning")}
-          {renderTimeGroup(afternoonSlots, "Afternoon")}
-          {renderTimeGroup(eveningSlots, "Evening")}
-        </div>
-      )}
+      </ScrollArea>
       
       {selectedTimeSlot && (
         <div className="mt-4 p-3 bg-muted rounded-md text-center">
