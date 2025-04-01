@@ -12,68 +12,70 @@ interface ConfirmationStepProps {
 }
 
 export function ConfirmationStep({ onClose, onReset }: ConfirmationStepProps) {
-  const { state, tutor } = useScheduling();
+  const { state, tutor, calculatePrice } = useScheduling();
   
   if (!state.selectedDate || !state.selectedTimeSlot || !tutor) {
     return null;
   }
   
-  const sessionDate = format(state.selectedDate, 'EEEE, MMMM d, yyyy');
-  const sessionTime = `${formatTimeDisplay(state.selectedTimeSlot.start)} - ${formatTimeDisplay(state.selectedTimeSlot.end)}`;
+  const sessionDate = format(state.selectedDate, 'MMMM d, yyyy');
+  const sessionTime = formatTimeDisplay(state.selectedTimeSlot.start);
+  const sessionPrice = calculatePrice(state.selectedDuration);
   
   return (
-    <div className="text-center py-4 space-y-6">
-      <CheckCircle className="mx-auto h-16 w-16 text-green-500" />
-      
-      <div>
-        <h2 className="text-2xl font-bold mb-2">Booking Confirmed!</h2>
-        <p className="text-muted-foreground">
-          Your session with {tutor.name} has been successfully booked.
-        </p>
-      </div>
-      
-      <div className="bg-gray-50 p-4 rounded-md text-left">
-        <h3 className="font-semibold text-lg mb-2">Session Details</h3>
-        <ul className="space-y-2">
-          <li className="flex justify-between">
-            <span className="text-muted-foreground">Date:</span>
-            <span>{sessionDate}</span>
-          </li>
-          <li className="flex justify-between">
-            <span className="text-muted-foreground">Time:</span>
-            <span>{sessionTime}</span>
-          </li>
-          <li className="flex justify-between">
-            <span className="text-muted-foreground">Duration:</span>
-            <span>{state.selectedDuration} minutes</span>
-          </li>
-          {state.notes && (
-            <li className="flex justify-between">
-              <span className="text-muted-foreground">Notes:</span>
-              <span className="text-right max-w-[70%]">{state.notes}</span>
-            </li>
-          )}
-        </ul>
-      </div>
-      
-      <div className="pt-4">
-        <p className="text-sm text-muted-foreground mb-4">
-          You'll receive an email confirmation with all the details.
-        </p>
-        <div className="flex gap-3 justify-center">
-          <Button 
-            onClick={onReset}
-            variant="outline"
-          >
-            Book Another Session
-          </Button>
-          <Button 
-            onClick={onClose}
-            className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
-          >
-            Close
-          </Button>
+    <div className="max-w-lg mx-auto">
+      <div className="bg-red-50 rounded-t-lg p-8 text-center">
+        <div className="mx-auto h-20 w-20 bg-red-100 rounded-full flex items-center justify-center mb-4">
+          <CheckCircle className="h-10 w-10 text-usc-cardinal" />
         </div>
+        
+        <h2 className="text-2xl font-bold">Booking Confirmed</h2>
+        <p className="text-gray-600 mt-2">
+          Your tutoring session has been scheduled
+        </p>
+      </div>
+      
+      <div className="bg-white rounded-b-lg p-8">
+        <div className="border-b py-5">
+          <h3 className="text-gray-500">Date & Time</h3>
+          <p className="text-xl font-bold mt-1">{sessionDate} at {sessionTime}</p>
+        </div>
+        
+        <div className="border-b py-5">
+          <h3 className="text-gray-500">Session Duration</h3>
+          <p className="text-xl font-bold mt-1">{state.selectedDuration} minutes</p>
+        </div>
+        
+        <div className="border-b py-5">
+          <h3 className="text-gray-500">Tutor</h3>
+          <div className="flex items-center mt-2">
+            {tutor.avatarUrl ? (
+              <img 
+                src={tutor.avatarUrl} 
+                alt={tutor.name} 
+                className="h-12 w-12 rounded-full mr-3"
+              />
+            ) : (
+              <div className="h-12 w-12 rounded-full bg-gray-200 mr-3" />
+            )}
+            <div>
+              <p className="text-xl font-bold">{tutor.name}</p>
+              <p className="text-gray-500">{tutor.subjects?.[0] || "Computer Science"}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="py-5">
+          <h3 className="text-gray-500">Total Price</h3>
+          <p className="text-xl font-bold mt-1">${sessionPrice.toFixed(0)}</p>
+        </div>
+        
+        <Button 
+          onClick={onClose}
+          className="w-full bg-usc-cardinal hover:bg-usc-cardinal-dark text-white mt-4"
+        >
+          View My Schedule
+        </Button>
       </div>
     </div>
   );

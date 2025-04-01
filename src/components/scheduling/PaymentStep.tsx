@@ -6,7 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { formatTimeDisplay } from "@/lib/scheduling/time-utils";
 import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2 } from "lucide-react";
+import { Loader2, CreditCard } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 
 interface PaymentStepProps {
   onComplete: () => void;
@@ -17,6 +18,7 @@ export function PaymentStep({ onComplete, onRequireAuth }: PaymentStepProps) {
   const { state, dispatch, tutor, calculatePrice } = useScheduling();
   const { user } = useAuth();
   const [processing, setProcessing] = useState(false);
+  const [notes, setNotes] = useState(state.notes || "");
   
   if (!state.selectedDate || !state.selectedTimeSlot || !tutor) {
     return null;
@@ -28,81 +30,75 @@ export function PaymentStep({ onComplete, onRequireAuth }: PaymentStepProps) {
     return null;
   }
   
-  const sessionDate = format(state.selectedDate, 'EEEE, MMMM d, yyyy');
-  const sessionTime = `${formatTimeDisplay(state.selectedTimeSlot.start)} - ${formatTimeDisplay(state.selectedTimeSlot.end)}`;
+  const sessionDate = format(state.selectedDate, 'MMMM d, yyyy');
+  const sessionTime = formatTimeDisplay(state.selectedTimeSlot.start);
   const sessionPrice = calculatePrice(state.selectedDuration);
   
   const handleBack = () => {
-    dispatch({ type: 'SET_STEP', payload: BookingStep.FILL_FORM });
+    dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_DURATION });
   };
   
-  const handlePayment = async () => {
+  const handleSubmit = async () => {
+    // Save notes to state
+    dispatch({ type: 'SET_NOTES', payload: notes });
+    
     setProcessing(true);
     
-    // Simulate payment processing
+    // Simulate payment processing with a delay
     setTimeout(() => {
       setProcessing(false);
-      dispatch({ type: 'SET_STEP', payload: BookingStep.CONFIRMATION });
+      onComplete();
     }, 1500);
   };
   
   return (
     <div className="space-y-6">
-      <h2 className="text-lg font-semibold">Complete Payment</h2>
+      <h2 className="text-2xl font-bold mb-4">Complete Your Booking</h2>
       
-      <Card>
-        <CardContent className="p-4">
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Tutor:</span>
-              <span className="font-medium">{tutor.name}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Date:</span>
-              <span className="font-medium">{sessionDate}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Time:</span>
-              <span className="font-medium">{sessionTime}</span>
-            </div>
-            <div className="flex justify-between font-bold mt-2 pt-2 border-t">
-              <span>Total:</span>
-              <span>${sessionPrice.toFixed(2)}</span>
-            </div>
+      <div className="bg-gray-50 p-4 rounded-md">
+        <h3 className="text-base font-medium mb-2">Selected Time:</h3>
+        <p className="text-xl font-bold">{sessionDate} at {sessionTime}</p>
+      </div>
+      
+      <div className="space-y-4">
+        <div>
+          <label htmlFor="session-duration" className="block text-sm font-medium mb-1">
+            Session Duration
+          </label>
+          <div className="rounded-md border border-gray-300 px-3 py-2 flex justify-between items-center">
+            <span>{state.selectedDuration} minutes (${sessionPrice.toFixed(0)})</span>
+            <span className="text-gray-400">▼</span>
+          </div>
+        </div>
+        
+        <div>
+          <label htmlFor="notes" className="block text-sm font-medium mb-1">
+            Notes (Optional)
+          </label>
+          <Textarea
+            id="notes"
+            placeholder="Any specific topics you'd like to cover?"
+            className="min-h-[100px]"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+          />
+        </div>
+      </div>
+      
+      <Card className="border-t">
+        <CardContent className="pt-4">
+          <div className="flex justify-between py-2">
+            <span className="font-medium">Session duration</span>
+            <span>{state.selectedDuration} minutes</span>
+          </div>
+          <div className="flex justify-between py-2 border-t font-bold">
+            <span>Total</span>
+            <span>${sessionPrice.toFixed(0)}</span>
           </div>
         </CardContent>
       </Card>
       
-      <div className="p-4 border rounded-md bg-gray-50">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-medium">Pay with Credit Card</h3>
-          <div className="flex space-x-2">
-            <div className="h-6 w-10 bg-gray-200 rounded"></div>
-            <div className="h-6 w-10 bg-gray-200 rounded"></div>
-            <div className="h-6 w-10 bg-gray-200 rounded"></div>
-          </div>
-        </div>
-        
-        {/* Simulated payment form */}
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Card number</label>
-            <div className="h-10 bg-white border rounded-md"></div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Expiration date</label>
-              <div className="h-10 bg-white border rounded-md"></div>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">CVC</label>
-              <div className="h-10 bg-white border rounded-md"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div className="mt-6 flex justify-between">
+      <div className="flex justify-between mt-4">
         <Button 
           variant="outline" 
           onClick={handleBack}
@@ -110,8 +106,9 @@ export function PaymentStep({ onComplete, onRequireAuth }: PaymentStepProps) {
         >
           Back
         </Button>
+        
         <Button 
-          onClick={handlePayment}
+          onClick={handleSubmit}
           disabled={processing}
           className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
         >
@@ -121,7 +118,10 @@ export function PaymentStep({ onComplete, onRequireAuth }: PaymentStepProps) {
               Processing...
             </>
           ) : (
-            `Pay $${sessionPrice.toFixed(2)}`
+            <>
+              <CreditCard className="mr-2 h-4 w-4" />
+              Confirm Booking
+            </>
           )}
         </Button>
       </div>

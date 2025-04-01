@@ -4,7 +4,9 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { createPaymentIntent, processPayment } from "@/lib/stripe-utils";
 import { Tutor } from "@/types/tutor";
-import { BookingSlot } from "@/lib/scheduling-utils";
+import { BookingSlot } from "@/lib/scheduling/types";
+import { createPaymentTransaction } from "@/lib/scheduling/payment-utils";
+import { supabase } from "@/integrations/supabase/client";
 
 export function usePaymentForm({
   tutor,
@@ -31,6 +33,7 @@ export function usePaymentForm({
   const [cardElement, setCardElement] = useState<any>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [cardError, setCardError] = useState<string | null>(null);
+  const [transactionId, setTransactionId] = useState<string | null>(null);
   
   // Calculate session duration and cost
   const startTime = new Date(`2000-01-01T${selectedSlot.start}`);
@@ -38,43 +41,54 @@ export function usePaymentForm({
   const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
   const sessionCost = tutor.hourlyRate * durationHours;
   
+  // Create payment transaction when component mounts
   useEffect(() => {
-    createPaymentIntentForSession();
-    setLoading(false);
-  }, [sessionId]);
-  
-  const createPaymentIntentForSession = async () => {
-    try {
-      const formattedDate = format(selectedSlot.day, 'MMM dd, yyyy');
-      const description = `Tutoring session with ${tutor.name} on ${formattedDate} at ${selectedSlot.start}`;
-      
-      console.log("Creating payment intent for session:", { 
-        sessionId, 
-        amount: sessionCost,
-        tutorId: tutor.id,
-        studentId,
-        description
-      });
-      
-      const paymentIntent = await createPaymentIntent(
-        sessionId,
-        sessionCost,
-        tutor.id,
-        studentId,
-        description
-      );
-      
-      console.log("Received payment intent:", paymentIntent);
-      setClientSecret(paymentIntent.client_secret);
-    } catch (error) {
-      console.error('Error creating payment intent:', error);
-      toast({
-        title: 'Payment Error',
-        description: 'Failed to set up payment. Please try again.',
-        variant: 'destructive',
-      });
+    const setupPayment = async () => {
+      try {
+        setLoading(true);
+        
+        // First, create a payment transaction record in the database
+        const transaction = await createPaymentTransaction(
+          sessionId,
+          studentId,
+          tutor.id,
+          sessionCost
+        );
+        
+        if (transaction) {
+          setTransactionId(transaction.id);
+          
+          // Then create a payment intent with Stripe
+          const formattedDate = format(selectedSlot.day, 'MMM dd, yyyy');
+          const description = `Tutoring session with ${tutor.name} on ${formattedDate} at ${selectedSlot.start}`;
+          
+          const paymentIntent = await createPaymentIntent(
+            sessionId,
+            sessionCost,
+            tutor.id,
+            studentId,
+            description
+          );
+          
+          console.log("Received payment intent:", paymentIntent);
+          setClientSecret(paymentIntent.client_secret);
+        }
+      } catch (error) {
+        console.error('Error setting up payment:', error);
+        toast({
+          title: 'Payment Setup Error',
+          description: 'Failed to set up payment. Please try again.',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (sessionId && studentId && tutor.id) {
+      setupPayment();
     }
-  };
+  }, [sessionId, studentId, tutor.id, toast, selectedSlot, sessionCost, tutor.name]);
   
   const handleCardElementReady = (element: any) => {
     setCardElement(element);
@@ -109,21 +123,31 @@ export function usePaymentForm({
         studentEmail || 'unknown@example.com'
       );
       
-      console.log('Payment successful:', paymentResult);
-      
-      // Show success message
-      toast({
-        title: 'Payment Successful',
-        description: 'Your session has been booked and payment processed.',
-      });
-      
-      setPaymentComplete(true);
-      
-      // Call the onPaymentComplete callback after a short delay
-      setTimeout(() => {
+      if (paymentResult) {
+        // Update session status and payment status
+        const { error: sessionError } = await supabase
+          .from('sessions')
+          .update({
+            payment_status: 'paid',
+            status: 'confirmed'
+          })
+          .eq('id', sessionId);
+          
+        if (sessionError) {
+          console.error("Error updating session status:", sessionError);
+        }
+        
+        // Show success message
+        toast({
+          title: 'Payment Successful',
+          description: 'Your session has been booked and payment processed.',
+        });
+        
+        setPaymentComplete(true);
+        
+        // Call the onPaymentComplete callback
         onPaymentComplete();
-      }, 2000);
-      
+      }
     } catch (error) {
       console.error('Payment error:', error);
       toast({

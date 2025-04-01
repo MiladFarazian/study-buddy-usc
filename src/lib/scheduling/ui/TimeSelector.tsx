@@ -1,9 +1,7 @@
 
-import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { format, parse } from 'date-fns';
-import { Clock } from "lucide-react";
 
 export interface TimeSlot {
   time: string; // Format: "HH:mm" (24-hour)
@@ -23,68 +21,44 @@ export function TimeSelector({ availableTimeSlots, selectedTime, onSelectTime }:
     return format(timeObj, 'h:mm a');
   };
 
+  // Group time slots into logical sections for a more organized display
   const morningSlots = availableTimeSlots.filter(
     slot => parseInt(slot.time.split(':')[0]) < 12
   );
   
   const afternoonSlots = availableTimeSlots.filter(
-    slot => parseInt(slot.time.split(':')[0]) >= 12
+    slot => parseInt(slot.time.split(':')[0]) >= 12 && parseInt(slot.time.split(':')[0]) < 17
+  );
+  
+  const eveningSlots = availableTimeSlots.filter(
+    slot => parseInt(slot.time.split(':')[0]) >= 17
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <h2 className="text-2xl font-bold">Select a Time</h2>
       
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          {morningSlots.length > 0 && (
-            <div className="grid grid-cols-2 gap-2">
-              {morningSlots.map((slot) => (
-                <Button
-                  key={slot.time}
-                  variant="outline"
-                  className={cn(
-                    "h-16 w-full justify-center",
-                    selectedTime === slot.time && "bg-usc-cardinal text-white border-usc-cardinal",
-                    !slot.available && "opacity-50 cursor-not-allowed"
-                  )}
-                  disabled={!slot.available}
-                  onClick={() => onSelectTime(slot.time)}
-                >
-                  {formatTimeDisplay(slot.time)}
-                </Button>
-              ))}
-            </div>
-          )}
-        </div>
-        
-        <div className="space-y-2">
-          {afternoonSlots.length > 0 && (
-            <div className="grid grid-cols-2 gap-2">
-              {afternoonSlots.map((slot) => (
-                <Button
-                  key={slot.time}
-                  variant="outline"
-                  className={cn(
-                    "h-16 w-full justify-center",
-                    selectedTime === slot.time && "bg-usc-cardinal text-white border-usc-cardinal",
-                    !slot.available && "opacity-50 cursor-not-allowed"
-                  )}
-                  disabled={!slot.available}
-                  onClick={() => onSelectTime(slot.time)}
-                >
-                  {formatTimeDisplay(slot.time)}
-                </Button>
-              ))}
-            </div>
-          )}
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {availableTimeSlots.map((slot) => (
+          <Button
+            key={slot.time}
+            variant="outline"
+            className={cn(
+              "h-16 w-full justify-center text-lg",
+              selectedTime === slot.time ? "bg-usc-cardinal text-white border-usc-cardinal" : "bg-white",
+              !slot.available && "opacity-50 cursor-not-allowed"
+            )}
+            disabled={!slot.available}
+            onClick={() => onSelectTime(slot.time)}
+          >
+            {formatTimeDisplay(slot.time)}
+          </Button>
+        ))}
       </div>
       
       {availableTimeSlots.length === 0 && (
-        <div className="flex flex-col items-center justify-center p-8 border rounded-md bg-muted/30">
-          <Clock className="h-8 w-8 text-muted-foreground mb-2" />
-          <p className="text-muted-foreground text-center">
+        <div className="flex flex-col items-center justify-center p-8 border rounded-md bg-gray-50">
+          <p className="text-gray-500 text-center">
             No available time slots for this date. Please select another date.
           </p>
         </div>

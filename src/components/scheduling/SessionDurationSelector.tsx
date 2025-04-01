@@ -2,7 +2,6 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Clock } from "lucide-react";
 import { useScheduling } from '@/contexts/SchedulingContext';
 
 const DURATION_OPTIONS = [30, 60, 90, 120];
@@ -19,10 +18,10 @@ export function SessionDurationSelector() {
   const hourlyRate = tutor?.hourlyRate || 25; // Default to $25 if not set
   
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-semibold mb-4">Select Session Duration</h2>
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold">Select Session Duration</h2>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {DURATION_OPTIONS.map((minutes) => {
           const price = calculatePrice(minutes);
           
@@ -31,23 +30,41 @@ export function SessionDurationSelector() {
               key={minutes}
               variant="outline"
               className={cn(
-                "h-24 flex flex-col items-center justify-center p-4",
+                "h-32 flex flex-col items-center justify-center p-6 rounded-md border",
                 selectedDuration === minutes 
                   ? "bg-red-50 border-usc-cardinal text-usc-cardinal" 
                   : "bg-white hover:bg-gray-50"
               )}
               onClick={() => handleSelectDuration(minutes)}
             >
-              <span className="text-lg font-medium mb-1">{minutes} minutes</span>
-              <span className="text-muted-foreground">${price.toFixed(2)}</span>
+              <span className="text-xl font-bold mb-2">{minutes} minutes</span>
+              <span className="text-lg text-muted-foreground">${price.toFixed(0)}</span>
             </Button>
           );
         })}
       </div>
       
-      <p className="text-sm text-muted-foreground mt-2">
-        Rate: ${hourlyRate}/hour
-      </p>
+      <div className="flex justify-between mt-8">
+        <Button 
+          variant="outline" 
+          className="px-8"
+          onClick={() => dispatch({ type: 'SET_STEP', payload: 0 })}
+        >
+          Back
+        </Button>
+        
+        <Button 
+          className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white px-8"
+          onClick={() => {
+            if (selectedDuration) {
+              dispatch({ type: 'SET_STEP', payload: 2 });
+            }
+          }}
+          disabled={!selectedDuration}
+        >
+          Continue
+        </Button>
+      </div>
     </div>
   );
 }
