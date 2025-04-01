@@ -196,8 +196,3 @@ verify_jwt = false
 [functions.stripe-webhook]
 verify_jwt = false
 
-# Analytics configuration - using proper format
-[analytics]
-enabled = false
-port = 54327
-vector_port = 54328
