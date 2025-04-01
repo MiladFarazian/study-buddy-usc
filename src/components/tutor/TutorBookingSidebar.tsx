@@ -5,9 +5,7 @@ import { Calendar, Clock, ArrowRightLeft } from "lucide-react";
 import { Tutor } from "@/types/tutor";
 import MessageButton from "@/components/messaging/MessageButton";
 import { useState } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { SimpleBookingWizard } from "@/components/scheduling/SimpleBookingWizard";
-import { SchedulingProvider } from "@/contexts/SchedulingContext";
+import { SchedulerModal } from "@/components/scheduling/SchedulerModal";
 
 interface TutorBookingSidebarProps {
   tutor: Tutor;
@@ -44,7 +42,7 @@ export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
               <Clock className="h-5 w-5 mr-2 text-muted-foreground" />
               <div>
                 <p className="font-medium">Select your session length</p>
-                <p className="text-sm text-muted-foreground">Adjustable duration to fit your needs</p>
+                <p className="text-sm text-muted-foreground">30 min, 1 hour, or 1.5 hours</p>
               </div>
             </div>
             <div className="flex items-center">
@@ -70,19 +68,12 @@ export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
         </CardContent>
       </Card>
 
-      <Dialog 
-        open={showBookingModal} 
-        onOpenChange={setShowBookingModal}
-      >
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          <SchedulingProvider>
-            <SimpleBookingWizard 
-              tutor={tutor}
-              onClose={() => setShowBookingModal(false)}
-            />
-          </SchedulingProvider>
-        </DialogContent>
-      </Dialog>
+      {/* Using our new SchedulerModal component */}
+      <SchedulerModal 
+        isOpen={showBookingModal} 
+        onClose={() => setShowBookingModal(false)}
+        tutor={tutor}
+      />
     </>
   );
 };

@@ -1,21 +1,15 @@
+
 import { useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useTutor } from "@/hooks/useTutor";
 import { ArrowLeft, Book, Calendar, Clock, DollarSign, Loader2, Mail } from "lucide-react";
 import { TutorProfileHeader } from "@/components/tutor/TutorProfileHeader";
-import { TutorBioSection } from "@/components/tutor/TutorBioSection";
-import { TutorEducationSection } from "@/components/tutor/TutorEducationSection";
-import { TutorSubjectsSection } from "@/components/tutor/TutorSubjectsSection";
-import { TutorReviewsSection } from "@/components/tutor/TutorReviewsSection";
-import { TutorAvailabilityCard } from "@/components/scheduling/TutorAvailabilityCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useState } from "react";
 import MessageButton from "@/components/messaging/MessageButton";
-import { CalendlyBookingWizard } from "@/components/scheduling/CalendlyBookingWizard";
-import { TutorAvailabilitySection } from "@/components/tutor/TutorAvailabilitySection";
-import { SchedulingProvider } from "@/contexts/SchedulingContext";
+import { TutorAvailabilityCard } from "@/components/scheduling/TutorAvailabilityCard";
+import { SchedulerModal } from "@/components/scheduling/SchedulerModal";
 
 const TutorProfile = () => {
   const { id } = useParams<{ id: string }>();
@@ -156,11 +150,31 @@ const TutorProfile = () => {
                       </div>
                     </div>
                     
-                    <TutorReviewsSection 
-                      reviews={reviews} 
-                      tutorId={tutor.id} 
-                      onReviewAdded={refreshReviews} 
-                    />
+                    {/* Reviews Section */}
+                    {reviews.length > 0 && (
+                      <div>
+                        <h3 className="text-xl font-semibold mb-3">Reviews</h3>
+                        <div className="space-y-4">
+                          {reviews.map((review, index) => (
+                            <div key={index} className="border-b pb-4">
+                              <div className="flex items-center mb-2">
+                                <div className="flex items-center">
+                                  {Array.from({ length: 5 }).map((_, i) => (
+                                    <span key={i} className={`text-lg ${i < review.rating ? "text-yellow-500" : "text-gray-300"}`}>
+                                      ★
+                                    </span>
+                                  ))}
+                                </div>
+                                <span className="ml-2 text-sm text-muted-foreground">
+                                  {new Date(review.createdAt).toLocaleDateString()}
+                                </span>
+                              </div>
+                              <p>{review.comment}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </TabsContent>
                 
@@ -182,7 +196,25 @@ const TutorProfile = () => {
                 </TabsContent>
                 
                 <TabsContent value="availability" className="mt-0">
-                  <TutorAvailabilitySection tutor={tutor} />
+                  <div className="space-y-6">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+                      <div>
+                        <h2 className="text-2xl font-bold mb-1">Availability</h2>
+                        <p className="text-muted-foreground">
+                          Check when {tutor.firstName || tutor.name.split(' ')[0]} is available for tutoring
+                        </p>
+                      </div>
+                      <Button 
+                        onClick={() => setShowBookingModal(true)}
+                        className="mt-3 sm:mt-0 bg-usc-cardinal hover:bg-usc-cardinal-dark"
+                      >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        Book a Session
+                      </Button>
+                    </div>
+
+                    <TutorAvailabilityCard tutorId={tutor.id} readOnly={true} />
+                  </div>
                 </TabsContent>
               </CardContent>
             </Card>
@@ -206,19 +238,12 @@ const TutorProfile = () => {
         </div>
       </div>
       
-      <Dialog 
-        open={showBookingModal} 
-        onOpenChange={setShowBookingModal}
-      >
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          <SchedulingProvider>
-            <CalendlyBookingWizard 
-              tutor={tutor}
-              onClose={() => setShowBookingModal(false)}
-            />
-          </SchedulingProvider>
-        </DialogContent>
-      </Dialog>
+      {/* Using our new SchedulerModal component */}
+      <SchedulerModal 
+        isOpen={showBookingModal} 
+        onClose={() => setShowBookingModal(false)}
+        tutor={tutor}
+      />
     </div>
   );
 };
