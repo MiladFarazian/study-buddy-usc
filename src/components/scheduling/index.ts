@@ -9,4 +9,4 @@ export * from './DateSelectionStep';
 export * from './PaymentStep';
 export * from './SimpleBookingWizard';
 export * from './CalendlyBookingWizard';
-
+export * from './DurationSelector';

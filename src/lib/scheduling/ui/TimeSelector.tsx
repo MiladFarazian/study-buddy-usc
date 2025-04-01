@@ -29,14 +29,17 @@ export function TimeSelector({
       const timeObj = parse(time24, 'HH:mm', new Date());
       return format(timeObj, 'h:mm a');
     } catch (error) {
-      console.error("Error formatting time:", error);
+      console.error("Error formatting time:", error, time24);
       return time24; // Return original format if parsing fails
     }
   };
 
+  // Safety check for malformed data
+  const validTimeSlots = Array.isArray(availableTimeSlots) ? availableTimeSlots : [];
+
   return (
     <div className={cn("space-y-2", className)}>
-      {availableTimeSlots.length === 0 ? (
+      {validTimeSlots.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-8 border rounded-md bg-gray-50">
           <Clock className="h-6 w-6 text-muted-foreground mb-2" />
           <p className="text-gray-500 text-center">
@@ -45,9 +48,9 @@ export function TimeSelector({
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-          {availableTimeSlots.map((slot) => (
+          {validTimeSlots.map((slot, index) => (
             <Button
-              key={slot.time}
+              key={`${slot.time}-${index}`}
               variant="outline"
               className={cn(
                 "h-14 w-full justify-center text-base",

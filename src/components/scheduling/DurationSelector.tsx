@@ -29,12 +29,15 @@ export function DurationSelector({
     return (hourlyRate / 60) * minutes;
   };
 
+  // Ensure options is an array
+  const safeOptions = Array.isArray(options) ? options : [];
+
   return (
     <div className={cn("space-y-4", className)}>
       <h2 className="text-2xl font-bold">Select Session Duration</h2>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-4">
-        {options.map((option) => {
+        {safeOptions.map((option) => {
           const price = calculatePrice(option.minutes);
           
           return (
