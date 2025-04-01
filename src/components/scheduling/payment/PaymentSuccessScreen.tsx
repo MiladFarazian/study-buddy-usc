@@ -13,18 +13,18 @@ export function PaymentSuccessScreen({ onComplete }: PaymentSuccessScreenProps) 
         <CheckCircle className="h-10 w-10 text-green-500" />
       </div>
       
-      <h3 className="text-xl font-semibold mb-2">Payment Successful!</h3>
+      <h3 className="text-xl font-semibold mb-2">Session Request Submitted!</h3>
       
       <p className="text-muted-foreground mb-6 max-w-sm">
-        Your tutoring session has been booked and payment has been processed successfully.
+        Your tutoring session request has been submitted successfully. The payment functionality is currently being set up.
       </p>
       
       <div className="bg-muted/30 p-4 rounded-md w-full mb-6">
         <p className="text-sm text-muted-foreground mb-1">
-          You will receive an email confirmation shortly with the session details.
+          While we finalize our payment system, please note that your tutor will be notified of your booking request.
         </p>
         <p className="text-sm text-muted-foreground">
-          You can view and manage your upcoming sessions in your schedule dashboard.
+          You will be contacted to arrange payment once the tutor confirms your session.
         </p>
       </div>
       

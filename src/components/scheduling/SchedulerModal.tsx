@@ -74,20 +74,18 @@ export function SchedulerModal({
                     selectedSlot={selectedSlot} 
                   />
                   
-                  {clientSecret ? (
-                    <StripePaymentForm
-                      clientSecret={clientSecret}
-                      amount={paymentAmount}
-                      onSuccess={handlePaymentComplete}
-                      onCancel={handleCancel}
-                      processing={false}
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-6">
-                      <Loader2 className="h-6 w-6 animate-spin text-usc-cardinal mb-3" />
-                      <p className="text-center text-muted-foreground">Preparing payment...</p>
-                    </div>
-                  )}
+                  {/* Temporarily provide direct access to payment success while we setup Stripe */}
+                  <div className="mt-8">
+                    <p className="text-center text-sm text-muted-foreground mb-6">
+                      We're currently setting up our payment system. Click below to proceed with your booking request.
+                    </p>
+                    <Button 
+                      onClick={handlePaymentComplete}
+                      className="w-full bg-usc-cardinal hover:bg-usc-cardinal-dark"
+                    >
+                      Submit Booking Request
+                    </Button>
+                  </div>
                 </>
               )}
             </div>
