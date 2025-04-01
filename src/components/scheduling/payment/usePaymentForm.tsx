@@ -36,6 +36,7 @@ export function usePaymentForm({
   const [transactionId, setTransactionId] = useState<string | null>(null);
   const [stripe, setStripe] = useState<any>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [setupError, setSetupError] = useState<string | null>(null);
   
   // Calculate session duration and cost
   const startTime = selectedSlot?.start ? new Date(`2000-01-01T${selectedSlot.start || '00:00'}`) : new Date();
@@ -70,12 +71,13 @@ export function usePaymentForm({
     const setupPayment = async () => {
       // Skip if not all required data is available
       if (!sessionId || !studentId || !tutor?.id || !stripeLoaded || 
-          !selectedSlot.day || !selectedSlot.start) {
+          !selectedSlot?.day || !selectedSlot?.start) {
         return;
       }
       
       try {
         setLoading(true);
+        setSetupError(null);
         
         // Create a payment intent with Stripe
         const formattedDate = format(new Date(selectedSlot.day), 'MMM dd, yyyy');
@@ -101,6 +103,8 @@ export function usePaymentForm({
         setClientSecret(paymentIntent.client_secret);
       } catch (error) {
         console.error('Error setting up payment:', error);
+        setSetupError(error.message || "Failed to set up payment");
+        
         toast({
           title: 'Payment Setup Error',
           description: 'Failed to set up payment. The Stripe integration may not be properly configured.',
@@ -209,6 +213,7 @@ export function usePaymentForm({
     clientSecret,
     cardError,
     sessionCost,
+    setupError,
     handleCardElementReady,
     handleSubmitPayment,
     setCardError,

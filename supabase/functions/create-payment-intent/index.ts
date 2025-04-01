@@ -97,10 +97,10 @@ serve(async (req) => {
             console.log(`Reusing existing payment intent in state: ${paymentIntent.status}`);
             
             // Update the payment intent if necessary
-            if (paymentIntent.amount !== Math.round(amount * 100)) {
+            if (paymentIntent.amount !== Math.round(amount)) {
               paymentIntent = await stripe.paymentIntents.update(
                 paymentIntent.id,
-                { amount: Math.round(amount * 100) }
+                { amount: Math.round(amount) }
               );
             }
           } else {
@@ -116,10 +116,10 @@ serve(async (req) => {
       
       // Create a new payment intent if we don't have a valid existing one
       if (!paymentIntent) {
-        console.log('Creating new payment intent');
+        console.log('Creating new payment intent with amount:', amount);
         
         paymentIntent = await stripe.paymentIntents.create({
-          amount: Math.round(amount * 100), // Convert to cents and ensure it's an integer
+          amount: Math.round(amount), // Ensure it's an integer
           currency: 'usd',
           metadata: {
             sessionId,
@@ -138,7 +138,7 @@ serve(async (req) => {
             session_id: sessionId,
             student_id: studentId,
             tutor_id: tutorId,
-            amount: amount,
+            amount: amount / 100, // Convert from cents to dollars for storage
             status: 'processing',
             stripe_payment_intent_id: paymentIntent.id,
           });
@@ -179,7 +179,7 @@ serve(async (req) => {
         JSON.stringify({
           id: paymentIntent.id,
           client_secret: paymentIntent.client_secret,
-          amount,
+          amount: amount / 100, // Convert back to dollars for display
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

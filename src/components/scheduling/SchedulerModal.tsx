@@ -8,7 +8,7 @@ import { useBookingSession } from "./booking-modal/useBookingSession";
 import { SessionDetailsDisplay } from "./payment/SessionDetailsDisplay";
 import { PaymentCardElement } from "./payment/PaymentCardElement";
 import { PaymentSuccessScreen } from "./payment/PaymentSuccessScreen";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle } from "lucide-react";
 import { AuthRequiredDialog } from "./booking-modal/AuthRequiredDialog";
 import { usePaymentForm } from "./payment/usePaymentForm";
 import { useState, useEffect } from "react";
@@ -68,12 +68,6 @@ export function SchedulerModal({
     onPaymentComplete: handlePaymentComplete
   });
 
-  // Update payment form props when data changes
-  useEffect(() => {
-    // This effect ensures props are updated when data is available
-    // but doesn't affect the hook call pattern that must stay consistent
-  }, [tutor, selectedSlot, sessionId, user]);
-
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -109,17 +103,37 @@ export function SchedulerModal({
                   />
                   
                   <div className="mt-6">
-                    <PaymentCardElement
-                      onCardElementReady={paymentForm.handleCardElementReady}
-                      onSubmit={paymentForm.handleSubmitPayment}
-                      onCancel={handleCancel}
-                      processing={paymentForm.processing}
-                      loading={paymentForm.loading}
-                      cardError={paymentForm.cardError}
-                      amount={paymentForm.sessionCost}
-                      stripeLoaded={paymentForm.stripeLoaded}
-                      clientSecret={paymentForm.clientSecret}
-                    />
+                    {paymentForm.setupError ? (
+                      <div className="p-4 border border-red-300 bg-red-50 rounded-md mb-4 flex items-start">
+                        <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 mr-2 flex-shrink-0" />
+                        <div>
+                          <h4 className="font-medium text-red-800">Payment Setup Error</h4>
+                          <p className="text-sm text-red-700 mt-1">
+                            {paymentForm.setupError}. Please contact support if this issue persists.
+                          </p>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="mt-3"
+                            onClick={handleCancel}
+                          >
+                            Go Back
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <PaymentCardElement
+                        onCardElementReady={paymentForm.handleCardElementReady}
+                        onSubmit={paymentForm.handleSubmitPayment}
+                        onCancel={handleCancel}
+                        processing={paymentForm.processing}
+                        loading={paymentForm.loading}
+                        cardError={paymentForm.cardError}
+                        amount={paymentForm.sessionCost}
+                        stripeLoaded={paymentForm.stripeLoaded}
+                        clientSecret={paymentForm.clientSecret}
+                      />
+                    )}
                   </div>
                 </>
               )}

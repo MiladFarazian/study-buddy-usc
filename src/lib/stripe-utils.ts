@@ -43,7 +43,7 @@ export const createPaymentIntent = async (
     const { data, error } = await supabase.functions.invoke('create-payment-intent', {
       body: {
         sessionId,
-        amount,
+        amount: Math.round(amount * 100), // Convert to cents for Stripe
         tutorId,
         studentId,
         description
@@ -58,6 +58,12 @@ export const createPaymentIntent = async (
     if (!data) {
       console.error("No data returned from create-payment-intent function");
       throw new Error('No data returned from create-payment-intent function');
+    }
+    
+    // Check if the response contains an error message from the edge function
+    if (data.error) {
+      console.error("Edge function error:", data.error);
+      throw new Error(data.error.message || data.error);
     }
     
     console.log("Payment intent created:", data);
