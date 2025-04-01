@@ -31,11 +31,24 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const requestBody = await req.json();
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (parseError) {
+      console.error('Error parsing request body:', parseError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid request body format' }), 
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
+    }
+
     const { sessionId, amount, tutorId, studentId, description } = requestBody;
 
     // Validate required parameters
-    if (!sessionId || !amount || !tutorId || !studentId) {
+    if (!sessionId || amount === undefined || !tutorId || !studentId) {
       return new Response(
         JSON.stringify({ error: 'Missing required parameters' }), 
         {
@@ -53,11 +66,24 @@ serve(async (req) => {
         apiVersion: '2023-10-16',
       });
 
-      // Create a new payment intent
+      // Ensure amount is a number and convert to cents (Stripe uses smallest currency unit)
+      const amountInCents = Math.round(parseFloat(amount.toString()) * 100);
+      
+      if (isNaN(amountInCents) || amountInCents <= 0) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid amount value' }), 
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400,
+          }
+        );
+      }
+      
       console.log('Creating new payment intent with amount:', amount);
       
+      // Create a new payment intent
       const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(amount * 100), // Convert to cents for Stripe
+        amount: amountInCents,
         currency: 'usd',
         metadata: {
           sessionId,

@@ -27,82 +27,110 @@ export function StripePaymentForm({
   const [cardError, setCardError] = useState<string | null>(null);
   const [cardComplete, setCardComplete] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
 
   // Initialize Stripe
   useEffect(() => {
+    let mounted = true;
+    
     const loadStripe = async () => {
       try {
+        setLoading(true);
         const stripeInstance = await initializeStripe();
-        setStripe(stripeInstance);
+        
+        if (mounted) {
+          setStripe(stripeInstance);
+          setLoading(false);
+        }
       } catch (error) {
         console.error('Error loading Stripe:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load payment processor.',
-          variant: 'destructive',
-        });
+        if (mounted) {
+          toast({
+            title: 'Error',
+            description: 'Failed to load payment processor. Please try again.',
+            variant: 'destructive',
+          });
+          setLoading(false);
+        }
       }
     };
 
     loadStripe();
+    
+    return () => {
+      mounted = false;
+    };
   }, [toast]);
 
   // Initialize Elements when stripe and clientSecret are available
   useEffect(() => {
-    if (stripe && clientSecret) {
-      const elementsInstance = stripe.elements({
-        clientSecret,
-        appearance: {
-          theme: 'stripe',
-          variables: {
-            colorPrimary: '#990000',
-            colorBackground: '#ffffff',
-            colorText: '#1a1a1a',
-            colorDanger: '#ff5555',
-            fontFamily: 'system-ui, sans-serif',
-            borderRadius: '8px',
-          },
+    if (!stripe || !clientSecret) return;
+    
+    const elementsInstance = stripe.elements({
+      clientSecret,
+      appearance: {
+        theme: 'stripe',
+        variables: {
+          colorPrimary: '#990000',
+          colorBackground: '#ffffff',
+          colorText: '#1a1a1a',
+          colorDanger: '#ff5555',
+          fontFamily: 'system-ui, sans-serif',
+          borderRadius: '8px',
         },
-      });
+      },
+    });
 
-      setElements(elementsInstance);
-    }
+    setElements(elementsInstance);
+    
+    return () => {
+      // Elements doesn't have a cleanup method
+    };
   }, [stripe, clientSecret]);
 
   // Mount CardElement when elements is available
   useEffect(() => {
-    if (elements) {
-      const card = elements.create('card', {
-        style: {
-          base: {
-            fontSize: '16px',
-            fontFamily: 'system-ui, sans-serif',
+    if (!elements) return;
+    
+    const cardContainer = document.getElementById('card-element');
+    if (!cardContainer) return;
+    
+    // Clear previous card element if it exists
+    cardContainer.innerHTML = '';
+    
+    const card = elements.create('card', {
+      style: {
+        base: {
+          fontSize: '16px',
+          fontFamily: 'system-ui, sans-serif',
+          '::placeholder': {
+            color: '#aab7c4',
           },
         },
-      });
+        invalid: {
+          color: '#ff5555',
+        },
+      },
+    });
 
-      const cardContainer = document.getElementById('card-element');
-      if (cardContainer) {
-        card.mount('#card-element');
-        setCardElement(card);
+    card.mount('#card-element');
+    setCardElement(card);
 
-        card.on('change', (event: any) => {
-          setCardError(event.error ? event.error.message : '');
-          setCardComplete(event.complete);
-        });
-      }
+    card.on('change', (event: any) => {
+      setCardError(event.error ? event.error.message : '');
+      setCardComplete(event.complete);
+    });
 
-      // Cleanup function
-      return () => {
-        card.unmount();
-      };
-    }
+    // Cleanup function
+    return () => {
+      card.unmount();
+    };
   }, [elements]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (!stripe || !elements || !cardElement || !clientSecret) {
+    if (!stripe || !elements || !clientSecret) {
       // Show error message if Stripe hasn't loaded
       toast({
         title: 'Error',
@@ -164,10 +192,9 @@ export function StripePaymentForm({
               </p>
             </div>
 
-            <div id="card-element" className="p-4 border rounded-md bg-white">
-              {/* Stripe Card Element will be mounted here */}
-              {!stripe && (
-                <div className="flex items-center justify-center h-10">
+            <div id="card-element" className="p-4 border rounded-md bg-white min-h-[100px] flex items-center justify-center">
+              {loading && (
+                <div className="flex items-center justify-center">
                   <Loader2 className="h-5 w-5 animate-spin text-usc-cardinal" />
                   <span className="ml-2 text-sm text-muted-foreground">Loading payment form...</span>
                 </div>
@@ -202,7 +229,7 @@ export function StripePaymentForm({
               <Button
                 type="submit"
                 className="bg-usc-cardinal text-white hover:bg-usc-cardinal-dark"
-                disabled={!stripe || !cardComplete || processing || isSubmitting}
+                disabled={!stripe || !cardComplete || processing || isSubmitting || loading}
               >
                 {isSubmitting ? (
                   <>

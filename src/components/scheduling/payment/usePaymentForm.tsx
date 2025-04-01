@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { createPaymentIntent, processPayment, initializeStripe } from "@/lib/stripe-utils";
@@ -35,6 +35,16 @@ export function usePaymentForm({
   const [retryCount, setRetryCount] = useState(0);
   const [stripe, setStripe] = useState<any>(null);
   
+  // Use refs to track mounted state
+  const isMounted = useRef(true);
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+  
   // Calculate session duration and cost
   const startTime = selectedSlot?.start ? new Date(`2000-01-01T${selectedSlot.start}`) : new Date();
   const endTime = selectedSlot?.end ? new Date(`2000-01-01T${selectedSlot.end}`) : new Date();
@@ -45,19 +55,17 @@ export function usePaymentForm({
   const sessionCost = hourlyRate * durationHours;
   
   // Load Stripe.js
-  useEffect(() => {
-    let isMounted = true;
-    
+  useEffect(() => {    
     const loadStripe = async () => {
       try {
         const stripeInstance = await initializeStripe();
-        if (isMounted) {
+        if (isMounted.current) {
           setStripe(stripeInstance);
           setStripeLoaded(true);
         }
       } catch (error) {
         console.error('Error loading Stripe:', error);
-        if (isMounted) {
+        if (isMounted.current) {
           toast({
             title: 'Error',
             description: 'Failed to load payment processor. Please try again.',
@@ -68,25 +76,20 @@ export function usePaymentForm({
     };
     
     loadStripe();
-    
-    return () => {
-      isMounted = false;
-    };
   }, [toast]);
   
   // Create payment intent when component mounts
   useEffect(() => {
-    let isMounted = true;
+    // Skip if not all required data is available
+    if (!sessionId || !studentId || !tutor?.id || !stripeLoaded || 
+        !selectedSlot?.day || !selectedSlot?.start) {
+      setLoading(false);
+      return;
+    }
     
     const setupPayment = async () => {
-      // Skip if not all required data is available
-      if (!sessionId || !studentId || !tutor?.id || !stripeLoaded || 
-          !selectedSlot?.day || !selectedSlot?.start) {
-        return;
-      }
-      
       try {
-        if (isMounted) {
+        if (isMounted.current) {
           setLoading(true);
           setSetupError(null);
         }
@@ -113,14 +116,14 @@ export function usePaymentForm({
         
         console.log("Received payment intent:", paymentIntent);
         
-        if (isMounted) {
+        if (isMounted.current) {
           setClientSecret(paymentIntent.client_secret);
           setLoading(false);
         }
       } catch (error) {
         console.error('Error setting up payment:', error);
         
-        if (isMounted) {
+        if (isMounted.current) {
           setSetupError(error.message || "Failed to set up payment");
           setLoading(false);
           
@@ -129,30 +132,13 @@ export function usePaymentForm({
             description: 'There was an issue setting up your payment. Please try again.',
             variant: 'destructive',
           });
-          
-          // If we have retries left, try again after a delay
-          if (retryCount < 2) {
-            setTimeout(() => {
-              if (isMounted) {
-                console.log("Retrying payment setup...");
-                setRetryCount(prev => prev + 1);
-                setupPayment();
-              }
-            }, 2000);
-          }
         }
       }
     };
     
     if (sessionId && studentId && tutor?.id && stripeLoaded && selectedSlot?.day) {
       setupPayment();
-    } else if (!loading && !setupError) {
-      setLoading(false);
     }
-    
-    return () => {
-      isMounted = false;
-    };
   }, [sessionId, studentId, tutor?.id, tutor?.name, selectedSlot, sessionCost, 
       toast, stripeLoaded, retryCount]);
   
@@ -208,7 +194,7 @@ export function usePaymentForm({
   };
 
   const retrySetupPayment = useCallback(() => {
-    setRetryCount(0);
+    setRetryCount(prev => prev + 1);
     setSetupError(null);
     setLoading(true);
   }, []);

@@ -9,24 +9,30 @@ export interface StripePaymentIntent {
   amount: number;
 }
 
+// Cache for Stripe instance
+let stripePromise: Promise<any> | null = null;
+
 // Initialize Stripe
 export const initializeStripe = () => {
-  return new Promise<any>((resolve, reject) => {
-    if ((window as any).Stripe) {
-      resolve((window as any).Stripe(STRIPE_PUBLIC_KEY));
-    } else {
-      // Add Stripe.js if it's not loaded yet
-      const script = document.createElement('script');
-      script.src = 'https://js.stripe.com/v3/';
-      script.onload = () => {
+  if (!stripePromise) {
+    stripePromise = new Promise<any>((resolve, reject) => {
+      if ((window as any).Stripe) {
         resolve((window as any).Stripe(STRIPE_PUBLIC_KEY));
-      };
-      script.onerror = (err) => {
-        reject(new Error('Failed to load Stripe.js'));
-      };
-      document.body.appendChild(script);
-    }
-  });
+      } else {
+        // Add Stripe.js if it's not loaded yet
+        const script = document.createElement('script');
+        script.src = 'https://js.stripe.com/v3/';
+        script.onload = () => {
+          resolve((window as any).Stripe(STRIPE_PUBLIC_KEY));
+        };
+        script.onerror = (err) => {
+          reject(new Error('Failed to load Stripe.js'));
+        };
+        document.body.appendChild(script);
+      }
+    });
+  }
+  return stripePromise;
 };
 
 // Create a payment intent via Supabase Edge Function
@@ -40,7 +46,7 @@ export const createPaymentIntent = async (
   try {
     console.log("Creating payment intent:", { sessionId, amount, tutorId, studentId, description });
     
-    // Prepare the request body - make sure amount is a number
+    // Prepare the request body - ensure amount is a number
     const payload = {
       sessionId,
       amount: parseFloat(amount.toString()), // Ensure amount is a number
