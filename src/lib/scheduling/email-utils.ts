@@ -17,8 +17,8 @@ export async function sendSessionConfirmationEmails(sessionId: string): Promise<
       .from('sessions')
       .select(`
         *,
-        tutor:profiles!tutor_id(id, first_name, last_name, email, hourly_rate),
-        student:profiles!student_id(id, first_name, last_name, email)
+        tutor:profiles!tutor_id(id, first_name, last_name, hourly_rate),
+        student:profiles!student_id(id, first_name, last_name)
       `)
       .eq('id', sessionId)
       .single();
@@ -34,8 +34,24 @@ export async function sendSessionConfirmationEmails(sessionId: string): Promise<
     // Get tutor and student details
     const tutorName = `${session.tutor.first_name || ''} ${session.tutor.last_name || ''}`.trim();
     const studentName = `${session.student.first_name || ''} ${session.student.last_name || ''}`.trim();
-    const tutorEmail = session.tutor.email;
-    const studentEmail = session.student.email;
+    
+    // Fetch emails from auth.users table since they aren't in the profiles table
+    const { data: tutorAuth, error: tutorAuthError } = await supabase
+      .auth.admin.getUserById(session.tutor.id);
+    
+    if (tutorAuthError) {
+      throw new Error(`Error fetching tutor auth details: ${tutorAuthError.message}`);
+    }
+    
+    const { data: studentAuth, error: studentAuthError } = await supabase
+      .auth.admin.getUserById(session.student.id);
+    
+    if (studentAuthError) {
+      throw new Error(`Error fetching student auth details: ${studentAuthError.message}`);
+    }
+    
+    const tutorEmail = tutorAuth.user.email;
+    const studentEmail = studentAuth.user.email;
     
     if (!tutorEmail || !studentEmail) {
       throw new Error('Missing email for tutor or student');
@@ -93,8 +109,8 @@ export async function sendSessionCancellationEmails(sessionId: string): Promise<
       .from('sessions')
       .select(`
         *,
-        tutor:profiles!tutor_id(id, first_name, last_name, email, hourly_rate),
-        student:profiles!student_id(id, first_name, last_name, email)
+        tutor:profiles!tutor_id(id, first_name, last_name, hourly_rate),
+        student:profiles!student_id(id, first_name, last_name)
       `)
       .eq('id', sessionId)
       .single();
@@ -110,8 +126,24 @@ export async function sendSessionCancellationEmails(sessionId: string): Promise<
     // Get tutor and student details
     const tutorName = `${session.tutor.first_name || ''} ${session.tutor.last_name || ''}`.trim();
     const studentName = `${session.student.first_name || ''} ${session.student.last_name || ''}`.trim();
-    const tutorEmail = session.tutor.email;
-    const studentEmail = session.student.email;
+    
+    // Fetch emails from auth.users table since they aren't in the profiles table
+    const { data: tutorAuth, error: tutorAuthError } = await supabase
+      .auth.admin.getUserById(session.tutor.id);
+    
+    if (tutorAuthError) {
+      throw new Error(`Error fetching tutor auth details: ${tutorAuthError.message}`);
+    }
+    
+    const { data: studentAuth, error: studentAuthError } = await supabase
+      .auth.admin.getUserById(session.student.id);
+    
+    if (studentAuthError) {
+      throw new Error(`Error fetching student auth details: ${studentAuthError.message}`);
+    }
+    
+    const tutorEmail = tutorAuth.user.email;
+    const studentEmail = studentAuth.user.email;
     
     if (!tutorEmail || !studentEmail) {
       throw new Error('Missing email for tutor or student');
