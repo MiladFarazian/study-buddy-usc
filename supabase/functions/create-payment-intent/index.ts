@@ -79,7 +79,7 @@ serve(async (req) => {
         );
       }
       
-      console.log('Creating new payment intent with amount:', amount);
+      console.log('Creating payment intent with amount in cents:', amountInCents);
       
       // Create a new payment intent
       const paymentIntent = await stripe.paymentIntents.create({

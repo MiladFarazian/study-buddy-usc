@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle } from "lucide-react";
 import { initializeStripe } from "@/lib/stripe-utils";
 
 interface StripePaymentFormProps {
@@ -28,6 +28,8 @@ export function StripePaymentForm({
   const [cardComplete, setCardComplete] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
+  const [initError, setInitError] = useState<string | null>(null);
+  const [initAttempt, setInitAttempt] = useState<number>(0);
 
   // Initialize Stripe
   useEffect(() => {
@@ -35,18 +37,30 @@ export function StripePaymentForm({
     
     const loadStripe = async () => {
       try {
+        console.log('Loading Stripe.js...');
         setLoading(true);
+        setInitError(null);
+        
         const stripeInstance = await initializeStripe();
         
-        if (mounted) {
-          setStripe(stripeInstance);
+        if (!mounted) return;
+        
+        if (!stripeInstance) {
+          console.error('Failed to initialize Stripe');
+          setInitError('Failed to initialize payment processor. Please refresh and try again.');
           setLoading(false);
+          return;
         }
+        
+        console.log('Stripe loaded successfully');
+        setStripe(stripeInstance);
+        setLoading(false);
       } catch (error) {
         console.error('Error loading Stripe:', error);
         if (mounted) {
+          setInitError('Failed to load payment processor. Please refresh and try again.');
           toast({
-            title: 'Error',
+            title: 'Payment Error',
             description: 'Failed to load payment processor. Please try again.',
             variant: 'destructive',
           });
@@ -60,28 +74,34 @@ export function StripePaymentForm({
     return () => {
       mounted = false;
     };
-  }, [toast]);
+  }, [toast, initAttempt]);
 
   // Initialize Elements when stripe and clientSecret are available
   useEffect(() => {
     if (!stripe || !clientSecret) return;
     
-    const elementsInstance = stripe.elements({
-      clientSecret,
-      appearance: {
-        theme: 'stripe',
-        variables: {
-          colorPrimary: '#990000',
-          colorBackground: '#ffffff',
-          colorText: '#1a1a1a',
-          colorDanger: '#ff5555',
-          fontFamily: 'system-ui, sans-serif',
-          borderRadius: '8px',
+    try {
+      console.log('Creating Elements instance with client secret');
+      const elementsInstance = stripe.elements({
+        clientSecret,
+        appearance: {
+          theme: 'stripe',
+          variables: {
+            colorPrimary: '#990000',
+            colorBackground: '#ffffff',
+            colorText: '#1a1a1a',
+            colorDanger: '#ff5555',
+            fontFamily: 'system-ui, sans-serif',
+            borderRadius: '8px',
+          },
         },
-      },
-    });
+      });
 
-    setElements(elementsInstance);
+      setElements(elementsInstance);
+    } catch (error) {
+      console.error('Error creating Stripe Elements:', error);
+      setInitError('Failed to initialize payment form. Please try again.');
+    }
     
     return () => {
       // Elements doesn't have a cleanup method
@@ -93,38 +113,47 @@ export function StripePaymentForm({
     if (!elements) return;
     
     const cardContainer = document.getElementById('card-element');
-    if (!cardContainer) return;
+    if (!cardContainer) {
+      console.warn('Card element container not found');
+      return;
+    }
     
-    // Clear previous card element if it exists
-    cardContainer.innerHTML = '';
-    
-    const card = elements.create('card', {
-      style: {
-        base: {
-          fontSize: '16px',
-          fontFamily: 'system-ui, sans-serif',
-          '::placeholder': {
-            color: '#aab7c4',
+    try {
+      // Clear previous card element if it exists
+      cardContainer.innerHTML = '';
+      
+      console.log('Creating and mounting card element');
+      const card = elements.create('card', {
+        style: {
+          base: {
+            fontSize: '16px',
+            fontFamily: 'system-ui, sans-serif',
+            '::placeholder': {
+              color: '#aab7c4',
+            },
+          },
+          invalid: {
+            color: '#ff5555',
           },
         },
-        invalid: {
-          color: '#ff5555',
-        },
-      },
-    });
+      });
 
-    card.mount('#card-element');
-    setCardElement(card);
+      card.mount('#card-element');
+      setCardElement(card);
 
-    card.on('change', (event: any) => {
-      setCardError(event.error ? event.error.message : '');
-      setCardComplete(event.complete);
-    });
+      card.on('change', (event: any) => {
+        setCardError(event.error ? event.error.message : '');
+        setCardComplete(event.complete);
+      });
 
-    // Cleanup function
-    return () => {
-      card.unmount();
-    };
+      // Cleanup function
+      return () => {
+        card.unmount();
+      };
+    } catch (error) {
+      console.error('Error mounting card element:', error);
+      setInitError('Failed to initialize payment form. Please try again.');
+    }
   }, [elements]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -143,6 +172,7 @@ export function StripePaymentForm({
     try {
       setIsSubmitting(true);
       
+      console.log('Confirming card payment with client secret');
       const result = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
           card: cardElement,
@@ -154,6 +184,7 @@ export function StripePaymentForm({
 
       if (result.error) {
         // Show error message
+        console.error('Payment error:', result.error);
         setCardError(result.error.message || 'Payment failed');
         toast({
           title: 'Payment Failed',
@@ -162,6 +193,7 @@ export function StripePaymentForm({
         });
       } else if (result.paymentIntent.status === 'succeeded') {
         // Payment succeeded
+        console.log('Payment successful:', result.paymentIntent);
         toast({
           title: 'Payment Successful',
           description: 'Your session has been booked and payment processed.',
@@ -178,6 +210,10 @@ export function StripePaymentForm({
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const retryInitialization = () => {
+    setInitAttempt(prev => prev + 1);
   };
 
   return (
@@ -197,6 +233,23 @@ export function StripePaymentForm({
                 <div className="flex items-center justify-center">
                   <Loader2 className="h-5 w-5 animate-spin text-usc-cardinal" />
                   <span className="ml-2 text-sm text-muted-foreground">Loading payment form...</span>
+                </div>
+              )}
+              
+              {initError && !loading && (
+                <div className="flex flex-col items-center justify-center">
+                  <div className="flex items-center text-red-500 mb-2">
+                    <AlertTriangle className="h-5 w-5 mr-2" />
+                    <span>{initError}</span>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={retryInitialization}
+                    className="mt-2"
+                  >
+                    Retry
+                  </Button>
                 </div>
               )}
             </div>
@@ -229,7 +282,7 @@ export function StripePaymentForm({
               <Button
                 type="submit"
                 className="bg-usc-cardinal text-white hover:bg-usc-cardinal-dark"
-                disabled={!stripe || !cardComplete || processing || isSubmitting || loading}
+                disabled={!stripe || !cardComplete || processing || isSubmitting || loading || !!initError}
               >
                 {isSubmitting ? (
                   <>
@@ -242,6 +295,15 @@ export function StripePaymentForm({
               </Button>
             </div>
           </div>
+          
+          {!clientSecret && !loading && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-md mt-4">
+              <p className="text-sm text-amber-800 flex items-center">
+                <AlertTriangle className="h-4 w-4 mr-2 text-amber-600" />
+                Payment system not fully connected. Please ensure Stripe is properly configured.
+              </p>
+            </div>
+          )}
         </div>
       </form>
     </div>

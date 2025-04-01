@@ -15,17 +15,22 @@ let stripePromise: Promise<any> | null = null;
 // Initialize Stripe
 export const initializeStripe = () => {
   if (!stripePromise) {
+    console.log("Initializing Stripe with public key:", STRIPE_PUBLIC_KEY);
     stripePromise = new Promise<any>((resolve, reject) => {
       if ((window as any).Stripe) {
+        console.log("Stripe already loaded, creating instance");
         resolve((window as any).Stripe(STRIPE_PUBLIC_KEY));
       } else {
+        console.log("Stripe not loaded, adding script");
         // Add Stripe.js if it's not loaded yet
         const script = document.createElement('script');
         script.src = 'https://js.stripe.com/v3/';
         script.onload = () => {
+          console.log("Stripe script loaded successfully");
           resolve((window as any).Stripe(STRIPE_PUBLIC_KEY));
         };
         script.onerror = (err) => {
+          console.error("Failed to load Stripe.js", err);
           reject(new Error('Failed to load Stripe.js'));
         };
         document.body.appendChild(script);
@@ -47,13 +52,21 @@ export const createPaymentIntent = async (
     console.log("Creating payment intent:", { sessionId, amount, tutorId, studentId, description });
     
     // Prepare the request body - ensure amount is a number
+    const amountInDollars = parseFloat(amount.toString());
+    
+    if (isNaN(amountInDollars) || amountInDollars <= 0) {
+      throw new Error("Invalid amount: must be a positive number");
+    }
+    
     const payload = {
       sessionId,
-      amount: parseFloat(amount.toString()), // Ensure amount is a number
+      amount: amountInDollars, // Send as a number
       tutorId,
       studentId,
       description
     };
+    
+    console.log("Sending payment intent request with payload:", payload);
     
     const { data, error } = await supabase.functions.invoke('create-payment-intent', {
       body: payload
@@ -75,7 +88,7 @@ export const createPaymentIntent = async (
       throw new Error(data.error.message || data.error);
     }
     
-    console.log("Payment intent created:", data);
+    console.log("Payment intent created successfully:", data);
     return data as StripePaymentIntent;
   } catch (error) {
     console.error('Error creating payment intent:', error);
