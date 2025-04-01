@@ -1,65 +1,107 @@
 
-import React from 'react';
-import { formatTime } from '../../utils/dateUtils';
-import { TimeSlot as TimeSlotType, TIME_SLOTS } from '../../utils/mockData';
+import React, { useState, useEffect } from 'react';
+import { Button } from "@/components/ui/button";
+import { format } from 'date-fns';
+import { Clock, Loader2 } from "lucide-react";
+import { BookingSlot } from '@/types/scheduling';
+import { useScheduling } from '@/contexts/SchedulingContext';
 
 interface TimeSlotsProps {
-  selectedDate: Date | null;
-  selectedTime: string | null;
-  onSelectTime: (time: string) => void;
+  availableSlots: BookingSlot[];
 }
 
-const TimeSlots: React.FC<TimeSlotsProps> = ({ 
-  selectedDate, 
-  selectedTime, 
-  onSelectTime 
-}) => {
+export const TimeSlots: React.FC<TimeSlotsProps> = ({ availableSlots }) => {
+  const { state, dispatch } = useScheduling();
+  const { selectedDate, selectedTimeSlot } = state;
+  
+  const [visibleSlots, setVisibleSlots] = useState<BookingSlot[]>([]);
+  const [loading, setLoading] = useState(false);
+  
+  useEffect(() => {
+    if (selectedDate) {
+      setLoading(true);
+      
+      // Filter slots for the selected date
+      const slotsForDate = availableSlots.filter(
+        slot => format(slot.day, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')
+      );
+      
+      // Sort by time
+      slotsForDate.sort((a, b) => a.start.localeCompare(b.start));
+      
+      setVisibleSlots(slotsForDate);
+      setLoading(false);
+    } else {
+      setVisibleSlots([]);
+    }
+  }, [selectedDate, availableSlots]);
+  
+  const handleSelectSlot = (slot: BookingSlot) => {
+    dispatch({ type: 'SELECT_TIME_SLOT', payload: slot });
+  };
+  
   if (!selectedDate) {
     return (
-      <div className="w-full rounded-xl bg-white shadow-sm p-6 mt-4 text-center animate-fade-in">
-        <p className="text-muted-foreground">Please select a date to view available time slots</p>
+      <div className="mt-6 text-center p-4 border rounded-md bg-muted/30">
+        <p className="text-muted-foreground">
+          Please select a date to view available time slots
+        </p>
       </div>
     );
   }
-
-  const dateStr = selectedDate.toISOString().split('T')[0];
-  const availableSlots = TIME_SLOTS[dateStr] || [];
-
-  if (availableSlots.length === 0) {
+  
+  if (loading) {
     return (
-      <div className="w-full rounded-xl bg-white shadow-sm p-6 mt-4 text-center animate-fade-in">
-        <p className="text-muted-foreground">No available time slots for this date</p>
+      <div className="mt-6 flex justify-center items-center p-6">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground mr-2" />
+        <span>Loading time slots...</span>
       </div>
     );
   }
-
-  return (
-    <div className="w-full rounded-xl bg-white shadow-sm mt-4">
-      <div className="p-4 border-b border-border">
-        <h2 className="text-lg font-medium">Select a Time</h2>
+  
+  if (visibleSlots.length === 0) {
+    return (
+      <div className="mt-6 text-center p-4 border rounded-md bg-muted/30">
+        <p className="text-muted-foreground">
+          No available time slots for {format(selectedDate, 'MMMM d, yyyy')}
+        </p>
+        <p className="text-sm text-muted-foreground mt-2">
+          Please select another date
+        </p>
       </div>
-      <div className="p-6">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {availableSlots.map((slot) => (
-            <button
-              key={slot.id}
-              onClick={() => slot.available && onSelectTime(slot.time)}
-              disabled={!slot.available}
-              className={`py-3 px-3 rounded-xl border transition-all duration-200 ease-in-out ${
-                selectedTime === slot.time
-                  ? 'bg-usc-cardinal text-white border-usc-cardinal'
-                  : slot.available
-                  ? 'border-gray-200 hover:border-gray-400'
-                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              }`}
+    );
+  }
+  
+  // Format time to 12-hour format
+  const formatTime = (timeStr: string) => {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const hours12 = hours % 12 || 12;
+    return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+  };
+  
+  return (
+    <div className="mt-6 space-y-3">
+      <h3 className="text-lg font-medium">Available Time Slots</h3>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+        {visibleSlots.map((slot, index) => {
+          const isSelected = selectedTimeSlot && 
+            selectedTimeSlot.day.getTime() === slot.day.getTime() && 
+            selectedTimeSlot.start === slot.start;
+          
+          return (
+            <Button
+              key={`${format(slot.day, 'yyyy-MM-dd')}-${slot.start}-${index}`}
+              variant={isSelected ? "default" : "outline"}
+              className={isSelected ? "bg-usc-cardinal hover:bg-usc-cardinal-dark" : ""}
+              onClick={() => handleSelectSlot(slot)}
             >
-              {formatTime(slot.time)}
-            </button>
-          ))}
-        </div>
+              <Clock className="h-4 w-4 mr-2" />
+              {formatTime(slot.start)}
+            </Button>
+          );
+        })}
       </div>
     </div>
   );
 };
-
-export default TimeSlots;

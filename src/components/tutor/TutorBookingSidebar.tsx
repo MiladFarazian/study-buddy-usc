@@ -4,13 +4,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Clock, ArrowRightLeft } from "lucide-react";
 import { Tutor } from "@/types/tutor";
 import MessageButton from "@/components/messaging/MessageButton";
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { SimpleBookingWizard } from "@/components/scheduling/SimpleBookingWizard";
+import { SchedulingProvider } from "@/contexts/SchedulingContext";
 
 interface TutorBookingSidebarProps {
   tutor: Tutor;
 }
 
 export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
+  const [showBookingModal, setShowBookingModal] = useState(false);
+
   // Format hourly rate with two decimal places from tutor profile
   const formattedHourlyRate = tutor.hourlyRate ? `$${tutor.hourlyRate.toFixed(2)}` : "$25.00";
 
@@ -53,12 +58,9 @@ export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
 
           <Button 
             className="w-full bg-usc-cardinal hover:bg-usc-cardinal-dark text-white mb-3"
-            asChild
+            onClick={() => setShowBookingModal(true)}
           >
-            <Link to={`/tutors/${tutor.id}/schedule`}>
-              <Calendar className="mr-2 h-4 w-4" />
-              Book a Session
-            </Link>
+            Book a Session
           </Button>
           
           <MessageButton 
@@ -67,6 +69,20 @@ export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
           />
         </CardContent>
       </Card>
+
+      <Dialog 
+        open={showBookingModal} 
+        onOpenChange={setShowBookingModal}
+      >
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <SchedulingProvider>
+            <SimpleBookingWizard 
+              tutor={tutor}
+              onClose={() => setShowBookingModal(false)}
+            />
+          </SchedulingProvider>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

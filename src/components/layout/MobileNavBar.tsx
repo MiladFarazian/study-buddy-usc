@@ -1,5 +1,5 @@
 
-import { Home, BookOpen, User, Users, GraduationCap } from "lucide-react";
+import { Home, BookOpen, Calendar, User, Users, GraduationCap } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -54,7 +54,12 @@ const MobileNavBar = () => {
       title: "Courses",
       icon: BookOpen,
       path: "/courses",
-    }
+    },
+    {
+      title: "Schedule",
+      icon: Calendar,
+      path: "/schedule",
+    },
   ];
 
   // Check if we're on the profile page
