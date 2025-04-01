@@ -1,7 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-const STRIPE_PUBLIC_KEY = "pk_test_51Ok0zXRnDQljLWdZVYc5mUPORgYEO64gQUe2HH5YqtdrmDZPXI9p4RR0yiiwI7YPVXcqLcSjn7Pp4RLY2PVWxdZv00URQjH9Cg";
+const STRIPE_PUBLIC_KEY = "pk_test_51R9DpIPF6HhVb1F0M00AK1877aQa1pSH7nujC3bCrbd058tuM7fLrJn3CFVAA0fDPy7xYpsdq7ZjZvh3xME4UJnF000NPpVfds";
 
 export interface StripePaymentIntent {
   id: string;
