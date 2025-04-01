@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tutor } from "@/types/tutor";
 import { BookingSlot } from "@/lib/scheduling";
 import { useAvailabilityData } from "../calendar/useAvailabilityData";
@@ -11,17 +11,22 @@ import { SlotSelectionFooter } from "./SlotSelectionFooter";
 import { useBookingState } from "./useBookingState";
 import { LoadingState } from "./LoadingState";
 import { ErrorDisplay } from "./ErrorDisplay";
+import { formatTimeDisplay } from "@/lib/scheduling/time-utils";
 
 interface BookingStepSelectorProps {
   tutor: Tutor;
   onSelectSlot: (slot: BookingSlot) => void;
   onClose: () => void;
+  initialDate?: Date;
+  initialTime?: string;
 }
 
 export const BookingStepSelector = ({ 
   tutor, 
   onSelectSlot, 
-  onClose 
+  onClose,
+  initialDate,
+  initialTime
 }: BookingStepSelectorProps) => {
   const {
     date,
@@ -40,7 +45,7 @@ export const BookingStepSelector = ({
     getFinalBookingSlot,
     getSessionTimeRange,
     formatTimeForDisplay
-  } = useBookingState();
+  } = useBookingState(initialDate, initialTime);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -56,6 +61,22 @@ export const BookingStepSelector = ({
       slot.available
     );
   });
+  
+  // When initial date and time are provided, pre-select the matching slot
+  useEffect(() => {
+    if (initialDate && initialTime && availableTimeSlotsForDate.length > 0 && !selectedTimeSlot) {
+      const matchingSlot = availableTimeSlotsForDate.find(slot => {
+        // Match the slot that contains the initial time
+        const slotStartHour = parseInt(slot.start.split(':')[0]);
+        const initialTimeHour = parseInt(initialTime.split(':')[0]);
+        return slotStartHour === initialTimeHour;
+      });
+      
+      if (matchingSlot) {
+        handleTimeSlotSelect(matchingSlot);
+      }
+    }
+  }, [initialDate, initialTime, availableTimeSlotsForDate, selectedTimeSlot]);
   
   // Handle confirming the session booking
   const handleConfirmBooking = () => {

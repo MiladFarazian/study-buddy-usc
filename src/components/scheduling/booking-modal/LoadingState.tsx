@@ -1,17 +1,11 @@
 
-import React from "react";
+import { Loader2 } from "lucide-react";
 
-interface LoadingStateProps {
-  message?: string;
-}
-
-export const LoadingState: React.FC<LoadingStateProps> = ({ 
-  message = "Loading tutor availability..." 
-}) => {
+export const LoadingState = () => {
   return (
-    <div className="flex justify-center items-center py-8">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-usc-cardinal"></div>
-      <span className="ml-2">{message}</span>
+    <div className="flex flex-col items-center justify-center py-8">
+      <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal mb-4" />
+      <p className="text-muted-foreground">Loading tutor's availability...</p>
     </div>
   );
 };

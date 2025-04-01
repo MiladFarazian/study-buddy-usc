@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { TutorAvailabilityCard } from "../scheduling/TutorAvailabilityCard";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "lucide-react";
@@ -7,13 +7,29 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { CalendlyBookingWizard } from "../scheduling/CalendlyBookingWizard";
 import { Tutor } from "@/types/tutor";
 import { SchedulingProvider } from "@/contexts/SchedulingContext";
+import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+import { SchedulerModal } from "@/components/scheduling/SchedulerModal";
 
 interface TutorAvailabilitySectionProps {
   tutor: Tutor;
 }
 
 export const TutorAvailabilitySection = ({ tutor }: TutorAvailabilitySectionProps) => {
+  const { toast } = useToast();
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedTime, setSelectedTime] = useState<{ start: string; end: string } | null>(null);
+
+  const handleSelectTimeSlot = (date: Date, startTime: string, endTime: string) => {
+    setSelectedDate(date);
+    setSelectedTime({ start: startTime, end: endTime });
+    
+    toast({
+      title: "Time Selected",
+      description: `${format(date, 'MMM d')} from ${startTime} to ${endTime}. Click Book a Session to proceed.`
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -33,21 +49,34 @@ export const TutorAvailabilitySection = ({ tutor }: TutorAvailabilitySectionProp
         </Button>
       </div>
 
-      <TutorAvailabilityCard tutorId={tutor.id} readOnly={true} />
+      <TutorAvailabilityCard 
+        tutorId={tutor.id} 
+        readOnly={false} 
+        onSelectTimeSlot={handleSelectTimeSlot} 
+      />
 
-      <Dialog open={showBookingModal} onOpenChange={setShowBookingModal}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Book a Session with {tutor.name}</DialogTitle>
-          </DialogHeader>
-          <SchedulingProvider>
-            <CalendlyBookingWizard 
-              tutor={tutor}
-              onClose={() => setShowBookingModal(false)}
-            />
-          </SchedulingProvider>
-        </DialogContent>
-      </Dialog>
+      {selectedDate && selectedTime && (
+        <div className="bg-usc-gold/20 p-4 rounded-md mt-4">
+          <h3 className="font-medium mb-2">Selected Time Slot</h3>
+          <p>
+            {format(selectedDate, 'EEEE, MMMM d, yyyy')} from {selectedTime.start} to {selectedTime.end}
+          </p>
+          <Button 
+            className="mt-3 bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
+            onClick={() => setShowBookingModal(true)}
+          >
+            Book This Time
+          </Button>
+        </div>
+      )}
+
+      <SchedulerModal 
+        isOpen={showBookingModal} 
+        onClose={() => setShowBookingModal(false)}
+        tutor={tutor}
+        initialDate={selectedDate || undefined}
+        initialTime={selectedTime?.start}
+      />
     </div>
   );
 };

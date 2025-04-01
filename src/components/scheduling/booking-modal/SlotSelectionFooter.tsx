@@ -9,21 +9,26 @@ interface SlotSelectionFooterProps {
   isDisabled: boolean;
 }
 
-export const SlotSelectionFooter = ({ 
-  onProceed, 
-  onCancel, 
-  isLoading, 
-  isDisabled 
+export const SlotSelectionFooter = ({
+  onProceed,
+  onCancel,
+  isLoading,
+  isDisabled
 }: SlotSelectionFooterProps) => {
   return (
-    <div className="flex justify-between gap-2 mt-6 pt-2 border-t">
-      <Button variant="outline" onClick={onCancel}>
+    <div className="flex justify-between pt-4 border-t">
+      <Button
+        variant="outline"
+        onClick={onCancel}
+        disabled={isLoading}
+      >
         Cancel
       </Button>
-      <Button 
-        onClick={onProceed} 
-        disabled={isDisabled || isLoading} 
-        className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white min-w-[140px]"
+      
+      <Button
+        onClick={onProceed}
+        disabled={isDisabled || isLoading}
+        className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
       >
         {isLoading ? (
           <>
@@ -31,7 +36,7 @@ export const SlotSelectionFooter = ({
             Processing...
           </>
         ) : (
-          'Confirm Booking'
+          "Book Session"
         )}
       </Button>
     </div>

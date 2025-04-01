@@ -1,155 +1,153 @@
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { BookingSlot } from "@/lib/scheduling";
-import { convertTimeToMinutes, convertMinutesToTime } from "../calendar/hooks/useTimeFormatting";
+import { 
+  formatTimeDisplay, 
+  convertTimeToMinutes, 
+  convertMinutesToTime 
+} from "@/lib/scheduling/time-utils";
+import { addMinutes, differenceInMinutes } from "date-fns";
 
-export function useBookingState() {
-  const [date, setDate] = useState<Date | undefined>(new Date());
+export function useBookingState(initialDate?: Date, initialTime?: string) {
+  // Date selection
+  const [date, setDate] = useState<Date | undefined>(initialDate || undefined);
+  
+  // Time slot selection
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<BookingSlot | null>(null);
-  const [email, setEmail] = useState<string>("");
-  const [sessionDuration, setSessionDuration] = useState<number>(60); // Default 60 minutes
-  const [sessionStart, setSessionStart] = useState<string | null>(null);
-  const [selectedStartTime, setSelectedStartTime] = useState<string>("");
-  const [calculatedCost, setCalculatedCost] = useState<number | null>(null);
-  const [availableStartTimes, setAvailableStartTimes] = useState<string[]>([]);
-
+  
+  // Session details
+  const [sessionDuration, setSessionDuration] = useState(60); // Default to 1 hour
+  const [selectedStartTime, setSelectedStartTime] = useState<string | null>(initialTime || null);
+  const [calculatedCost, setCalculatedCost] = useState(0);
+  
+  // Student info
+  const [email, setEmail] = useState("");
+  
+  // Calculate available start times within the selected time slot
+  const availableStartTimes = useMemo(() => {
+    if (!selectedTimeSlot) return [];
+    
+    const startMinutes = convertTimeToMinutes(selectedTimeSlot.start);
+    const endMinutes = convertTimeToMinutes(selectedTimeSlot.end);
+    const slotDuration = endMinutes - startMinutes;
+    
+    // We can only start at times that leave enough room for the session
+    const maxStartMinutes = endMinutes - sessionDuration;
+    
+    // Generate every 30-minute increment as a possible start time
+    const startTimes: string[] = [];
+    for (let m = startMinutes; m <= maxStartMinutes; m += 30) {
+      startTimes.push(convertMinutesToTime(m));
+    }
+    
+    return startTimes;
+  }, [selectedTimeSlot, sessionDuration]);
+  
+  // Set initial start time when slot is selected
+  useEffect(() => {
+    if (selectedTimeSlot && !selectedStartTime) {
+      // Initialize with the slot's start time
+      setSelectedStartTime(selectedTimeSlot.start);
+    }
+  }, [selectedTimeSlot, selectedStartTime]);
+  
+  // Update calculated cost when duration or start time changes
+  useEffect(() => {
+    if (selectedTimeSlot && selectedStartTime) {
+      // Calculate hourly rate portion based on minutes
+      const hourlyFraction = sessionDuration / 60;
+      // Assuming $25/hour default
+      const cost = hourlyFraction * 25;
+      setCalculatedCost(cost);
+    }
+  }, [sessionDuration, selectedStartTime, selectedTimeSlot]);
+  
   // Handle time slot selection
   const handleTimeSlotSelect = (slot: BookingSlot) => {
-    if (!slot) return;
-    
     setSelectedTimeSlot(slot);
+    // Reset start time to the beginning of the slot
+    setSelectedStartTime(slot.start);
     
-    // Generate available start times in 15-minute increments
-    const startTimeMinutes = convertTimeToMinutes(slot.start);
-    const endTimeMinutes = convertTimeToMinutes(slot.end);
-    const maxDuration = endTimeMinutes - startTimeMinutes;
+    // Set initial duration based on slot length
+    const slotStart = convertTimeToMinutes(slot.start);
+    const slotEnd = convertTimeToMinutes(slot.end);
+    const availableDuration = slotEnd - slotStart;
     
-    const startTimes: string[] = [];
-    // Generate start times in 15-minute increments, leaving at least 15 minutes for session
-    for (let time = startTimeMinutes; time < endTimeMinutes - 15; time += 15) {
-      startTimes.push(convertMinutesToTime(time));
-    }
-    
-    setAvailableStartTimes(startTimes);
-    
-    // Set default start time to the beginning of the slot
-    const defaultStartTime = slot.start;
-    setSelectedStartTime(defaultStartTime);
-    setSessionStart(defaultStartTime);
-    
-    // Set default duration to 60 minutes or max available time if less
-    const defaultDuration = Math.min(60, maxDuration);
+    // Default to 60 minutes unless the slot is shorter
+    const defaultDuration = Math.min(60, availableDuration);
     setSessionDuration(defaultDuration);
-    
-    // Calculate cost based on duration
-    calculateCost(defaultDuration, slot.tutorId ? 25 : 25); // Default rate
   };
   
-  // Handle start time selection
-  const handleStartTimeChange = (startTime: string, hourlyRate: number = 25) => {
-    if (!startTime || !selectedTimeSlot) return;
-    
-    setSelectedStartTime(startTime);
-    setSessionStart(startTime);
-    
-    // Adjust max duration based on new start time
-    const startTimeMinutes = convertTimeToMinutes(startTime);
-    const endTimeMinutes = convertTimeToMinutes(selectedTimeSlot.end);
-    const maxPossibleDuration = endTimeMinutes - startTimeMinutes;
-    
-    // If current duration exceeds max possible, adjust it
-    if (sessionDuration > maxPossibleDuration) {
-      setSessionDuration(maxPossibleDuration);
-      calculateCost(maxPossibleDuration, hourlyRate);
-    } else {
-      // Recalculate session time range and cost with new start time
-      calculateCost(sessionDuration, hourlyRate);
-    }
-  };
-  
-  // Calculate the cost based on duration and hourly rate
-  const calculateCost = (durationMinutes: number, hourlyRate: number) => {
-    const durationHours = durationMinutes / 60;
-    const cost = hourlyRate * durationHours;
+  // Handle start time change
+  const handleStartTimeChange = (time: string, hourlyRate: number) => {
+    setSelectedStartTime(time);
+    // Recalculate cost
+    const hourlyFraction = sessionDuration / 60;
+    const cost = hourlyFraction * hourlyRate;
     setCalculatedCost(cost);
   };
   
-  // Handle duration slider change
-  const handleDurationChange = (value: number[], hourlyRate: number = 25) => {
-    if (!selectedTimeSlot || !value || !value.length || !sessionStart) return;
-    
-    const newDuration = value[0];
-    setSessionDuration(newDuration);
-    
-    // Calculate cost based on new duration
-    calculateCost(newDuration, hourlyRate);
+  // Handle duration change
+  const handleDurationChange = (durationMinutes: number, hourlyRate: number) => {
+    setSessionDuration(durationMinutes);
+    // Recalculate cost
+    const hourlyFraction = durationMinutes / 60;
+    const cost = hourlyFraction * hourlyRate;
+    setCalculatedCost(cost);
   };
   
-  // Get the maximum possible duration for the selected time slot and start time
+  // Get max possible duration based on selected slot and start time
   const getMaxDuration = (): number => {
-    if (!selectedTimeSlot || !sessionStart) return 180; // Default max 3 hours
+    if (!selectedTimeSlot || !selectedStartTime) return 60;
     
-    const startTimeMinutes = convertTimeToMinutes(sessionStart);
-    const endTimeMinutes = convertTimeToMinutes(selectedTimeSlot.end);
+    const slotEndMinutes = convertTimeToMinutes(selectedTimeSlot.end);
+    const startTimeMinutes = convertTimeToMinutes(selectedStartTime);
     
-    // Cap at 3 hours or max available
-    return Math.min(180, endTimeMinutes - startTimeMinutes);
+    return slotEndMinutes - startTimeMinutes;
   };
   
-  // Function to get the final booking slot based on selected duration
+  // Get final booking slot object
   const getFinalBookingSlot = (): BookingSlot | null => {
-    if (!selectedTimeSlot || !sessionStart || !sessionDuration) return null;
+    if (!selectedTimeSlot || !selectedStartTime || !date) return null;
     
-    const startMinutes = convertTimeToMinutes(sessionStart);
+    const startMinutes = convertTimeToMinutes(selectedStartTime);
     const endMinutes = startMinutes + sessionDuration;
     const endTime = convertMinutesToTime(endMinutes);
     
     return {
-      tutorId: selectedTimeSlot.tutorId,
-      day: selectedTimeSlot.day,
-      start: sessionStart,
+      ...selectedTimeSlot,
+      day: date,
+      start: selectedStartTime,
       end: endTime,
-      available: true
+      tutorId: selectedTimeSlot.tutorId
     };
   };
-
-  // Format time for displaying the session start and end times
+  
+  // Get formatted time range for display
   const getSessionTimeRange = (): string => {
-    if (!sessionStart || !sessionDuration || !selectedTimeSlot) return '';
+    if (!selectedStartTime) return "";
     
-    const startMinutes = convertTimeToMinutes(sessionStart);
+    const startMinutes = convertTimeToMinutes(selectedStartTime);
     const endMinutes = startMinutes + sessionDuration;
     const endTime = convertMinutesToTime(endMinutes);
     
-    return `${formatTimeForDisplay(sessionStart)} - ${formatTimeForDisplay(endTime)}`;
+    return `${formatTimeDisplay(selectedStartTime)} - ${formatTimeDisplay(endTime)}`;
   };
-
-  // Helper function to format time for displaying
-  const formatTimeForDisplay = (time24: string): string => {
-    if (!time24) return '';
-    
-    try {
-      const [hours, minutes] = time24.split(':').map(Number);
-      const period = hours >= 12 ? 'PM' : 'AM';
-      const hours12 = hours % 12 || 12;
-      return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
-    } catch (error) {
-      console.error("Error formatting time:", error);
-      return time24;
-    }
-  };
-
+  
   return {
     date,
     setDate,
     selectedTimeSlot,
+    setSelectedTimeSlot,
     email,
     setEmail,
     sessionDuration,
-    sessionStart,
-    calculatedCost,
+    setSessionDuration,
     selectedStartTime,
+    setSelectedStartTime,
     availableStartTimes,
+    calculatedCost,
+    
     handleTimeSlotSelect,
     handleStartTimeChange,
     handleDurationChange,

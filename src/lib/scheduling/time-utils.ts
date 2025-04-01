@@ -1,5 +1,5 @@
 
-import { format, parseISO, addMinutes, isValid } from "date-fns";
+import { format, parseISO, addMinutes, isValid, parse } from "date-fns";
 
 // Format time from 24-hour format to 12-hour format
 export function formatTime(time: string): string {
@@ -23,6 +23,11 @@ export function formatTime(time: string): string {
     console.error("Error formatting time:", error);
     return time;
   }
+}
+
+// Alias for formatTime for consistent naming
+export function formatTimeDisplay(time: string): string {
+  return formatTime(time);
 }
 
 // Format date to a readable string
@@ -82,3 +87,41 @@ export function formatCurrency(amount: number): string {
     currency: 'USD',
   }).format(amount);
 }
+
+// Convert time in "HH:MM" format to minutes since midnight
+export function convertTimeToMinutes(time: string): number {
+  try {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  } catch (error) {
+    console.error("Error converting time to minutes:", error);
+    return 0;
+  }
+}
+
+// Convert minutes since midnight to "HH:MM" format
+export function convertMinutesToTime(minutes: number): string {
+  try {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+  } catch (error) {
+    console.error("Error converting minutes to time:", error);
+    return "00:00";
+  }
+}
+
+// Format time string with proper padding
+export function formatTimeString(hour: number, minute: number): string {
+  return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+}
+
+// Parse a time string to get hours and minutes
+export function parseTimeString(timeStr: string): { hour: number; minute: number } {
+  const [hourStr, minuteStr] = timeStr.split(':');
+  return {
+    hour: parseInt(hourStr, 10),
+    minute: parseInt(minuteStr, 10)
+  };
+}
+
