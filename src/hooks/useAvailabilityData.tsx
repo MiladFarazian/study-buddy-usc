@@ -19,6 +19,7 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
   const [hasAvailability, setHasAvailability] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [tutorId, setTutorId] = useState<string | null>(null);
+  const [fetchAttempted, setFetchAttempted] = useState<boolean>(false);
 
   // Store the tutor ID in state to use in dependency array
   useEffect(() => {
@@ -33,12 +34,17 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
       setLoading(false);
       setHasAvailability(false);
       setErrorMessage("No tutor information available");
+      setFetchAttempted(true);
       return;
+    }
+    
+    if (fetchAttempted) {
+      return; // Don't fetch again if we've already attempted once with the same inputs
     }
     
     setLoading(true);
     try {
-      console.log("Loading availability for tutor:", tutorId);
+      console.log(`Loading availability for tutor: ${tutorId} (starting at ${startDate.toISOString()})`);
       // Get tutor's availability settings
       const availability = await getTutorAvailability(tutorId);
       
@@ -47,6 +53,7 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
         setHasAvailability(false);
         setErrorMessage("This tutor hasn't set their availability yet.");
         setLoading(false);
+        setFetchAttempted(true);
         return;
       }
       
@@ -58,6 +65,7 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
         setHasAvailability(false);
         setErrorMessage("This tutor has no availability slots set.");
         setLoading(false);
+        setFetchAttempted(true);
         return;
       }
       
@@ -95,27 +103,30 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
       });
     } finally {
       setLoading(false);
+      setFetchAttempted(true);
     }
-  }, [tutorId, startDate, toast]);
+  }, [tutorId, startDate.toISOString(), toast, fetchAttempted]);
+
+  // Reset fetch state when key inputs change
+  useEffect(() => {
+    setFetchAttempted(false);
+  }, [tutorId, startDate.toISOString()]);
 
   useEffect(() => {
     let isMounted = true;
     
-    // Delay loading availability to prevent infinite render loops
-    const timer = setTimeout(() => {
-      if (isMounted && tutorId) {
-        loadAvailability();
-      }
-    }, 500);
+    if (isMounted && tutorId && !fetchAttempted) {
+      loadAvailability();
+    }
     
     return () => {
       isMounted = false;
-      clearTimeout(timer);
     };
-  }, [tutorId, loadAvailability]);
+  }, [tutorId, loadAvailability, fetchAttempted]);
 
   const refreshAvailability = useCallback(() => {
     if (tutorId) {
+      setFetchAttempted(false); // Reset the fetch state
       loadAvailability();
     }
   }, [tutorId, loadAvailability]);

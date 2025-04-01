@@ -1,6 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { memo } from "react";
 
 interface SlotSelectionFooterProps {
   onProceed: () => void;
@@ -9,7 +10,7 @@ interface SlotSelectionFooterProps {
   isDisabled: boolean;
 }
 
-export const SlotSelectionFooter = ({
+export const SlotSelectionFooter = memo(({
   onProceed,
   onCancel,
   isLoading,
@@ -41,4 +42,7 @@ export const SlotSelectionFooter = ({
       </Button>
     </div>
   );
-};
+});
+
+// Add display name for debugging
+SlotSelectionFooter.displayName = "SlotSelectionFooter";

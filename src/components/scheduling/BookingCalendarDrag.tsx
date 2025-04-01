@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { format, addDays, startOfWeek, eachDayOfInterval } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Tutor } from "@/types/tutor";
@@ -30,10 +30,22 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot, onClose }: BookingCal
   const navigate = useNavigate();
   // Initialize state
   const [startDate, setStartDate] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
-  const [weekDays, setWeekDays] = useState<Date[]>([]);
-
-  // Hours to display in the calendar (24-hour format)
-  const hours = Array.from({ length: 14 }, (_, i) => i + 8); // 8 AM to 9 PM
+  
+  // Memoize the weekDays to prevent unnecessary recalculations
+  const weekDays = useMemo(() => {
+    // Generate array of dates for the week
+    const days = eachDayOfInterval({
+      start: startDate,
+      end: addDays(startDate, 6)
+    });
+    
+    // Debug log which days we're showing
+    days.forEach(day => {
+      console.log(`Calendar showing ${format(day, 'yyyy-MM-dd')} (${mapDateToDayOfWeek(day)})`);
+    });
+    
+    return days;
+  }, [startDate]);
   
   // Custom hooks
   const { loading, availableSlots, hasAvailability, errorMessage, refreshAvailability } = useAvailabilityData(tutor, startDate);
@@ -47,20 +59,6 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot, onClose }: BookingCal
     isInDragRange,
     getSlotAt
   } = useDragSelection(availableSlots, onSelectSlot);
-  
-  useEffect(() => {
-    // Generate array of dates for the week
-    const days = eachDayOfInterval({
-      start: startDate,
-      end: addDays(startDate, 6)
-    });
-    setWeekDays(days);
-    
-    // Debug log which days we're showing
-    days.forEach(day => {
-      console.log(`Calendar showing ${format(day, 'yyyy-MM-dd')} (${mapDateToDayOfWeek(day)})`);
-    });
-  }, [startDate]);
   
   const handlePrevWeek = () => {
     setStartDate(prev => addDays(prev, -7));
@@ -164,7 +162,7 @@ export const BookingCalendarDrag = ({ tutor, onSelectSlot, onClose }: BookingCal
           <CalendarDaysHeader weekDays={weekDays} />
           
           <TimeGrid 
-            hours={hours}
+            hours={Array.from({ length: 14 }, (_, i) => i + 8)} // 8 AM to 9 PM
             weekDays={weekDays}
             getSlotAt={getSlotAt}
             handleMouseDown={handleMouseDown}

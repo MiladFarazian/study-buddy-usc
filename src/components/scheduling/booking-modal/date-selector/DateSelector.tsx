@@ -71,7 +71,7 @@ export const DateSelector = ({
           available: (day) => hasAvailableSlots(day)
         }}
         components={{
-          Day: (props) => {
+          Day: (props: DayContentProps) => {
             // Get the date from props
             const dayDate = props.date;
             // Check if this date has available slots
