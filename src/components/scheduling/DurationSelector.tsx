@@ -40,6 +40,7 @@ export function DurationSelector({
           return (
             <Button
               key={option.minutes}
+              type="button"
               variant="outline"
               className={cn(
                 "h-32 flex flex-col items-center justify-center p-6 border rounded-md relative",

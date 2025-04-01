@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { startOfDay } from "date-fns";
 import { useAvailabilityData } from "@/hooks/useAvailabilityData";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SimpleBookingWizardProps {
   tutor: any;
@@ -19,15 +20,22 @@ export function SimpleBookingWizard({ tutor, onClose }: SimpleBookingWizardProps
   const { state, dispatch, setTutor } = useScheduling();
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [initializing, setInitializing] = useState(true);
+  const { session, user } = useAuth();
   
   // Get availability data for the tutor
   const today = startOfDay(new Date());
-  const { loading: isLoading, availableSlots, hasAvailability, errorMessage } = 
-    tutor ? useAvailabilityData(tutor, today) : { loading: false, availableSlots: [], hasAvailability: false, errorMessage: null };
+  const { 
+    loading: isLoading, 
+    availableSlots, 
+    hasAvailability, 
+    errorMessage, 
+    refreshAvailability 
+  } = useAvailabilityData(tutor, today);
   
   // Set the tutor in the scheduling context
   useEffect(() => {
-    if (tutor) {
+    // Only set tutor if it's not already set or if it's changed
+    if (tutor && tutor.id) {
       setTutor(tutor);
     }
     
@@ -36,19 +44,24 @@ export function SimpleBookingWizard({ tutor, onClose }: SimpleBookingWizardProps
       setInitializing(false);
     }, 800);
     
-    // Reset the scheduling state when the component unmounts
     return () => {
       clearTimeout(timer);
+    };
+  }, [tutor, setTutor]);
+  
+  // Reset the scheduling state when the component unmounts
+  useEffect(() => {
+    return () => {
       dispatch({ type: "RESET" });
     };
-  }, [tutor, setTutor, dispatch]);
+  }, [dispatch]);
   
   const renderStep = () => {
-    if (initializing) {
+    if (initializing || (isLoading && !availableSlots.length)) {
       return (
         <div className="flex flex-col justify-center items-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal mb-4" />
-          <p className="text-center text-gray-600">Initializing booking wizard...</p>
+          <p className="text-center text-gray-600">Loading booking wizard...</p>
         </div>
       );
     }

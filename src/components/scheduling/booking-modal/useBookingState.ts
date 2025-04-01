@@ -15,6 +15,8 @@ export function useBookingState() {
 
   // Handle time slot selection
   const handleTimeSlotSelect = (slot: BookingSlot) => {
+    if (!slot) return;
+    
     setSelectedTimeSlot(slot);
     
     // Generate available start times in 15-minute increments
@@ -45,23 +47,23 @@ export function useBookingState() {
   
   // Handle start time selection
   const handleStartTimeChange = (startTime: string, hourlyRate: number = 25) => {
+    if (!startTime || !selectedTimeSlot) return;
+    
     setSelectedStartTime(startTime);
     setSessionStart(startTime);
     
     // Adjust max duration based on new start time
-    if (selectedTimeSlot) {
-      const startTimeMinutes = convertTimeToMinutes(startTime);
-      const endTimeMinutes = convertTimeToMinutes(selectedTimeSlot.end);
-      const maxPossibleDuration = endTimeMinutes - startTimeMinutes;
-      
-      // If current duration exceeds max possible, adjust it
-      if (sessionDuration > maxPossibleDuration) {
-        setSessionDuration(maxPossibleDuration);
-        calculateCost(maxPossibleDuration, hourlyRate);
-      } else {
-        // Recalculate session time range and cost with new start time
-        calculateCost(sessionDuration, hourlyRate);
-      }
+    const startTimeMinutes = convertTimeToMinutes(startTime);
+    const endTimeMinutes = convertTimeToMinutes(selectedTimeSlot.end);
+    const maxPossibleDuration = endTimeMinutes - startTimeMinutes;
+    
+    // If current duration exceeds max possible, adjust it
+    if (sessionDuration > maxPossibleDuration) {
+      setSessionDuration(maxPossibleDuration);
+      calculateCost(maxPossibleDuration, hourlyRate);
+    } else {
+      // Recalculate session time range and cost with new start time
+      calculateCost(sessionDuration, hourlyRate);
     }
   };
   
@@ -74,7 +76,7 @@ export function useBookingState() {
   
   // Handle duration slider change
   const handleDurationChange = (value: number[], hourlyRate: number = 25) => {
-    if (!selectedTimeSlot || !value.length || !sessionStart) return;
+    if (!selectedTimeSlot || !value || !value.length || !sessionStart) return;
     
     const newDuration = value[0];
     setSessionDuration(newDuration);
@@ -124,10 +126,17 @@ export function useBookingState() {
 
   // Helper function to format time for displaying
   const formatTimeForDisplay = (time24: string): string => {
-    const [hours, minutes] = time24.split(':').map(Number);
-    const period = hours >= 12 ? 'PM' : 'AM';
-    const hours12 = hours % 12 || 12;
-    return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+    if (!time24) return '';
+    
+    try {
+      const [hours, minutes] = time24.split(':').map(Number);
+      const period = hours >= 12 ? 'PM' : 'AM';
+      const hours12 = hours % 12 || 12;
+      return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+    } catch (error) {
+      console.error("Error formatting time:", error);
+      return time24;
+    }
   };
 
   return {

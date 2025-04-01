@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useScheduling, BookingStep } from "@/contexts/SchedulingContext";
 import { DateSelectionStep } from "./DateSelectionStep";
 import { SessionDurationSelector } from "./SessionDurationSelector";
@@ -22,29 +22,53 @@ export function CalendlyBookingWizard({ tutor, onClose }: CalendlyBookingWizardP
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [initializing, setInitializing] = useState(true);
   const { session, user } = useAuth();
+  const tutorIdRef = useRef<string | null>(null);
+  
+  if (tutor && tutor.id && tutorIdRef.current !== tutor.id) {
+    tutorIdRef.current = tutor.id;
+  }
   
   // Get availability data for the tutor
   const today = startOfDay(new Date());
-  const { loading: isLoading, availableSlots, hasAvailability, errorMessage, refreshAvailability } = 
-    useAvailabilityData(tutor, today);
+  const { 
+    loading: isLoading, 
+    availableSlots, 
+    hasAvailability, 
+    errorMessage, 
+    refreshAvailability 
+  } = useAvailabilityData(tutor, today);
   
   // Set the tutor in the scheduling context
   useEffect(() => {
-    if (tutor) {
-      setTutor(tutor);
-    }
+    let isMounted = true;
+    
+    const initializeWizard = () => {
+      if (tutor && tutor.id && isMounted) {
+        setTutor(tutor);
+      }
+    };
+    
+    initializeWizard();
     
     // Short delay to ensure auth state is processed
     const timer = setTimeout(() => {
-      setInitializing(false);
+      if (isMounted) {
+        setInitializing(false);
+      }
     }, 800);
     
-    // Reset the scheduling state when the component unmounts
     return () => {
+      isMounted = false;
       clearTimeout(timer);
+    };
+  }, [tutor, setTutor]);
+  
+  // Reset the scheduling state when the component unmounts
+  useEffect(() => {
+    return () => {
       dispatch({ type: "RESET" });
     };
-  }, [tutor, setTutor, dispatch]);
+  }, [dispatch]);
   
   // Refresh availability when booking is completed
   useEffect(() => {
@@ -89,7 +113,7 @@ export function CalendlyBookingWizard({ tutor, onClose }: CalendlyBookingWizardP
   };
   
   // Show loading state if the initialization is not complete
-  if (initializing || (isLoading && !availableSlots.length)) {
+  if (initializing || (isLoading && availableSlots.length === 0)) {
     return (
       <div className="w-full max-w-4xl mx-auto p-4">
         <div className="flex flex-col justify-center items-center py-12">

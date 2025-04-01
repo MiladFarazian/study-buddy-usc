@@ -14,17 +14,28 @@ interface TimeSelectorProps {
   availableTimeSlots: TimeSlot[];
   selectedTime: string | null;
   onSelectTime: (time: string) => void;
+  className?: string;
 }
 
-export function TimeSelector({ availableTimeSlots, selectedTime, onSelectTime }: TimeSelectorProps) {
+export function TimeSelector({ 
+  availableTimeSlots, 
+  selectedTime, 
+  onSelectTime,
+  className 
+}: TimeSelectorProps) {
   // Function to format time from 24-hour to 12-hour format
   const formatTimeDisplay = (time24: string): string => {
-    const timeObj = parse(time24, 'HH:mm', new Date());
-    return format(timeObj, 'h:mm a');
+    try {
+      const timeObj = parse(time24, 'HH:mm', new Date());
+      return format(timeObj, 'h:mm a');
+    } catch (error) {
+      console.error("Error formatting time:", error);
+      return time24; // Return original format if parsing fails
+    }
   };
 
   return (
-    <div className="space-y-2">
+    <div className={cn("space-y-2", className)}>
       {availableTimeSlots.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-8 border rounded-md bg-gray-50">
           <Clock className="h-6 w-6 text-muted-foreground mb-2" />
