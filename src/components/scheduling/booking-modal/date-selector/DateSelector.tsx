@@ -38,7 +38,7 @@ export const DateSelector = ({
   };
   
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full max-w-full overflow-hidden">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Select a Date</h3>
         <div className="flex gap-2">
@@ -57,11 +57,13 @@ export const DateSelector = ({
         onSelect={onDateChange}
         month={month}
         onMonthChange={setMonth}
-        className="rounded-md border"
+        className="rounded-md border max-w-full"
         classNames={{
           day_today: "bg-muted",
           day_selected: "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark focus:bg-usc-cardinal-dark",
-          day_disabled: "text-muted-foreground opacity-50"
+          day_disabled: "text-muted-foreground opacity-50",
+          months: "max-w-full overflow-x-auto",
+          month: "max-w-full"
         }}
         modifiersClassNames={{
           today: "text-usc-gold font-bold",
@@ -111,7 +113,7 @@ export const DateSelector = ({
       
       {date && (
         <div className="text-center mt-4">
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             {isToday(date) 
               ? "Selected date: Today" 
               : `Selected date: ${format(date, 'EEEE, MMMM d, yyyy')}`}

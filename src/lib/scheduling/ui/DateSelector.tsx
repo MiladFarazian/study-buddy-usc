@@ -33,34 +33,34 @@ export function DateSelector({ selectedDate, onSelectDate, availableDates }: Dat
   };
   
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Select a Date</h2>
+    <div className="space-y-6 w-full overflow-hidden">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h2 className="text-xl sm:text-2xl font-bold">Select a Date</h2>
         <Tabs defaultValue="week" value={viewMode} onValueChange={(value) => setViewMode(value as "week" | "month")}>
           <TabsList>
-            <TabsTrigger value="week" className="px-4">
+            <TabsTrigger value="week" className="px-3 sm:px-4">
               <CalendarIcon className="h-4 w-4 mr-2" />
-              Week
+              <span className="hidden sm:inline">Week</span>
             </TabsTrigger>
-            <TabsTrigger value="month" className="px-4">
+            <TabsTrigger value="month" className="px-3 sm:px-4">
               <CalendarIcon className="h-4 w-4 mr-2" /> 
-              Month
+              <span className="hidden sm:inline">Month</span>
             </TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
 
-      <div className="border rounded-md overflow-hidden">
-        <div className="grid grid-cols-8 text-center border-b">
+      <div className="border rounded-md overflow-x-auto">
+        <div className="grid grid-cols-8 text-center border-b min-w-[640px]">
           {weekDays.map((date, i) => (
-            <div key={i} className="p-4 border-r last:border-r-0">
-              <div className="text-sm text-gray-500 mb-1">
+            <div key={i} className="p-2 sm:p-4 border-r last:border-r-0">
+              <div className="text-xs sm:text-sm text-gray-500 mb-1">
                 {format(date, 'EEE')}
               </div>
               <Button
                 variant="ghost"
                 className={cn(
-                  "h-12 w-12 rounded-full p-0 font-normal text-lg",
+                  "h-10 w-10 sm:h-12 sm:w-12 rounded-full p-0 font-normal text-sm sm:text-lg",
                   isToday(date) && !selectedDate && "bg-gray-100 font-medium",
                   selectedDate && isSameDay(date, selectedDate) && "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark",
                   !isDateAvailable(date) && "opacity-50 cursor-not-allowed"

@@ -17,11 +17,12 @@ export const SlotSelectionFooter = memo(({
   isDisabled
 }: SlotSelectionFooterProps) => {
   return (
-    <div className="flex justify-between items-center pt-4 mt-4 border-t">
+    <div className="flex justify-between items-center pt-4 mt-4 border-t w-full">
       <Button
         variant="outline"
         onClick={onCancel}
         disabled={isLoading}
+        className="min-w-20"
       >
         Cancel
       </Button>
@@ -29,7 +30,7 @@ export const SlotSelectionFooter = memo(({
       <Button
         onClick={onProceed}
         disabled={isDisabled || isLoading}
-        className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
+        className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white min-w-28"
       >
         {isLoading ? (
           <>

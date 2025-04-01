@@ -35,7 +35,7 @@ export function TimeSelector({
   };
 
   return (
-    <div className={cn("space-y-2", className)}>
+    <div className={cn("space-y-2 w-full", className)}>
       {availableTimeSlots.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-8 border rounded-md bg-gray-50">
           <Clock className="h-6 w-6 text-muted-foreground mb-2" />
@@ -44,13 +44,13 @@ export function TimeSelector({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-w-full">
           {availableTimeSlots.map((slot) => (
             <Button
               key={slot.time}
               variant="outline"
               className={cn(
-                "h-14 w-full justify-center text-base",
+                "h-14 w-full justify-center text-base overflow-hidden",
                 selectedTime === slot.time 
                   ? "bg-usc-cardinal text-white border-usc-cardinal" 
                   : "bg-white",
@@ -59,7 +59,9 @@ export function TimeSelector({
               disabled={!slot.available}
               onClick={() => onSelectTime(slot.time)}
             >
-              {formatTimeDisplay(slot.time)}
+              <span className="truncate">
+                {formatTimeDisplay(slot.time)}
+              </span>
             </Button>
           ))}
         </div>
