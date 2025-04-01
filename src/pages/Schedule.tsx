@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Session } from "@/types/session";
 import { SessionList } from "@/components/scheduling/SessionList";
-import { ScheduleCalendar } from "@/lib/scheduling";
+import { ScheduleCalendar } from "@/components/scheduling/ScheduleCalendar"; // Changed from @/lib/scheduling
 import { TutorAvailabilityCard } from "@/components/scheduling/TutorAvailabilityCard";
 
 const Schedule = () => {

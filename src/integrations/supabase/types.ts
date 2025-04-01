@@ -460,6 +460,30 @@ export type Database = {
         }
         Relationships: []
       }
+      tutor_availability: {
+        Row: {
+          availability: Json | null
+          created_at: string
+          id: string
+          tutor_id: string
+          updated_at: string
+        }
+        Insert: {
+          availability?: Json | null
+          created_at?: string
+          id?: string
+          tutor_id: string
+          updated_at?: string
+        }
+        Update: {
+          availability?: Json | null
+          created_at?: string
+          id?: string
+          tutor_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tutor_courses: {
         Row: {
           course_number: string
