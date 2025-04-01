@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { WeeklyAvailabilityCalendar } from './calendar/WeeklyAvailabilityCalendar';
+import { WeeklyAvailabilityCalendar } from './calendar';
 import { AvailabilityCalendar } from './AvailabilityCalendar';
 import { WeeklyAvailability } from '@/lib/scheduling/types';
 import { useToast } from '@/hooks/use-toast';
