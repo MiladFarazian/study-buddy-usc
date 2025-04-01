@@ -1,8 +1,14 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { Resend } from "npm:resend@2.0.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+
+// Initialize Supabase client with service role for admin privileges
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,9 +18,9 @@ const corsHeaders = {
 
 interface EmailRequest {
   sessionId: string;
-  tutorEmail: string;
+  tutorId: string;
   tutorName: string;
-  studentEmail: string;
+  studentId: string;
   studentName: string;
   startTime: string;
   endTime: string;
@@ -35,9 +41,9 @@ serve(async (req) => {
     // Parse the request body
     const {
       sessionId,
-      tutorEmail,
+      tutorId,
       tutorName,
-      studentEmail,
+      studentId,
       studentName,
       startTime,
       endTime,
@@ -47,6 +53,20 @@ serve(async (req) => {
       price,
       emailType
     }: EmailRequest = await req.json();
+
+    // Fetch user emails from auth.users using service role
+    const { data: tutorData, error: tutorError } = await supabase.auth.admin.getUserById(tutorId);
+    if (tutorError) throw new Error(`Error fetching tutor data: ${tutorError.message}`);
+
+    const { data: studentData, error: studentError } = await supabase.auth.admin.getUserById(studentId);
+    if (studentError) throw new Error(`Error fetching student data: ${studentError.message}`);
+
+    const tutorEmail = tutorData.user.email;
+    const studentEmail = studentData.user.email;
+
+    if (!tutorEmail || !studentEmail) {
+      throw new Error('Missing email for tutor or student');
+    }
 
     // Format dates for display
     const startDate = new Date(startTime);
@@ -251,6 +271,8 @@ serve(async (req) => {
     } else {
       throw new Error(`Invalid email type: ${emailType}`);
     }
+
+    console.log(`Sending ${emailType} emails to tutor (${tutorEmail}) and student (${studentEmail})`);
 
     // Send email to tutor
     const tutorEmailResponse = await resend.emails.send({

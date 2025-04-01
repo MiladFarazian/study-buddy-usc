@@ -35,41 +35,20 @@ export async function sendSessionConfirmationEmails(sessionId: string): Promise<
     const tutorName = `${session.tutor.first_name || ''} ${session.tutor.last_name || ''}`.trim();
     const studentName = `${session.student.first_name || ''} ${session.student.last_name || ''}`.trim();
     
-    // Fetch emails from auth.users table since they aren't in the profiles table
-    const { data: tutorAuth, error: tutorAuthError } = await supabase
-      .auth.admin.getUserById(session.tutor.id);
-    
-    if (tutorAuthError) {
-      throw new Error(`Error fetching tutor auth details: ${tutorAuthError.message}`);
-    }
-    
-    const { data: studentAuth, error: studentAuthError } = await supabase
-      .auth.admin.getUserById(session.student.id);
-    
-    if (studentAuthError) {
-      throw new Error(`Error fetching student auth details: ${studentAuthError.message}`);
-    }
-    
-    const tutorEmail = tutorAuth.user.email;
-    const studentEmail = studentAuth.user.email;
-    
-    if (!tutorEmail || !studentEmail) {
-      throw new Error('Missing email for tutor or student');
-    }
-    
     // Calculate session duration in hours for price
     const startTime = new Date(session.start_time);
     const endTime = new Date(session.end_time);
     const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
     const price = session.tutor.hourly_rate ? session.tutor.hourly_rate * durationHours : 0;
     
-    // Call the edge function to send emails
+    // Call the edge function directly to send emails
+    // This edge function will handle fetching the emails on the server side with admin privileges
     const { data, error } = await supabase.functions.invoke('send-session-emails', {
       body: {
         sessionId: session.id,
-        tutorEmail,
+        tutorId: session.tutor.id,
         tutorName,
-        studentEmail,
+        studentId: session.student.id,
         studentName,
         startTime: session.start_time,
         endTime: session.end_time,
@@ -127,41 +106,20 @@ export async function sendSessionCancellationEmails(sessionId: string): Promise<
     const tutorName = `${session.tutor.first_name || ''} ${session.tutor.last_name || ''}`.trim();
     const studentName = `${session.student.first_name || ''} ${session.student.last_name || ''}`.trim();
     
-    // Fetch emails from auth.users table since they aren't in the profiles table
-    const { data: tutorAuth, error: tutorAuthError } = await supabase
-      .auth.admin.getUserById(session.tutor.id);
-    
-    if (tutorAuthError) {
-      throw new Error(`Error fetching tutor auth details: ${tutorAuthError.message}`);
-    }
-    
-    const { data: studentAuth, error: studentAuthError } = await supabase
-      .auth.admin.getUserById(session.student.id);
-    
-    if (studentAuthError) {
-      throw new Error(`Error fetching student auth details: ${studentAuthError.message}`);
-    }
-    
-    const tutorEmail = tutorAuth.user.email;
-    const studentEmail = studentAuth.user.email;
-    
-    if (!tutorEmail || !studentEmail) {
-      throw new Error('Missing email for tutor or student');
-    }
-    
     // Calculate session duration in hours for price
     const startTime = new Date(session.start_time);
     const endTime = new Date(session.end_time);
     const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
     const price = session.tutor.hourly_rate ? session.tutor.hourly_rate * durationHours : 0;
     
-    // Call the edge function to send emails
+    // Call the edge function directly to send emails
+    // This edge function will handle fetching the emails on the server side with admin privileges
     const { data, error } = await supabase.functions.invoke('send-session-emails', {
       body: {
         sessionId: session.id,
-        tutorEmail,
+        tutorId: session.tutor.id,
         tutorName,
-        studentEmail,
+        studentId: session.student.id,
         studentName,
         startTime: session.start_time,
         endTime: session.end_time,
