@@ -16,6 +16,8 @@ import PrivateRoute from "@/components/auth/PrivateRoute";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Schedule from "@/pages/Schedule";
 import { Outlet } from "react-router-dom";
+import NotFound from "@/pages/NotFound";
+import Students from "@/pages/Students";
 
 // Create a wrapper component that provides children to Layout
 const LayoutWrapper = () => {
@@ -30,6 +32,7 @@ const router = createBrowserRouter([
   {
     path: "/",
     element: <LayoutWrapper />,
+    errorElement: <NotFound />,
     children: [
       {
         index: true,
@@ -80,6 +83,14 @@ const router = createBrowserRouter([
         element: (
           <PrivateRoute>
             <Messages />
+          </PrivateRoute>
+        ),
+      },
+      {
+        path: "students",
+        element: (
+          <PrivateRoute>
+            <Students />
           </PrivateRoute>
         ),
       },
