@@ -1,16 +1,24 @@
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tutor } from "@/types/tutor";
+import { Link } from "react-router-dom";
 
 interface TutorAvailabilitySectionProps {
   tutor: Tutor;
 }
 
 export const TutorAvailabilitySection = ({ tutor }: TutorAvailabilitySectionProps) => {
-  const [showBookingModal, setShowBookingModal] = useState(false);
+  // Mock availability data - in a real app, this would come from the database
+  const availabilityByDay = {
+    monday: "9:00 AM - 5:00 PM",
+    tuesday: "9:00 AM - 5:00 PM",
+    wednesday: "9:00 AM - 5:00 PM",
+    thursday: "9:00 AM - 5:00 PM",
+    friday: "9:00 AM - 5:00 PM",
+    saturday: "Unavailable",
+    sunday: "Unavailable"
+  };
 
   return (
     <div className="space-y-6">
@@ -22,30 +30,28 @@ export const TutorAvailabilitySection = ({ tutor }: TutorAvailabilitySectionProp
           </p>
         </div>
         <Button 
-          onClick={() => setShowBookingModal(true)}
           className="mt-3 sm:mt-0 bg-usc-cardinal hover:bg-usc-cardinal-dark"
+          asChild
         >
-          <Calendar className="mr-2 h-4 w-4" />
-          Book a Session
+          <Link to={`/tutors/${tutor.id}/schedule`}>
+            <Calendar className="mr-2 h-4 w-4" />
+            Book a Session
+          </Link>
         </Button>
       </div>
 
       <div className="p-6 bg-gray-50 rounded-lg border border-gray-200">
-        <p className="text-center text-gray-500">
-          Availability information will be shown here in the future.
-        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {Object.entries(availabilityByDay).map(([day, hours]) => (
+            <div key={day} className="flex justify-between border-b pb-2 last:border-b-0 last:pb-0">
+              <div className="font-medium capitalize">{day}</div>
+              <div className={hours === "Unavailable" ? "text-gray-400" : ""}>
+                {hours}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
-
-      <Dialog open={showBookingModal} onOpenChange={setShowBookingModal}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Book a Session with {tutor.name}</DialogTitle>
-          </DialogHeader>
-          <div className="p-6 text-center">
-            <p>Booking functionality will be available soon.</p>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
