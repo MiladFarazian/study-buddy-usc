@@ -41,17 +41,15 @@ export function SchedulerModal({
           <DialogTitle>Book a Session with {tutor.name}</DialogTitle>
         </DialogHeader>
         
-        <ScrollArea className="flex-1 max-h-[calc(90vh-80px)]">
-          <div className="p-6 pt-2">
-            <BookingStepSelector 
-              tutor={tutor} 
-              onSelectSlot={handleSlotSelect} 
-              onClose={onClose}
-              initialDate={initialDate}
-              initialTime={initialTime}
-            />
-          </div>
-        </ScrollArea>
+        <div className="overflow-y-auto flex-1 px-6 pb-6">
+          <BookingStepSelector 
+            tutor={tutor} 
+            onSelectSlot={handleSlotSelect} 
+            onClose={onClose}
+            initialDate={initialDate}
+            initialTime={initialTime}
+          />
+        </div>
       </DialogContent>
     </Dialog>
   );
