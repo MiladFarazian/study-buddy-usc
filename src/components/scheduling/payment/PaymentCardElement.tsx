@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Loader2, CreditCard, Check } from "lucide-react";
+import { Loader2, CreditCard, Check, AlertTriangle } from "lucide-react";
 import { initializeStripe } from "@/lib/stripe-utils";
 
 export interface PaymentCardElementProps {
@@ -32,6 +32,7 @@ export const PaymentCardElement = ({
   const [elements, setElements] = useState<any>(null);
   const [cardComplete, setCardComplete] = useState(false);
   const [cardElementMounted, setCardElementMounted] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Load Stripe.js and create Elements instance
   useEffect(() => {
@@ -60,6 +61,7 @@ export const PaymentCardElement = ({
         }
       } catch (error) {
         console.error('Error setting up Stripe:', error);
+        setLoadError('Could not initialize payment system. Please refresh and try again.');
       }
     };
     
@@ -71,44 +73,49 @@ export const PaymentCardElement = ({
   // Create and mount the Card Element
   useEffect(() => {
     if (elements && !cardElementMounted) {
-      const cardElement = elements.create('card', {
-        style: {
-          base: {
-            fontSize: '16px',
-            fontFamily: 'system-ui, sans-serif',
-            color: '#32325d',
-            '::placeholder': {
-              color: '#aab7c4',
+      try {
+        const cardElement = elements.create('card', {
+          style: {
+            base: {
+              fontSize: '16px',
+              fontFamily: 'system-ui, sans-serif',
+              color: '#32325d',
+              '::placeholder': {
+                color: '#aab7c4',
+              },
+            },
+            invalid: {
+              color: '#fa755a',
+              iconColor: '#fa755a',
             },
           },
-          invalid: {
-            color: '#fa755a',
-            iconColor: '#fa755a',
-          },
-        },
-      });
-      
-      const cardContainer = document.getElementById('card-element');
-      if (cardContainer) {
-        cardElement.mount('#card-element');
-        setCardElementMounted(true);
-        
-        cardElement.on('change', (event: any) => {
-          setCardComplete(event.complete);
-          if (event.error) {
-            console.error('Card element error:', event.error.message);
-          }
         });
         
-        onCardElementReady(cardElement);
-      }
-      
-      // Cleanup function
-      return () => {
-        if (cardElementMounted) {
-          cardElement.unmount();
+        const cardContainer = document.getElementById('card-element');
+        if (cardContainer) {
+          cardElement.mount('#card-element');
+          setCardElementMounted(true);
+          
+          cardElement.on('change', (event: any) => {
+            setCardComplete(event.complete);
+            if (event.error) {
+              console.error('Card element error:', event.error.message);
+            }
+          });
+          
+          onCardElementReady(cardElement);
         }
-      };
+        
+        // Cleanup function
+        return () => {
+          if (cardElementMounted) {
+            cardElement.unmount();
+          }
+        };
+      } catch (error) {
+        console.error('Error creating card element:', error);
+        setLoadError('Could not create payment form. Please refresh and try again.');
+      }
     }
   }, [elements, cardElementMounted, onCardElementReady]);
 
@@ -120,6 +127,11 @@ export const PaymentCardElement = ({
           {loading || !stripeLoaded ? (
             <div className="h-10 flex items-center justify-center">
               <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+            </div>
+          ) : loadError ? (
+            <div className="h-10 flex items-center justify-center text-red-500">
+              <AlertTriangle className="h-5 w-5 mr-2" />
+              <span className="text-sm">{loadError}</span>
             </div>
           ) : (
             <div id="card-element" className="h-10"></div>
@@ -139,7 +151,7 @@ export const PaymentCardElement = ({
         <Button
           type="submit"
           className="w-full bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
-          disabled={loading || processing || !stripeLoaded || !clientSecret || !cardComplete}
+          disabled={loading || processing || !stripeLoaded || !clientSecret || !cardComplete || !!loadError}
         >
           {processing ? (
             <>
@@ -164,6 +176,15 @@ export const PaymentCardElement = ({
           Cancel
         </Button>
       </div>
+      
+      {!clientSecret && !loading && (
+        <div className="p-3 bg-amber-50 border border-amber-200 rounded-md mt-4">
+          <p className="text-sm text-amber-800 flex items-center">
+            <AlertTriangle className="h-4 w-4 mr-2 text-amber-600" />
+            Payment system not fully connected. Please ensure Stripe is properly configured.
+          </p>
+        </div>
+      )}
     </form>
   );
 };

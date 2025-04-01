@@ -35,11 +35,13 @@ export function usePaymentForm({
   const [cardError, setCardError] = useState<string | null>(null);
   const [transactionId, setTransactionId] = useState<string | null>(null);
   const [stripe, setStripe] = useState<any>(null);
+  const [retryCount, setRetryCount] = useState(0);
   
   // Calculate session duration and cost
-  const startTime = new Date(`2000-01-01T${selectedSlot.start}`);
-  const endTime = new Date(`2000-01-01T${selectedSlot.end}`);
-  const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+  const startTime = new Date(`2000-01-01T${selectedSlot.start || '00:00'}`);
+  const endTime = new Date(`2000-01-01T${selectedSlot.end || '00:00'}`);
+  const durationHours = selectedSlot.start && selectedSlot.end ? 
+    (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60) : 0;
   const sessionCost = tutor.hourlyRate ? tutor.hourlyRate * durationHours : 25 * durationHours;
   
   // Load Stripe.js
@@ -68,9 +70,18 @@ export function usePaymentForm({
       try {
         setLoading(true);
         
+        // Skip if not all data is available
+        if (!selectedSlot.day || !selectedSlot.start) {
+          return;
+        }
+        
         // Create a payment intent with Stripe
         const formattedDate = format(new Date(selectedSlot.day), 'MMM dd, yyyy');
         const description = `Tutoring session with ${tutor.name} on ${formattedDate} at ${selectedSlot.start}`;
+        
+        console.log("Creating payment intent:", {
+          sessionId, sessionCost, tutorId: tutor.id, studentId, description
+        });
         
         const paymentIntent = await createPaymentIntent(
           sessionId,
@@ -80,24 +91,37 @@ export function usePaymentForm({
           description
         );
         
+        if (!paymentIntent || !paymentIntent.client_secret) {
+          throw new Error("Failed to create payment intent. Please check the Stripe configuration.");
+        }
+        
         console.log("Received payment intent:", paymentIntent);
         setClientSecret(paymentIntent.client_secret);
       } catch (error) {
         console.error('Error setting up payment:', error);
         toast({
           title: 'Payment Setup Error',
-          description: 'Failed to set up payment. Please try again.',
+          description: 'Failed to set up payment. The Stripe integration may not be properly configured.',
           variant: 'destructive',
         });
+        
+        // If we have retries left, try again
+        if (retryCount < 2) {
+          setRetryCount(prev => prev + 1);
+          setTimeout(() => {
+            console.log("Retrying payment setup...");
+            setupPayment();
+          }, 2000);
+        }
       } finally {
         setLoading(false);
       }
     };
     
-    if (sessionId && studentId && tutor.id && stripeLoaded) {
+    if (sessionId && studentId && tutor.id && stripeLoaded && selectedSlot.day) {
       setupPayment();
     }
-  }, [sessionId, studentId, tutor.id, tutor.name, selectedSlot, sessionCost, toast, stripeLoaded]);
+  }, [sessionId, studentId, tutor.id, tutor.name, selectedSlot, sessionCost, toast, stripeLoaded, retryCount]);
   
   const handleCardElementReady = (element: any) => {
     setCardElement(element);
