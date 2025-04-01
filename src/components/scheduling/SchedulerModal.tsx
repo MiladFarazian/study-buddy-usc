@@ -36,18 +36,22 @@ export function SchedulerModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden p-0">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col overflow-hidden p-0">
         <DialogHeader className="p-6 pb-2">
           <DialogTitle>Book a Session with {tutor.name}</DialogTitle>
         </DialogHeader>
         
-        <BookingStepSelector 
-          tutor={tutor} 
-          onSelectSlot={handleSlotSelect} 
-          onClose={onClose}
-          initialDate={initialDate}
-          initialTime={initialTime}
-        />
+        <ScrollArea className="flex-1">
+          <div className="p-6 pt-2">
+            <BookingStepSelector 
+              tutor={tutor} 
+              onSelectSlot={handleSlotSelect} 
+              onClose={onClose}
+              initialDate={initialDate}
+              initialTime={initialTime}
+            />
+          </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

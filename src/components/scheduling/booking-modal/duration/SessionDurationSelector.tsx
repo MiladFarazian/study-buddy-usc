@@ -3,6 +3,7 @@ import { Slider } from "@/components/ui/slider";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { Clock, DollarSign } from "lucide-react";
 
@@ -31,15 +32,18 @@ export const SessionDurationSelector = ({
   selectedStartTime,
   formatTimeForDisplay
 }: SessionDurationSelectorProps) => {
-  const [durationMethod, setDurationMethod] = useState<'slider' | 'preset'>('preset');
-  
-  // Available duration presets (up to the max allowed duration)
-  const durationPresets = [
-    { value: 30, label: '30 min' },
-    { value: 60, label: '1 hour' },
-    { value: 90, label: '1.5 hours' },
-    { value: 120, label: '2 hours' }
-  ].filter(preset => preset.value <= maxDuration);
+  // Generate available duration options (in 30 min increments up to max duration)
+  const durationOptions = [];
+  for (let duration = 30; duration <= maxDuration; duration += 30) {
+    if (duration <= 120) { // Only show up to 2 hours as common options
+      durationOptions.push({
+        value: duration,
+        label: duration === 60 ? '1 hour' : 
+               duration === 120 ? '2 hours' : 
+               `${duration} min`
+      });
+    }
+  }
   
   // Format cost as currency
   const formattedCost = new Intl.NumberFormat('en-US', {
@@ -83,27 +87,19 @@ export const SessionDurationSelector = ({
         
         <div className="mb-4">
           <Label className="mb-2 block">Session Duration</Label>
-          <RadioGroup
-            className="grid grid-cols-2 sm:grid-cols-4 gap-2"
-            defaultValue={sessionDuration.toString()}
-            onValueChange={(value) => onDurationChange(parseInt(value))}
-          >
-            {durationPresets.map(preset => (
-              <div key={preset.value} className="flex items-center space-x-2">
-                <RadioGroupItem 
-                  value={preset.value.toString()} 
-                  id={`duration-${preset.value}`}
-                  checked={sessionDuration === preset.value}
-                />
-                <Label 
-                  htmlFor={`duration-${preset.value}`}
-                  className={sessionDuration === preset.value ? "font-medium" : ""}
-                >
-                  {preset.label}
-                </Label>
-              </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {durationOptions.map(option => (
+              <Button
+                key={option.value}
+                type="button"
+                variant={sessionDuration === option.value ? "default" : "outline"} 
+                className={sessionDuration === option.value ? "bg-usc-cardinal hover:bg-usc-cardinal-dark" : ""}
+                onClick={() => onDurationChange(option.value)}
+              >
+                {option.label}
+              </Button>
             ))}
-          </RadioGroup>
+          </div>
         </div>
         
         <div className="flex items-center justify-between pt-3 border-t">
