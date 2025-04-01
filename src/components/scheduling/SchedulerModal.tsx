@@ -41,7 +41,7 @@ export function SchedulerModal({
           <DialogTitle>Book a Session with {tutor.name}</DialogTitle>
         </DialogHeader>
         
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 max-h-[calc(90vh-80px)]">
           <div className="p-6 pt-2">
             <BookingStepSelector 
               tutor={tutor} 
