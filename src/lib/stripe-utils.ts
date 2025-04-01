@@ -40,14 +40,17 @@ export const createPaymentIntent = async (
   try {
     console.log("Creating payment intent:", { sessionId, amount, tutorId, studentId, description });
     
+    // Prepare the request body - make sure amount is a number
+    const payload = {
+      sessionId,
+      amount: parseFloat(amount.toString()), // Ensure amount is a number
+      tutorId,
+      studentId,
+      description
+    };
+    
     const { data, error } = await supabase.functions.invoke('create-payment-intent', {
-      body: {
-        sessionId,
-        amount: Math.round(amount * 100), // Convert to cents for Stripe
-        tutorId,
-        studentId,
-        description
-      }
+      body: payload
     });
 
     if (error) {

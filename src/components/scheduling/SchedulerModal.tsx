@@ -8,7 +8,7 @@ import { useBookingSession } from "./booking-modal/useBookingSession";
 import { SessionDetailsDisplay } from "./payment/SessionDetailsDisplay";
 import { PaymentCardElement } from "./payment/PaymentCardElement";
 import { PaymentSuccessScreen } from "./payment/PaymentSuccessScreen";
-import { Loader2, AlertTriangle } from "lucide-react";
+import { Loader2, AlertTriangle, RefreshCcw } from "lucide-react";
 import { AuthRequiredDialog } from "./booking-modal/AuthRequiredDialog";
 import { usePaymentForm } from "./payment/usePaymentForm";
 import { useState, useEffect } from "react";
@@ -109,16 +109,27 @@ export function SchedulerModal({
                         <div>
                           <h4 className="font-medium text-red-800">Payment Setup Error</h4>
                           <p className="text-sm text-red-700 mt-1">
-                            {paymentForm.setupError}. Please contact support if this issue persists.
+                            {paymentForm.setupError}
                           </p>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="mt-3"
-                            onClick={handleCancel}
-                          >
-                            Go Back
-                          </Button>
+                          <div className="flex gap-3 mt-3">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={handleCancel}
+                              className="border-red-300 text-red-700 hover:bg-red-50"
+                            >
+                              Go Back
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={paymentForm.retrySetupPayment}
+                              className="flex items-center gap-1"
+                            >
+                              <RefreshCcw className="h-3.5 w-3.5" />
+                              Retry
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ) : (

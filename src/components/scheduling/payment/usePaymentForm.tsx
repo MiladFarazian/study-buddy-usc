@@ -5,8 +5,6 @@ import { format } from "date-fns";
 import { createPaymentIntent, processPayment, initializeStripe } from "@/lib/stripe-utils";
 import { Tutor } from "@/types/tutor";
 import { BookingSlot } from "@/lib/scheduling/types";
-import { createPaymentTransaction, updatePaymentTransactionWithStripe, markPaymentComplete } from "@/lib/scheduling/payment-utils";
-import { supabase } from "@/integrations/supabase/client";
 
 export function usePaymentForm({
   tutor,
@@ -33,41 +31,53 @@ export function usePaymentForm({
   const [cardElement, setCardElement] = useState<any>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [cardError, setCardError] = useState<string | null>(null);
-  const [transactionId, setTransactionId] = useState<string | null>(null);
-  const [stripe, setStripe] = useState<any>(null);
-  const [retryCount, setRetryCount] = useState(0);
   const [setupError, setSetupError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [stripe, setStripe] = useState<any>(null);
   
   // Calculate session duration and cost
-  const startTime = selectedSlot?.start ? new Date(`2000-01-01T${selectedSlot.start || '00:00'}`) : new Date();
-  const endTime = selectedSlot?.end ? new Date(`2000-01-01T${selectedSlot.end || '00:00'}`) : new Date();
-  const durationHours = selectedSlot?.start && selectedSlot?.end ? 
-    (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60) : 0;
+  const startTime = selectedSlot?.start ? new Date(`2000-01-01T${selectedSlot.start}`) : new Date();
+  const endTime = selectedSlot?.end ? new Date(`2000-01-01T${selectedSlot.end}`) : new Date();
+  const durationHours = selectedSlot?.start && selectedSlot?.end 
+    ? (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60) 
+    : 0;
   const hourlyRate = tutor?.hourlyRate || 25;
   const sessionCost = hourlyRate * durationHours;
   
   // Load Stripe.js
   useEffect(() => {
+    let isMounted = true;
+    
     const loadStripe = async () => {
       try {
         const stripeInstance = await initializeStripe();
-        setStripe(stripeInstance);
-        setStripeLoaded(true);
+        if (isMounted) {
+          setStripe(stripeInstance);
+          setStripeLoaded(true);
+        }
       } catch (error) {
         console.error('Error loading Stripe:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load payment processor. Please try again.',
-          variant: 'destructive',
-        });
+        if (isMounted) {
+          toast({
+            title: 'Error',
+            description: 'Failed to load payment processor. Please try again.',
+            variant: 'destructive',
+          });
+        }
       }
     };
     
     loadStripe();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [toast]);
   
-  // Create payment transaction when component mounts
+  // Create payment intent when component mounts
   useEffect(() => {
+    let isMounted = true;
+    
     const setupPayment = async () => {
       // Skip if not all required data is available
       if (!sessionId || !studentId || !tutor?.id || !stripeLoaded || 
@@ -76,8 +86,10 @@ export function usePaymentForm({
       }
       
       try {
-        setLoading(true);
-        setSetupError(null);
+        if (isMounted) {
+          setLoading(true);
+          setSetupError(null);
+        }
         
         // Create a payment intent with Stripe
         const formattedDate = format(new Date(selectedSlot.day), 'MMM dd, yyyy');
@@ -96,38 +108,53 @@ export function usePaymentForm({
         );
         
         if (!paymentIntent || !paymentIntent.client_secret) {
-          throw new Error("Failed to create payment intent. Please check the Stripe configuration.");
+          throw new Error("Failed to create payment intent. Please try again later.");
         }
         
         console.log("Received payment intent:", paymentIntent);
-        setClientSecret(paymentIntent.client_secret);
+        
+        if (isMounted) {
+          setClientSecret(paymentIntent.client_secret);
+          setLoading(false);
+        }
       } catch (error) {
         console.error('Error setting up payment:', error);
-        setSetupError(error.message || "Failed to set up payment");
         
-        toast({
-          title: 'Payment Setup Error',
-          description: 'Failed to set up payment. The Stripe integration may not be properly configured.',
-          variant: 'destructive',
-        });
-        
-        // If we have retries left, try again
-        if (retryCount < 2) {
-          setRetryCount(prev => prev + 1);
-          setTimeout(() => {
-            console.log("Retrying payment setup...");
-            setupPayment();
-          }, 2000);
+        if (isMounted) {
+          setSetupError(error.message || "Failed to set up payment");
+          setLoading(false);
+          
+          toast({
+            title: 'Payment Setup Error',
+            description: 'There was an issue setting up your payment. Please try again.',
+            variant: 'destructive',
+          });
+          
+          // If we have retries left, try again after a delay
+          if (retryCount < 2) {
+            setTimeout(() => {
+              if (isMounted) {
+                console.log("Retrying payment setup...");
+                setRetryCount(prev => prev + 1);
+                setupPayment();
+              }
+            }, 2000);
+          }
         }
-      } finally {
-        setLoading(false);
       }
     };
     
     if (sessionId && studentId && tutor?.id && stripeLoaded && selectedSlot?.day) {
       setupPayment();
+    } else if (!loading && !setupError) {
+      setLoading(false);
     }
-  }, [sessionId, studentId, tutor?.id, tutor?.name, selectedSlot, sessionCost, toast, stripeLoaded, retryCount]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [sessionId, studentId, tutor?.id, tutor?.name, selectedSlot, sessionCost, 
+      toast, stripeLoaded, retryCount]);
   
   const handleCardElementReady = useCallback((element: any) => {
     setCardElement(element);
@@ -154,44 +181,20 @@ export function usePaymentForm({
     
     try {
       // Process the payment with Stripe
-      const result = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: cardElement,
-          billing_details: {
-            name: studentName || 'Unknown Student',
-            email: studentEmail || 'unknown@example.com'
-          }
-        }
+      const result = await processPayment(
+        clientSecret,
+        cardElement,
+        studentName || 'Unknown Student',
+        studentEmail || 'unknown@example.com'
+      );
+      
+      toast({
+        title: 'Payment Successful',
+        description: 'Your session has been booked and payment processed.',
       });
       
-      if (result.error) {
-        throw new Error(result.error.message || 'Payment failed');
-      }
-      
-      if (result.paymentIntent.status === 'succeeded') {
-        // Show success message
-        toast({
-          title: 'Payment Successful',
-          description: 'Your session has been booked and payment processed.',
-        });
-        
-        setPaymentComplete(true);
-        
-        // Call the onPaymentComplete callback
-        onPaymentComplete();
-      } else if (result.paymentIntent.status === 'requires_action') {
-        // Handle any required actions like 3D Secure authentication
-        toast({
-          title: 'Additional Authentication Required',
-          description: 'Please complete the authentication process to finalize your payment.',
-        });
-      } else {
-        // Handle other potential statuses
-        toast({
-          title: 'Payment Processing',
-          description: 'Your payment is being processed. We will notify you when it completes.',
-        });
-      }
+      setPaymentComplete(true);
+      onPaymentComplete();
     } catch (error) {
       console.error('Payment error:', error);
       toast({
@@ -203,6 +206,12 @@ export function usePaymentForm({
       setProcessing(false);
     }
   };
+
+  const retrySetupPayment = useCallback(() => {
+    setRetryCount(0);
+    setSetupError(null);
+    setLoading(true);
+  }, []);
   
   return {
     loading,
@@ -216,6 +225,7 @@ export function usePaymentForm({
     setupError,
     handleCardElementReady,
     handleSubmitPayment,
+    retrySetupPayment,
     setCardError,
   };
 }
