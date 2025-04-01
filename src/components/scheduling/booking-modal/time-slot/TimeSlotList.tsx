@@ -1,3 +1,4 @@
+
 import { BookingSlot } from "@/lib/scheduling";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -95,10 +96,8 @@ export const TimeSlotList = ({
     const slots = findConsecutiveSlots(slot, selectedDuration);
     setConsecutiveSlots(slots);
     
-    // If we couldn't get the full duration, adjust the duration
-    if (slots.length < Math.ceil(selectedDuration / 30)) {
-      setSelectedDuration(slots.length * 30);
-    }
+    // If we couldn't get the full duration, we'll use what we have
+    // No need to set selectedDuration anymore as it's now controlled by parent
     
     // Create a merged slot for the entire duration
     if (slots.length > 0) {
@@ -116,22 +115,7 @@ export const TimeSlotList = ({
     }
   };
   
-  // Handle duration change
-  const handleDurationChange = (durationMinutes: number) => {
-    setSelectedDuration(durationMinutes);
-    
-    // If we already have a selected slot, update the selection with the new duration
-    if (selectedTimeSlot) {
-      const startSlot = availableTimeSlots.find(slot => 
-        slot.day.toString() === selectedTimeSlot.day.toString() &&
-        slot.start === selectedTimeSlot.start
-      );
-      
-      if (startSlot) {
-        handleSlotSelect(startSlot);
-      }
-    }
-  };
+  // No longer handling duration changes internally - parent controls this
   
   // Ensure any slot selection updates maintain consistent duration
   useEffect(() => {
@@ -162,7 +146,7 @@ export const TimeSlotList = ({
         }
       }
     }
-  }, [selectedDuration, availableTimeSlots]);
+  }, [selectedDuration, availableTimeSlots, selectedTimeSlot, onSelectTimeSlot]);
   
   // Render a time slot group
   const renderTimeGroup = (slots: BookingSlot[], title: string) => {
@@ -191,7 +175,8 @@ export const TimeSlotList = ({
     );
   };
   
-  // Duration selector component
+  // Duration selector component to display current duration
+  // Now it doesn't set the duration but informs parent about button clicks
   const DurationSelector = () => (
     <div className="mt-4 mb-4">
       <h4 className="text-sm font-medium text-muted-foreground mb-2">Session Duration</h4>
@@ -202,7 +187,25 @@ export const TimeSlotList = ({
             variant={selectedDuration === duration ? "default" : "outline"}
             size="sm"
             className={selectedDuration === duration ? "bg-usc-cardinal hover:bg-usc-cardinal-dark" : ""}
-            onClick={() => handleDurationChange(duration)}
+            // Just pass the selected duration to the parent component via onSelectTimeSlot
+            onClick={() => {
+              if (selectedTimeSlot) {
+                // Recalculate consecutive slots with new duration
+                const slots = findConsecutiveSlots(selectedTimeSlot, duration);
+                if (slots.length > 0) {
+                  const firstSlot = slots[0];
+                  const lastSlot = slots[slots.length - 1];
+                  
+                  const mergedSlot: BookingSlot = {
+                    ...firstSlot,
+                    end: lastSlot.end
+                  };
+                  
+                  // This will trigger the parent to update the duration
+                  onSelectTimeSlot(mergedSlot);
+                }
+              }
+            }}
           >
             {duration === 60 ? "1 hour" : duration === 120 ? "2 hours" : `${duration} min`}
           </Button>
