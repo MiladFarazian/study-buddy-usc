@@ -41,10 +41,26 @@ export function SchedulerModal({
     setAuthRequired
   } = useBookingSession(tutor, isOpen, onClose);
 
+  // Create a proper BookingSlot with all required properties
+  // when selectedSlot is either null or missing properties
+  const completeBookingSlot: BookingSlot = selectedSlot ? {
+    tutorId: selectedSlot.tutorId || tutor.id,
+    day: selectedSlot.day,
+    start: selectedSlot.start,
+    end: selectedSlot.end,
+    available: selectedSlot.available ?? true
+  } : {
+    tutorId: tutor.id,
+    day: new Date(),
+    start: '',
+    end: '',
+    available: true
+  };
+
   // Always call usePaymentForm hook with default values
   const paymentForm = usePaymentForm({
     tutor: tutor,
-    selectedSlot: selectedSlot || { day: new Date(), start: '', end: '' },
+    selectedSlot: completeBookingSlot,
     sessionId: sessionId || '',
     studentId: user?.id || '',
     studentName: user?.user_metadata?.full_name || '',
