@@ -8,12 +8,10 @@ import { TutorBioSection } from "@/components/tutor/TutorBioSection";
 import { TutorEducationSection } from "@/components/tutor/TutorEducationSection";
 import { TutorSubjectsSection } from "@/components/tutor/TutorSubjectsSection";
 import { TutorReviewsSection } from "@/components/tutor/TutorReviewsSection";
-import { TutorAvailabilityCard } from "@/components/scheduling/TutorAvailabilityCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useState } from "react";
 import MessageButton from "@/components/messaging/MessageButton";
-import { CalendlyBookingWizard } from "@/components/scheduling/CalendlyBookingWizard";
 import { TutorAvailabilitySection } from "@/components/tutor/TutorAvailabilitySection";
 import { SchedulingProvider } from "@/contexts/SchedulingContext";
 
@@ -211,12 +209,6 @@ const TutorProfile = () => {
         onOpenChange={setShowBookingModal}
       >
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          <SchedulingProvider>
-            <CalendlyBookingWizard 
-              tutor={tutor}
-              onClose={() => setShowBookingModal(false)}
-            />
-          </SchedulingProvider>
         </DialogContent>
       </Dialog>
     </div>
