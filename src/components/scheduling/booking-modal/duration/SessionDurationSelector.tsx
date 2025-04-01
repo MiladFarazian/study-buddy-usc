@@ -45,11 +45,15 @@ export const SessionDurationSelector = ({
     }
   }
   
+  // Calculate cost based on hourly rate and duration in hours
+  const durationInHours = sessionDuration / 60;
+  const totalCost = hourlyRate * durationInHours;
+  
   // Format cost as currency
   const formattedCost = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD'
-  }).format(calculatedCost);
+  }).format(totalCost);
 
   // When component loads, ensure it's showing the current session duration
   useEffect(() => {

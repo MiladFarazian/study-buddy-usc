@@ -125,6 +125,7 @@ export const BookingStepSelector = ({
         <TimeSlotList 
           availableTimeSlots={timeSlotsForSelectedDate}
           selectedTimeSlot={selectedTimeSlot}
+          selectedDuration={sessionDuration}
           onSelectTimeSlot={handleTimeSlotSelect}
           formatTimeForDisplay={formatTimeForDisplay}
           isLoading={loading}

@@ -1,4 +1,3 @@
-
 import { BookingSlot } from "@/lib/scheduling";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -9,19 +8,20 @@ import { useState, useEffect } from "react";
 interface TimeSlotListProps {
   availableTimeSlots: BookingSlot[];
   selectedTimeSlot: BookingSlot | null;
+  selectedDuration: number;
   onSelectTimeSlot: (slot: BookingSlot) => void;
   formatTimeForDisplay: (time: string) => string;
-  isLoading?: boolean;
+  isLoading: boolean;
 }
 
 export const TimeSlotList = ({
   availableTimeSlots,
   selectedTimeSlot,
+  selectedDuration,
   onSelectTimeSlot,
   formatTimeForDisplay,
   isLoading = false
 }: TimeSlotListProps) => {
-  const [selectedDuration, setSelectedDuration] = useState<number>(30); // Default 30 min
   const [consecutiveSlots, setConsecutiveSlots] = useState<BookingSlot[]>([]);
 
   // Group slots by morning, afternoon, evening

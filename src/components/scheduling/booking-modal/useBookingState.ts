@@ -54,10 +54,10 @@ export function useBookingState(initialDate?: Date, initialTime?: string) {
   // Update calculated cost when duration or start time changes
   useEffect(() => {
     if (selectedTimeSlot && selectedStartTime) {
-      // Calculate hourly rate portion based on minutes
-      const hourlyFraction = sessionDuration / 60;
-      // Assuming $25/hour default
-      const cost = hourlyFraction * 25;
+      // Calculate cost based on hourly rate and duration in hours
+      const hourlyRate = 25; // Default hourly rate, will be overridden by props
+      const durationInHours = sessionDuration / 60;
+      const cost = hourlyRate * durationInHours;
       setCalculatedCost(cost);
     }
   }, [sessionDuration, selectedStartTime, selectedTimeSlot]);
@@ -80,9 +80,9 @@ export function useBookingState(initialDate?: Date, initialTime?: string) {
   // Handle start time change
   const handleStartTimeChange = (time: string, hourlyRate: number) => {
     setSelectedStartTime(time);
-    // Recalculate cost
-    const hourlyFraction = sessionDuration / 60;
-    const cost = hourlyFraction * hourlyRate;
+    // Recalculate cost based on hourly rate and duration in hours
+    const durationInHours = sessionDuration / 60;
+    const cost = hourlyRate * durationInHours;
     setCalculatedCost(cost);
     
     // If we have a selected time slot, we need to update its start time
@@ -98,9 +98,9 @@ export function useBookingState(initialDate?: Date, initialTime?: string) {
   // Handle duration change
   const handleDurationChange = (durationMinutes: number, hourlyRate: number) => {
     setSessionDuration(durationMinutes);
-    // Recalculate cost
-    const hourlyFraction = durationMinutes / 60;
-    const cost = hourlyFraction * hourlyRate;
+    // Recalculate cost based on hourly rate and duration in hours
+    const durationInHours = durationMinutes / 60;
+    const cost = hourlyRate * durationInHours;
     setCalculatedCost(cost);
     
     // If we have a selected time slot, we need to update its end time based on the new duration
