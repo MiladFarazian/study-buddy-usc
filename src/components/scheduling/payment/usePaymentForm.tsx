@@ -159,7 +159,7 @@ export function usePaymentForm({
         // Handle other potential statuses
         toast({
           title: 'Payment Processing',
-          description: 'Your payment is being processed. We'll notify you when it completes.',
+          description: 'Your payment is being processed. We will notify you when it completes.',
         });
       }
     } catch (error) {
