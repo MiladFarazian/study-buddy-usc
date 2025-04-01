@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useReducer, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useReducer, ReactNode, useCallback } from 'react';
 import { Tutor } from "@/types/tutor";
 import { BookingSlot } from "@/lib/scheduling/types";
 import { toast } from "sonner";
@@ -95,15 +95,15 @@ export const SchedulingProvider: React.FC<{ children: ReactNode }> = ({ children
     setTutorState(newTutor);
   };
 
-  const calculatePrice = (durationMinutes: number) => {
+  const calculatePrice = useCallback((durationMinutes: number): number => {
     if (!tutor) return 0;
     
     // Calculate price based on tutor's hourly rate and duration
     const hourlyRate = tutor.hourlyRate || 25; // Use tutor's rate or default to $25
     return (hourlyRate / 60) * durationMinutes;
-  };
+  }, [tutor]);
 
-  const continueToNextStep = () => {
+  const continueToNextStep = useCallback(() => {
     // Validation before moving to the next step
     switch (state.bookingStep) {
       case BookingStep.SELECT_DATE_TIME:
@@ -135,14 +135,14 @@ export const SchedulingProvider: React.FC<{ children: ReactNode }> = ({ children
     // Move to the next step
     const nextStep = state.bookingStep + 1;
     dispatch({ type: 'SET_STEP', payload: nextStep as BookingStep });
-  };
+  }, [state]);
 
-  const goToPreviousStep = () => {
+  const goToPreviousStep = useCallback(() => {
     if (state.bookingStep > 0) {
       const prevStep = state.bookingStep - 1;
       dispatch({ type: 'SET_STEP', payload: prevStep as BookingStep });
     }
-  };
+  }, [state.bookingStep]);
 
   return (
     <SchedulingContext.Provider value={{ 

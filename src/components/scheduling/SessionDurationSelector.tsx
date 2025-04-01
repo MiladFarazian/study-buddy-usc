@@ -1,14 +1,21 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { DurationSelector } from "./DurationSelector";
 import { useScheduling } from '@/contexts/SchedulingContext';
-
-const DURATION_OPTIONS = [30, 60, 90, 120];
+import { format } from 'date-fns';
+import { CalendarIcon, ClockIcon } from "lucide-react";
 
 export function SessionDurationSelector() {
-  const { state, dispatch, calculatePrice, tutor } = useScheduling();
-  const { selectedDuration } = state;
+  const { state, dispatch, calculatePrice, tutor, continueToNextStep, goToPreviousStep } = useScheduling();
+  const { selectedDuration, selectedDate, selectedTimeSlot } = state;
+  
+  const durationOptions = [
+    { minutes: 30, display: "30 minutes" },
+    { minutes: 60, display: "1 hour" },
+    { minutes: 90, display: "1.5 hours" },
+    { minutes: 120, display: "2 hours" }
+  ];
   
   const handleSelectDuration = (duration: number) => {
     dispatch({ type: 'SET_DURATION', payload: duration });
@@ -19,47 +26,38 @@ export function SessionDurationSelector() {
   
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Select Session Duration</h2>
+      {selectedDate && selectedTimeSlot && (
+        <div className="bg-muted/30 p-4 rounded-md mb-6">
+          <div className="flex items-center mb-2">
+            <CalendarIcon className="h-5 w-5 mr-2 text-muted-foreground" />
+            <span className="font-medium">{format(selectedDate, 'EEEE, MMMM d, yyyy')}</span>
+          </div>
+          <div className="flex items-center">
+            <ClockIcon className="h-5 w-5 mr-2 text-muted-foreground" />
+            <span className="font-medium">{selectedTimeSlot.start}</span>
+          </div>
+        </div>
+      )}
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {DURATION_OPTIONS.map((minutes) => {
-          const price = calculatePrice(minutes);
-          
-          return (
-            <Button
-              key={minutes}
-              variant="outline"
-              className={cn(
-                "h-32 flex flex-col items-center justify-center p-6 rounded-md border",
-                selectedDuration === minutes 
-                  ? "bg-red-50 border-usc-cardinal text-usc-cardinal" 
-                  : "bg-white hover:bg-gray-50"
-              )}
-              onClick={() => handleSelectDuration(minutes)}
-            >
-              <span className="text-xl font-bold mb-2">{minutes} minutes</span>
-              <span className="text-lg text-muted-foreground">${price.toFixed(0)}</span>
-            </Button>
-          );
-        })}
-      </div>
+      <DurationSelector
+        options={durationOptions}
+        selectedDuration={selectedDuration}
+        onSelectDuration={handleSelectDuration}
+        hourlyRate={hourlyRate}
+      />
       
       <div className="flex justify-between mt-8">
         <Button 
           variant="outline" 
           className="px-8"
-          onClick={() => dispatch({ type: 'SET_STEP', payload: 0 })}
+          onClick={goToPreviousStep}
         >
           Back
         </Button>
         
         <Button 
           className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white px-8"
-          onClick={() => {
-            if (selectedDuration) {
-              dispatch({ type: 'SET_STEP', payload: 2 });
-            }
-          }}
+          onClick={continueToNextStep}
           disabled={!selectedDuration}
         >
           Continue

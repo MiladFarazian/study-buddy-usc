@@ -1,10 +1,10 @@
 
-import React from "react";
-import { CheckCircle } from "lucide-react";
+import React from 'react';
 import { Button } from "@/components/ui/button";
-import { useScheduling } from "@/contexts/SchedulingContext";
-import { formatTimeDisplay } from "@/lib/scheduling/time-utils";
-import { format } from "date-fns";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Check, Calendar, Clock, User, CreditCard } from "lucide-react";
+import { format } from 'date-fns';
+import { useScheduling } from '@/contexts/SchedulingContext';
 
 interface ConfirmationStepProps {
   onClose: () => void;
@@ -13,73 +13,122 @@ interface ConfirmationStepProps {
 
 export function ConfirmationStep({ onClose, onReset }: ConfirmationStepProps) {
   const { state, tutor, calculatePrice } = useScheduling();
+  const { selectedDate, selectedTimeSlot, selectedDuration } = state;
   
-  if (!state.selectedDate || !state.selectedTimeSlot || !tutor) {
-    return null;
-  }
+  // Calculate session cost
+  const sessionCost = selectedDuration ? calculatePrice(selectedDuration) : 0;
   
-  const sessionDate = format(state.selectedDate, 'MMMM d, yyyy');
-  const sessionTime = formatTimeDisplay(state.selectedTimeSlot.start);
-  const sessionPrice = calculatePrice(state.selectedDuration);
+  // Format date and time for display
+  const formattedDate = selectedDate ? format(selectedDate, 'EEEE, MMMM d, yyyy') : '';
+  const formattedStartTime = selectedTimeSlot?.start || '';
+  
+  // Calculate end time based on duration
+  const calculateEndTime = () => {
+    if (!selectedTimeSlot?.start || !selectedDuration) return '';
+    
+    const [hours, minutes] = selectedTimeSlot.start.split(':').map(Number);
+    const startMinutes = hours * 60 + minutes;
+    const endMinutes = startMinutes + selectedDuration;
+    
+    const endHours = Math.floor(endMinutes / 60);
+    const endMins = endMinutes % 60;
+    
+    return `${endHours.toString().padStart(2, '0')}:${endMins.toString().padStart(2, '0')}`;
+  };
+  
+  const formattedEndTime = calculateEndTime();
+  
+  // Format duration for display (e.g., "1 hour", "30 minutes", "1 hour 30 minutes")
+  const formatDuration = (minutes: number): string => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    
+    if (hours === 0) {
+      return `${mins} minute${mins !== 1 ? 's' : ''}`;
+    } else if (mins === 0) {
+      return `${hours} hour${hours !== 1 ? 's' : ''}`;
+    } else {
+      return `${hours} hour${hours !== 1 ? 's' : ''} ${mins} minute${mins !== 1 ? 's' : ''}`;
+    }
+  };
   
   return (
-    <div className="max-w-lg mx-auto">
-      <div className="bg-red-50 rounded-t-lg p-8 text-center">
-        <div className="mx-auto h-20 w-20 bg-red-100 rounded-full flex items-center justify-center mb-4">
-          <CheckCircle className="h-10 w-10 text-usc-cardinal" />
+    <Card className="w-full">
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4 mx-auto">
+          <Check className="h-6 w-6 text-green-600" />
         </div>
-        
-        <h2 className="text-2xl font-bold">Booking Confirmed</h2>
-        <p className="text-gray-600 mt-2">
-          Your tutoring session has been scheduled
-        </p>
-      </div>
-      
-      <div className="bg-white rounded-b-lg p-8">
-        <div className="border-b py-5">
-          <h3 className="text-gray-500">Date & Time</h3>
-          <p className="text-xl font-bold mt-1">{sessionDate} at {sessionTime}</p>
-        </div>
-        
-        <div className="border-b py-5">
-          <h3 className="text-gray-500">Session Duration</h3>
-          <p className="text-xl font-bold mt-1">{state.selectedDuration} minutes</p>
-        </div>
-        
-        <div className="border-b py-5">
-          <h3 className="text-gray-500">Tutor</h3>
-          <div className="flex items-center mt-2">
-            {tutor.imageUrl ? (
-              <img 
-                src={tutor.imageUrl} 
-                alt={tutor.name} 
-                className="h-12 w-12 rounded-full mr-3"
-              />
-            ) : (
-              <div className="h-12 w-12 rounded-full bg-gray-200 mr-3" />
+        <CardTitle className="text-center">Booking Confirmed!</CardTitle>
+        <CardDescription className="text-center">
+          Your session has been successfully booked
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-6">
+          <div className="bg-muted/30 p-4 rounded-md space-y-3">
+            {tutor && (
+              <div className="flex items-center">
+                <User className="h-5 w-5 mr-3 text-muted-foreground" />
+                <div>
+                  <span className="font-medium">{tutor.name}</span>
+                  {tutor.subjects && tutor.subjects.length > 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      {typeof tutor.subjects[0] === 'string' 
+                        ? tutor.subjects[0] 
+                        : 'object' in tutor.subjects[0] 
+                          ? (tutor.subjects[0] as any).name || 'Subject' 
+                          : 'Subject'}
+                    </p>
+                  )}
+                </div>
+              </div>
             )}
-            <div>
-              <p className="text-xl font-bold">{tutor.name}</p>
-              <p className="text-gray-500">{tutor.subjects && tutor.subjects.length > 0 
-                ? tutor.subjects[0].name || tutor.subjects[0].code 
-                : "Computer Science"}
-              </p>
+            
+            <div className="flex items-center">
+              <Calendar className="h-5 w-5 mr-3 text-muted-foreground" />
+              <span>{formattedDate}</span>
+            </div>
+            
+            <div className="flex items-center">
+              <Clock className="h-5 w-5 mr-3 text-muted-foreground" />
+              <div>
+                <div>{formattedStartTime} - {formattedEndTime}</div>
+                <div className="text-sm text-muted-foreground">
+                  {selectedDuration ? formatDuration(selectedDuration) : ''}
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center">
+              <CreditCard className="h-5 w-5 mr-3 text-muted-foreground" />
+              <span className="font-medium">${sessionCost.toFixed(2)} paid</span>
+            </div>
+          </div>
+          
+          <div className="space-y-3">
+            <p className="text-center text-sm text-muted-foreground">
+              We've sent a confirmation email with all the details of your booking.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-3 mt-6">
+              <Button 
+                variant="outline" 
+                onClick={onReset}
+                className="sm:flex-1 max-w-[200px] mx-auto"
+              >
+                Book Another Session
+              </Button>
+              
+              <Button 
+                onClick={onClose}
+                className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white sm:flex-1 max-w-[200px] mx-auto"
+              >
+                Done
+              </Button>
             </div>
           </div>
         </div>
-        
-        <div className="py-5">
-          <h3 className="text-gray-500">Total Price</h3>
-          <p className="text-xl font-bold mt-1">${sessionPrice.toFixed(0)}</p>
-        </div>
-        
-        <Button 
-          onClick={onClose}
-          className="w-full bg-usc-cardinal hover:bg-usc-cardinal-dark text-white mt-4"
-        >
-          View My Schedule
-        </Button>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

@@ -1,110 +1,154 @@
 
-import { useState, useEffect, useMemo } from 'react';
-import { BookingSlot } from "@/lib/scheduling";
-import { useScheduling, BookingStep } from "@/contexts/SchedulingContext";
-import { format, isSameDay } from 'date-fns';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Loader2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from 'date-fns';
+import { CalendarIcon, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { BookingSlot } from "@/lib/scheduling";
+import { useScheduling } from '@/contexts/SchedulingContext';
+import { TimeSelector } from "@/lib/scheduling/ui/TimeSelector";
 
-export interface DateSelectionStepProps {
+interface DateSelectionStepProps {
   availableSlots: BookingSlot[];
   isLoading: boolean;
 }
 
 export function DateSelectionStep({ availableSlots, isLoading }: DateSelectionStepProps) {
-  const { state, dispatch } = useScheduling();
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(state.selectedDate || undefined);
-
-  // Extract all available dates from the available slots
-  const availableDates = useMemo(() => {
-    const uniqueDates = new Set<string>();
-    const dates: Date[] = [];
+  const { state, dispatch, continueToNextStep } = useScheduling();
+  const { selectedDate, selectedTimeSlot } = state;
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  
+  // Function to determine which dates have available slots
+  const getDatesWithSlots = () => {
+    const datesMap = new Map<string, Date>();
     
     availableSlots.forEach(slot => {
       if (slot.available) {
-        const dateString = format(slot.day, 'yyyy-MM-dd');
-        if (!uniqueDates.has(dateString)) {
-          uniqueDates.add(dateString);
-          dates.push(new Date(slot.day));
+        const dateStr = format(slot.day, 'yyyy-MM-dd');
+        if (!datesMap.has(dateStr)) {
+          datesMap.set(dateStr, slot.day);
         }
       }
     });
     
-    return dates;
-  }, [availableSlots]);
-
-  // Helper function to check if a date has available slots
-  const isDateAvailable = (date: Date) => {
-    return availableDates.some(availableDate => 
-      isSameDay(availableDate, date)
-    );
+    return Array.from(datesMap.values());
   };
-
-  // Update local state when context state changes
-  useEffect(() => {
-    if (state.selectedDate) {
-      setSelectedDate(state.selectedDate);
-    }
-  }, [state.selectedDate]);
-
-  // Handle date selection
+  
+  const datesWithSlots = getDatesWithSlots();
+  
+  // Get available time slots for the selected date
+  const getTimeSlots = () => {
+    if (!selectedDate) return [];
+    
+    const slots = availableSlots.filter(slot => {
+      const slotDate = new Date(slot.day);
+      return (
+        slot.available && 
+        slotDate.getDate() === selectedDate.getDate() &&
+        slotDate.getMonth() === selectedDate.getMonth() &&
+        slotDate.getFullYear() === selectedDate.getFullYear()
+      );
+    });
+    
+    // Convert booking slots to time slots for the TimeSelector component
+    return slots.map(slot => ({
+      time: slot.start,
+      available: slot.available
+    }));
+  };
+  
   const handleDateSelect = (date: Date | undefined) => {
-    if (date && isDateAvailable(date)) {
-      setSelectedDate(date);
+    setCalendarOpen(false);
+    if (date) {
       dispatch({ type: 'SELECT_DATE', payload: date });
     }
   };
-
-  // Handle continue button click
-  const handleContinue = () => {
-    if (selectedDate) {
-      dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_DURATION });
+  
+  const handleTimeSelect = (time: string) => {
+    const slot = availableSlots.find(s => {
+      const sameDay = format(s.day, 'yyyy-MM-dd') === format(selectedDate!, 'yyyy-MM-dd');
+      return sameDay && s.start === time;
+    });
+    
+    if (slot) {
+      dispatch({ type: 'SELECT_TIME_SLOT', payload: slot });
     }
   };
-
-  // Handle back button click
-  const handleBack = () => {
-    dispatch({ type: 'RESET' });
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal" />
-        <span className="ml-2">Loading available dates...</span>
-      </div>
-    );
-  }
-
+  
   return (
     <div className="space-y-6">
-      <h2 className="text-lg font-semibold">Select a Date</h2>
+      <h2 className="text-2xl font-bold">Select Date & Time</h2>
       
-      <div className="flex justify-center">
-        <Calendar
-          mode="single"
-          selected={selectedDate}
-          onSelect={handleDateSelect}
-          disabled={(date) => !isDateAvailable(date)}
-          className="rounded-md border"
-        />
-      </div>
-      
-      <div className="mt-6 flex justify-between">
-        <Button 
-          variant="outline" 
-          onClick={handleBack}
-        >
-          Back
-        </Button>
-        <Button 
-          onClick={handleContinue}
-          disabled={!selectedDate}
-          className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
-        >
-          Continue
-        </Button>
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="md:col-span-1">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Date</label>
+              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !selectedDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedDate ? format(selectedDate, 'EEEE, MMMM d, yyyy') : <span>Select date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate || undefined}
+                    onSelect={handleDateSelect}
+                    initialFocus
+                    disabled={(date) => {
+                      // Only enable dates that have available slots
+                      return !datesWithSlots.some(
+                        d => d.toDateString() === date.toDateString()
+                      );
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+          
+          <div className="md:col-span-2 space-y-2">
+            <label className="text-sm font-medium">Time</label>
+            {isLoading ? (
+              <div className="flex items-center justify-center p-8 border rounded-md">
+                <Loader2 className="h-6 w-6 animate-spin text-usc-cardinal mr-2" />
+                <span>Loading available times...</span>
+              </div>
+            ) : selectedDate ? (
+              <TimeSelector
+                availableTimeSlots={getTimeSlots()}
+                selectedTime={selectedTimeSlot?.start || null}
+                onSelectTime={handleTimeSelect}
+              />
+            ) : (
+              <div className="flex items-center justify-center p-8 border rounded-md bg-muted/20">
+                <p className="text-muted-foreground">
+                  Please select a date to view available times
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        <div className="flex justify-end mt-8">
+          <Button 
+            className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white px-8"
+            onClick={continueToNextStep}
+            disabled={!selectedDate || !selectedTimeSlot}
+          >
+            Continue
+          </Button>
+        </div>
       </div>
     </div>
   );

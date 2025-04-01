@@ -5,7 +5,6 @@ import { DateSelectionStep } from "./DateSelectionStep";
 import { SessionDurationSelector } from "./SessionDurationSelector";
 import { PaymentStep } from "./PaymentStep";
 import { ConfirmationStep } from "./ConfirmationStep";
-import { BookingSlot } from "@/lib/scheduling";
 import { startOfDay } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { Tutor } from "@/types/tutor";
@@ -26,7 +25,7 @@ export function CalendlyBookingWizard({ tutor, onClose }: CalendlyBookingWizardP
   
   // Get availability data for the tutor
   const today = startOfDay(new Date());
-  const { loading: isLoading, availableSlots, hasAvailability, errorMessage } = 
+  const { loading: isLoading, availableSlots, hasAvailability, errorMessage, refreshAvailability } = 
     useAvailabilityData(tutor, today);
   
   // Set the tutor in the scheduling context
@@ -46,6 +45,13 @@ export function CalendlyBookingWizard({ tutor, onClose }: CalendlyBookingWizardP
       dispatch({ type: "RESET" });
     };
   }, [tutor, setTutor, dispatch]);
+  
+  // Refresh availability when booking is completed
+  useEffect(() => {
+    if (state.bookingStep === BookingStep.CONFIRMATION) {
+      refreshAvailability();
+    }
+  }, [state.bookingStep, refreshAvailability]);
   
   const renderStep = () => {
     // Don't render anything until initialization is complete

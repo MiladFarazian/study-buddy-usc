@@ -1,130 +1,230 @@
 
-import { useState } from "react";
-import { useScheduling, BookingStep } from "@/contexts/SchedulingContext";
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { formatTimeDisplay } from "@/lib/scheduling/time-utils";
-import { format } from "date-fns";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { format } from 'date-fns';
+import { CalendarIcon, Clock, User, CreditCard, ArrowLeft, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, CreditCard } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { useScheduling } from '@/contexts/SchedulingContext';
+import { createSessionBooking } from "@/lib/scheduling/booking-utils";
+import { StripePaymentForm } from "./payment/StripePaymentForm";
+import { createPaymentIntent } from "@/lib/stripe-utils";
 
-interface PaymentStepProps {
+export function PaymentStep({ 
+  onComplete,
+  onRequireAuth
+}: { 
   onComplete: () => void;
   onRequireAuth: () => void;
-}
-
-export function PaymentStep({ onComplete, onRequireAuth }: PaymentStepProps) {
-  const { state, dispatch, tutor, calculatePrice } = useScheduling();
-  const { user } = useAuth();
-  const [processing, setProcessing] = useState(false);
-  const [notes, setNotes] = useState(state.notes || "");
+}) {
+  const { toast } = useToast();
+  const { session, user } = useAuth();
+  const { state, dispatch, tutor, calculatePrice, goToPreviousStep } = useScheduling();
+  const { selectedDate, selectedTimeSlot, selectedDuration, notes, studentName, studentEmail } = state;
   
-  if (!state.selectedDate || !state.selectedTimeSlot || !tutor) {
-    return null;
-  }
+  const [loading, setLoading] = useState(false);
+  const [creatingBooking, setCreatingBooking] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
   
-  if (!user) {
-    // If user is not authenticated, show auth required
-    onRequireAuth();
-    return null;
-  }
+  // Calculate total cost
+  const totalCost = selectedDuration ? calculatePrice(selectedDuration) : 0;
   
-  const sessionDate = format(state.selectedDate, 'MMMM d, yyyy');
-  const sessionTime = formatTimeDisplay(state.selectedTimeSlot.start);
-  const sessionPrice = calculatePrice(state.selectedDuration);
+  // Format selected date and time for display
+  const formattedDate = selectedDate ? format(selectedDate, 'EEEE, MMMM d, yyyy') : '';
+  const formattedStartTime = selectedTimeSlot?.start || '';
   
-  const handleBack = () => {
-    dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_DURATION });
+  // Calculate end time based on duration
+  const calculateEndTime = () => {
+    if (!selectedTimeSlot?.start || !selectedDuration) return '';
+    
+    const [hours, minutes] = selectedTimeSlot.start.split(':').map(Number);
+    const startMinutes = hours * 60 + minutes;
+    const endMinutes = startMinutes + selectedDuration;
+    
+    const endHours = Math.floor(endMinutes / 60);
+    const endMins = endMinutes % 60;
+    
+    return `${endHours.toString().padStart(2, '0')}:${endMins.toString().padStart(2, '0')}`;
   };
   
-  const handleSubmit = async () => {
-    // Save notes to state
-    dispatch({ type: 'SET_NOTES', payload: notes });
+  const formattedEndTime = calculateEndTime();
+  
+  // Check if user is authenticated
+  useEffect(() => {
+    if (!session || !user) {
+      onRequireAuth();
+    }
+  }, [session, user, onRequireAuth]);
+  
+  // Create session and payment intent
+  const createSessionAndPaymentIntent = async () => {
+    if (!user || !tutor || !selectedDate || !selectedTimeSlot || !selectedDuration) {
+      toast({
+        title: "Error",
+        description: "Missing required booking information.",
+        variant: "destructive",
+      });
+      return;
+    }
     
-    setProcessing(true);
+    setLoading(true);
     
-    // Simulate payment processing with a delay
-    setTimeout(() => {
-      setProcessing(false);
-      onComplete();
-    }, 1500);
+    try {
+      // Format date and times for the API
+      const startDateTime = new Date(selectedDate);
+      const [startHour, startMin] = selectedTimeSlot.start.split(':').map(Number);
+      startDateTime.setHours(startHour, startMin, 0, 0);
+      
+      const endDateTime = new Date(startDateTime);
+      endDateTime.setMinutes(endDateTime.getMinutes() + selectedDuration);
+      
+      // Create session booking
+      const bookingResult = await createSessionBooking(
+        user.id,
+        tutor.id,
+        null, // courseId
+        startDateTime.toISOString(),
+        endDateTime.toISOString(),
+        null, // location
+        notes || null
+      );
+      
+      if (bookingResult && bookingResult.id) {
+        setSessionId(bookingResult.id);
+        
+        // Create payment intent with Stripe
+        const sessionDate = format(startDateTime, 'MMM d, yyyy');
+        const sessionTime = format(startDateTime, 'h:mm a');
+        const description = `Tutoring session with ${tutor.name} on ${sessionDate} at ${sessionTime}`;
+        
+        const paymentIntent = await createPaymentIntent(
+          bookingResult.id,
+          Math.round(totalCost * 100), // convert to cents
+          tutor.id,
+          user.id,
+          description
+        );
+        
+        if (paymentIntent && paymentIntent.client_secret) {
+          setClientSecret(paymentIntent.client_secret);
+        } else {
+          throw new Error("Failed to create payment intent");
+        }
+      } else {
+        throw new Error("Failed to create session booking");
+      }
+    } catch (error) {
+      console.error("Error creating session or payment intent:", error);
+      toast({
+        title: "Error",
+        description: "Failed to set up booking. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Initialize booking and payment when component mounts
+  useEffect(() => {
+    if (user && tutor && selectedDate && selectedTimeSlot && selectedDuration && !sessionId) {
+      createSessionAndPaymentIntent();
+    }
+  }, [user, tutor, selectedDate, selectedTimeSlot, selectedDuration]);
+  
+  const handlePaymentSuccess = () => {
+    setPaymentProcessing(false);
+    onComplete();
   };
   
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold mb-4">Complete Your Booking</h2>
-      
-      <div className="bg-gray-50 p-4 rounded-md">
-        <h3 className="text-base font-medium mb-2">Selected Time:</h3>
-        <p className="text-xl font-bold">{sessionDate} at {sessionTime}</p>
+      <div className="mb-6">
+        <Button
+          variant="ghost"
+          onClick={goToPreviousStep}
+          className="pl-0 text-muted-foreground"
+          disabled={loading || paymentProcessing}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back
+        </Button>
       </div>
       
-      <div className="space-y-4">
-        <div>
-          <label htmlFor="session-duration" className="block text-sm font-medium mb-1">
-            Session Duration
-          </label>
-          <div className="rounded-md border border-gray-300 px-3 py-2 flex justify-between items-center">
-            <span>{state.selectedDuration} minutes (${sessionPrice.toFixed(0)})</span>
-            <span className="text-gray-400">▼</span>
-          </div>
-        </div>
-        
-        <div>
-          <label htmlFor="notes" className="block text-sm font-medium mb-1">
-            Notes (Optional)
-          </label>
-          <Textarea
-            id="notes"
-            placeholder="Any specific topics you'd like to cover?"
-            className="min-h-[100px]"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-          />
-        </div>
-      </div>
-      
-      <Card className="border-t">
-        <CardContent className="pt-4">
-          <div className="flex justify-between py-2">
-            <span className="font-medium">Session duration</span>
-            <span>{state.selectedDuration} minutes</span>
-          </div>
-          <div className="flex justify-between py-2 border-t font-bold">
-            <span>Total</span>
-            <span>${sessionPrice.toFixed(0)}</span>
+      <Card>
+        <CardHeader>
+          <CardTitle>Confirm and Pay</CardTitle>
+          <CardDescription>
+            Review your session details and complete payment
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {/* Session details summary */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Session Details</h3>
+              
+              <div className="bg-muted/30 p-4 rounded-md space-y-3">
+                {tutor && (
+                  <div className="flex items-center">
+                    <User className="h-5 w-5 mr-3 text-muted-foreground" />
+                    <span className="font-medium">{tutor.name}</span>
+                  </div>
+                )}
+                
+                <div className="flex items-center">
+                  <CalendarIcon className="h-5 w-5 mr-3 text-muted-foreground" />
+                  <span>{formattedDate}</span>
+                </div>
+                
+                <div className="flex items-center">
+                  <Clock className="h-5 w-5 mr-3 text-muted-foreground" />
+                  <span>{formattedStartTime} - {formattedEndTime}</span>
+                </div>
+                
+                <div className="flex items-center">
+                  <CreditCard className="h-5 w-5 mr-3 text-muted-foreground" />
+                  <span>${totalCost.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Payment form */}
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-10">
+                <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal mb-4" />
+                <p className="text-center text-muted-foreground">Setting up your booking...</p>
+              </div>
+            ) : (
+              clientSecret ? (
+                <StripePaymentForm
+                  clientSecret={clientSecret}
+                  amount={totalCost}
+                  onSuccess={handlePaymentSuccess}
+                  onCancel={goToPreviousStep}
+                  processing={paymentProcessing}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center py-10">
+                  <p className="text-center text-red-600">
+                    Unable to initialize payment. Please try again.
+                  </p>
+                  <Button 
+                    onClick={createSessionAndPaymentIntent} 
+                    variant="outline"
+                    className="mt-4"
+                  >
+                    Retry
+                  </Button>
+                </div>
+              )
+            )}
           </div>
         </CardContent>
       </Card>
-      
-      <div className="flex justify-between mt-4">
-        <Button 
-          variant="outline" 
-          onClick={handleBack}
-          disabled={processing}
-        >
-          Back
-        </Button>
-        
-        <Button 
-          onClick={handleSubmit}
-          disabled={processing}
-          className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
-        >
-          {processing ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Processing...
-            </>
-          ) : (
-            <>
-              <CreditCard className="mr-2 h-4 w-4" />
-              Confirm Booking
-            </>
-          )}
-        </Button>
-      </div>
     </div>
   );
 }

@@ -1,90 +1,99 @@
 
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import Stripe from "https://esm.sh/stripe@12.5.0?target=deno";
-
-// These will be replaced with your actual keys
-const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY") || "";
-
-const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: "2023-10-16",
-});
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.23.0';
+import Stripe from 'https://esm.sh/stripe@12.13.0?target=deno';
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 serve(async (req) => {
   // Handle CORS preflight requests
-  if (req.method === "OPTIONS") {
-    return new Response(null, {
-      headers: corsHeaders,
-    });
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
   }
-  
+
   try {
+    // Initialize Supabase client
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+    );
+
+    // Verify authentication
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
+
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Parse request body
     const { sessionId, amount, tutorId, studentId, description } = await req.json();
-    
-    console.log("Creating payment intent with:", { sessionId, amount, tutorId, studentId });
-    
-    // Create a Stripe payment intent
+
+    // Validate required parameters
+    if (!sessionId || !amount || !tutorId || !studentId) {
+      return new Response(JSON.stringify({ error: 'Missing required parameters' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Initialize Stripe
+    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+      apiVersion: '2023-10-16',
+    });
+
+    // Create a payment intent
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Stripe expects amount in cents
-      currency: "usd",
-      payment_method_types: ["card"], // Explicitly specify payment method types
+      amount, // Amount in cents
+      currency: 'usd',
       metadata: {
         sessionId,
         tutorId,
         studentId,
       },
-      description,
+      description: description || `Tutoring session payment`,
     });
-    
-    console.log("Payment intent created:", paymentIntent.id);
-    
-    // Store the payment intent in the database
-    const { error: dbError } = await supabase
+
+    // Update payment transaction with Stripe payment intent ID
+    const { error: dbError } = await supabaseClient
       .from('payment_transactions')
-      .update({ 
+      .update({
         stripe_payment_intent_id: paymentIntent.id,
-        status: 'processing'
+        status: 'processing',
       })
       .eq('session_id', sessionId);
-      
+
     if (dbError) {
-      console.error("Error updating payment transaction:", dbError);
+      console.error('Error updating payment transaction:', dbError);
     }
-    
-    // Return the payment intent details to the client
+
+    // Return the client secret to the client
     return new Response(
       JSON.stringify({
         id: paymentIntent.id,
         client_secret: paymentIntent.client_secret,
-        amount: amount,
+        amount: amount / 100, // Convert back to dollars for display
       }),
       {
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       }
     );
   } catch (error) {
-    console.error("Error creating payment intent:", error);
+    console.error('Error creating payment intent:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message || 'Failed to create payment intent' }),
       {
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
-        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
       }
     );
   }
