@@ -11,6 +11,7 @@ import { PaymentSuccessScreen } from "./payment/PaymentSuccessScreen";
 import { Loader2 } from "lucide-react";
 import { AuthRequiredDialog } from "./booking-modal/AuthRequiredDialog";
 import { usePaymentForm } from "./payment/usePaymentForm";
+import { useState } from "react";
 
 interface SchedulerModalProps {
   isOpen: boolean;
@@ -40,9 +41,33 @@ export function SchedulerModal({
     setAuthRequired
   } = useBookingSession(tutor, isOpen, onClose);
 
-  // If we're in payment step and have all the necessary info, use the payment form hook
-  const paymentForm = step === 'payment' && selectedSlot && sessionId && user ? 
-    usePaymentForm({
+  // Initialize with null values to ensure hook is always called
+  const [paymentFormProps, setPaymentFormProps] = useState<{
+    tutor: Tutor;
+    selectedSlot: BookingSlot;
+    sessionId: string;
+    studentId: string;
+    studentName: string;
+    studentEmail: string;
+    onPaymentComplete: () => void;
+  } | null>(null);
+
+  // Always call usePaymentForm with default values or actual values when available
+  const paymentForm = usePaymentForm(
+    paymentFormProps || {
+      tutor: tutor,
+      selectedSlot: {} as BookingSlot, // Empty object as fallback
+      sessionId: "",
+      studentId: "",
+      studentName: "",
+      studentEmail: "",
+      onPaymentComplete: () => {}
+    }
+  );
+
+  // Update payment form props when ready
+  if (step === 'payment' && selectedSlot && sessionId && user && !paymentFormProps) {
+    setPaymentFormProps({
       tutor,
       selectedSlot,
       sessionId,
@@ -50,7 +75,8 @@ export function SchedulerModal({
       studentName: user.user_metadata?.full_name || '',
       studentEmail: user.email || '',
       onPaymentComplete: handlePaymentComplete
-    }) : null;
+    });
+  }
 
   return (
     <>
@@ -86,7 +112,7 @@ export function SchedulerModal({
                     selectedSlot={selectedSlot} 
                   />
                   
-                  {paymentForm && (
+                  {paymentFormProps && (
                     <div className="mt-6">
                       <PaymentCardElement
                         onCardElementReady={paymentForm.handleCardElementReady}
