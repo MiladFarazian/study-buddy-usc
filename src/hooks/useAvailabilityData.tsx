@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { format, startOfDay, addDays } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -13,20 +13,15 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export function useAvailabilityData(tutor: Tutor, startDate: Date) {
   const { toast } = useToast();
-  const { session } = useAuth();
   const [loading, setLoading] = useState<boolean>(true);
   const [availableSlots, setAvailableSlots] = useState<BookingSlot[]>([]);
   const [hasAvailability, setHasAvailability] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [tutorId, setTutorId] = useState<string | null>(null);
-  const [fetchAttempted, setFetchAttempted] = useState<boolean>(false);
-
-  // Store the tutor ID in state to use in dependency array
-  useEffect(() => {
-    if (tutor && tutor.id && tutor.id !== tutorId) {
-      setTutorId(tutor.id);
-    }
-  }, [tutor, tutorId]);
+  const [fetchTrigger, setFetchTrigger] = useState<number>(0);
+  
+  // Memoize these values to prevent unnecessary re-renders
+  const tutorId = useMemo(() => tutor?.id, [tutor]);
+  const memoizedStartDate = useMemo(() => startOfDay(startDate).toISOString(), [startDate]);
 
   const loadAvailability = useCallback(async () => {
     if (!tutorId) {
@@ -34,17 +29,14 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
       setLoading(false);
       setHasAvailability(false);
       setErrorMessage("No tutor information available");
-      setFetchAttempted(true);
       return;
     }
     
-    if (fetchAttempted) {
-      return; // Don't fetch again if we've already attempted once with the same inputs
-    }
-    
     setLoading(true);
+    
     try {
-      console.log(`Loading availability for tutor: ${tutorId} (starting at ${startDate.toISOString()})`);
+      console.log(`Loading availability for tutor: ${tutorId} (starting at ${memoizedStartDate})`);
+      
       // Get tutor's availability settings
       const availability = await getTutorAvailability(tutorId);
       
@@ -53,7 +45,6 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
         setHasAvailability(false);
         setErrorMessage("This tutor hasn't set their availability yet.");
         setLoading(false);
-        setFetchAttempted(true);
         return;
       }
       
@@ -65,12 +56,11 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
         setHasAvailability(false);
         setErrorMessage("This tutor has no availability slots set.");
         setLoading(false);
-        setFetchAttempted(true);
         return;
       }
       
       // Get tutor's booked sessions
-      const today = startOfDay(startDate);
+      const today = new Date(memoizedStartDate);
       const bookedSessions = await getTutorBookedSessions(tutorId, today, addDays(today, 28));
       
       // Generate available slots
@@ -103,33 +93,35 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
       });
     } finally {
       setLoading(false);
-      setFetchAttempted(true);
     }
-  }, [tutorId, startDate.toISOString(), toast, fetchAttempted]);
+  }, [tutorId, memoizedStartDate, toast]);
 
-  // Reset fetch state when key inputs change
-  useEffect(() => {
-    setFetchAttempted(false);
-  }, [tutorId, startDate.toISOString()]);
-
+  // Use effect with proper dependencies
   useEffect(() => {
     let isMounted = true;
     
-    if (isMounted && tutorId && !fetchAttempted) {
-      loadAvailability();
-    }
+    const fetchData = async () => {
+      if (isMounted && tutorId) {
+        await loadAvailability();
+      }
+    };
+    
+    fetchData();
     
     return () => {
       isMounted = false;
     };
-  }, [tutorId, loadAvailability, fetchAttempted]);
+  }, [tutorId, memoizedStartDate, fetchTrigger, loadAvailability]);
 
   const refreshAvailability = useCallback(() => {
-    if (tutorId) {
-      setFetchAttempted(false); // Reset the fetch state
-      loadAvailability();
-    }
-  }, [tutorId, loadAvailability]);
+    setFetchTrigger(prev => prev + 1);
+  }, []);
 
-  return { loading, availableSlots, hasAvailability, errorMessage, refreshAvailability };
+  return { 
+    loading, 
+    availableSlots, 
+    hasAvailability, 
+    errorMessage, 
+    refreshAvailability 
+  };
 }
