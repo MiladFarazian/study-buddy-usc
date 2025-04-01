@@ -1,17 +1,17 @@
 
-import React, { useState, useEffect } from 'react';
-import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
+import React, { useState, useEffect } from "react";
+import { useScheduling, BookingStep } from "@/contexts/SchedulingContext";
+import { DateSelectionStep } from "./DateSelectionStep";
+import { SessionDurationSelector } from "./SessionDurationSelector";
+import { PaymentStep } from "./PaymentStep";
+import { ConfirmationStep } from "./ConfirmationStep";
+import { BookingSlot } from "@/lib/scheduling";
+import { startOfDay } from "date-fns";
+import { Loader2 } from "lucide-react";
 import { Tutor } from "@/types/tutor";
 import { useAvailabilityData } from "@/hooks/useAvailabilityData";
-import { CalendlyDateSelector } from "./CalendlyDateSelector";
-import { CalendlyTimeSlots } from "./CalendlyTimeSlots";
-import { format, addDays, parseISO, isAfter, startOfDay } from 'date-fns';
-import { BookingSlot } from "@/lib/scheduling/types";
-import { createSessionBooking } from "@/lib/scheduling";
-import { Loader2 } from "lucide-react";
-import { useScheduling } from "@/contexts/SchedulingContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface CalendlyBookingWizardProps {
   tutor: Tutor;
@@ -19,148 +19,119 @@ interface CalendlyBookingWizardProps {
 }
 
 export function CalendlyBookingWizard({ tutor, onClose }: CalendlyBookingWizardProps) {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [isBooking, setIsBooking] = useState(false);
-  
-  // Set the tutor in the SchedulingContext
   const { state, dispatch, setTutor } = useScheduling();
-  const { selectedDate, selectedTimeSlot } = state;
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const [initializing, setInitializing] = useState(true);
+  const { session, user } = useAuth();
   
-  useEffect(() => {
-    setTutor(tutor);
-  }, [tutor, setTutor]);
-  
-  // Get availability data
+  // Get availability data for the tutor
   const today = startOfDay(new Date());
-  const { loading, availableSlots, hasAvailability, errorMessage } = useAvailabilityData(tutor, today);
+  const { loading: isLoading, availableSlots, hasAvailability, errorMessage } = 
+    useAvailabilityData(tutor, today);
   
-  // Extract all available dates
-  const availableDates = availableSlots
-    .filter(slot => slot.available)
-    .map(slot => slot.day)
-    .filter((date, index, self) => 
-      index === self.findIndex(d => 
-        d.getDate() === date.getDate() && 
-        d.getMonth() === date.getMonth() && 
-        d.getFullYear() === date.getFullYear()
-      )
-    );
+  // Set the tutor in the scheduling context
+  useEffect(() => {
+    if (tutor) {
+      setTutor(tutor);
+    }
+    
+    // Short delay to ensure auth state is processed
+    const timer = setTimeout(() => {
+      setInitializing(false);
+    }, 800);
+    
+    // Reset the scheduling state when the component unmounts
+    return () => {
+      clearTimeout(timer);
+      dispatch({ type: "RESET" });
+    };
+  }, [tutor, setTutor, dispatch]);
   
-  // Handle booking session
-  const handleBookSession = async () => {
-    if (!user || !selectedTimeSlot) return;
-    
-    setIsBooking(true);
-    
-    try {
-      // Parse start time
-      const startDate = new Date(selectedTimeSlot.day);
-      const [startHour, startMin] = selectedTimeSlot.start.split(':').map(Number);
-      startDate.setHours(startHour, startMin, 0, 0);
-      
-      // Set end time (30 mins after start)
-      const endDate = new Date(startDate);
-      endDate.setMinutes(endDate.getMinutes() + 30);
-      
-      // Create booking
-      await createSessionBooking(
-        user.id,
-        tutor.id,
-        null, // courseId
-        startDate.toISOString(),
-        endDate.toISOString(),
-        null, // location
-        null  // notes
+  const renderStep = () => {
+    // Don't render anything until initialization is complete
+    if (initializing) {
+      return (
+        <div className="flex flex-col justify-center items-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal mb-4" />
+          <p className="text-center text-gray-600">Initializing booking wizard...</p>
+        </div>
       );
-      
-      toast({
-        title: "Session Booked!",
-        description: `Your session with ${tutor.name} has been scheduled.`,
-      });
-      
-      onClose();
-    } catch (error) {
-      console.error("Error booking session:", error);
-      toast({
-        title: "Booking Failed",
-        description: "There was an error booking your session. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsBooking(false);
+    }
+    
+    switch (state.bookingStep) {
+      case BookingStep.SELECT_DATE_TIME:
+        return <DateSelectionStep availableSlots={availableSlots} isLoading={isLoading} />;
+      case BookingStep.SELECT_DURATION:
+        return <SessionDurationSelector />;
+      case BookingStep.FILL_FORM:
+        return (
+          <PaymentStep 
+            onComplete={() => dispatch({ type: "SET_STEP", payload: BookingStep.CONFIRMATION })}
+            onRequireAuth={() => setShowAuthDialog(true)}
+          />
+        );
+      case BookingStep.CONFIRMATION:
+        return (
+          <ConfirmationStep
+            onClose={onClose}
+            onReset={() => dispatch({ type: "RESET" })}
+          />
+        );
+      default:
+        return <DateSelectionStep availableSlots={availableSlots} isLoading={isLoading} />;
     }
   };
   
-  if (loading) {
+  // Show loading state if the initialization is not complete
+  if (initializing || (isLoading && !availableSlots.length)) {
     return (
-      <div className="flex flex-col items-center justify-center py-10">
-        <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal mb-4" />
-        <p>Loading available times...</p>
+      <div className="w-full max-w-4xl mx-auto p-4">
+        <div className="flex flex-col justify-center items-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal mb-4" />
+          <p className="text-center text-gray-600">Loading available times...</p>
+        </div>
       </div>
     );
   }
   
-  if (!hasAvailability || availableSlots.length === 0) {
+  // Show error message if there's no availability
+  if (!hasAvailability && !isLoading) {
     return (
-      <div className="py-6 text-center">
-        <h2 className="text-xl font-semibold mb-4">No Availability</h2>
-        <p className="text-muted-foreground mb-6">
-          {errorMessage || `${tutor.name} doesn't have any available slots right now.`}
-        </p>
-        <Button variant="outline" onClick={onClose}>Close</Button>
+      <div className="w-full max-w-4xl mx-auto p-4">
+        <div className="flex flex-col justify-center items-center py-8">
+          <div className="mb-4 p-2 rounded-full bg-red-50">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-usc-cardinal"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <h3 className="text-lg font-medium mb-2">No Availability</h3>
+          <p className="text-center text-gray-600 mb-4">{errorMessage || "This tutor has no available time slots."}</p>
+          <button 
+            onClick={onClose}
+            className="px-4 py-2 bg-usc-cardinal text-white rounded-md hover:bg-usc-cardinal-dark"
+          >
+            Close
+          </button>
+        </div>
       </div>
     );
   }
-  
-  // Calculate session price based on tutor's hourly rate
-  const hourlyRate = tutor.hourlyRate || 25;
-  const sessionPrice = (hourlyRate / 2).toFixed(2); // 30-minute session
   
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-center mb-6">
-        Book a Session with {tutor.name}
-      </h1>
+    <div className="w-full max-w-4xl mx-auto p-4">
+      {renderStep()}
       
-      <CalendlyDateSelector 
-        availableDates={availableDates} 
-        showWeekMonth={true}
-      />
-      
-      <CalendlyTimeSlots 
-        availableSlots={availableSlots}
-      />
-      
-      {selectedTimeSlot && (
-        <div className="border-t pt-6 mt-8">
-          <div className="flex justify-between mb-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Session Duration</p>
-              <p className="font-medium">30 minutes</p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-muted-foreground">Price</p>
-              <p className="font-medium">${sessionPrice}</p>
-            </div>
+      <Dialog open={showAuthDialog} onOpenChange={setShowAuthDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Authentication Required</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="mb-4">
+              You need to be logged in to book a session. Please log in or create an account to continue.
+            </p>
+            {/* Auth buttons would go here */}
           </div>
-          
-          <Button 
-            className="w-full bg-usc-cardinal hover:bg-usc-cardinal-dark"
-            onClick={handleBookSession}
-            disabled={isBooking}
-          >
-            {isBooking ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Booking Session...
-              </>
-            ) : (
-              'Confirm Booking'
-            )}
-          </Button>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

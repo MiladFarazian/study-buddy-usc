@@ -9,9 +9,11 @@ import {
   generateAvailableSlots
 } from "@/lib/scheduling";
 import { Tutor } from "@/types/tutor";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function useAvailabilityData(tutor: Tutor, startDate: Date) {
   const { toast } = useToast();
+  const { session } = useAuth();
   const [loading, setLoading] = useState<boolean>(true);
   const [availableSlots, setAvailableSlots] = useState<BookingSlot[]>([]);
   const [hasAvailability, setHasAvailability] = useState<boolean>(true);
@@ -89,10 +91,16 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
   }, [tutor, startDate, toast]);
 
   useEffect(() => {
+    // Don't load availability until we have both a tutor and an auth session
     if (tutor && tutor.id) {
-      loadAvailability();
+      // Delay loading availability to ensure auth state is fully processed
+      const timer = setTimeout(() => {
+        loadAvailability();
+      }, 500);
+      
+      return () => clearTimeout(timer);
     }
-  }, [tutor, loadAvailability]);
+  }, [tutor, loadAvailability, session]);
 
   const refreshAvailability = useCallback(() => {
     loadAvailability();
