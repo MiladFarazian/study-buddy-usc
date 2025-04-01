@@ -18,14 +18,15 @@ import Schedule from "@/pages/Schedule";
 
 const router = createBrowserRouter([
   {
+    path: "/",
     element: <Layout />,
     children: [
       {
-        path: "/",
+        index: true,
         element: <Index />,
       },
       {
-        path: "/tutors",
+        path: "tutors",
         element: (
           <PrivateRoute>
             <Tutors />
@@ -33,7 +34,7 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "/tutors/:id",
+        path: "tutors/:id",
         element: (
           <PrivateRoute>
             <TutorProfile />
@@ -41,7 +42,7 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "/tutors/:id/schedule",
+        path: "tutors/:id/schedule",
         element: (
           <PrivateRoute>
             <Schedule />
@@ -49,15 +50,15 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "/login",
+        path: "login",
         element: <Login />,
       },
       {
-        path: "/register",
+        path: "register",
         element: <Register />,
       },
       {
-        path: "/settings",
+        path: "settings",
         element: (
           <PrivateRoute>
             <Settings />
@@ -65,7 +66,7 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "/messages",
+        path: "messages",
         element: (
           <PrivateRoute>
             <Messages />
