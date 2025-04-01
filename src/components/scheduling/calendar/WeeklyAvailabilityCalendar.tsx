@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { addDays, format, startOfWeek, isWithinInterval } from 'date-fns';
+import React, { useState, useEffect, useCallback } from 'react';
+import { addDays, format, startOfWeek, parse } from 'date-fns';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { WeeklyAvailability } from "@/lib/scheduling/types";
+import { WeeklyAvailability, AvailabilitySlot } from "@/lib/scheduling/types";
 
 interface WeeklyAvailabilityCalendarProps {
   availability: WeeklyAvailability;
@@ -19,13 +19,12 @@ export const WeeklyAvailabilityCalendar = ({
 }: WeeklyAvailabilityCalendarProps) => {
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(startOfWeek(new Date(), { weekStartsOn: 0 }));
   const [isSelecting, setIsSelecting] = useState(false);
-  const [selectionStartCell, setSelectionStartCell] = useState<string | null>(null);
-  const [hoveredCell, setHoveredCell] = useState<string | null>(null);
-
-  // Generate hours for the day
-  const hours = Array.from({ length: 13 }, (_, i) => i + 8); // 8 AM to 8 PM
+  const [selectionMode, setSelectionMode] = useState<'add' | 'remove'>('add');
+  const [selectionStart, setSelectionStart] = useState<{day: string, hour: number} | null>(null);
+  const [selectionEnd, setSelectionEnd] = useState<{day: string, hour: number} | null>(null);
   
-  // Generate days of the week
+  const hours = Array.from({ length: 14 }, (_, i) => i + 8);
+  
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const day = addDays(currentWeekStart, i);
     return {
@@ -44,31 +43,24 @@ export const WeeklyAvailabilityCalendar = ({
     setCurrentWeekStart(addDays(currentWeekStart, 7));
   };
 
-  const isCellAvailable = (day: string, hour: number) => {
-    if (!availability[day]) return false;
+  const isCellAvailable = (day: string, hour: number): boolean => {
+    const hourStart = `${hour.toString().padStart(2, '0')}:00`;
+    const hourEnd = `${(hour + 1).toString().padStart(2, '0')}:00`;
     
-    const hourStr = hour.toString().padStart(2, '0');
-    const nextHourStr = (hour + 1).toString().padStart(2, '0');
-    
-    return availability[day].some(slot => {
-      const slotStart = slot.start.split(':')[0];
-      const slotEnd = slot.end.split(':')[0];
+    return (availability[day] || []).some(slot => {
+      const slotStart = slot.start;
+      const slotEnd = slot.end;
       
-      return parseInt(slotStart) <= hour && parseInt(slotEnd) > hour;
+      return slotStart < hourEnd && slotEnd > hourStart;
     });
   };
 
-  const getCellKey = (day: string, hour: number) => `${day}-${hour}`;
-
-  const isInSelection = (day: string, hour: number) => {
-    if (!isSelecting || !selectionStartCell || !hoveredCell) return false;
-    
-    const [startDay, startHour] = selectionStartCell.split('-');
-    const [endDay, endHour] = hoveredCell.split('-');
+  const isInCurrentSelection = (day: string, hour: number): boolean => {
+    if (!selectionStart || !selectionEnd) return false;
     
     const dayIndices = weekDays.map(d => d.fullName);
-    const startDayIndex = dayIndices.indexOf(startDay);
-    const endDayIndex = dayIndices.indexOf(endDay);
+    const startDayIndex = dayIndices.indexOf(selectionStart.day);
+    const endDayIndex = dayIndices.indexOf(selectionEnd.day);
     const currentDayIndex = dayIndices.indexOf(day);
     
     const minDayIndex = Math.min(startDayIndex, endDayIndex);
@@ -76,126 +68,137 @@ export const WeeklyAvailabilityCalendar = ({
     
     if (currentDayIndex < minDayIndex || currentDayIndex > maxDayIndex) return false;
     
-    const startHourNum = parseInt(startHour);
-    const endHourNum = parseInt(endHour);
-    const minHour = Math.min(startHourNum, endHourNum);
-    const maxHour = Math.max(startHourNum, endHourNum);
+    const minHour = Math.min(selectionStart.hour, selectionEnd.hour);
+    const maxHour = Math.max(selectionStart.hour, selectionEnd.hour);
     
     return hour >= minHour && hour <= maxHour;
   };
 
-  const handleMouseDown = (day: string, hour: number) => {
+  const handleCellMouseDown = (day: string, hour: number) => {
     if (readOnly) return;
     
+    const isAvailable = isCellAvailable(day, hour);
+    
+    setSelectionMode(isAvailable ? 'remove' : 'add');
     setIsSelecting(true);
-    setSelectionStartCell(getCellKey(day, hour));
+    setSelectionStart({ day, hour });
+    setSelectionEnd({ day, hour });
   };
 
-  const handleMouseMove = (day: string, hour: number) => {
-    if (readOnly) return;
-    
-    if (isSelecting) {
-      setHoveredCell(getCellKey(day, hour));
-    }
+  const handleCellMouseEnter = (day: string, hour: number) => {
+    if (!isSelecting || readOnly) return;
+    setSelectionEnd({ day, hour });
   };
 
-  const handleMouseUp = () => {
-    if (readOnly) return;
+  const updateAvailabilityFromSelection = useCallback(() => {
+    if (!selectionStart || !selectionEnd) return;
     
-    if (isSelecting && selectionStartCell && hoveredCell) {
-      const [startDay, startHour] = selectionStartCell.split('-');
-      const [endDay, endHour] = hoveredCell.split('-');
+    const newAvailability = { ...availability };
+    const dayIndices = weekDays.map(d => d.fullName);
+    const startDayIndex = dayIndices.indexOf(selectionStart.day);
+    const endDayIndex = dayIndices.indexOf(selectionEnd.day);
+    
+    const minDayIndex = Math.min(startDayIndex, endDayIndex);
+    const maxDayIndex = Math.max(startDayIndex, endDayIndex);
+    
+    const minHour = Math.min(selectionStart.hour, selectionEnd.hour);
+    const maxHour = Math.max(selectionStart.hour, selectionEnd.hour);
+    
+    for (let dayIndex = minDayIndex; dayIndex <= maxDayIndex; dayIndex++) {
+      const currentDay = dayIndices[dayIndex];
       
-      const dayIndices = weekDays.map(d => d.fullName);
-      const startDayIndex = dayIndices.indexOf(startDay);
-      const endDayIndex = dayIndices.indexOf(endDay);
-      
-      const minDayIndex = Math.min(startDayIndex, endDayIndex);
-      const maxDayIndex = Math.max(startDayIndex, endDayIndex);
-      
-      const startHourNum = parseInt(startHour);
-      const endHourNum = parseInt(endHour);
-      const minHour = Math.min(startHourNum, endHourNum);
-      const maxHour = Math.max(startHourNum, endHourNum);
-      
-      // Update availability
-      const newAvailability = { ...availability };
-      
-      for (let dayIndex = minDayIndex; dayIndex <= maxDayIndex; dayIndex++) {
-        const day = dayIndices[dayIndex];
-        newAvailability[day] = newAvailability[day] || [];
+      if (selectionMode === 'add') {
+        const newSlot: AvailabilitySlot = {
+          day: currentDay,
+          start: `${minHour.toString().padStart(2, '0')}:00`,
+          end: `${(maxHour + 1).toString().padStart(2, '0')}:00`
+        };
         
-        // Create new slot or update existing
-        const startTime = `${minHour.toString().padStart(2, '0')}:00`;
-        const endTime = `${(maxHour + 1).toString().padStart(2, '0')}:00`;
+        const existingSlots = newAvailability[currentDay] || [];
         
-        // Check if we need to add or remove availability
-        const isAddingAvailability = !isCellAvailable(day, minHour);
-        
-        if (isAddingAvailability) {
-          // Check for overlapping slots and merge or add
-          const overlappingSlots = newAvailability[day].filter(slot => {
-            const slotStart = parseInt(slot.start.split(':')[0]);
-            const slotEnd = parseInt(slot.end.split(':')[0]);
-            return (slotStart <= maxHour + 1 && slotEnd >= minHour);
-          });
+        const nonOverlappingSlots = existingSlots.filter(slot => {
+          const slotStart = parseInt(slot.start.split(':')[0]);
+          const slotEnd = parseInt(slot.end.split(':')[0]);
           
-          if (overlappingSlots.length > 0) {
-            // Remove overlapping slots
-            newAvailability[day] = newAvailability[day].filter(slot => {
-              const slotStart = parseInt(slot.start.split(':')[0]);
-              const slotEnd = parseInt(slot.end.split(':')[0]);
-              return !(slotStart <= maxHour + 1 && slotEnd >= minHour);
-            });
-            
-            // Get the min start and max end from all slots
-            const allStarts = [minHour, ...overlappingSlots.map(s => parseInt(s.start.split(':')[0]))];
-            const allEnds = [maxHour + 1, ...overlappingSlots.map(s => parseInt(s.end.split(':')[0]))];
-            
-            const newStart = Math.min(...allStarts).toString().padStart(2, '0') + ':00';
-            const newEnd = Math.max(...allEnds).toString().padStart(2, '0') + ':00';
-            
-            // Add merged slot
-            newAvailability[day].push({
-              day,
-              start: newStart,
-              end: newEnd
-            });
+          return slotEnd <= minHour || slotStart >= maxHour + 1;
+        });
+        
+        const allSlots = [...nonOverlappingSlots, newSlot];
+        const sortedSlots = allSlots.sort((a, b) => {
+          return parseInt(a.start) - parseInt(b.start);
+        });
+        
+        const mergedSlots: AvailabilitySlot[] = [];
+        let currentSlot = sortedSlots[0];
+        
+        for (let i = 1; i < sortedSlots.length; i++) {
+          const nextSlot = sortedSlots[i];
+          const currentEnd = parseInt(currentSlot.end.split(':')[0]);
+          const nextStart = parseInt(nextSlot.start.split(':')[0]);
+          
+          if (currentEnd >= nextStart) {
+            currentSlot.end = nextSlot.end > currentSlot.end ? nextSlot.end : currentSlot.end;
           } else {
-            // Add new slot
-            newAvailability[day].push({
-              day,
-              start: startTime,
-              end: endTime
-            });
+            mergedSlots.push(currentSlot);
+            currentSlot = nextSlot;
           }
-        } else {
-          // Remove or update existing slots that overlap with selection
-          newAvailability[day] = newAvailability[day].filter(slot => {
-            const slotStart = parseInt(slot.start.split(':')[0]);
-            const slotEnd = parseInt(slot.end.split(':')[0]);
-            
-            // Keep slots that don't overlap with our selection
-            return !(slotStart < maxHour + 1 && slotEnd > minHour);
-          });
         }
+        
+        mergedSlots.push(currentSlot);
+        
+        newAvailability[currentDay] = mergedSlots;
+      } else {
+        const existingSlots = newAvailability[currentDay] || [];
+        
+        const resultSlots: AvailabilitySlot[] = [];
+        
+        existingSlots.forEach(slot => {
+          const slotStart = parseInt(slot.start.split(':')[0]);
+          const slotEnd = parseInt(slot.end.split(':')[0]);
+          
+          if (slotEnd <= minHour || slotStart >= maxHour + 1) {
+            resultSlots.push(slot);
+          } else {
+            if (slotStart < minHour) {
+              resultSlots.push({
+                day: currentDay,
+                start: slot.start,
+                end: `${minHour.toString().padStart(2, '0')}:00`
+              });
+            }
+            
+            if (slotEnd > maxHour + 1) {
+              resultSlots.push({
+                day: currentDay,
+                start: `${(maxHour + 1).toString().padStart(2, '0')}:00`,
+                end: slot.end
+              });
+            }
+          }
+        });
+        
+        newAvailability[currentDay] = resultSlots;
       }
-      
-      onChange(newAvailability);
     }
     
-    setIsSelecting(false);
-    setSelectionStartCell(null);
-    setHoveredCell(null);
-  };
+    onChange(newAvailability);
+  }, [availability, onChange, selectionStart, selectionEnd, weekDays, selectionMode]);
+
+  const handleMouseUp = useCallback(() => {
+    if (isSelecting) {
+      updateAvailabilityFromSelection();
+      setIsSelecting(false);
+      setSelectionStart(null);
+      setSelectionEnd(null);
+    }
+  }, [isSelecting, updateAvailabilityFromSelection]);
 
   useEffect(() => {
-    // Add global mouse up event listener to handle if mouse goes outside grid
-    window.addEventListener('mouseup', handleMouseUp);
-    return () => {
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isSelecting, selectionStartCell, hoveredCell]);
+    if (isSelecting) {
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => document.removeEventListener('mouseup', handleMouseUp);
+    }
+  }, [isSelecting, handleMouseUp]);
 
   return (
     <Card className="border shadow-sm">
@@ -218,7 +221,6 @@ export const WeeklyAvailabilityCalendar = ({
         
         <div className="overflow-x-auto">
           <div className="min-w-[700px]">
-            {/* Header Row with Days */}
             <div className="grid grid-cols-[80px_repeat(7,1fr)]">
               <div className="h-16 border-b flex items-end justify-center pb-2 font-medium">
                 Time
@@ -231,31 +233,31 @@ export const WeeklyAvailabilityCalendar = ({
               ))}
             </div>
             
-            {/* Time Slots */}
             {hours.map((hour) => (
               <div key={hour} className="grid grid-cols-[80px_repeat(7,1fr)]">
                 <div className="h-12 border-b flex items-center justify-center text-sm text-muted-foreground">
                   {format(new Date().setHours(hour, 0, 0, 0), 'h:mm a')}
                 </div>
                 
-                {weekDays.map((day, dayIndex) => {
+                {weekDays.map((day) => {
                   const isAvailable = isCellAvailable(day.fullName, hour);
-                  const inSelection = isInSelection(day.fullName, hour);
+                  const isSelected = isSelecting && isInCurrentSelection(day.fullName, hour);
+                  const isAddingSelected = isSelected && selectionMode === 'add';
+                  const isRemovingSelected = isSelected && selectionMode === 'remove';
                   
                   return (
                     <div
-                      key={`${day.name}-${hour}`}
+                      key={`${day.fullName}-${hour}`}
                       className={cn(
                         "h-12 border-b border-r cursor-pointer transition-colors",
-                        isAvailable && !inSelection ? "bg-usc-cardinal hover:bg-usc-cardinal-dark" : "",
-                        !isAvailable && !inSelection ? "bg-gray-100 hover:bg-gray-200" : "",
-                        inSelection ? "bg-usc-gold text-gray-900" : "",
-                        readOnly && isAvailable ? "cursor-default bg-usc-cardinal" : "",
-                        readOnly && !isAvailable ? "cursor-default bg-gray-100" : ""
+                        isAvailable && !isSelected ? "bg-usc-cardinal hover:bg-usc-cardinal-dark" : "",
+                        !isAvailable && !isSelected ? "bg-gray-100 hover:bg-gray-200" : "",
+                        isAddingSelected ? "bg-usc-gold text-gray-900" : "",
+                        isRemovingSelected ? "bg-gray-300" : "",
+                        readOnly ? "cursor-default" : ""
                       )}
-                      onMouseDown={!readOnly ? () => handleMouseDown(day.fullName, hour) : undefined}
-                      onMouseMove={!readOnly ? () => handleMouseMove(day.fullName, hour) : undefined}
-                      onMouseUp={!readOnly ? handleMouseUp : undefined}
+                      onMouseDown={!readOnly ? () => handleCellMouseDown(day.fullName, hour) : undefined}
+                      onMouseEnter={!readOnly ? () => handleCellMouseEnter(day.fullName, hour) : undefined}
                     />
                   );
                 })}

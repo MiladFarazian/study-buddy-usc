@@ -78,13 +78,19 @@ export async function updateTutorAvailability(
   availability: WeeklyAvailability
 ): Promise<boolean> {
   try {
+    console.log("Updating availability for tutor:", tutorId, availability);
+    
     const { error } = await supabase
       .from('profiles')
       .update({ availability })
       .eq('id', tutorId);
       
-    if (error) throw error;
+    if (error) {
+      console.error("Error updating tutor availability:", error);
+      throw error;
+    }
     
+    console.log("Successfully updated tutor availability");
     return true;
   } catch (error) {
     console.error("Error updating tutor availability:", error);
