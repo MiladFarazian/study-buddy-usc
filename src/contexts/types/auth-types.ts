@@ -9,8 +9,6 @@ export type AuthContextType = {
   user: User | null;
   profile: Profile | null;
   signIn: (provider: 'google') => Promise<void>;
-  signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   loading: boolean;
   isStudent: boolean;

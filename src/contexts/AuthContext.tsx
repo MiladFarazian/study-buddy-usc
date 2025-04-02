@@ -11,7 +11,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { session, user, profile, loading, isStudent, isTutor, isProfileComplete, updateProfile } = useAuthState();
   const { signIn, signOut } = useAuthMethods();
 
-  const value = {
+  const value: AuthContextType = {
     session,
     user,
     profile,

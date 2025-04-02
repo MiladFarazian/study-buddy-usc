@@ -43,7 +43,7 @@ file_size_limit = "50MiB"
 # in emails.
 site_url = "http://localhost:3000"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["https://localhost:3000"]
+additional_redirect_urls = ["https://localhost:3000", "http://localhost:5173", "https://2af9de10-0b79-4e1c-95f0-e684ae075927.lovableproject.com"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 seconds (one
 # week).
 jwt_expiry = 3600
@@ -52,7 +52,7 @@ enable_signup = true
 
 [auth.email]
 # Allow/disallow new user signups via email to your project.
-enable_signup = true
+enable_signup = false
 # If enabled, a user will be required to confirm any email change on both the old, and new email
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
@@ -115,10 +115,10 @@ redirect_uri = ""
 url = ""
 
 [auth.external.google]
-enabled = false
-client_id = ""
+enabled = true
+client_id = "916366352118-01hf6mghsee0fl7i76oq0nkv1sfmk3c8.apps.googleusercontent.com"
 secret = ""
-redirect_uri = ""
+redirect_uri = "http://localhost:3000/auth/callback"
 url = ""
 
 [auth.external.keycloak]
