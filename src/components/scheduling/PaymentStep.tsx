@@ -3,13 +3,14 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from 'date-fns';
-import { CalendarIcon, Clock, User, CreditCard, ArrowLeft, Loader2 } from "lucide-react";
+import { CalendarIcon, Clock, User, CreditCard, ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useScheduling } from '@/contexts/SchedulingContext';
 import { createSessionBooking } from "@/lib/scheduling/booking-utils";
 import { StripePaymentForm } from "./payment/StripePaymentForm";
 import { createPaymentIntent } from "@/lib/stripe-utils";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function PaymentStep({ 
   onComplete,
@@ -28,6 +29,7 @@ export function PaymentStep({
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   // Calculate total cost
   const totalCost = selectedDuration ? calculatePrice(selectedDuration) : 0;
@@ -71,6 +73,7 @@ export function PaymentStep({
     }
     
     setLoading(true);
+    setError(null);
     
     try {
       // Format date and times for the API
@@ -102,7 +105,7 @@ export function PaymentStep({
         
         const paymentIntent = await createPaymentIntent(
           bookingResult.id,
-          Math.round(totalCost * 100), // convert to cents
+          totalCost,
           tutor.id,
           user.id,
           description
@@ -118,11 +121,22 @@ export function PaymentStep({
       }
     } catch (error) {
       console.error("Error creating session or payment intent:", error);
-      toast({
-        title: "Error",
-        description: "Failed to set up booking. Please try again.",
-        variant: "destructive",
-      });
+      
+      // Check for specific error about tutor not having Stripe Connect set up
+      if (error.message && (
+        error.message.includes("payment account") || 
+        error.message.includes("Stripe Connect") ||
+        error.message.includes("not completed")
+      )) {
+        setError("The tutor hasn't completed their payment account setup. Please try a different tutor or contact support.");
+      } else {
+        setError("Failed to set up booking. Please try again.");
+        toast({
+          title: "Error",
+          description: "Failed to set up booking. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -198,6 +212,20 @@ export function PaymentStep({
                 <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal mb-4" />
                 <p className="text-center text-muted-foreground">Setting up your booking...</p>
               </div>
+            ) : error ? (
+              <div className="py-4">
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+                <Button 
+                  onClick={goToPreviousStep} 
+                  className="mt-4"
+                >
+                  Go Back
+                </Button>
+              </div>
             ) : (
               clientSecret ? (
                 <StripePaymentForm
@@ -227,4 +255,4 @@ export function PaymentStep({
       </Card>
     </div>
   );
-}
+};

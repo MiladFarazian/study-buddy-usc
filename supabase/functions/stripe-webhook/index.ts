@@ -3,7 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.23.0';
 import Stripe from 'https://esm.sh/stripe@12.13.0?target=deno';
 
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+const stripe = new Stripe(Deno.env.get('STRIPE_CONNECT_SECRET_KEY') || '', {
   apiVersion: '2023-10-16',
 });
 
@@ -86,6 +86,7 @@ serve(async (req) => {
             .from('payment_transactions')
             .update({
               status: 'completed',
+              payment_intent_status: paymentIntent.status,
               updated_at: new Date().toISOString()
             })
             .eq('id', transactions.id);
@@ -106,6 +107,7 @@ serve(async (req) => {
               stripe_payment_intent_id: paymentIntent.id,
               amount: paymentIntent.amount / 100, // Convert from cents to dollars
               status: 'completed',
+              payment_intent_status: paymentIntent.status,
               tutor_id: tutorId,
               student_id: studentId,
             });
@@ -181,6 +183,7 @@ serve(async (req) => {
             .from('payment_transactions')
             .update({
               status: 'failed',
+              payment_intent_status: failedPayment.status,
               updated_at: new Date().toISOString()
             })
             .eq('id', failedTx.id);
@@ -214,6 +217,89 @@ serve(async (req) => {
               });
           } catch (notifyError) {
             console.error('Error creating payment failure notification:', notifyError);
+          }
+        }
+        break;
+
+      case 'account.updated':
+        const account = event.data.object;
+        console.log(`Stripe Connect account updated: ${account.id}`);
+        
+        // Update the user's Stripe Connect onboarding status
+        if (account.metadata?.user_id) {
+          const onboardingComplete = account.details_submitted && account.payouts_enabled;
+          
+          const { error: updateError } = await supabaseAdmin
+            .from('profiles')
+            .update({
+              stripe_connect_onboarding_complete: onboardingComplete,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', account.metadata.user_id);
+            
+          if (updateError) {
+            console.error('Error updating profile onboarding status:', updateError);
+          } else {
+            console.log(`Updated onboarding status for user ${account.metadata.user_id} to ${onboardingComplete}`);
+          }
+        }
+        break;
+
+      case 'transfer.created':
+        const transfer = event.data.object;
+        console.log(`Transfer created: ${transfer.id}`);
+        
+        if (transfer.metadata?.payment_id && transfer.metadata?.session_id) {
+          // Update payment transfer record
+          const { error: transferError } = await supabaseAdmin
+            .from('payment_transfers')
+            .update({
+              transfer_id: transfer.id,
+              status: 'completed',
+              transferred_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .eq('payment_id', transfer.metadata.payment_id);
+            
+          if (transferError) {
+            console.error('Error updating payment transfer:', transferError);
+          } else {
+            console.log(`Updated transfer record for payment ${transfer.metadata.payment_id}`);
+          }
+          
+          // Update payment transaction with transfer status
+          const { error: paymentUpdateError } = await supabaseAdmin
+            .from('payment_transactions')
+            .update({
+              transfer_status: 'completed',
+              transfer_id: transfer.id,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', transfer.metadata.payment_id);
+            
+          if (paymentUpdateError) {
+            console.error('Error updating payment transaction with transfer status:', paymentUpdateError);
+          }
+          
+          // Send notification to tutor about funds transferred
+          if (transfer.metadata.tutor_id) {
+            try {
+              await supabaseAdmin
+                .from('notifications')
+                .insert({
+                  user_id: transfer.metadata.tutor_id,
+                  type: 'funds_transferred',
+                  title: 'Funds Transferred',
+                  message: `Funds for session #${transfer.metadata.session_id.slice(0, 8)} have been transferred to your account.`,
+                  metadata: {
+                    sessionId: transfer.metadata.session_id,
+                    amount: transfer.amount / 100,
+                    transfer_id: transfer.id
+                  }
+                });
+            } catch (notifyError) {
+              console.error('Error creating tutor transfer notification:', notifyError);
+            }
           }
         }
         break;

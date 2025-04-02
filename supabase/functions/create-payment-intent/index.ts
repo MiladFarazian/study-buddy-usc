@@ -16,12 +16,12 @@ serve(async (req) => {
 
   try {
     // Check if Stripe secret key is configured
-    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
+    const stripeSecretKey = Deno.env.get('STRIPE_CONNECT_SECRET_KEY');
     if (!stripeSecretKey) {
-      console.error('Missing STRIPE_SECRET_KEY environment variable');
+      console.error('Missing STRIPE_CONNECT_SECRET_KEY environment variable');
       return new Response(
         JSON.stringify({ 
-          error: 'Stripe configuration missing. Please set the STRIPE_SECRET_KEY in Supabase edge function secrets.' 
+          error: 'Stripe configuration missing. Please set the STRIPE_CONNECT_SECRET_KEY in Supabase edge function secrets.' 
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -60,6 +60,49 @@ serve(async (req) => {
 
     console.log(`Creating payment intent for session ${sessionId} with amount ${amount}`);
 
+    // Initialize Supabase client
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') || '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+    );
+
+    // Get the tutor's Stripe Connect ID
+    const { data: tutorProfile, error: tutorError } = await supabaseAdmin
+      .from('profiles')
+      .select('stripe_connect_id, stripe_connect_onboarding_complete')
+      .eq('id', tutorId)
+      .single();
+
+    if (tutorError || !tutorProfile) {
+      return new Response(
+        JSON.stringify({ error: 'Tutor profile not found' }), 
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 404,
+        }
+      );
+    }
+
+    if (!tutorProfile.stripe_connect_id) {
+      return new Response(
+        JSON.stringify({ error: 'Tutor has not set up their payment account yet' }), 
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
+    }
+
+    if (!tutorProfile.stripe_connect_onboarding_complete) {
+      return new Response(
+        JSON.stringify({ error: 'Tutor has not completed their payment account setup' }), 
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
+    }
+
     // Initialize Stripe
     try {
       const stripe = new Stripe(stripeSecretKey, {
@@ -81,19 +124,49 @@ serve(async (req) => {
       
       console.log('Creating payment intent with amount in cents:', amountInCents);
       
+      // Calculate platform fee (10% of the amount)
+      const platformFeeAmount = Math.round(amountInCents * 0.1);
+      
       // Create a new payment intent
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amountInCents,
         currency: 'usd',
+        capture_method: 'manual', // This allows us to authorize now but capture later
         metadata: {
           sessionId,
           tutorId,
           studentId,
+          platformFee: platformFeeAmount,
         },
         description: description || `Tutoring session payment`,
+        application_fee_amount: platformFeeAmount,
+        transfer_data: {
+          destination: tutorProfile.stripe_connect_id,
+        },
       });
       
       console.log(`Created new payment intent: ${paymentIntent.id}`);
+
+      // Create a payment transaction record in the database
+      const { data: paymentTransaction, error: paymentError } = await supabaseAdmin
+        .from('payment_transactions')
+        .insert({
+          session_id: sessionId,
+          student_id: studentId,
+          tutor_id: tutorId,
+          amount: parseFloat(amount.toString()),
+          status: 'pending',
+          stripe_payment_intent_id: paymentIntent.id,
+          payment_intent_status: paymentIntent.status,
+          capture_method: 'manual',
+          platform_fee: platformFeeAmount / 100,
+        })
+        .select()
+        .single();
+
+      if (paymentError) {
+        console.error('Error creating payment transaction:', paymentError);
+      }
       
       // Return the client secret to the client
       return new Response(
@@ -101,6 +174,7 @@ serve(async (req) => {
           id: paymentIntent.id,
           client_secret: paymentIntent.client_secret,
           amount: amount, // Keep original amount for display
+          payment_transaction_id: paymentTransaction?.id,
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

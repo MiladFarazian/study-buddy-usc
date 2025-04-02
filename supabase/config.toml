@@ -195,3 +195,12 @@ verify_jwt = false
 
 [functions.stripe-webhook]
 verify_jwt = false
+
+[functions.check-connect-account]
+verify_jwt = true
+
+[functions.create-connect-account]
+verify_jwt = true
+
+[functions.confirm-session-complete]
+verify_jwt = true
