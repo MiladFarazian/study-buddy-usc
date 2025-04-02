@@ -6,6 +6,11 @@ import { useToast } from "@/hooks/use-toast";
 export const useAuthMethods = () => {
   const { toast } = useToast();
 
+  // Helper function to validate USC email domains
+  const isUscEmail = (email: string): boolean => {
+    return email.toLowerCase().endsWith('@usc.edu');
+  };
+
   const signIn = async (provider: 'google') => {
     try {
       const origin = window.location.origin;
@@ -17,6 +22,10 @@ export const useAuthMethods = () => {
         provider,
         options: {
           redirectTo: redirectUrl,
+          queryParams: {
+            // Restrict to USC email domains for Google login
+            hd: 'usc.edu',
+          },
         },
       });
 
@@ -39,6 +48,15 @@ export const useAuthMethods = () => {
 
   const signInWithEmail = async (email: string, password: string) => {
     try {
+      // Validate USC email domain
+      if (!isUscEmail(email)) {
+        return {
+          error: {
+            message: "Only @usc.edu email addresses are allowed"
+          } as Error
+        };
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -66,6 +84,15 @@ export const useAuthMethods = () => {
 
   const signUp = async (email: string, password: string) => {
     try {
+      // Validate USC email domain
+      if (!isUscEmail(email)) {
+        return {
+          error: {
+            message: "Only @usc.edu email addresses are allowed"
+          } as Error
+        };
+      }
+
       const { error } = await supabase.auth.signUp({
         email,
         password,

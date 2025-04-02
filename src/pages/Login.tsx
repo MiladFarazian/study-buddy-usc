@@ -31,6 +31,16 @@ const Login = () => {
       return;
     }
     
+    // Basic USC email validation on the front-end
+    if (!email.toLowerCase().endsWith('@usc.edu')) {
+      toast({
+        title: "Invalid Email",
+        description: "Please use your USC email address (@usc.edu)",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
       const { error } = await signInWithEmail(email, password);
@@ -87,7 +97,7 @@ const Login = () => {
           <CardHeader>
             <CardTitle>Sign In</CardTitle>
             <CardDescription>
-              Access your account to connect with tutors and manage your study sessions
+              Access your account with your USC email to connect with tutors and manage your study sessions
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -100,7 +110,7 @@ const Login = () => {
               <TabsContent value="email">
                 <form onSubmit={handleEmailSignIn} className="space-y-4 mt-4">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">USC Email</Label>
                     <Input 
                       id="email"
                       type="email"
@@ -109,6 +119,9 @@ const Login = () => {
                       onChange={(e) => setEmail(e.target.value)}
                       required
                     />
+                    <p className="text-xs text-gray-500">
+                      Only @usc.edu email addresses are allowed
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -144,6 +157,9 @@ const Login = () => {
               
               <TabsContent value="google">
                 <div className="mt-4">
+                  <p className="text-sm text-gray-600 mb-4">
+                    Sign in with your USC Google account (@usc.edu email only)
+                  </p>
                   <Button 
                     onClick={handleGoogleSignIn} 
                     variant="outline" 
