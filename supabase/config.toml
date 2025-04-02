@@ -50,37 +50,9 @@ verify_jwt = false
 # Port for the SQL editor
 port = 54322
 # Port for the DB connection
-remote_port = 5432
-shadow_port = 54320
 major_version = 15
-connector = "postgres"
-
-[db.pooler]
-# Port for the connection pooler
-port = 54329
-remote_port = 5432
-
-[realtime]
-# Port for the realtime db
-port = 54323
 
 [studio]
 # Port for Supabase Studio
 port = 54324
 
-[inbucket]
-# Port for the email testing server
-port = 54325
-smtp_port = 54326
-pop3_port = 54327
-
-[auth]
-# Port for the management access
-port = 54328
-
-[storage]
-# Port for the storage service
-port = 54330
-
-[dashboard]
-port = 54310

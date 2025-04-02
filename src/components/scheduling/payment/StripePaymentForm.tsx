@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -35,16 +34,13 @@ export function StripePaymentForm({
   const [retryTimeout, setRetryTimeout] = useState<number | null>(null);
   const [stripeReady, setStripeReady] = useState<boolean>(false);
 
-  // Initialize Stripe
   useEffect(() => {
     let mounted = true;
     
-    // Clear any existing timeout
     if (retryTimeout) {
       clearTimeout(retryTimeout);
     }
     
-    // Don't load if already retrying
     if (isInitRetrying) {
       return;
     }
@@ -73,7 +69,6 @@ export function StripePaymentForm({
       } catch (error: any) {
         console.error('Error loading Stripe:', error);
         if (mounted) {
-          // Check if it's a rate limit error
           const isRateLimit = error.message && (
             error.message.includes("rate limit") || 
             error.message.includes("Rate limit") ||
@@ -81,7 +76,6 @@ export function StripePaymentForm({
           );
           
           if (isRateLimit && initAttempt < 3) {
-            // Set up automatic retry with exponential backoff
             const retryDelay = Math.min(2000 * Math.pow(2, initAttempt), 10000);
             
             setInitError(`Payment system is busy. Will retry in ${Math.ceil(retryDelay/1000)} seconds.`);
@@ -118,7 +112,6 @@ export function StripePaymentForm({
     };
   }, [toast, initAttempt, isInitRetrying, retryTimeout]);
 
-  // Initialize Elements when stripe and clientSecret are available
   useEffect(() => {
     if (!stripe || !clientSecret || !stripeReady) return;
     
@@ -146,7 +139,6 @@ export function StripePaymentForm({
     }
   }, [stripe, clientSecret, stripeReady]);
 
-  // Mount CardElement when elements is available
   useEffect(() => {
     if (!elements) return;
     
@@ -157,7 +149,6 @@ export function StripePaymentForm({
     }
     
     try {
-      // Clear previous card element if it exists
       cardContainer.innerHTML = '';
       
       console.log('Creating and mounting card element');
@@ -184,7 +175,6 @@ export function StripePaymentForm({
         setCardComplete(event.complete);
       });
 
-      // Cleanup function
       return () => {
         card.unmount();
       };
@@ -198,7 +188,6 @@ export function StripePaymentForm({
     e.preventDefault();
 
     if (!stripe || !elements || !clientSecret) {
-      // Show error message if Stripe hasn't loaded
       toast({
         title: 'Error',
         description: 'Payment system is not fully loaded yet. Please try again.',
@@ -215,13 +204,11 @@ export function StripePaymentForm({
         payment_method: {
           card: cardElement,
           billing_details: {
-            // You can add billing details here if needed
           },
         },
       });
 
       if (result.error) {
-        // Show error message
         console.error('Payment error:', result.error);
         setCardError(result.error.message || 'Payment failed');
         toast({
@@ -230,7 +217,6 @@ export function StripePaymentForm({
           variant: 'destructive',
         });
       } else if (result.paymentIntent.status === 'succeeded') {
-        // Payment succeeded
         console.log('Payment successful:', result.paymentIntent);
         toast({
           title: 'Payment Successful',
@@ -268,7 +254,7 @@ export function StripePaymentForm({
             </div>
 
             {clientSecret && stripeReady && !initError && (
-              <Alert variant="success" className="mb-4 bg-green-50 border-green-200">
+              <Alert className="mb-4 bg-green-50 border-green-200">
                 <CheckCircle className="h-4 w-4 text-green-600" />
                 <AlertDescription className="text-green-800">
                   Payment system ready. Enter your card details to complete booking.
