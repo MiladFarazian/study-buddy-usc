@@ -9,15 +9,13 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { session, user, profile, loading, isStudent, isTutor, isProfileComplete, updateProfile } = useAuthState();
-  const { signIn, signInWithEmail, signUp, signOut } = useAuthMethods();
+  const { signIn, signOut } = useAuthMethods();
 
   const value = {
     session,
     user,
     profile,
     signIn,
-    signInWithEmail,
-    signUp,
     signOut,
     loading,
     isStudent,

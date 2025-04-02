@@ -6,11 +6,6 @@ import { useToast } from "@/hooks/use-toast";
 export const useAuthMethods = () => {
   const { toast } = useToast();
 
-  // Helper function to validate USC email domains
-  const isUscEmail = (email: string): boolean => {
-    return email.toLowerCase().endsWith('@usc.edu');
-  };
-
   const signIn = async (provider: 'google') => {
     try {
       const origin = window.location.origin;
@@ -46,81 +41,6 @@ export const useAuthMethods = () => {
     }
   };
 
-  const signInWithEmail = async (email: string, password: string) => {
-    try {
-      // Validate USC email domain
-      if (!isUscEmail(email)) {
-        return {
-          error: {
-            message: "Only @usc.edu email addresses are allowed"
-          } as Error
-        };
-      }
-
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (error) {
-        toast({
-          title: "Sign In Failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
-      
-      return { error };
-    } catch (error) {
-      console.error('Email sign in error:', error);
-      toast({
-        title: "Sign In Failed",
-        description: "An unexpected error occurred",
-        variant: "destructive",
-      });
-      return { error: error as Error };
-    }
-  };
-
-  const signUp = async (email: string, password: string) => {
-    try {
-      // Validate USC email domain
-      if (!isUscEmail(email)) {
-        return {
-          error: {
-            message: "Only @usc.edu email addresses are allowed"
-          } as Error
-        };
-      }
-
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        }
-      });
-
-      if (error) {
-        toast({
-          title: "Registration Failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
-      
-      return { error };
-    } catch (error) {
-      console.error('Sign up error:', error);
-      toast({
-        title: "Registration Failed",
-        description: "An unexpected error occurred",
-        variant: "destructive",
-      });
-      return { error: error as Error };
-    }
-  };
-
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -146,5 +66,5 @@ export const useAuthMethods = () => {
     }
   };
 
-  return { signIn, signInWithEmail, signUp, signOut };
+  return { signIn, signOut };
 };
