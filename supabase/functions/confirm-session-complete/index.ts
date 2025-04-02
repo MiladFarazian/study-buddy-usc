@@ -43,18 +43,18 @@ serve(async (req) => {
 
     // Parse request body
     const { sessionId, userRole } = await req.json();
-
-    if (!sessionId || !userRole) {
-      return new Response(JSON.stringify({ error: 'Missing required parameters' }), {
+    
+    if (!sessionId) {
+      return new Response(JSON.stringify({ error: 'Session ID is required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    // Get session details
+    // Get session data
     const { data: session, error: sessionError } = await supabaseAdmin
       .from('sessions')
-      .select('*, payment_transactions(*)')
+      .select('*, student:student_id(*), tutor:tutor_id(*), payment:payment_transactions!inner(*)')
       .eq('id', sessionId)
       .single();
 
@@ -65,28 +65,30 @@ serve(async (req) => {
       });
     }
 
-    // Check if the user is authorized to confirm this session
-    if (
-      (userRole === 'tutor' && session.tutor_id !== user.id) || 
-      (userRole === 'student' && session.student_id !== user.id)
-    ) {
-      return new Response(JSON.stringify({ error: 'Not authorized to confirm this session' }), {
+    // Check if user is authorized to confirm this session
+    if (userRole === 'tutor' && session.tutor_id !== user.id) {
+      return new Response(JSON.stringify({ error: 'Unauthorized to confirm this session' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    // Update the session confirmation status based on user role
+    if (userRole === 'student' && session.student_id !== user.id) {
+      return new Response(JSON.stringify({ error: 'Unauthorized to confirm this session' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Update the appropriate confirmation field
     const updateData = userRole === 'tutor' 
       ? { tutor_confirmed: true } 
       : { student_confirmed: true };
     
+    // Update session record
     const { error: updateError } = await supabaseAdmin
       .from('sessions')
-      .update({
-        ...updateData,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', sessionId);
 
     if (updateError) {
@@ -96,135 +98,101 @@ serve(async (req) => {
       });
     }
 
-    // Get the updated session to check if both parties have confirmed
-    const { data: updatedSession, error: getError } = await supabaseAdmin
+    // Check if both parties have confirmed
+    const { data: updatedSession } = await supabaseAdmin
       .from('sessions')
-      .select('*, payment_transactions(*)')
+      .select('*')
       .eq('id', sessionId)
       .single();
 
-    if (getError || !updatedSession) {
-      return new Response(JSON.stringify({ error: 'Failed to retrieve updated session' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
+    // If both have confirmed, mark session as complete and transfer payment
+    if (updatedSession?.tutor_confirmed && updatedSession?.student_confirmed) {
+      // Get the payment transaction
+      const { data: payment } = await supabaseAdmin
+        .from('payment_transactions')
+        .select('*')
+        .eq('session_id', sessionId)
+        .single();
 
-    let transferResult = null;
-
-    // If both tutor and student have confirmed, finalize the payment
-    if (updatedSession.tutor_confirmed && updatedSession.student_confirmed) {
-      // Find the payment transaction
-      const paymentTransaction = updatedSession.payment_transactions[0];
-      
-      if (!paymentTransaction || !paymentTransaction.stripe_payment_intent_id) {
-        return new Response(JSON.stringify({ 
-          error: 'No payment found for this session',
-          session: updatedSession
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-
-      if (paymentTransaction.status !== 'completed') {
-        return new Response(JSON.stringify({ 
-          error: 'Payment has not been completed yet',
-          session: updatedSession
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-
-      // Only proceed if the transfer hasn't been completed yet
-      if (paymentTransaction.transfer_status !== 'completed') {
+      if (payment && payment.payment_intent_id && !payment.transfer_id) {
         try {
           // Initialize Stripe
           const stripe = new Stripe(Deno.env.get('STRIPE_CONNECT_SECRET_KEY') || '', {
             apiVersion: '2023-10-16',
           });
 
-          // Get tutor's Stripe Connect account ID
-          const { data: tutorProfile, error: tutorError } = await supabaseAdmin
+          // Get the tutor's connect account id
+          const { data: tutorProfile } = await supabaseAdmin
             .from('profiles')
             .select('stripe_connect_id')
-            .eq('id', updatedSession.tutor_id)
+            .eq('id', session.tutor_id)
             .single();
 
-          if (tutorError || !tutorProfile?.stripe_connect_id) {
-            throw new Error('Tutor Stripe Connect account not found');
+          if (!tutorProfile?.stripe_connect_id) {
+            throw new Error('Tutor does not have a Stripe Connect account');
           }
 
-          // Create a transfer to the tutor's connected account
+          // Calculate the platform fee (e.g., 15%)
+          const amount = payment.amount;
+          const platformFeePercent = 0.15;
+          const platformFee = Math.round(amount * platformFeePercent);
+          const tutorAmount = amount - platformFee;
+
+          // Create a transfer to the tutor's connect account
           const transfer = await stripe.transfers.create({
-            amount: Math.floor((paymentTransaction.amount * 100) * 0.9), // 90% of the amount (10% platform fee)
+            amount: tutorAmount,
             currency: 'usd',
             destination: tutorProfile.stripe_connect_id,
-            source_transaction: paymentTransaction.stripe_payment_intent_id,
+            transfer_group: `session_${sessionId}`,
+            source_transaction: payment.charge_id,
             metadata: {
               session_id: sessionId,
-              payment_id: paymentTransaction.id,
-              tutor_id: updatedSession.tutor_id,
-              student_id: updatedSession.student_id
-            }
+              tutor_id: session.tutor_id,
+              student_id: session.student_id,
+            },
           });
 
-          // Create a record of the transfer
-          const { data: transferRecord, error: transferError } = await supabaseAdmin
-            .from('payment_transfers')
-            .insert({
-              payment_id: paymentTransaction.id,
-              session_id: sessionId,
-              tutor_id: updatedSession.tutor_id,
-              student_id: updatedSession.student_id,
-              amount: paymentTransaction.amount * 0.9, // 90% to tutor
-              platform_fee: paymentTransaction.amount * 0.1, // 10% platform fee
-              transfer_id: transfer.id,
-              status: 'completed',
-              transferred_at: new Date().toISOString()
-            })
-            .select()
-            .single();
-
-          if (transferError) {
-            console.error('Error creating transfer record:', transferError);
-          }
-
-          // Update payment transaction with transfer status
-          const { error: paymentUpdateError } = await supabaseAdmin
+          // Update the payment transaction with transfer info
+          await supabaseAdmin
             .from('payment_transactions')
             .update({
-              transfer_status: 'completed',
               transfer_id: transfer.id,
-              updated_at: new Date().toISOString()
+              transfer_status: 'completed',
+              platform_fee: platformFee,
+              updated_at: new Date().toISOString(),
             })
-            .eq('id', paymentTransaction.id);
+            .eq('id', payment.id);
 
-          if (paymentUpdateError) {
-            console.error('Error updating payment transaction:', paymentUpdateError);
-          }
+          // Create a record in payment_transfers
+          await supabaseAdmin
+            .from('payment_transfers')
+            .insert({
+              payment_id: payment.id,
+              session_id: sessionId,
+              tutor_id: session.tutor_id,
+              student_id: session.student_id,
+              amount: tutorAmount,
+              platform_fee: platformFee,
+              transfer_id: transfer.id,
+              status: 'completed',
+              transferred_at: new Date().toISOString(),
+            });
 
           // Update session completion date
-          const { error: sessionUpdateError } = await supabaseAdmin
+          await supabaseAdmin
             .from('sessions')
             .update({
-              status: 'completed',
               completion_date: new Date().toISOString(),
-              updated_at: new Date().toISOString()
+              status: 'completed',
+              updated_at: new Date().toISOString(),
             })
             .eq('id', sessionId);
-
-          if (sessionUpdateError) {
-            console.error('Error updating session completion:', sessionUpdateError);
-          }
-
-          transferResult = transfer;
+            
         } catch (error) {
           console.error('Error processing transfer:', error);
           return new Response(JSON.stringify({ 
-            error: `Failed to process payment: ${error.message}`,
-            session: updatedSession
+            error: 'Failed to process payment transfer',
+            details: error.message 
           }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -233,17 +201,17 @@ serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({
-      success: true,
-      session: updatedSession,
-      transfer: transferResult
+    return new Response(JSON.stringify({ 
+      success: true, 
+      message: 'Session confirmation updated',
+      bothConfirmed: Boolean(updatedSession?.tutor_confirmed && updatedSession?.student_confirmed)
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   } catch (error) {
     console.error('Error confirming session:', error);
-    return new Response(JSON.stringify({ error: error.message || 'Failed to confirm session' }), {
+    return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
