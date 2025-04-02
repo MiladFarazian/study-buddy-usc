@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { createPaymentIntent, processPayment, initializeStripe } from "@/lib/stripe-utils";
+import { createPaymentIntent, findExistingPaymentIntent, initializeStripe, processPayment } from "@/lib/stripe-utils";
 import { Tutor } from "@/types/tutor";
 import { BookingSlot } from "@/lib/scheduling/types";
 
@@ -65,8 +65,10 @@ export function usePaymentForm({
   useEffect(() => {    
     const loadStripe = async () => {
       try {
+        console.log("Initializing Stripe...");
         const stripeInstance = await initializeStripe();
         if (isMounted.current) {
+          console.log("Stripe loaded successfully");
           setStripe(stripeInstance);
           setStripeLoaded(true);
         }
@@ -105,6 +107,18 @@ export function usePaymentForm({
           paymentAttempted.current = true;
         }
         
+        // First check if there's an existing payment intent for this session
+        const existingIntent = await findExistingPaymentIntent(sessionId);
+        if (existingIntent && existingIntent.client_secret) {
+          console.log("Found existing payment intent:", existingIntent);
+          if (isMounted.current) {
+            setClientSecret(existingIntent.client_secret);
+            setLoading(false);
+            paymentAttempted.current = false;
+            return;
+          }
+        }
+        
         // Create a payment intent with Stripe
         const formattedDate = format(new Date(selectedSlot.day), 'MMM dd, yyyy');
         const description = `Tutoring session with ${tutor.name} on ${formattedDate} at ${selectedSlot.start}`;
@@ -132,7 +146,7 @@ export function usePaymentForm({
           setLoading(false);
           paymentAttempted.current = false;
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error setting up payment:', error);
         
         if (isMounted.current) {
@@ -161,7 +175,8 @@ export function usePaymentForm({
           } else if (error.message && (
             error.message.includes("payment account") || 
             error.message.includes("Stripe Connect") ||
-            error.message.includes("not completed")
+            error.message.includes("not completed") ||
+            error.message.includes("Stripe API error")
           )) {
             setSetupError("The tutor hasn't completed their payment account setup. Please try a different tutor or contact support.");
           } else {
@@ -181,6 +196,7 @@ export function usePaymentForm({
     };
     
     if (sessionId && studentId && tutor?.id && stripeLoaded && selectedSlot?.day) {
+      console.log("All requirements met, setting up payment...");
       setupPayment();
     }
   }, [sessionId, studentId, tutor?.id, tutor?.name, selectedSlot, sessionCost, 
@@ -225,7 +241,7 @@ export function usePaymentForm({
       
       setPaymentComplete(true);
       onPaymentComplete();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Payment error:', error);
       toast({
         title: 'Payment Failed',

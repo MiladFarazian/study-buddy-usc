@@ -2,8 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Loader2, AlertTriangle, RefreshCcw } from "lucide-react";
+import { Loader2, AlertTriangle, RefreshCcw, CheckCircle } from "lucide-react";
 import { initializeStripe } from "@/lib/stripe-utils";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface StripePaymentFormProps {
   clientSecret: string;
@@ -32,6 +33,7 @@ export function StripePaymentForm({
   const [initAttempt, setInitAttempt] = useState<number>(0);
   const [isInitRetrying, setIsInitRetrying] = useState<boolean>(false);
   const [retryTimeout, setRetryTimeout] = useState<number | null>(null);
+  const [stripeReady, setStripeReady] = useState<boolean>(false);
 
   // Initialize Stripe
   useEffect(() => {
@@ -66,8 +68,9 @@ export function StripePaymentForm({
         
         console.log('Stripe loaded successfully');
         setStripe(stripeInstance);
+        setStripeReady(true);
         setLoading(false);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error loading Stripe:', error);
         if (mounted) {
           // Check if it's a rate limit error
@@ -117,7 +120,7 @@ export function StripePaymentForm({
 
   // Initialize Elements when stripe and clientSecret are available
   useEffect(() => {
-    if (!stripe || !clientSecret) return;
+    if (!stripe || !clientSecret || !stripeReady) return;
     
     try {
       console.log('Creating Elements instance with client secret');
@@ -141,11 +144,7 @@ export function StripePaymentForm({
       console.error('Error creating Stripe Elements:', error);
       setInitError('Failed to initialize payment form. Please try again.');
     }
-    
-    return () => {
-      // Elements doesn't have a cleanup method
-    };
-  }, [stripe, clientSecret]);
+  }, [stripe, clientSecret, stripeReady]);
 
   // Mount CardElement when elements is available
   useEffect(() => {
@@ -239,7 +238,7 @@ export function StripePaymentForm({
         });
         onSuccess();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Payment error:', error);
       toast({
         title: 'Payment Error',
@@ -267,6 +266,15 @@ export function StripePaymentForm({
                 Your payment is secured with SSL encryption.
               </p>
             </div>
+
+            {clientSecret && stripeReady && !initError && (
+              <Alert variant="success" className="mb-4 bg-green-50 border-green-200">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-green-800">
+                  Payment system ready. Enter your card details to complete booking.
+                </AlertDescription>
+              </Alert>
+            )}
 
             <div id="card-element" className="p-4 border rounded-md bg-white min-h-[100px] flex items-center justify-center">
               {(loading || isInitRetrying) && (
@@ -327,7 +335,7 @@ export function StripePaymentForm({
               <Button
                 type="submit"
                 className="bg-usc-cardinal text-white hover:bg-usc-cardinal-dark"
-                disabled={!stripe || !cardComplete || processing || isSubmitting || loading || !!initError || isInitRetrying}
+                disabled={!stripe || !cardComplete || processing || isSubmitting || loading || !!initError || isInitRetrying || !stripeReady}
               >
                 {isSubmitting ? (
                   <>

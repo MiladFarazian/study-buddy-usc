@@ -51,6 +51,7 @@ export const initializeStripe = () => {
       // Add Stripe.js if it's not loaded yet
       const script = document.createElement('script');
       script.src = 'https://js.stripe.com/v3/';
+      script.async = true; // Add async loading
       script.onload = () => {
         console.log("Stripe script loaded successfully");
         isLoadingStripe = false;
@@ -76,6 +77,52 @@ export const initializeStripe = () => {
   return stripePromise;
 };
 
+// Find existing payment intent for session
+export const findExistingPaymentIntent = async (sessionId: string): Promise<StripePaymentIntent | null> => {
+  try {
+    console.log("Checking for existing payment intent for session:", sessionId);
+    
+    const { data, error } = await supabase
+      .from('payment_transactions')
+      .select('stripe_payment_intent_id, amount, status')
+      .eq('session_id', sessionId)
+      .eq('status', 'pending')
+      .maybeSingle();
+    
+    if (error) {
+      console.error("Error checking for existing payment intent:", error);
+      return null;
+    }
+    
+    if (data?.stripe_payment_intent_id) {
+      console.log("Found existing payment intent:", data.stripe_payment_intent_id);
+      
+      // Retrieve the full payment intent details
+      const response = await supabase.functions.invoke('retrieve-payment-intent', {
+        body: { paymentIntentId: data.stripe_payment_intent_id }
+      });
+      
+      if (response.error) {
+        console.error("Error retrieving payment intent:", response.error);
+        return null;
+      }
+      
+      if (response.data && response.data.client_secret) {
+        return {
+          id: data.stripe_payment_intent_id,
+          client_secret: response.data.client_secret,
+          amount: data.amount
+        };
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error("Error finding existing payment intent:", error);
+    return null;
+  }
+};
+
 // Create a payment intent via Supabase Edge Function
 export const createPaymentIntent = async (
   sessionId: string,
@@ -86,6 +133,13 @@ export const createPaymentIntent = async (
 ): Promise<StripePaymentIntent> => {
   try {
     console.log("Creating payment intent:", { sessionId, amount, tutorId, studentId, description });
+    
+    // First check if there's an existing payment intent for this session
+    const existingIntent = await findExistingPaymentIntent(sessionId);
+    if (existingIntent) {
+      console.log("Using existing payment intent:", existingIntent.id);
+      return existingIntent;
+    }
     
     // Prepare the request body - ensure amount is a number
     const amountInDollars = parseFloat(amount.toString());
@@ -135,7 +189,7 @@ export const createPaymentIntent = async (
         
         console.log("Payment intent created successfully:", data);
         return data as StripePaymentIntent;
-      } catch (error) {
+      } catch (error: any) {
         // Check if we should retry based on error type
         const isRateLimit = error.message && (
           error.message.includes("rate limit") || 
@@ -149,6 +203,17 @@ export const createPaymentIntent = async (
           console.log(`Rate limit hit. Retrying in ${delay}ms (attempt ${retries}/${maxRetries})`);
           await new Promise(resolve => setTimeout(resolve, delay));
           continue;
+        }
+        
+        // Check if the error indicates missing Stripe Connect setup
+        if (error.message && (
+          error.message.includes("payment account") || 
+          error.message.includes("Stripe Connect") ||
+          error.message.includes("not completed") ||
+          error.message.includes("Stripe API error")
+        )) {
+          console.error('Tutor Stripe Connect setup error:', error.message);
+          throw new Error("The tutor's payment account setup is incomplete. Please check tutor settings or try another tutor.");
         }
         
         console.error('Error creating payment intent:', error);
