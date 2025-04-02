@@ -8,6 +8,44 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Simple rate limiting mechanism
+const RATE_LIMIT_WINDOW = 60000; // 1 minute in milliseconds
+const RATE_LIMIT_MAX = 10; // Maximum allowed requests per minute
+const requestLog: Record<string, { count: number, timestamp: number }> = {};
+
+// Check if a request should be rate limited
+function shouldRateLimit(clientId: string): boolean {
+  const now = Date.now();
+  const clientRequests = requestLog[clientId];
+  
+  if (!clientRequests) {
+    requestLog[clientId] = { count: 1, timestamp: now };
+    return false;
+  }
+  
+  // If the time window has passed, reset the counter
+  if (now - clientRequests.timestamp > RATE_LIMIT_WINDOW) {
+    requestLog[clientId] = { count: 1, timestamp: now };
+    return false;
+  }
+  
+  // Increment the counter
+  clientRequests.count++;
+  
+  // Return true if the limit is exceeded
+  return clientRequests.count > RATE_LIMIT_MAX;
+}
+
+// Clean up old entries in the request log periodically
+setInterval(() => {
+  const now = Date.now();
+  Object.keys(requestLog).forEach(key => {
+    if (now - requestLog[key].timestamp > RATE_LIMIT_WINDOW) {
+      delete requestLog[key];
+    }
+  });
+}, RATE_LIMIT_WINDOW);
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -46,6 +84,23 @@ serve(async (req) => {
     }
 
     const { sessionId, amount, tutorId, studentId, description } = requestBody;
+    
+    // Client identifier for rate limiting - using session ID
+    const clientId = sessionId || 'anonymous';
+    
+    // Implement rate limiting
+    if (shouldRateLimit(clientId)) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Too many payment requests. Please try again in a moment.',
+          code: 'rate_limited'
+        }), 
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 429,
+        }
+      );
+    }
 
     // Validate required parameters
     if (!sessionId || amount === undefined || !tutorId || !studentId) {
@@ -65,6 +120,55 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_URL') || '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
     );
+
+    // Check if a payment transaction already exists for this session
+    const { data: existingTransaction, error: txCheckError } = await supabaseAdmin
+      .from('payment_transactions')
+      .select('id, stripe_payment_intent_id, status')
+      .eq('session_id', sessionId)
+      .eq('status', 'pending')
+      .or('status.eq.processing')
+      .maybeSingle();
+    
+    if (txCheckError) {
+      console.error('Error checking for existing transactions:', txCheckError);
+    }
+    
+    // If there's an existing transaction with a valid payment intent, return it
+    if (existingTransaction?.stripe_payment_intent_id) {
+      console.log(`Found existing payment intent: ${existingTransaction.stripe_payment_intent_id}`);
+      
+      try {
+        // Initialize Stripe
+        const stripe = new Stripe(stripeSecretKey, {
+          apiVersion: '2023-10-16',
+        });
+        
+        // Retrieve the existing payment intent
+        const paymentIntent = await stripe.paymentIntents.retrieve(
+          existingTransaction.stripe_payment_intent_id
+        );
+        
+        // Only return if it's in a usable state
+        if (['requires_payment_method', 'requires_confirmation', 'requires_action'].includes(paymentIntent.status)) {
+          return new Response(
+            JSON.stringify({
+              id: paymentIntent.id,
+              client_secret: paymentIntent.client_secret,
+              amount: amount,
+              payment_transaction_id: existingTransaction.id,
+            }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 200,
+            }
+          );
+        }
+      } catch (retrieveError) {
+        console.error('Error retrieving existing payment intent:', retrieveError);
+        // Continue to create a new one if there was an error
+      }
+    }
 
     // Get the tutor's Stripe Connect ID
     const { data: tutorProfile, error: tutorError } = await supabaseAdmin
@@ -122,7 +226,7 @@ serve(async (req) => {
         );
       }
       
-      console.log('Creating payment intent with amount in cents:', amountInCents);
+      console.log('Creating new payment intent with amount:', amount);
       
       // Calculate platform fee (10% of the amount)
       const platformFeeAmount = Math.round(amountInCents * 0.1);
@@ -183,6 +287,22 @@ serve(async (req) => {
       );
     } catch (stripeError) {
       console.error('Stripe API error:', stripeError);
+      
+      // Handle rate limiting errors specially
+      if (stripeError.code === 'rate_limit') {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Stripe rate limit exceeded. Please try again in a moment.',
+            code: 'rate_limited',
+            details: stripeError.message
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 429,
+          }
+        );
+      }
+      
       return new Response(
         JSON.stringify({ 
           error: 'Stripe API error. Please check your Stripe configuration and try again.',

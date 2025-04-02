@@ -11,32 +11,68 @@ export interface StripePaymentIntent {
 
 // Cache for Stripe instance
 let stripePromise: Promise<any> | null = null;
+// Track loading state
+let isLoadingStripe = false;
+// Track failure count
+let stripeLoadFailureCount = 0;
 
 // Initialize Stripe
 export const initializeStripe = () => {
-  if (!stripePromise) {
-    console.log("Initializing Stripe with public key:", STRIPE_PUBLIC_KEY);
-    stripePromise = new Promise<any>((resolve, reject) => {
-      if ((window as any).Stripe) {
-        console.log("Stripe already loaded, creating instance");
-        resolve((window as any).Stripe(STRIPE_PUBLIC_KEY));
-      } else {
-        console.log("Stripe not loaded, adding script");
-        // Add Stripe.js if it's not loaded yet
-        const script = document.createElement('script');
-        script.src = 'https://js.stripe.com/v3/';
-        script.onload = () => {
-          console.log("Stripe script loaded successfully");
-          resolve((window as any).Stripe(STRIPE_PUBLIC_KEY));
-        };
-        script.onerror = (err) => {
-          console.error("Failed to load Stripe.js", err);
-          reject(new Error('Failed to load Stripe.js'));
-        };
-        document.body.appendChild(script);
-      }
+  if (stripePromise) {
+    return stripePromise;
+  }
+  
+  if (isLoadingStripe) {
+    // Return a promise that resolves when the current loading is done
+    return new Promise((resolve, reject) => {
+      const checkInterval = setInterval(() => {
+        if (!isLoadingStripe) {
+          clearInterval(checkInterval);
+          if (stripePromise) {
+            resolve(stripePromise);
+          } else {
+            reject(new Error('Stripe initialization failed'));
+          }
+        }
+      }, 100);
     });
   }
+  
+  console.log("Initializing Stripe with public key:", STRIPE_PUBLIC_KEY);
+  isLoadingStripe = true;
+  
+  stripePromise = new Promise<any>((resolve, reject) => {
+    if ((window as any).Stripe) {
+      console.log("Stripe already loaded, creating instance");
+      isLoadingStripe = false;
+      resolve((window as any).Stripe(STRIPE_PUBLIC_KEY));
+    } else {
+      console.log("Stripe not loaded, adding script");
+      // Add Stripe.js if it's not loaded yet
+      const script = document.createElement('script');
+      script.src = 'https://js.stripe.com/v3/';
+      script.onload = () => {
+        console.log("Stripe script loaded successfully");
+        isLoadingStripe = false;
+        stripeLoadFailureCount = 0;
+        resolve((window as any).Stripe(STRIPE_PUBLIC_KEY));
+      };
+      script.onerror = (err) => {
+        console.error("Failed to load Stripe.js", err);
+        isLoadingStripe = false;
+        stripeLoadFailureCount++;
+        stripePromise = null;
+        reject(new Error('Failed to load Stripe.js'));
+      };
+      document.body.appendChild(script);
+    }
+  }).catch(err => {
+    console.error("Stripe initialization failed:", err);
+    isLoadingStripe = false;
+    stripePromise = null;
+    throw err;
+  });
+  
   return stripePromise;
 };
 
@@ -68,28 +104,59 @@ export const createPaymentIntent = async (
     
     console.log("Sending payment intent request with payload:", payload);
     
-    const { data, error } = await supabase.functions.invoke('create-payment-intent', {
-      body: payload
-    });
+    // Add backoff retry logic
+    let retries = 0;
+    const maxRetries = 3;
+    const baseDelay = 1000; // 1 second
+    
+    while (retries <= maxRetries) {
+      try {
+        const { data, error } = await supabase.functions.invoke('create-payment-intent', {
+          body: payload
+        });
 
-    if (error) {
-      console.error("Supabase function error:", error);
-      throw error;
+        if (error) {
+          throw error;
+        }
+        
+        if (!data) {
+          throw new Error('No data returned from create-payment-intent function');
+        }
+        
+        // Check if the response contains an error with rate limiting
+        if (data.error && data.code === 'rate_limited') {
+          throw new Error(`Rate limited: ${data.error}`);
+        }
+        
+        // Check if the response contains any other error message from the edge function
+        if (data.error) {
+          throw new Error(data.error.message || data.error);
+        }
+        
+        console.log("Payment intent created successfully:", data);
+        return data as StripePaymentIntent;
+      } catch (error) {
+        // Check if we should retry based on error type
+        const isRateLimit = error.message && (
+          error.message.includes("rate limit") || 
+          error.message.includes("Rate limit") ||
+          error.message.includes("Too many requests")
+        );
+        
+        if (isRateLimit && retries < maxRetries) {
+          retries++;
+          const delay = baseDelay * Math.pow(2, retries);
+          console.log(`Rate limit hit. Retrying in ${delay}ms (attempt ${retries}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+        
+        console.error('Error creating payment intent:', error);
+        throw error;
+      }
     }
     
-    if (!data) {
-      console.error("No data returned from create-payment-intent function");
-      throw new Error('No data returned from create-payment-intent function');
-    }
-    
-    // Check if the response contains an error message from the edge function
-    if (data.error) {
-      console.error("Edge function error:", data.error);
-      throw new Error(data.error.message || data.error);
-    }
-    
-    console.log("Payment intent created successfully:", data);
-    return data as StripePaymentIntent;
+    throw new Error('Maximum retry attempts exceeded');
   } catch (error) {
     console.error('Error creating payment intent:', error);
     throw error;

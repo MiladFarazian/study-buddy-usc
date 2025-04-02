@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Loader2, AlertTriangle } from "lucide-react";
+import { Loader2, AlertTriangle, RefreshCcw } from "lucide-react";
 import { initializeStripe } from "@/lib/stripe-utils";
 
 interface StripePaymentFormProps {
@@ -30,10 +30,22 @@ export function StripePaymentForm({
   const [loading, setLoading] = useState<boolean>(true);
   const [initError, setInitError] = useState<string | null>(null);
   const [initAttempt, setInitAttempt] = useState<number>(0);
+  const [isInitRetrying, setIsInitRetrying] = useState<boolean>(false);
+  const [retryTimeout, setRetryTimeout] = useState<number | null>(null);
 
   // Initialize Stripe
   useEffect(() => {
     let mounted = true;
+    
+    // Clear any existing timeout
+    if (retryTimeout) {
+      clearTimeout(retryTimeout);
+    }
+    
+    // Don't load if already retrying
+    if (isInitRetrying) {
+      return;
+    }
     
     const loadStripe = async () => {
       try {
@@ -58,12 +70,36 @@ export function StripePaymentForm({
       } catch (error) {
         console.error('Error loading Stripe:', error);
         if (mounted) {
-          setInitError('Failed to load payment processor. Please refresh and try again.');
-          toast({
-            title: 'Payment Error',
-            description: 'Failed to load payment processor. Please try again.',
-            variant: 'destructive',
-          });
+          // Check if it's a rate limit error
+          const isRateLimit = error.message && (
+            error.message.includes("rate limit") || 
+            error.message.includes("Rate limit") ||
+            error.message.includes("Too many requests")
+          );
+          
+          if (isRateLimit && initAttempt < 3) {
+            // Set up automatic retry with exponential backoff
+            const retryDelay = Math.min(2000 * Math.pow(2, initAttempt), 10000);
+            
+            setInitError(`Payment system is busy. Will retry in ${Math.ceil(retryDelay/1000)} seconds.`);
+            setIsInitRetrying(true);
+            
+            const timeoutId = window.setTimeout(() => {
+              if (mounted) {
+                setInitAttempt(prev => prev + 1);
+                setIsInitRetrying(false);
+              }
+            }, retryDelay);
+            
+            setRetryTimeout(timeoutId);
+          } else {
+            setInitError('Failed to load payment processor. Please try again later.');
+            toast({
+              title: 'Payment Error',
+              description: 'Failed to load payment processor. Please try again.',
+              variant: 'destructive',
+            });
+          }
           setLoading(false);
         }
       }
@@ -73,8 +109,11 @@ export function StripePaymentForm({
     
     return () => {
       mounted = false;
+      if (retryTimeout) {
+        clearTimeout(retryTimeout);
+      }
     };
-  }, [toast, initAttempt]);
+  }, [toast, initAttempt, isInitRetrying, retryTimeout]);
 
   // Initialize Elements when stripe and clientSecret are available
   useEffect(() => {
@@ -214,6 +253,7 @@ export function StripePaymentForm({
 
   const retryInitialization = () => {
     setInitAttempt(prev => prev + 1);
+    setIsInitRetrying(false);
   };
 
   return (
@@ -229,14 +269,18 @@ export function StripePaymentForm({
             </div>
 
             <div id="card-element" className="p-4 border rounded-md bg-white min-h-[100px] flex items-center justify-center">
-              {loading && (
+              {(loading || isInitRetrying) && (
                 <div className="flex items-center justify-center">
                   <Loader2 className="h-5 w-5 animate-spin text-usc-cardinal" />
-                  <span className="ml-2 text-sm text-muted-foreground">Loading payment form...</span>
+                  <span className="ml-2 text-sm text-muted-foreground">
+                    {isInitRetrying 
+                      ? "Retrying payment connection..." 
+                      : "Loading payment form..."}
+                  </span>
                 </div>
               )}
               
-              {initError && !loading && (
+              {initError && !loading && !isInitRetrying && (
                 <div className="flex flex-col items-center justify-center">
                   <div className="flex items-center text-red-500 mb-2">
                     <AlertTriangle className="h-5 w-5 mr-2" />
@@ -248,6 +292,7 @@ export function StripePaymentForm({
                     onClick={retryInitialization}
                     className="mt-2"
                   >
+                    <RefreshCcw className="h-3.5 w-3.5 mr-1" />
                     Retry
                   </Button>
                 </div>
@@ -282,7 +327,7 @@ export function StripePaymentForm({
               <Button
                 type="submit"
                 className="bg-usc-cardinal text-white hover:bg-usc-cardinal-dark"
-                disabled={!stripe || !cardComplete || processing || isSubmitting || loading || !!initError}
+                disabled={!stripe || !cardComplete || processing || isSubmitting || loading || !!initError || isInitRetrying}
               >
                 {isSubmitting ? (
                   <>

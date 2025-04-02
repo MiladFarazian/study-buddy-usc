@@ -34,16 +34,23 @@ export function usePaymentForm({
   const [setupError, setSetupError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [stripe, setStripe] = useState<any>(null);
+  const [retryTimeout, setRetryTimeout] = useState<number | null>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
   
   // Use refs to track mounted state
   const isMounted = useRef(true);
+  const paymentAttempted = useRef(false);
   
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       isMounted.current = false;
+      // Clear any timeout on unmount
+      if (retryTimeout) {
+        clearTimeout(retryTimeout);
+      }
     };
-  }, []);
+  }, [retryTimeout]);
   
   // Calculate session duration and cost
   const startTime = selectedSlot?.start ? new Date(`2000-01-01T${selectedSlot.start}`) : new Date();
@@ -82,8 +89,10 @@ export function usePaymentForm({
   useEffect(() => {
     // Skip if not all required data is available
     if (!sessionId || !studentId || !tutor?.id || !stripeLoaded || 
-        !selectedSlot?.day || !selectedSlot?.start) {
-      setLoading(false);
+        !selectedSlot?.day || !selectedSlot?.start || paymentAttempted.current || isRetrying) {
+      if (!sessionId || !studentId || !tutor?.id || !stripeLoaded || !selectedSlot?.day || !selectedSlot?.start) {
+        setLoading(false);
+      }
       return;
     }
     
@@ -92,6 +101,8 @@ export function usePaymentForm({
         if (isMounted.current) {
           setLoading(true);
           setSetupError(null);
+          // Mark that we've attempted payment to prevent multiple simultaneous attempts
+          paymentAttempted.current = true;
         }
         
         // Create a payment intent with Stripe
@@ -119,19 +130,52 @@ export function usePaymentForm({
         if (isMounted.current) {
           setClientSecret(paymentIntent.client_secret);
           setLoading(false);
+          paymentAttempted.current = false;
         }
       } catch (error) {
         console.error('Error setting up payment:', error);
         
         if (isMounted.current) {
-          setSetupError(error.message || "Failed to set up payment");
-          setLoading(false);
+          // Check if the error is related to rate limiting
+          const isRateLimit = error.message && (
+            error.message.includes("rate limit") || 
+            error.message.includes("Rate limit") ||
+            error.message.includes("Too many requests")
+          );
           
-          toast({
-            title: 'Payment Setup Error',
-            description: 'There was an issue setting up your payment. Please try again.',
-            variant: 'destructive',
-          });
+          if (isRateLimit) {
+            setSetupError("Payment system is temporarily busy. We'll retry automatically in a few seconds.");
+            // Set a timeout to retry after a delay, with exponential backoff
+            const retryDelay = Math.min(2000 * Math.pow(2, retryCount), 16000); // Max 16 seconds
+            
+            const timeoutId = window.setTimeout(() => {
+              if (isMounted.current) {
+                setIsRetrying(false);
+                paymentAttempted.current = false;
+                setRetryCount(prev => prev + 1);
+              }
+            }, retryDelay);
+            
+            setRetryTimeout(timeoutId);
+            setIsRetrying(true);
+          } else if (error.message && (
+            error.message.includes("payment account") || 
+            error.message.includes("Stripe Connect") ||
+            error.message.includes("not completed")
+          )) {
+            setSetupError("The tutor hasn't completed their payment account setup. Please try a different tutor or contact support.");
+          } else {
+            setSetupError(error.message || "Failed to set up payment");
+            
+            toast({
+              title: 'Payment Setup Error',
+              description: 'There was an issue setting up your payment. Please try again.',
+              variant: 'destructive',
+            });
+          }
+          
+          setLoading(false);
+          paymentAttempted.current = false;
         }
       }
     };
@@ -140,7 +184,7 @@ export function usePaymentForm({
       setupPayment();
     }
   }, [sessionId, studentId, tutor?.id, tutor?.name, selectedSlot, sessionCost, 
-      toast, stripeLoaded, retryCount]);
+      toast, stripeLoaded, retryCount, isRetrying]);
   
   const handleCardElementReady = useCallback((element: any) => {
     setCardElement(element);
@@ -194,6 +238,7 @@ export function usePaymentForm({
   };
 
   const retrySetupPayment = useCallback(() => {
+    paymentAttempted.current = false;
     setRetryCount(prev => prev + 1);
     setSetupError(null);
     setLoading(true);
@@ -209,6 +254,7 @@ export function usePaymentForm({
     cardError,
     sessionCost,
     setupError,
+    isRetrying,
     handleCardElementReady,
     handleSubmitPayment,
     retrySetupPayment,
