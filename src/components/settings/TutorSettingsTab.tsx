@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -14,10 +14,15 @@ import { Slider } from "@/components/ui/slider";
 export const TutorSettingsTab = () => {
   const { profile, updateProfile } = useAuth();
   const { toast } = useToast();
-  const [hourlyRate, setHourlyRate] = useState(
-    profile?.hourly_rate ? profile.hourly_rate.toString() : "25.00"
-  );
+  const [hourlyRate, setHourlyRate] = useState<string>("25.00");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Initialize hourly rate from profile when component mounts
+  useEffect(() => {
+    if (profile?.hourly_rate) {
+      setHourlyRate(profile.hourly_rate.toString());
+    }
+  }, [profile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,7 +67,12 @@ export const TutorSettingsTab = () => {
     }
   };
 
-  // Handle rate change with slider (optional enhancement)
+  // Handle input change
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setHourlyRate(e.target.value);
+  };
+
+  // Handle rate change with slider
   const handleSliderChange = (value: number[]) => {
     if (value.length > 0) {
       setHourlyRate(value[0].toString());
@@ -90,7 +100,7 @@ export const TutorSettingsTab = () => {
                   min="0"
                   className="w-24"
                   value={hourlyRate}
-                  onChange={(e) => setHourlyRate(e.target.value)}
+                  onChange={handleInputChange}
                   placeholder="25.00"
                 />
                 <span className="text-lg font-medium">${hourlyRate}</span>
