@@ -5,6 +5,35 @@ import { Profile } from "@/integrations/supabase/types-extension";
 
 type UserRole = Database['public']['Enums']['user_role'];
 
+export const useProfileForm = (profile: Profile | null) => {
+  const [firstName, setFirstName] = useState(profile?.first_name || "");
+  const [lastName, setLastName] = useState(profile?.last_name || "");
+  const [major, setMajor] = useState(profile?.major || "");
+  const [gradYear, setGradYear] = useState(profile?.graduation_year || "");
+  const [bio, setBio] = useState(profile?.bio || "");
+  const [hourlyRate, setHourlyRate] = useState(profile?.hourly_rate?.toString() || "");
+
+  const isProfileComplete = Boolean(
+    firstName && lastName && major && bio
+  );
+
+  return {
+    firstName,
+    lastName,
+    major,
+    gradYear,
+    bio,
+    hourlyRate,
+    setFirstName,
+    setLastName,
+    setMajor,
+    setGradYear,
+    setBio,
+    setHourlyRate,
+    isProfileComplete
+  };
+};
+
 export const useProfileFormState = (profile: Profile | null) => {
   const [formData, setFormData] = useState({
     first_name: profile?.first_name || "",

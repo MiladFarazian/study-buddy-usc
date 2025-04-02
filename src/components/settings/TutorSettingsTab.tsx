@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { AvailabilitySettings } from "../scheduling/AvailabilitySettings";
+import { Slider } from "@/components/ui/slider";
 
 export const TutorSettingsTab = () => {
   const { profile, updateProfile } = useAuth();
@@ -47,7 +48,7 @@ export const TutorSettingsTab = () => {
 
       toast({
         title: "Settings updated",
-        description: "Your tutor settings have been saved successfully.",
+        description: "Your hourly rate has been saved successfully.",
       });
     } catch (error) {
       console.error("Error updating tutor settings:", error);
@@ -61,6 +62,13 @@ export const TutorSettingsTab = () => {
     }
   };
 
+  // Handle rate change with slider (optional enhancement)
+  const handleSliderChange = (value: number[]) => {
+    if (value.length > 0) {
+      setHourlyRate(value[0].toString());
+    }
+  };
+
   return (
     <div className="space-y-8">
       <Card>
@@ -71,36 +79,55 @@ export const TutorSettingsTab = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-4">
               <Label htmlFor="hourlyRate">Hourly Rate ($)</Label>
-              <div className="flex">
+              <div className="flex items-center gap-4">
                 <Input
                   id="hourlyRate"
                   type="number"
                   step="0.01"
                   min="0"
-                  className="max-w-[200px]"
+                  className="w-24"
                   value={hourlyRate}
                   onChange={(e) => setHourlyRate(e.target.value)}
                   placeholder="25.00"
                 />
-                <Button
-                  type="submit"
-                  className="ml-4 bg-usc-cardinal hover:bg-usc-cardinal-dark"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    'Save Rate'
-                  )}
-                </Button>
+                <span className="text-lg font-medium">${hourlyRate}</span>
               </div>
+              <div className="py-4">
+                <Slider
+                  min={5}
+                  max={150}
+                  step={1}
+                  value={[parseFloat(hourlyRate) || 25]}
+                  onValueChange={handleSliderChange}
+                  className="w-full max-w-md"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                  <span>$5</span>
+                  <span>$150</span>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Set a competitive rate that reflects your expertise and experience. 
+                USC tutors typically charge between $15 and $75 per hour.
+              </p>
             </div>
+            <Button
+              type="submit"
+              className="bg-usc-cardinal hover:bg-usc-cardinal-dark"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Rate'
+              )}
+            </Button>
           </form>
         </CardContent>
       </Card>
