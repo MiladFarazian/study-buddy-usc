@@ -186,10 +186,10 @@ url = ""
 
 [functions]
 # These are the configuration parameters for serverless functions in production mode.
-# Whether to enforce protection measures against unauthorized use of the Functions.
+# Global setting for all functions
 verify_jwt = true
 
-# Individual functions can have their JWT verification disabled
+# Individual functions can have their JWT verification settings
 [functions.create-payment-intent]
 verify_jwt = false
 
