@@ -8,6 +8,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper to determine if we're in production
+const isProduction = () => {
+  // Check for production hostname
+  const hostname = Deno.env.get('HOSTNAME') || '';
+  const isDeploy = hostname.includes('studybuddyusc.com') || hostname.includes('prod');
+  
+  // Override for explicit environment variable
+  const envFlag = Deno.env.get('USE_PRODUCTION_STRIPE');
+  if (envFlag === 'true') return true;
+  if (envFlag === 'false') return false;
+  
+  return isDeploy;
+};
+
 serve(async (req) => {
   console.log("Stripe webhook function invoked");
   
@@ -19,16 +33,26 @@ serve(async (req) => {
   }
 
   try {
-    // Check for required environment variables
-    const stripeSecretKey = Deno.env.get('STRIPE_CONNECT_SECRET_KEY');
-    const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
+    // Determine the environment and log it
+    const environment = isProduction() ? 'production' : 'test';
+    console.log(`Processing webhook in ${environment} mode`);
+    
+    // Get the appropriate keys based on environment
+    const stripeSecretKey = isProduction()
+      ? Deno.env.get('STRIPE_LIVE_SECRET_KEY') || Deno.env.get('STRIPE_CONNECT_LIVE_SECRET_KEY')
+      : Deno.env.get('STRIPE_CONNECT_SECRET_KEY');
+      
+    const webhookSecret = isProduction()
+      ? Deno.env.get('STRIPE_LIVE_WEBHOOK_SECRET')
+      : Deno.env.get('STRIPE_WEBHOOK_SECRET');
+      
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
     // Validate all required environment variables are present
     const missingEnvVars = [];
-    if (!stripeSecretKey) missingEnvVars.push('STRIPE_CONNECT_SECRET_KEY');
-    if (!webhookSecret) missingEnvVars.push('STRIPE_WEBHOOK_SECRET');
+    if (!stripeSecretKey) missingEnvVars.push(isProduction() ? 'STRIPE_CONNECT_LIVE_SECRET_KEY' : 'STRIPE_CONNECT_SECRET_KEY');
+    if (!webhookSecret) missingEnvVars.push(isProduction() ? 'STRIPE_LIVE_WEBHOOK_SECRET' : 'STRIPE_WEBHOOK_SECRET');
     if (!supabaseUrl) missingEnvVars.push('SUPABASE_URL');
     if (!supabaseServiceKey) missingEnvVars.push('SUPABASE_SERVICE_ROLE_KEY');
 
@@ -132,6 +156,29 @@ serve(async (req) => {
         }
         break;
 
+      case 'payment_intent.payment_failed':
+        const failedPaymentIntent = event.data.object;
+        console.log(`PaymentIntent failed: ${failedPaymentIntent.id}`);
+        
+        // Update payment_transactions record for the failed payment
+        const { error: failedPaymentUpdateError } = await supabaseAdmin
+          .from('payment_transactions')
+          .update({
+            status: 'failed',
+            payment_intent_status: failedPaymentIntent.status,
+            updated_at: new Date().toISOString()
+          })
+          .eq('stripe_payment_intent_id', failedPaymentIntent.id);
+
+        if (failedPaymentUpdateError) {
+          console.error('Error updating failed payment transaction:', failedPaymentUpdateError);
+        } else {
+          console.log(`Updated payment ${failedPaymentIntent.id} status to failed`);
+        }
+        
+        result.message = `Payment ${failedPaymentIntent.id} marked as failed`;
+        break;
+
       case 'charge.succeeded':
         const charge = event.data.object;
         console.log(`Charge succeeded: ${charge.id}`);
@@ -163,7 +210,8 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       ...result,
       received: true,
-      event: event.type
+      event: event.type,
+      environment
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

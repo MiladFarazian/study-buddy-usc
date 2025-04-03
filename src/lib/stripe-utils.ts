@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 // Cache for Stripe instance
@@ -9,6 +8,8 @@ let isLoadingStripe = false;
 let stripeLoadFailureCount = 0;
 // Last error message
 let lastStripeLoadError: string | null = null;
+// Detected environment
+let stripeEnvironment: string | null = null;
 
 // Initialize Stripe
 export const initializeStripe = () => {
@@ -59,10 +60,11 @@ export const initializeStripe = () => {
       }
       
       const publishableKey = configData.publishableKey;
-      console.log("Got Stripe publishable key from backend");
+      stripeEnvironment = configData.environment || 'test';
+      console.log(`Got Stripe publishable key from backend (${stripeEnvironment} mode)`);
       
       if ((window as any).Stripe) {
-        console.log("Stripe already loaded, creating instance");
+        console.log(`Stripe already loaded, creating instance (${stripeEnvironment} mode)`);
         isLoadingStripe = false;
         resolve((window as any).Stripe(publishableKey));
       } else {
@@ -72,7 +74,7 @@ export const initializeStripe = () => {
         script.src = 'https://js.stripe.com/v3/';
         script.async = true; // Add async loading
         script.onload = () => {
-          console.log("Stripe script loaded successfully");
+          console.log(`Stripe script loaded successfully (${stripeEnvironment} mode)`);
           isLoadingStripe = false;
           stripeLoadFailureCount = 0;
           lastStripeLoadError = null;
@@ -103,6 +105,11 @@ export const initializeStripe = () => {
   });
   
   return stripePromise;
+};
+
+// Get the current Stripe environment
+export const getStripeEnvironment = (): string => {
+  return stripeEnvironment || 'test';
 };
 
 export interface StripePaymentIntent {

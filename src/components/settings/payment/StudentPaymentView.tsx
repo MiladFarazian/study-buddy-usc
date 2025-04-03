@@ -1,50 +1,63 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { Card, CardContent } from "@/components/ui/card";
+import { CreditCard, Clock } from "lucide-react";
+import { getStripeEnvironment } from "@/lib/stripe-utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { AlertCircle } from "lucide-react";
 
-export const StudentPaymentView: React.FC = () => {
+export const StudentPaymentView = () => {
+  const [stripeEnvironment, setStripeEnvironment] = useState<string>('test');
+
+  // Check Stripe environment on component mount
+  useEffect(() => {
+    const env = getStripeEnvironment();
+    console.log(`Current Stripe environment for student view: ${env}`);
+    setStripeEnvironment(env);
+  }, []);
+
   return (
     <div className="space-y-6">
       <div className="space-y-4">
         <h3 className="text-lg font-medium">Payment Methods</h3>
+        
+        {stripeEnvironment === 'production' && (
+          <Alert className="bg-green-50 border-green-200">
+            <AlertDescription className="text-green-800">
+              You are in live mode. Any payments you make will be real charges to your payment method.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <p className="text-sm text-muted-foreground">
-          Manage your payment methods for tutoring sessions
+          Your payment information is securely stored with our payment processor.
+          Payment methods are collected during the session booking process.
         </p>
-        
-        <Alert className="bg-blue-50 border-blue-200">
-          <AlertCircle className="h-4 w-4 text-blue-600" />
-          <AlertDescription className="text-blue-800">
-            We collect payment information securely when you book a session with a tutor.
-          </AlertDescription>
-        </Alert>
-        
-        <div className="border p-6 rounded-md text-center">
-          <p className="text-muted-foreground mb-4">
-            Your payment information is securely handled through Stripe when you book a session.
-          </p>
-          <Button 
-            variant="outline" 
-            className="bg-white"
-            disabled
-          >
-            Payment methods managed per-session
-          </Button>
-        </div>
       </div>
       
-      <div className="space-y-4 mt-8">
-        <h3 className="text-lg font-medium">Payment History</h3>
-        <p className="text-sm text-muted-foreground">
-          View your payment history for tutoring sessions
-        </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center text-center p-4">
+              <CreditCard className="h-12 w-12 text-usc-cardinal mb-4" />
+              <h3 className="text-lg font-medium mb-2">Payment Methods</h3>
+              <p className="text-sm text-muted-foreground">
+                Payment methods are added when you book a session
+              </p>
+            </div>
+          </CardContent>
+        </Card>
         
-        <div className="text-center py-8 border rounded-md bg-gray-50">
-          <p className="text-muted-foreground">
-            Your payment history will be displayed here once you book sessions
-          </p>
-        </div>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center text-center p-4">
+              <Clock className="h-12 w-12 text-usc-cardinal mb-4" />
+              <h3 className="text-lg font-medium mb-2">Payment History</h3>
+              <p className="text-sm text-muted-foreground">
+                View your payment history in the Sessions section
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

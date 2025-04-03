@@ -8,6 +8,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper to determine if we're in production
+const isProduction = () => {
+  // Check for production hostname
+  const hostname = Deno.env.get('HOSTNAME') || '';
+  const isDeploy = hostname.includes('studybuddyusc.com') || hostname.includes('prod');
+  
+  // Override for explicit environment variable
+  const envFlag = Deno.env.get('USE_PRODUCTION_STRIPE');
+  if (envFlag === 'true') return true;
+  if (envFlag === 'false') return false;
+  
+  return isDeploy;
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -15,6 +29,10 @@ serve(async (req) => {
   }
 
   try {
+    // Determine the environment
+    const environment = isProduction() ? 'production' : 'test';
+    console.log(`Processing transfers in ${environment} mode`);
+    
     // Get authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -67,10 +85,14 @@ serve(async (req) => {
       });
     }
 
+    // Get the appropriate Connect account ID field based on environment
+    const connectIdField = isProduction() ? 'stripe_connect_live_id' : 'stripe_connect_id';
+    const onboardingCompleteField = isProduction() ? 'stripe_connect_live_onboarding_complete' : 'stripe_connect_onboarding_complete';
+
     // Get the tutor's Stripe Connect ID
     const { data: tutorProfile, error: tutorError } = await supabaseAdmin
       .from('profiles')
-      .select('stripe_connect_id, stripe_connect_onboarding_complete, first_name, last_name')
+      .select(`${connectIdField}, ${onboardingCompleteField}, first_name, last_name`)
       .eq('id', tutorId)
       .single();
 
@@ -81,10 +103,11 @@ serve(async (req) => {
       });
     }
 
-    if (!tutorProfile.stripe_connect_id || !tutorProfile.stripe_connect_onboarding_complete) {
+    if (!tutorProfile[connectIdField] || !tutorProfile[onboardingCompleteField]) {
       return new Response(JSON.stringify({ 
-        error: 'Tutor has not completed Stripe Connect onboarding',
-        code: 'connect_incomplete'
+        error: `Tutor has not completed Stripe Connect onboarding in ${environment} mode`,
+        code: 'connect_incomplete',
+        environment
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -108,15 +131,29 @@ serve(async (req) => {
     if (!pendingTransfers || pendingTransfers.length === 0) {
       return new Response(JSON.stringify({ 
         message: 'No pending transfers found for this tutor',
-        transfersProcessed: 0
+        transfersProcessed: 0,
+        environment
       }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    // Initialize Stripe
-    const stripe = new Stripe(Deno.env.get('STRIPE_CONNECT_SECRET_KEY') || '', {
+    // Initialize Stripe with the appropriate key
+    const stripeSecretKey = isProduction()
+      ? Deno.env.get('STRIPE_CONNECT_LIVE_SECRET_KEY')
+      : Deno.env.get('STRIPE_CONNECT_SECRET_KEY');
+      
+    if (!stripeSecretKey) {
+      return new Response(JSON.stringify({ 
+        error: `Missing Stripe Connect ${environment} secret key` 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const stripe = new Stripe(stripeSecretKey, {
       apiVersion: '2023-10-16',
     });
 
@@ -130,16 +167,17 @@ serve(async (req) => {
         const newTransfer = await stripe.transfers.create({
           amount: Math.round(transfer.amount * 100), // Convert to cents
           currency: 'usd',
-          destination: tutorProfile.stripe_connect_id,
+          destination: tutorProfile[connectIdField],
           transfer_group: transfer.transfer_group,
           metadata: {
             session_id: transfer.session_id,
             tutor_id: transfer.tutor_id,
             student_id: transfer.student_id,
             payment_transaction_id: transfer.payment_transaction_id,
-            pending_transfer_id: transfer.id
+            pending_transfer_id: transfer.id,
+            environment
           },
-          description: `Tutor payment for session ${transfer.session_id}`
+          description: `Tutor payment for session ${transfer.session_id} (${environment})`
         });
 
         // Update the pending transfer record
@@ -148,7 +186,8 @@ serve(async (req) => {
           .update({
             status: 'completed',
             transfer_id: newTransfer.id,
-            processed_at: new Date().toISOString()
+            processed_at: new Date().toISOString(),
+            processor: `manual_${environment}`
           })
           .eq('id', transfer.id);
           
@@ -156,22 +195,25 @@ serve(async (req) => {
         results.push({
           pendingTransferId: transfer.id,
           transferId: newTransfer.id,
-          status: 'completed'
+          status: 'completed',
+          environment
         });
       } catch (error) {
         console.error(`Error processing transfer ${transfer.id}:`, error);
         results.push({
           pendingTransferId: transfer.id,
           error: error.message,
-          status: 'failed'
+          status: 'failed',
+          environment
         });
       }
     }
 
     return new Response(JSON.stringify({ 
-      message: `Processed ${transfersProcessed.length} transfers for tutor`,
+      message: `Processed ${transfersProcessed.length} transfers for tutor in ${environment} mode`,
       results,
-      transfersProcessed
+      transfersProcessed,
+      environment
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

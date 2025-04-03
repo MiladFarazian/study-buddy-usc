@@ -6,6 +6,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper to determine if we're in production
+const isProduction = () => {
+  // Check for production hostname
+  const hostname = Deno.env.get('HOSTNAME') || '';
+  const isDeploy = hostname.includes('studybuddyusc.com') || hostname.includes('prod');
+  
+  // Override for explicit environment variable
+  const envFlag = Deno.env.get('USE_PRODUCTION_STRIPE');
+  if (envFlag === 'true') return true;
+  if (envFlag === 'false') return false;
+  
+  return isDeploy;
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -13,15 +27,22 @@ serve(async (req) => {
   }
 
   try {
-    // Get the Stripe publishable key from environment variables
-    const publishableKey = Deno.env.get('STRIPE_PUBLISHABLE_KEY');
+    // Determine which key to use based on environment
+    const environment = isProduction() ? 'production' : 'test';
+    console.log(`Using Stripe ${environment} mode`);
+    
+    // Get the appropriate Stripe publishable key from environment variables
+    const publishableKey = isProduction() 
+      ? Deno.env.get('STRIPE_LIVE_PUBLISHABLE_KEY') 
+      : Deno.env.get('STRIPE_PUBLISHABLE_KEY');
     
     if (!publishableKey) {
-      console.error("STRIPE_PUBLISHABLE_KEY is not set in environment variables");
+      console.error(`STRIPE_${isProduction() ? 'LIVE_' : ''}PUBLISHABLE_KEY is not set in environment variables`);
       return new Response(
         JSON.stringify({ 
           error: 'Stripe publishable key not configured',
-          code: 'stripe_config_missing'
+          code: 'stripe_config_missing',
+          environment
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -30,9 +51,12 @@ serve(async (req) => {
       );
     }
 
-    // Return the publishable key
+    // Return the publishable key and environment info
     return new Response(
-      JSON.stringify({ publishableKey }),
+      JSON.stringify({ 
+        publishableKey,
+        environment 
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200 
