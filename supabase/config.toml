@@ -3,6 +3,7 @@ project_id = "fzcyzjruixuriqzryppz"
 
 [functions]
 port = 54321
+include_node_modules = true
 
 [functions.create-payment-intent]
 verify_jwt = true
