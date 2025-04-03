@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -246,6 +245,7 @@ export const TutorPaymentView: React.FC<TutorPaymentViewProps> = ({ user, profil
           {stripeEnvironment === 'production' ? ' (Live Mode)' : ' (Test Mode)'}
         </p>
 
+        {/* Loading state */}
         {loadingConnect ? (
           <div className="flex items-center space-x-2">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -304,6 +304,7 @@ export const TutorPaymentView: React.FC<TutorPaymentViewProps> = ({ user, profil
                 </div>
               </div>
 
+              {/* Status alerts */}
               {connectAccount && connectAccount.has_account && connectAccount.needs_onboarding && (
                 <Alert className="bg-amber-50 border-amber-200">
                   <AlertCircle className="h-4 w-4 text-amber-600" />
@@ -335,7 +336,7 @@ export const TutorPaymentView: React.FC<TutorPaymentViewProps> = ({ user, profil
         )}
       </div>
       
-      {/* Earnings Dashboard Section */}
+      {/* Earnings Dashboard - Only show if account is set up */}
       {connectAccount && connectAccount.has_account && !connectAccount.needs_onboarding && (
         <div className="space-y-4 mt-8">
           <h3 className="text-lg font-medium">Earnings {stripeEnvironment === 'production' ? '(Live)' : '(Test)'}</h3>

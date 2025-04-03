@@ -200,7 +200,7 @@ serve(async (req) => {
         break;
 
       case 'account.updated':
-        result = await handleAccountUpdated(event, stripe, supabaseAdmin);
+        result = await handleAccountUpdated(event, stripe, supabaseAdmin, environment);
         break;
 
       default:
@@ -229,7 +229,7 @@ serve(async (req) => {
 });
 
 // Handle account.updated events, specifically when Connect onboarding is completed
-async function handleAccountUpdated(event, stripe, supabaseAdmin) {
+async function handleAccountUpdated(event, stripe, supabaseAdmin, environment) {
   const account = event.data.object;
   console.log(`Connect account ${account.id} updated`);
   
@@ -237,12 +237,16 @@ async function handleAccountUpdated(event, stripe, supabaseAdmin) {
   if (account.details_submitted && account.payouts_enabled) {
     console.log(`Connect account ${account.id} has completed onboarding`);
     
+    // Get the field names based on environment
+    const connectIdField = environment === 'production' ? 'stripe_connect_live_id' : 'stripe_connect_id';
+    const onboardingCompleteField = environment === 'production' ? 'stripe_connect_live_onboarding_complete' : 'stripe_connect_onboarding_complete';
+    
     // Find the tutor associated with this connect account
     const { data: tutorProfiles, error: tutorError } = await supabaseAdmin
       .from('profiles')
       .select('id, first_name, last_name')
-      .eq('stripe_connect_id', account.id)
-      .eq('stripe_connect_onboarding_complete', false);
+      .eq(connectIdField, account.id)
+      .eq(onboardingCompleteField, false);
       
     if (tutorError) {
       console.error('Error finding tutor profile:', tutorError);
@@ -262,7 +266,7 @@ async function handleAccountUpdated(event, stripe, supabaseAdmin) {
       const { error: updateError } = await supabaseAdmin
         .from('profiles')
         .update({
-          stripe_connect_onboarding_complete: true,
+          [onboardingCompleteField]: true,
           updated_at: new Date().toISOString()
         })
         .eq('id', tutor.id);
@@ -272,7 +276,7 @@ async function handleAccountUpdated(event, stripe, supabaseAdmin) {
         continue;
       }
       
-      console.log(`Updated tutor ${tutor.id} to mark Stripe Connect onboarding as complete`);
+      console.log(`Updated tutor ${tutor.id} to mark Stripe Connect onboarding as complete (${environment} mode)`);
       
       // Process any pending transfers for this tutor
       try {
@@ -310,9 +314,10 @@ async function handleAccountUpdated(event, stripe, supabaseAdmin) {
                 student_id: transfer.student_id,
                 payment_transaction_id: transfer.payment_transaction_id,
                 pending_transfer_id: transfer.id,
-                processed_by: 'webhook'
+                processed_by: 'webhook',
+                environment
               },
-              description: `Automatic tutor payment for session ${transfer.session_id}`
+              description: `Automatic tutor payment for session ${transfer.session_id} (${environment} mode)`
             });
             
             // Update the pending transfer record
@@ -322,7 +327,7 @@ async function handleAccountUpdated(event, stripe, supabaseAdmin) {
                 status: 'completed',
                 transfer_id: newTransfer.id,
                 processed_at: new Date().toISOString(),
-                processor: 'webhook'
+                processor: `webhook_${environment}`
               })
               .eq('id', transfer.id);
               
@@ -338,7 +343,7 @@ async function handleAccountUpdated(event, stripe, supabaseAdmin) {
     
     return { 
       success: true, 
-      message: `Updated ${tutorProfiles.length} tutor profiles and processed pending transfers` 
+      message: `Updated ${tutorProfiles.length} tutor profiles and processed pending transfers in ${environment} mode` 
     };
   }
   
