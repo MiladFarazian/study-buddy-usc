@@ -189,7 +189,10 @@ serve(async (req) => {
 
     if (!tutorProfile.stripe_connect_id) {
       return new Response(
-        JSON.stringify({ error: 'Tutor has not set up their payment account yet' }), 
+        JSON.stringify({ 
+          error: 'Tutor has not set up their payment account yet',
+          code: 'connect_not_setup'
+        }), 
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400,
@@ -199,7 +202,10 @@ serve(async (req) => {
 
     if (!tutorProfile.stripe_connect_onboarding_complete) {
       return new Response(
-        JSON.stringify({ error: 'Tutor has not completed their payment account setup' }), 
+        JSON.stringify({ 
+          error: 'Tutor has not completed their payment account setup',
+          code: 'connect_incomplete' 
+        }), 
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400,
@@ -231,7 +237,7 @@ serve(async (req) => {
       // Calculate platform fee (10% of the amount)
       const platformFeeAmount = Math.round(amountInCents * 0.1);
       
-      // Create a new payment intent
+      // Create a new payment intent with separate charges and transfers
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amountInCents,
         currency: 'usd',
@@ -243,9 +249,9 @@ serve(async (req) => {
           platformFee: platformFeeAmount,
         },
         description: description || `Tutoring session payment`,
-        application_fee_amount: platformFeeAmount,
+        application_fee_amount: platformFeeAmount, // Platform fee (10%)
         transfer_data: {
-          destination: tutorProfile.stripe_connect_id,
+          destination: tutorProfile.stripe_connect_id, // Tutor's Connect account
         },
       });
       
@@ -285,7 +291,7 @@ serve(async (req) => {
           status: 200,
         }
       );
-    } catch (stripeError) {
+    } catch (stripeError: any) {
       console.error('Stripe API error:', stripeError);
       
       // Handle rate limiting errors specially
@@ -303,9 +309,27 @@ serve(async (req) => {
         );
       }
       
+      // Handle account verification issues
+      if (stripeError.code === 'account_invalid' || 
+          stripeError.message?.includes('verification') ||
+          stripeError.message?.includes('capability')) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Tutor account requires verification. Please try a different tutor.',
+            code: 'connect_verification_required',
+            details: stripeError.message
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400,
+          }
+        );
+      }
+      
       return new Response(
         JSON.stringify({ 
           error: 'Stripe API error. Please check your Stripe configuration and try again.',
+          code: 'stripe_api_error',
           details: stripeError.message
         }),
         {
@@ -314,10 +338,13 @@ serve(async (req) => {
         }
       );
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error processing request:', error);
     return new Response(
-      JSON.stringify({ error: error.message || 'Failed to create payment intent' }),
+      JSON.stringify({ 
+        error: error.message || 'Failed to create payment intent',
+        code: 'server_error'
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,

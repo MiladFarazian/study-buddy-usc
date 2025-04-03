@@ -1,14 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-const STRIPE_PUBLIC_KEY = "pk_test_51R9DpIPF6HhVb1F0M00AK1877aQa1pSH7nujC3bCrbd058tuM7fLrJn3CFVAA0fDPy7xYpsdq7ZjZvh3xME4UJnF000NPpVfds";
-
-export interface StripePaymentIntent {
-  id: string;
-  client_secret: string;
-  amount: number;
-}
-
 // Cache for Stripe instance
 let stripePromise: Promise<any> | null = null;
 // Track loading state
@@ -38,34 +30,56 @@ export const initializeStripe = () => {
     });
   }
   
-  console.log("Initializing Stripe with public key:", STRIPE_PUBLIC_KEY);
+  console.log("Initializing Stripe");
   isLoadingStripe = true;
   
-  stripePromise = new Promise<any>((resolve, reject) => {
-    if ((window as any).Stripe) {
-      console.log("Stripe already loaded, creating instance");
+  stripePromise = new Promise<any>(async (resolve, reject) => {
+    try {
+      // Fetch the publishable key from the Edge Function
+      const { data: configData, error: configError } = await supabase.functions.invoke('get-stripe-config', {
+        body: {}
+      });
+      
+      if (configError || !configData?.publishableKey) {
+        console.error("Failed to fetch Stripe configuration:", configError || "No publishable key returned");
+        isLoadingStripe = false;
+        reject(new Error('Failed to fetch Stripe configuration'));
+        return;
+      }
+      
+      const publishableKey = configData.publishableKey;
+      console.log("Got Stripe publishable key from backend");
+      
+      if ((window as any).Stripe) {
+        console.log("Stripe already loaded, creating instance");
+        isLoadingStripe = false;
+        resolve((window as any).Stripe(publishableKey));
+      } else {
+        console.log("Stripe not loaded, adding script");
+        // Add Stripe.js if it's not loaded yet
+        const script = document.createElement('script');
+        script.src = 'https://js.stripe.com/v3/';
+        script.async = true; // Add async loading
+        script.onload = () => {
+          console.log("Stripe script loaded successfully");
+          isLoadingStripe = false;
+          stripeLoadFailureCount = 0;
+          resolve((window as any).Stripe(publishableKey));
+        };
+        script.onerror = (err) => {
+          console.error("Failed to load Stripe.js", err);
+          isLoadingStripe = false;
+          stripeLoadFailureCount++;
+          stripePromise = null;
+          reject(new Error('Failed to load Stripe.js'));
+        };
+        document.body.appendChild(script);
+      }
+    } catch (err) {
+      console.error("Error initializing Stripe:", err);
       isLoadingStripe = false;
-      resolve((window as any).Stripe(STRIPE_PUBLIC_KEY));
-    } else {
-      console.log("Stripe not loaded, adding script");
-      // Add Stripe.js if it's not loaded yet
-      const script = document.createElement('script');
-      script.src = 'https://js.stripe.com/v3/';
-      script.async = true; // Add async loading
-      script.onload = () => {
-        console.log("Stripe script loaded successfully");
-        isLoadingStripe = false;
-        stripeLoadFailureCount = 0;
-        resolve((window as any).Stripe(STRIPE_PUBLIC_KEY));
-      };
-      script.onerror = (err) => {
-        console.error("Failed to load Stripe.js", err);
-        isLoadingStripe = false;
-        stripeLoadFailureCount++;
-        stripePromise = null;
-        reject(new Error('Failed to load Stripe.js'));
-      };
-      document.body.appendChild(script);
+      stripePromise = null;
+      reject(err);
     }
   }).catch(err => {
     console.error("Stripe initialization failed:", err);
@@ -76,6 +90,12 @@ export const initializeStripe = () => {
   
   return stripePromise;
 };
+
+export interface StripePaymentIntent {
+  id: string;
+  client_secret: string;
+  amount: number;
+}
 
 // Find existing payment intent for session
 export const findExistingPaymentIntent = async (sessionId: string): Promise<StripePaymentIntent | null> => {

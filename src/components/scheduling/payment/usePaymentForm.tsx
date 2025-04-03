@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { createPaymentIntent, findExistingPaymentIntent, initializeStripe, processPayment } from "@/lib/stripe-utils";
+import { createPaymentIntent, findExistingPaymentIntent, initializeStripe } from "@/lib/stripe-utils";
 import { Tutor } from "@/types/tutor";
 import { BookingSlot } from "@/lib/scheduling/types";
 
@@ -36,6 +36,7 @@ export function usePaymentForm({
   const [stripe, setStripe] = useState<any>(null);
   const [retryTimeout, setRetryTimeout] = useState<number | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   
   // Use refs to track mounted state
   const isMounted = useRef(true);
@@ -103,6 +104,7 @@ export function usePaymentForm({
         if (isMounted.current) {
           setLoading(true);
           setSetupError(null);
+          setErrorCode(null);
           // Mark that we've attempted payment to prevent multiple simultaneous attempts
           paymentAttempted.current = true;
         }
@@ -117,6 +119,27 @@ export function usePaymentForm({
             paymentAttempted.current = false;
             return;
           }
+        }
+        
+        // Validate required parameters
+        if (!tutor?.id) {
+          throw new Error("Tutor information is missing");
+        }
+        
+        if (!sessionId) {
+          throw new Error("Session ID is missing");
+        }
+        
+        if (!studentId) {
+          throw new Error("Student ID is missing");
+        }
+        
+        if (!selectedSlot?.day || !selectedSlot?.start) {
+          throw new Error("Booking time information is incomplete");
+        }
+        
+        if (isNaN(sessionCost) || sessionCost <= 0) {
+          throw new Error("Invalid session cost");
         }
         
         // Create a payment intent with Stripe
@@ -150,11 +173,34 @@ export function usePaymentForm({
         console.error('Error setting up payment:', error);
         
         if (isMounted.current) {
+          // Check for specific error codes
+          const errorData = error.message && error.message.includes('{') 
+            ? JSON.parse(error.message.substring(error.message.indexOf('{')))
+            : null;
+            
+          const errorCode = errorData?.code || null;
+          setErrorCode(errorCode);
+          
           // Check if the error is related to rate limiting
-          const isRateLimit = error.message && (
+          const isRateLimit = errorCode === 'rate_limited' || error.message && (
             error.message.includes("rate limit") || 
             error.message.includes("Rate limit") ||
             error.message.includes("Too many requests")
+          );
+          
+          // Check if the error is related to Connect account setup
+          const isConnectNotSetup = errorCode === 'connect_not_setup' || error.message && (
+            error.message.includes("payment account") ||
+            error.message.includes("not set up")
+          );
+          
+          const isConnectIncomplete = errorCode === 'connect_incomplete' || error.message && (
+            error.message.includes("not completed") ||
+            error.message.includes("incomplete")
+          );
+          
+          const isConnectVerification = errorCode === 'connect_verification_required' || error.message && (
+            error.message.includes("verification")
           );
           
           if (isRateLimit) {
@@ -172,13 +218,27 @@ export function usePaymentForm({
             
             setRetryTimeout(timeoutId);
             setIsRetrying(true);
-          } else if (error.message && (
-            error.message.includes("payment account") || 
-            error.message.includes("Stripe Connect") ||
-            error.message.includes("not completed") ||
-            error.message.includes("Stripe API error")
-          )) {
+          } else if (isConnectNotSetup) {
+            setSetupError("The tutor hasn't set up their payment account yet. Please try a different tutor or contact support.");
+            toast({
+              title: 'Tutor Payment Account Not Set Up',
+              description: 'This tutor has not set up their payment account yet. Please try another tutor.',
+              variant: 'destructive',
+            });
+          } else if (isConnectIncomplete) {
             setSetupError("The tutor hasn't completed their payment account setup. Please try a different tutor or contact support.");
+            toast({
+              title: 'Tutor Payment Setup Incomplete',
+              description: 'This tutor has not completed their payment account setup. Please try another tutor.',
+              variant: 'destructive',
+            });
+          } else if (isConnectVerification) {
+            setSetupError("The tutor's payment account requires verification. Please try a different tutor or contact support.");
+            toast({
+              title: 'Tutor Account Requires Verification',
+              description: 'This tutor\'s payment account requires verification. Please try another tutor.',
+              variant: 'destructive',
+            });
           } else {
             setSetupError(error.message || "Failed to set up payment");
             
@@ -227,27 +287,66 @@ export function usePaymentForm({
     
     try {
       // Process the payment with Stripe
-      const result = await processPayment(
-        clientSecret,
-        cardElement,
-        studentName || 'Unknown Student',
-        studentEmail || 'unknown@example.com'
-      );
-      
-      toast({
-        title: 'Payment Successful',
-        description: 'Your session has been booked and payment processed.',
+      const result = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: cardElement,
+          billing_details: {
+            name: studentName || 'Unknown Student',
+            email: studentEmail || 'unknown@example.com'
+          }
+        }
       });
       
-      setPaymentComplete(true);
-      onPaymentComplete();
+      if (result.error) {
+        console.error('Payment error:', result.error);
+        throw result.error;
+      }
+      
+      if (result.paymentIntent.status === 'succeeded') {
+        toast({
+          title: 'Payment Successful',
+          description: 'Your session has been booked and payment processed.',
+        });
+        
+        setPaymentComplete(true);
+        onPaymentComplete();
+      } else {
+        // Handle other payment intent statuses
+        console.log('Payment intent status:', result.paymentIntent.status);
+        toast({
+          title: 'Payment Processing',
+          description: 'Your payment is being processed. We will notify you once it completes.',
+        });
+      }
     } catch (error: any) {
       console.error('Payment error:', error);
-      toast({
-        title: 'Payment Failed',
-        description: error.message || 'There was an error processing your payment.',
-        variant: 'destructive',
-      });
+      
+      // Handle specific error codes
+      if (error.code === 'card_declined') {
+        toast({
+          title: 'Card Declined',
+          description: 'Your card was declined. Please try a different payment method.',
+          variant: 'destructive',
+        });
+      } else if (error.code === 'expired_card') {
+        toast({
+          title: 'Expired Card',
+          description: 'Your card has expired. Please try a different card.',
+          variant: 'destructive',
+        });
+      } else if (error.code === 'processing_error') {
+        toast({
+          title: 'Processing Error',
+          description: 'An error occurred while processing your card. Please try again.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Payment Failed',
+          description: error.message || 'There was an error processing your payment.',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setProcessing(false);
     }
@@ -257,6 +356,7 @@ export function usePaymentForm({
     paymentAttempted.current = false;
     setRetryCount(prev => prev + 1);
     setSetupError(null);
+    setErrorCode(null);
     setLoading(true);
   }, []);
   
@@ -270,6 +370,7 @@ export function usePaymentForm({
     cardError,
     sessionCost,
     setupError,
+    errorCode,
     isRetrying,
     handleCardElementReady,
     handleSubmitPayment,

@@ -46,6 +46,9 @@ verify_jwt = true
 [functions.stripe-webhook]
 verify_jwt = false
 
+[functions.get-stripe-config]
+verify_jwt = false
+
 [db]
 # Port for the SQL editor
 port = 54322
@@ -55,4 +58,3 @@ major_version = 15
 [studio]
 # Port for Supabase Studio
 port = 54324
-

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -78,7 +79,7 @@ export function StripePaymentForm({
           if (isRateLimit && initAttempt < 3) {
             const retryDelay = Math.min(2000 * Math.pow(2, initAttempt), 10000);
             
-            setInitError(`Payment system is busy. Will retry in ${Math.ceil(retryDelay/1000)} seconds.`);
+            setInitError(`Payment system is temporarily busy. Will retry in ${Math.ceil(retryDelay/1000)} seconds.`);
             setIsInitRetrying(true);
             
             const timeoutId = window.setTimeout(() => {
@@ -203,19 +204,40 @@ export function StripePaymentForm({
       const result = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
           card: cardElement,
-          billing_details: {
-          },
+          billing_details: {},
         },
       });
 
       if (result.error) {
         console.error('Payment error:', result.error);
         setCardError(result.error.message || 'Payment failed');
-        toast({
-          title: 'Payment Failed',
-          description: result.error.message || 'Payment processing failed. Please try again.',
-          variant: 'destructive',
-        });
+        
+        // Handle specific error codes
+        if (result.error.code === 'card_declined') {
+          toast({
+            title: 'Card Declined',
+            description: 'Your card was declined. Please try a different payment method.',
+            variant: 'destructive',
+          });
+        } else if (result.error.code === 'expired_card') {
+          toast({
+            title: 'Expired Card',
+            description: 'Your card has expired. Please try a different card.',
+            variant: 'destructive',
+          });
+        } else if (result.error.code === 'processing_error') {
+          toast({
+            title: 'Processing Error',
+            description: 'An error occurred while processing your card. Please try again.',
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Payment Failed',
+            description: result.error.message || 'Payment processing failed. Please try again.',
+            variant: 'destructive',
+          });
+        }
       } else if (result.paymentIntent.status === 'succeeded') {
         console.log('Payment successful:', result.paymentIntent);
         toast({
