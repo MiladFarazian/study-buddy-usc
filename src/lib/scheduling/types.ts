@@ -1,47 +1,14 @@
 
-// Common types for scheduling functionality
-export type AvailabilitySlot = {
+export interface BookingSlot {
+  id?: string;
   day: string;
   start: string;
   end: string;
-};
-
-export type WeeklyAvailability = {
-  [key: string]: AvailabilitySlot[];
-};
-
-export type BookingSlot = {
-  tutorId: string;
-  day: Date;
-  start: string;
-  end: string;
-  available: boolean;
-  // Add these new properties to fix the type errors
+  durationMinutes?: number;
+  tutorId?: string;
+  available?: boolean;
   startTime?: Date;
   endTime?: Date;
-  durationMinutes?: number;
-};
+}
 
-export type Session = {
-  id: string;
-  tutorId: string;
-  studentId: string;
-  startTime: Date;
-  endTime: Date;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
-  paymentStatus: 'unpaid' | 'paid' | 'refunded';
-};
-
-export type BookingFormData = {
-  date: Date | null;
-  time: string | null;
-  duration: number;
-  notes?: string;
-};
-
-export type TimeSlot = {
-  time: string; // Format: "HH:mm" (24-hour)
-  available: boolean;
-};
-
-export type CalendarViewMode = 'week' | 'month';
+export type BookingStep = 'select-slot' | 'payment' | 'processing';
