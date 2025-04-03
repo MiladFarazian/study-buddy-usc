@@ -1,20 +1,17 @@
 
-import { Slider } from "@/components/ui/slider";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import React from 'react';
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
-import { Clock, DollarSign } from "lucide-react";
 
 interface SessionDurationSelectorProps {
-  sessionTimeRange: string;
+  sessionTimeRange: { start: string; end: string };
   calculatedCost: number;
   sessionDuration: number;
+  onDurationChange: (values: number) => void;
+  onStartTimeChange: (time: string) => void;
   maxDuration: number;
   hourlyRate: number;
-  onDurationChange: (duration: number) => void;
-  onStartTimeChange: (time: string) => void;
   availableStartTimes: string[];
   selectedStartTime: string | null;
   formatTimeForDisplay: (time: string) => string;
@@ -24,99 +21,92 @@ export const SessionDurationSelector = ({
   sessionTimeRange,
   calculatedCost,
   sessionDuration,
-  maxDuration,
-  hourlyRate,
   onDurationChange,
   onStartTimeChange,
+  maxDuration,
+  hourlyRate,
   availableStartTimes,
   selectedStartTime,
   formatTimeForDisplay
 }: SessionDurationSelectorProps) => {
-  // Generate available duration options (in 30 min increments up to max duration)
-  const durationOptions = [];
-  for (let duration = 30; duration <= maxDuration; duration += 30) {
-    if (duration <= 120) { // Only show up to 2 hours as common options
-      durationOptions.push({
-        value: duration,
-        label: duration === 60 ? '1 hour' : 
-               duration === 120 ? '2 hours' : 
-               `${duration} min`
-      });
-    }
-  }
   
-  // Calculate cost based on hourly rate and duration in hours
-  const durationInHours = sessionDuration / 60;
-  const totalCost = hourlyRate * durationInHours;
+  // Default duration options
+  const durationOptions = [30, 60, 90, 120];
   
-  // Format cost as currency
-  const formattedCost = new Intl.NumberFormat('en-US', {
+  // Filter options based on max available duration
+  const availableDurations = durationOptions.filter(duration => duration <= maxDuration);
+  
+  // Format price display
+  const formattedPrice = new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD'
-  }).format(totalCost);
-
-  // When component loads, ensure it's showing the current session duration
-  useEffect(() => {
-    // This component is reactive to prop changes from parent
-  }, [sessionDuration]);
+    currency: 'USD',
+  }).format(calculatedCost);
   
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Session Details</h3>
+      <div>
+        <Label className="text-base font-medium">Session Duration</Label>
+        <p className="text-sm text-muted-foreground mb-4">
+          Choose how long you'd like your session to be
+        </p>
+        
+        <div className="flex flex-wrap gap-4 mb-6">
+          {availableDurations.map(duration => (
+            <button
+              key={duration}
+              type="button"
+              className={`
+                px-4 py-2 rounded-md border text-sm font-medium
+                ${sessionDuration === duration 
+                  ? 'bg-usc-cardinal text-white border-usc-cardinal' 
+                  : 'bg-white hover:bg-slate-50 border-gray-200'}
+              `}
+              onClick={() => onDurationChange(duration)}
+            >
+              {duration} min
+            </button>
+          ))}
+        </div>
       </div>
       
-      <div className="p-4 rounded-md border bg-muted/30">
-        <div className="flex items-center mb-3">
-          <Clock className="h-4 w-4 text-muted-foreground mr-2" />
-          <span className="text-sm text-muted-foreground">Current selection:</span>
-          <span className="ml-2 font-medium">{sessionTimeRange}</span>
+      {availableStartTimes.length > 1 && (
+        <div>
+          <Label className="text-base font-medium">Start Time</Label>
+          <p className="text-sm text-muted-foreground mb-2">
+            Choose when your session should start
+          </p>
+          
+          <Select 
+            value={selectedStartTime || undefined} 
+            onValueChange={onStartTimeChange}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select a start time" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableStartTimes.map(time => (
+                <SelectItem key={time} value={time}>
+                  {formatTimeForDisplay(time)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        
-        {availableStartTimes.length > 1 && (
-          <div className="mb-4">
-            <Label htmlFor="start-time" className="mb-2 block">Start Time</Label>
-            <Select
-              value={selectedStartTime || undefined}
-              onValueChange={onStartTimeChange}
-            >
-              <SelectTrigger id="start-time" className="w-full">
-                <SelectValue placeholder="Select a start time" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableStartTimes.map(time => (
-                  <SelectItem key={time} value={time}>
-                    {formatTimeForDisplay(time)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      )}
+      
+      <div className="rounded-md bg-slate-50 p-4 mt-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <p className="text-sm font-medium text-slate-700">Session Summary</p>
+            <p className="text-xs text-slate-500 mt-1">
+              {formatTimeForDisplay(sessionTimeRange.start)} - {formatTimeForDisplay(sessionTimeRange.end)} 
+              ({sessionDuration} min)
+            </p>
           </div>
-        )}
-        
-        <div className="mb-4">
-          <Label className="mb-2 block">Session Duration</Label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {durationOptions.map(option => (
-              <Button
-                key={option.value}
-                type="button"
-                variant={sessionDuration === option.value ? "default" : "outline"} 
-                className={sessionDuration === option.value ? "bg-usc-cardinal hover:bg-usc-cardinal-dark" : ""}
-                onClick={() => onDurationChange(option.value)}
-              >
-                {option.label}
-              </Button>
-            ))}
+          <div className="text-right">
+            <p className="text-sm font-medium text-slate-700">Total Price</p>
+            <p className="text-lg font-bold text-usc-cardinal">{formattedPrice}</p>
           </div>
-        </div>
-        
-        <div className="flex items-center justify-between pt-3 border-t">
-          <div className="flex items-center">
-            <DollarSign className="h-4 w-4 text-muted-foreground mr-1" />
-            <span className="text-sm text-muted-foreground">Total cost:</span>
-          </div>
-          <span className="font-bold text-lg">{formattedCost}</span>
         </div>
       </div>
     </div>

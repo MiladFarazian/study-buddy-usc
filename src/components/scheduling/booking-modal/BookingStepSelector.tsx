@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { Tutor } from "@/types/tutor";
 import { BookingSlot } from "@/lib/scheduling";
@@ -137,8 +138,8 @@ export const BookingStepSelector = ({
           sessionTimeRange={getSessionTimeRange()}
           calculatedCost={calculatedCost}
           sessionDuration={sessionDuration}
-          onDurationChange={(value) => handleDurationChange(value, tutor.hourlyRate || 25)}
-          onStartTimeChange={(time) => handleStartTimeChange(time, tutor.hourlyRate || 25)}
+          onDurationChange={(values) => handleDurationChange([values], tutor.hourlyRate || 25)}
+          onStartTimeChange={handleStartTimeChange}
           maxDuration={getMaxDuration()}
           hourlyRate={tutor.hourlyRate || 25}
           availableStartTimes={availableStartTimes}
