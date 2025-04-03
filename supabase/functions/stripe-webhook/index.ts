@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@12.13.0?target=deno";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.23.0';
@@ -8,6 +9,8 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log("Stripe webhook function invoked");
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, {
       status: 204,
@@ -81,6 +84,8 @@ serve(async (req) => {
         headers: corsHeaders,
       });
     }
+
+    console.log(`Received webhook event: ${event.type}`);
 
     // Process the webhook event
     let result = { success: true, message: 'No action needed' };
@@ -178,6 +183,7 @@ serve(async (req) => {
 // Handle account.updated events, specifically when Connect onboarding is completed
 async function handleAccountUpdated(event, stripe, supabaseAdmin) {
   const account = event.data.object;
+  console.log(`Connect account ${account.id} updated`);
   
   // Check if this is a connect account that just completed onboarding
   if (account.details_submitted && account.payouts_enabled) {
@@ -190,10 +196,17 @@ async function handleAccountUpdated(event, stripe, supabaseAdmin) {
       .eq('stripe_connect_id', account.id)
       .eq('stripe_connect_onboarding_complete', false);
       
-    if (tutorError || !tutorProfiles || tutorProfiles.length === 0) {
+    if (tutorError) {
+      console.error('Error finding tutor profile:', tutorError);
+      return { success: false, message: `Error finding tutor profile: ${tutorError.message}` };
+    }
+    
+    if (!tutorProfiles || tutorProfiles.length === 0) {
       console.log('No tutor found for this Connect account or tutor already marked as complete');
       return { success: true, message: 'No action needed' };
     }
+    
+    console.log(`Found ${tutorProfiles.length} tutors to update`);
     
     // Update tutor profile to mark onboarding as complete
     for (const tutor of tutorProfiles) {

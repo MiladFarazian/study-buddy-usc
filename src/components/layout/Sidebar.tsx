@@ -1,3 +1,4 @@
+
 import { Link, useLocation } from "react-router-dom";
 import { 
   BarChart, 
@@ -7,7 +8,8 @@ import {
   LayoutDashboard, 
   MessageSquare, 
   Settings, 
-  Users 
+  Users,
+  CreditCard
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -58,6 +60,12 @@ const Sidebar = () => {
       showWhen: !!user // Only for authenticated users
     },
     {
+      title: "Payments",
+      icon: CreditCard,
+      path: "/settings?tab=payments",
+      showWhen: !!user // Only for authenticated users
+    },
+    {
       title: "Resources",
       icon: FileText,
       path: "/resources",
@@ -83,7 +91,8 @@ const Sidebar = () => {
     <div className="min-h-screen w-64 bg-white text-usc-cardinal border-r border-gray-200 hidden md:block">
       <nav className="p-4 space-y-2">
         {filteredItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = location.pathname === item.path || 
+                          (item.path.startsWith('/settings') && location.pathname.startsWith('/settings'));
           
           return (
             <Link
