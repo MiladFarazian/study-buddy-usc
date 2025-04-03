@@ -35,8 +35,9 @@ export function SchedulerModal({
   const [creatingSession, setCreatingSession] = useState(false);
   const [sessionId, setSessionId] = useState<string>("");
   const [authRequired, setAuthRequired] = useState(false);
-  const [clientSecret, setClientSecret] = useState("");
+  const [clientSecret, setClientSecret] = useState<string | null>("");
   const [paymentAmount, setPaymentAmount] = useState(0);
+  const [processing, setProcessing] = useState(false);
   
   // Reset state when modal is closed
   useEffect(() => {
@@ -48,6 +49,7 @@ export function SchedulerModal({
       setAuthRequired(false);
       setClientSecret("");
       setPaymentAmount(0);
+      setProcessing(false);
     }
   }, [isOpen]);
   
@@ -79,6 +81,7 @@ export function SchedulerModal({
     
     try {
       setCreatingSession(true);
+      setProcessing(true);
       toast({
         title: "Processing",
         description: "Creating your session...",
@@ -96,6 +99,7 @@ export function SchedulerModal({
         setClientSecret(mockClientSecret);
         setPaymentAmount(mockAmount);
         setCreatingSession(false);
+        setProcessing(false);
       }, 1000);
       
     } catch (error) {
@@ -106,6 +110,7 @@ export function SchedulerModal({
         variant: "destructive",
       });
       setCreatingSession(false);
+      setProcessing(false);
       setStep('select-slot');
     }
   };
@@ -137,6 +142,12 @@ export function SchedulerModal({
     }
   };
   
+  const retryPaymentSetup = () => {
+    if (selectedSlot) {
+      startSessionCreation(selectedSlot);
+    }
+  };
+  
   const renderStepContent = () => {
     if (authRequired) {
       return <LoginPrompt onClose={onClose} />;
@@ -160,15 +171,11 @@ export function SchedulerModal({
             selectedSlot={selectedSlot}
             sessionId={sessionId}
             amount={paymentAmount}
+            clientSecret={clientSecret}
             onPaymentComplete={handlePaymentComplete}
             onBack={handleBackClick}
-            retryPaymentSetup={() => {
-              toast({
-                title: "Retrying",
-                description: "Retrying payment setup...",
-              });
-              startSessionCreation(selectedSlot!);
-            }}
+            processing={processing}
+            retryPaymentSetup={retryPaymentSetup}
           />
         );
       case 'processing':
