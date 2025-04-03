@@ -2,7 +2,7 @@
 import React from 'react';
 import { BookingSlot } from '@/lib/scheduling/types';
 import { Tutor } from '@/types/tutor';
-import { formatDate, formatTime } from '@/lib/utils';
+import { formatDate, formatTime } from '@/lib/scheduling/time-utils';
 import { useSessionCost } from './hooks/useSessionCost';
 import { StripePaymentForm } from './StripePaymentForm';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -379,7 +378,7 @@ export function StripePaymentForm({
           
           {!clientSecret && !loading && (
             <div className="mt-4">
-              <Alert variant="warning" className="bg-amber-50 border-amber-200">
+              <Alert variant="destructive" className="bg-amber-50 border-amber-200">
                 <AlertTriangle className="h-4 w-4 text-amber-600" />
                 <AlertTitle className="text-amber-800">Payment Setup Issue</AlertTitle>
                 <AlertDescription className="text-amber-700">
