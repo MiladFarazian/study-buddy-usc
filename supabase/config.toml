@@ -21,6 +21,7 @@ major_version = 15
 # Port for Supabase Studio
 port = 54324
 
+# Functions configuration
 [functions]
 # Port for the Functions service
 port = 54342

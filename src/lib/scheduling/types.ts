@@ -16,6 +16,10 @@ export type BookingSlot = {
   start: string;
   end: string;
   available: boolean;
+  // Add these new properties to fix the type errors
+  startTime?: Date;
+  endTime?: Date;
+  durationMinutes?: number;
 };
 
 export type Session = {

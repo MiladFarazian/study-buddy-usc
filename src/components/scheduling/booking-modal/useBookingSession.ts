@@ -46,15 +46,32 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
     setCreatingSession(true);
     
     try {
+      // Calculate start and end times from the slot data
+      const startTime = new Date(slot.day);
+      const [startHour, startMinute] = slot.start.split(':').map(Number);
+      startTime.setHours(startHour, startMinute, 0, 0);
+      
+      const endTime = new Date(slot.day);
+      const [endHour, endMinute] = slot.end.split(':').map(Number);
+      endTime.setHours(endHour, endMinute, 0, 0);
+      
+      // Calculate duration in minutes
+      const durationMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
+      
+      // Enhance the slot with calculated properties
+      slot.startTime = startTime;
+      slot.endTime = endTime;
+      slot.durationMinutes = durationMinutes;
+      
       // Create the session in the database
       const { data: session, error } = await supabase
         .from('sessions')
         .insert({
           tutor_id: tutor.id,
           student_id: user.id,
-          start_time: slot.startTime,
-          end_time: slot.endTime,
-          duration_minutes: slot.durationMinutes,
+          start_time: startTime.toISOString(),
+          end_time: endTime.toISOString(),
+          duration_minutes: durationMinutes,
           status: 'pending',
           payment_status: 'pending'
         })
@@ -129,7 +146,18 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
     
     // Calculate payment amount (hourly rate prorated by duration)
     const hourlyRate = tutor.hourlyRate || 50; // default to $50 if not set
-    const hours = slot.durationMinutes / 60;
+    
+    // If durationMinutes isn't set on the slot, calculate it from start/end
+    let durationMinutes = slot.durationMinutes;
+    if (!durationMinutes && slot.start && slot.end) {
+      const startParts = slot.start.split(':').map(Number);
+      const endParts = slot.end.split(':').map(Number);
+      const startMinutes = startParts[0] * 60 + startParts[1];
+      const endMinutes = endParts[0] * 60 + endParts[1];
+      durationMinutes = endMinutes - startMinutes;
+    }
+    
+    const hours = (durationMinutes || 60) / 60; // default to 1 hour if not set
     const amount = hourlyRate * hours;
     
     // Create a new session
@@ -167,7 +195,18 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
       
       // Calculate amount again
       const hourlyRate = tutor.hourlyRate || 50;
-      const hours = selectedSlot.durationMinutes / 60;
+      
+      // Calculate duration in hours
+      let durationMinutes = selectedSlot.durationMinutes;
+      if (!durationMinutes && selectedSlot.start && selectedSlot.end) {
+        const startParts = selectedSlot.start.split(':').map(Number);
+        const endParts = selectedSlot.end.split(':').map(Number);
+        const startMinutes = startParts[0] * 60 + startParts[1];
+        const endMinutes = endParts[0] * 60 + endParts[1];
+        durationMinutes = endMinutes - startMinutes;
+      }
+      
+      const hours = (durationMinutes || 60) / 60;
       const amount = hourlyRate * hours;
       
       // Try payment setup again
@@ -179,6 +218,7 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
     user,
     step,
     selectedSlot,
+    sessionId,
     creatingSession,
     authRequired,
     clientSecret,
