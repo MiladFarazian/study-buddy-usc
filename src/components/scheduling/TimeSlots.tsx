@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { format, parseISO, addMinutes } from 'date-fns';
 import { Button } from "@/components/ui/button";
@@ -102,8 +101,8 @@ export function TimeSlots({
         const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
         const isSelected = selectedSlot && 
           (selectedSlot.day instanceof Date ? 
-            selectedSlot.day.toISOString() === slotDay.toISOString() :
-            selectedSlot.day === slot.day) && 
+            format(selectedSlot.day, 'yyyy-MM-dd') === format(slotDay, 'yyyy-MM-dd') :
+            format(new Date(selectedSlot.day), 'yyyy-MM-dd') === format(slotDay, 'yyyy-MM-dd')) && 
           selectedSlot.start === slot.start;
 
         return (

@@ -17,11 +17,12 @@ export interface AvailabilitySlot {
   end: string;
 }
 
+// Define WeeklyAvailability as a Record with string keys and arrays of AvailabilitySlot values
 export interface WeeklyAvailability {
   [key: string]: AvailabilitySlot[]; // Keys like 'monday', 'tuesday', etc.
 }
 
-export type BookingStep = 'select-slot' | 'payment' | 'processing';
+export type BookingStep = 'select-slot' | 'payment' | 'processing' | 'confirmation';
 
 export interface Session {
   id: string;

@@ -29,7 +29,19 @@ export const AvailabilitySettings = () => {
   useEffect(() => {
     // Load availability from profile if available
     if (profile?.availability) {
-      setAvailability(profile.availability as WeeklyAvailability);
+      // Type assertion to handle the conversion safely
+      const availabilityData = profile.availability as any;
+      if (typeof availabilityData === 'object' && !Array.isArray(availabilityData)) {
+        // Create a properly typed availability object
+        const weekDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        const typedAvailability: WeeklyAvailability = {};
+        
+        weekDays.forEach(day => {
+          typedAvailability[day] = Array.isArray(availabilityData[day]) ? availabilityData[day] : [];
+        });
+        
+        setAvailability(typedAvailability);
+      }
     }
     setLoading(false);
   }, [profile]);

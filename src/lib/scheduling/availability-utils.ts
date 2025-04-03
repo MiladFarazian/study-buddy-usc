@@ -39,19 +39,23 @@ export async function getTutorAvailability(tutorId: string): Promise<WeeklyAvail
     
     // Ensure we return the availability in the correct format
     if (data?.availability) {
+      // Cast to WeeklyAvailability after validation
+      const availabilityData = data.availability as any;
+      
       // Check if it's a valid object with day properties
-      const avail = data.availability as WeeklyAvailability;
-      
-      // Initialize with empty arrays if undefined
-      const weekDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-      const cleanAvailability: WeeklyAvailability = {};
-      
-      // Ensure all days exist in the availability object
-      weekDays.forEach(day => {
-        cleanAvailability[day] = avail[day] || [];
-      });
-      
-      return cleanAvailability;
+      if (typeof availabilityData === 'object' && !Array.isArray(availabilityData)) {
+        const cleanAvailability: WeeklyAvailability = {};
+        
+        // Initialize with empty arrays if undefined
+        const weekDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        
+        // Ensure all days exist in the availability object
+        weekDays.forEach(day => {
+          cleanAvailability[day] = Array.isArray(availabilityData[day]) ? availabilityData[day] : [];
+        });
+        
+        return cleanAvailability;
+      }
     }
     
     // If tutor has no availability set yet, return a default structure
@@ -82,7 +86,7 @@ export async function updateTutorAvailability(
     
     const { error } = await supabase
       .from('profiles')
-      .update({ availability })
+      .update({ availability: availability as any })
       .eq('id', tutorId);
       
     if (error) {

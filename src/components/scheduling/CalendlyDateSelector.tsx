@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   format, 
@@ -29,7 +28,7 @@ export function CalendlyDateSelector({
   const { selectedDate } = state;
   
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<CalendarViewMode>('week');
+  const [viewMode, setViewMode] = useState<CalendarViewMode>(CalendarViewMode.WEEK);
   
   // Generate array of dates to display
   const [displayedDates, setDisplayedDates] = useState<Date[]>([]);
@@ -41,7 +40,7 @@ export function CalendlyDateSelector({
   }, [currentDate]);
   
   const handlePrevious = () => {
-    if (viewMode === 'week') {
+    if (viewMode === CalendarViewMode.WEEK) {
       setCurrentDate(prevDate => subDays(prevDate, 7));
     } else {
       // Move back by 30 days for month view
@@ -50,7 +49,7 @@ export function CalendlyDateSelector({
   };
   
   const handleNext = () => {
-    if (viewMode === 'week') {
+    if (viewMode === CalendarViewMode.WEEK) {
       setCurrentDate(prevDate => addDays(prevDate, 7));
     } else {
       // Move forward by 30 days for month view
@@ -87,16 +86,16 @@ export function CalendlyDateSelector({
         
         {showWeekMonth && (
           <Tabs 
-            defaultValue="week" 
+            defaultValue={CalendarViewMode.WEEK}
             value={viewMode} 
             onValueChange={(value) => setViewMode(value as CalendarViewMode)}
           >
             <TabsList className="grid grid-cols-2 w-[160px]">
-              <TabsTrigger value="week">
+              <TabsTrigger value={CalendarViewMode.WEEK}>
                 <CalendarIcon className="h-4 w-4 mr-2" />
                 Week
               </TabsTrigger>
-              <TabsTrigger value="month">
+              <TabsTrigger value={CalendarViewMode.MONTH}>
                 <CalendarIcon className="h-4 w-4 mr-2" />
                 Month
               </TabsTrigger>

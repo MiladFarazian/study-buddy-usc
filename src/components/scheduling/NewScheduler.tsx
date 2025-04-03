@@ -55,7 +55,11 @@ function SchedulerContent({ onClose }: SchedulerContentProps) {
     new Set(
       availableSlots
         .filter(slot => slot.available)
-        .map(slot => new Date(slot.day.setHours(0, 0, 0, 0)))
+        .map(slot => {
+          // Ensure slot.day is a Date object
+          const day = slot.day instanceof Date ? slot.day : new Date(slot.day);
+          return new Date(day.setHours(0, 0, 0, 0));
+        })
     )
   );
   
@@ -64,7 +68,13 @@ function SchedulerContent({ onClose }: SchedulerContentProps) {
       {bookingStep === BookingStep.SELECT_DATE_TIME && (
         <>
           <Calendar availableDates={availableDates} />
-          <TimeSlots availableSlots={availableSlots} />
+          <TimeSlots 
+            date={state.selectedDate} 
+            availableSlots={availableSlots} 
+            selectedSlot={state.selectedTimeSlot}
+            onSelectSlot={(slot) => dispatch({ type: 'SELECT_TIME_SLOT', payload: slot })}
+            isLoading={loading}
+          />
           
           {state.selectedDate && state.selectedTimeSlot && (
             <div className="mt-6 flex justify-end">

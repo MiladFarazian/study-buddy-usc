@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { Tutor } from "@/types/tutor";
 import { BookingSlot } from "@/lib/scheduling";
@@ -57,7 +56,7 @@ export const BookingStepSelector = ({
     if (!date) return [];
     
     return availableSlots.filter(slot => {
-      const slotDate = new Date(slot.day);
+      const slotDate = slot.day instanceof Date ? slot.day : new Date(slot.day as string);
       return (
         slotDate.toDateString() === date.toDateString() && 
         slot.available
@@ -72,7 +71,8 @@ export const BookingStepSelector = ({
     if (initialDate && initialTime && availableSlots.length > 0 && !selectedTimeSlot) {
       const matchingSlot = availableSlots.find(slot => {
         // Match the slot that contains the initial time
-        if (!isSameDay(new Date(slot.day), initialDate)) return false;
+        const slotDate = slot.day instanceof Date ? slot.day : new Date(slot.day as string);
+        if (!isSameDay(slotDate, initialDate)) return false;
         const slotStartHour = parseInt(slot.start.split(':')[0]);
         const initialTimeHour = parseInt(initialTime.split(':')[0]);
         return slotStartHour === initialTimeHour;
@@ -137,7 +137,7 @@ export const BookingStepSelector = ({
           sessionTimeRange={getSessionTimeRange()}
           calculatedCost={calculatedCost}
           sessionDuration={sessionDuration}
-          onDurationChange={(values) => handleDurationChange(values, tutor.hourlyRate || 25)}
+          onDurationChange={(value) => handleDurationChange(value, tutor.hourlyRate || 25)}
           onStartTimeChange={(time) => handleStartTimeChange(time, tutor.hourlyRate || 25)}
           maxDuration={getMaxDuration()}
           hourlyRate={tutor.hourlyRate || 25}

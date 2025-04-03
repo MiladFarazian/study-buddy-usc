@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -94,11 +93,17 @@ export function NewBookingWizard({ tutor, onClose }: NewBookingWizardProps) {
       // Extract unique available dates
       const dates = slotsWithTutor
         .filter(slot => slot.available)
-        .map(slot => slot.day);
+        .map(slot => {
+          // Ensure slot.day is a Date object
+          return slot.day instanceof Date ? slot.day : new Date(slot.day);
+        });
       
       // Remove duplicates
-      const uniqueDates = Array.from(new Set(dates.map(d => d.toDateString())))
-        .map(dateStr => new Date(dateStr));
+      const uniqueDates = Array.from(
+        new Set(
+          dates.map(d => d.toDateString())
+        )
+      ).map(dateStr => new Date(dateStr));
       
       setAvailableDates(uniqueDates);
       
