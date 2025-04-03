@@ -107,7 +107,7 @@ export function usePaymentForm({
     submitPayment,
     handleCardElementReady,
     retryInitialization,
-    retryPaymentSetup,
+    retryPaymentSetup: retrySetupPayment,
     setCardError,
   };
 }

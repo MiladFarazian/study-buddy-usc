@@ -1,114 +1,138 @@
 
-import React from 'react';
+import { useState, useEffect } from 'react';
+import { format, parseISO, addMinutes } from 'date-fns';
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Clock } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { BookingSlot } from "@/lib/scheduling/types";
-import { formatTimeDisplay } from "@/lib/scheduling/time-utils";
-import { useScheduling } from '@/contexts/SchedulingContext';
-import { isSameDay } from 'date-fns';
 
 interface TimeSlotsProps {
+  date: Date | null;
   availableSlots: BookingSlot[];
+  selectedSlot: BookingSlot | null;
+  onSelectSlot: (slot: BookingSlot) => void;
+  isLoading?: boolean;
 }
 
-export function TimeSlots({ availableSlots }: TimeSlotsProps) {
-  const { state, dispatch } = useScheduling();
-  const { selectedDate, selectedTimeSlot } = state;
-  
-  if (!selectedDate) {
-    return (
-      <div className="mt-4 text-center text-muted-foreground">
-        Please select a date to view available time slots.
-      </div>
-    );
-  }
-  
-  // Filter available slots for the selected date
-  const slotsForSelectedDate = availableSlots.filter(slot => {
-    return selectedDate && isSameDay(slot.day, selectedDate) && slot.available;
-  });
-  
-  // Group slots by morning and afternoon
-  const morningSlots = slotsForSelectedDate.filter(
-    slot => parseInt(slot.start.split(':')[0]) < 12
-  );
-  
-  const afternoonSlots = slotsForSelectedDate.filter(
-    slot => parseInt(slot.start.split(':')[0]) >= 12
-  );
-  
-  const handleSelectTimeSlot = (slot: BookingSlot) => {
-    dispatch({ type: 'SELECT_TIME_SLOT', payload: slot });
+export function TimeSlots({
+  date,
+  availableSlots,
+  selectedSlot,
+  onSelectSlot,
+  isLoading = false
+}: TimeSlotsProps) {
+  const [slots, setSlots] = useState<BookingSlot[]>([]);
+
+  useEffect(() => {
+    if (!date || !availableSlots.length) {
+      setSlots([]);
+      return;
+    }
+
+    // Filter slots for the selected date
+    const filtered = availableSlots.filter(slot => {
+      const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
+      return (
+        slot.available && 
+        format(slotDay, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+      );
+    });
+
+    // Sort by start time
+    const sorted = [...filtered].sort((a, b) => {
+      return a.start.localeCompare(b.start);
+    });
+
+    setSlots(sorted);
+  }, [date, availableSlots]);
+
+  const formatTimeRange = (start: string, end: string) => {
+    try {
+      const startDate = parseISO(`2000-01-01T${start}`);
+      const endDate = parseISO(`2000-01-01T${end}`);
+      return `${format(startDate, 'h:mm a')} - ${format(endDate, 'h:mm a')}`;
+    } catch (error) {
+      console.error("Error formatting time range:", error);
+      return `${start} - ${end}`;
+    }
   };
-  
-  if (slotsForSelectedDate.length === 0) {
+
+  const calculateDuration = (start: string, end: string) => {
+    try {
+      const startDate = parseISO(`2000-01-01T${start}`);
+      const endDate = parseISO(`2000-01-01T${end}`);
+      const minutes = Math.round((endDate.getTime() - startDate.getTime()) / 60000);
+      return `${minutes} min`;
+    } catch (error) {
+      console.error("Error calculating duration:", error);
+      return "Unknown duration";
+    }
+  };
+
+  if (isLoading) {
     return (
-      <div className="mt-6">
-        <h2 className="text-xl font-semibold mb-4">Select a Time</h2>
-        <div className="flex flex-col items-center justify-center p-8 border rounded-md bg-muted/30">
-          <Clock className="h-8 w-8 text-muted-foreground mb-2" />
-          <p className="text-muted-foreground text-center">
-            No available time slots for this date. Please select another date.
-          </p>
-        </div>
+      <div className="space-y-2">
+        {[1, 2, 3, 4].map(i => (
+          <Skeleton key={i} className="h-16 w-full" />
+        ))}
       </div>
     );
   }
-  
-  return (
-    <div className="mt-6 space-y-4">
-      <h2 className="text-xl font-semibold">Select a Time</h2>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {morningSlots.length > 0 && (
-          <div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-2">Morning</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {morningSlots.map((slot) => (
-                <Button
-                  key={`${slot.day.toISOString()}-${slot.start}-${slot.end}`}
-                  variant="outline"
-                  className={cn(
-                    "justify-center",
-                    selectedTimeSlot && selectedTimeSlot.start === slot.start && 
-                    selectedTimeSlot.end === slot.end && 
-                    isSameDay(selectedTimeSlot.day, slot.day) && 
-                    "bg-usc-cardinal text-white border-usc-cardinal"
-                  )}
-                  onClick={() => handleSelectTimeSlot(slot)}
-                >
-                  {formatTimeDisplay(slot.start)}
-                </Button>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {afternoonSlots.length > 0 && (
-          <div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-2">Afternoon/Evening</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {afternoonSlots.map((slot) => (
-                <Button
-                  key={`${slot.day.toISOString()}-${slot.start}-${slot.end}`}
-                  variant="outline"
-                  className={cn(
-                    "justify-center",
-                    selectedTimeSlot && selectedTimeSlot.start === slot.start && 
-                    selectedTimeSlot.end === slot.end && 
-                    isSameDay(selectedTimeSlot.day, slot.day) && 
-                    "bg-usc-cardinal text-white border-usc-cardinal"
-                  )}
-                  onClick={() => handleSelectTimeSlot(slot)}
-                >
-                  {formatTimeDisplay(slot.start)}
-                </Button>
-              ))}
-            </div>
-          </div>
-        )}
+
+  if (!date) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        Please select a date to see available time slots
       </div>
+    );
+  }
+
+  if (slots.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        No time slots available for {format(date, 'EEEE, MMMM d')}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {slots.map((slot, i) => {
+        const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
+        const isSelected = selectedSlot && 
+          (selectedSlot.day instanceof Date ? 
+            selectedSlot.day.toISOString() === slotDay.toISOString() :
+            selectedSlot.day === slot.day) && 
+          selectedSlot.start === slot.start;
+
+        return (
+          <Button
+            key={`${format(slotDay, 'yyyy-MM-dd')}-${slot.start}-${i}`}
+            type="button"
+            variant={isSelected ? "default" : "outline"}
+            className={cn(
+              "w-full justify-between h-auto py-3 px-4",
+              isSelected && "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark"
+            )}
+            onClick={() => onSelectSlot(slot)}
+          >
+            <div className="flex items-center">
+              <Clock className={cn(
+                "mr-2 h-4 w-4",
+                isSelected ? "text-white" : "text-muted-foreground"
+              )} />
+              <span>{formatTimeRange(slot.start, slot.end)}</span>
+            </div>
+            <span className={cn(
+              "text-sm",
+              isSelected ? "text-white" : "text-muted-foreground"
+            )}>
+              {calculateDuration(slot.start, slot.end)}
+            </span>
+          </Button>
+        );
+      })}
     </div>
   );
 }

@@ -1,17 +1,17 @@
 
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { BookingStep, BookingSlot } from "@/lib/scheduling/types";
 import { Tutor } from "@/types/tutor";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { BookingStepSelector } from "./booking-modal/BookingStepSelector";
-import { BookingSlot } from "@/lib/scheduling/types";
-import { useBookingSession } from "./booking-modal/useBookingSession";
-import { SessionDetailsDisplay } from "./payment/SessionDetailsDisplay";
-import { PaymentCardElement } from "./payment/PaymentCardElement";
-import { PaymentSuccessScreen } from "./payment/PaymentSuccessScreen";
-import { Loader2, AlertTriangle, RefreshCcw } from "lucide-react";
-import { AuthRequiredDialog } from "./booking-modal/AuthRequiredDialog";
-import { usePaymentForm } from "./payment/usePaymentForm";
-import { useState, useEffect } from "react";
+import { BookingPaymentForm } from "./payment/BookingPaymentForm";
+import { ArrowLeftIcon } from "lucide-react";
+import { LoadingScreen } from "./booking-modal/LoadingScreen";
+import { SuccessScreen } from "./booking-modal/SuccessScreen";
+import { LoginPrompt } from "./booking-modal/LoginPrompt";
 
 interface SchedulerModalProps {
   isOpen: boolean;
@@ -28,141 +28,189 @@ export function SchedulerModal({
   initialDate,
   initialTime
 }: SchedulerModalProps) {
-  const {
-    user,
-    step,
-    selectedSlot,
-    creatingSession,
-    authRequired,
-    sessionId,
-    handleSlotSelect,
-    handlePaymentComplete,
-    handleCancel,
-    setAuthRequired
-  } = useBookingSession(tutor, isOpen, onClose);
-
-  // Create a proper BookingSlot with all required properties
-  // when selectedSlot is either null or missing properties
-  const completeBookingSlot: BookingSlot = selectedSlot ? {
-    tutorId: selectedSlot.tutorId || tutor.id,
-    day: selectedSlot.day,
-    start: selectedSlot.start,
-    end: selectedSlot.end,
-    available: selectedSlot.available ?? true
-  } : {
-    tutorId: tutor.id,
-    day: new Date(),
-    start: '',
-    end: '',
-    available: true
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [step, setStep] = useState<BookingStep>('select-slot');
+  const [selectedSlot, setSelectedSlot] = useState<BookingSlot | null>(null);
+  const [creatingSession, setCreatingSession] = useState(false);
+  const [sessionId, setSessionId] = useState<string>("");
+  const [authRequired, setAuthRequired] = useState(false);
+  const [clientSecret, setClientSecret] = useState("");
+  const [paymentAmount, setPaymentAmount] = useState(0);
+  
+  // Reset state when modal is closed
+  useEffect(() => {
+    if (!isOpen) {
+      setStep('select-slot');
+      setSelectedSlot(null);
+      setCreatingSession(false);
+      setSessionId("");
+      setAuthRequired(false);
+      setClientSecret("");
+      setPaymentAmount(0);
+    }
+  }, [isOpen]);
+  
+  const handleSelectSlot = (slot: BookingSlot) => {
+    // Convert the slot day to a Date object if it's not already
+    const slotWithDateDay: BookingSlot = {
+      ...slot,
+      day: slot.day instanceof Date ? slot.day : new Date(slot.day as string),
+      available: true
+    };
+    
+    setSelectedSlot(slotWithDateDay);
+    
+    // Check if user is authenticated
+    if (!user) {
+      setAuthRequired(true);
+      return;
+    }
+    
+    // Move to payment step
+    setStep('payment');
+    
+    // Create a session and get client secret (this would be implemented in a hook or utility)
+    startSessionCreation(slotWithDateDay);
   };
-
-  // Always call usePaymentForm hook with default values
-  const paymentForm = usePaymentForm({
-    tutor: tutor,
-    selectedSlot: completeBookingSlot,
-    sessionId: sessionId || '',
-    studentId: user?.id || '',
-    studentName: user?.user_metadata?.full_name || '',
-    studentEmail: user?.email || '',
-    onPaymentComplete: handlePaymentComplete
-  });
-
-  return (
-    <>
-      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col overflow-hidden p-0">
-          <DialogHeader className="p-6 pb-2">
-            <DialogTitle>Book a Session with {tutor.name}</DialogTitle>
-          </DialogHeader>
-          
-          {step === 'select-slot' && (
-            <div className="overflow-y-auto flex-1 px-6 pb-6">
-              <BookingStepSelector 
-                tutor={tutor} 
-                onSelectSlot={handleSlotSelect} 
-                onClose={onClose}
-                initialDate={initialDate}
-                initialTime={initialTime}
-              />
-            </div>
-          )}
-          
-          {step === 'payment' && selectedSlot && (
-            <div className="overflow-y-auto flex-1 px-6 pb-6">
-              {creatingSession ? (
-                <div className="flex flex-col items-center justify-center py-10">
-                  <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal mb-4" />
-                  <p className="text-center text-muted-foreground">Setting up your booking...</p>
-                </div>
-              ) : (
-                <>
-                  <SessionDetailsDisplay 
-                    tutor={tutor} 
-                    selectedSlot={selectedSlot} 
-                  />
-                  
-                  <div className="mt-6">
-                    {paymentForm.setupError ? (
-                      <div className="p-4 border border-red-300 bg-red-50 rounded-md mb-4 flex items-start">
-                        <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 mr-2 flex-shrink-0" />
-                        <div>
-                          <h4 className="font-medium text-red-800">Payment Setup Error</h4>
-                          <p className="text-sm text-red-700 mt-1">
-                            {paymentForm.setupError}
-                          </p>
-                          <div className="flex gap-3 mt-3">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={handleCancel}
-                              className="border-red-300 text-red-700 hover:bg-red-50"
-                            >
-                              Go Back
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={paymentForm.retrySetupPayment}
-                              className="flex items-center gap-1"
-                            >
-                              <RefreshCcw className="h-3.5 w-3.5" />
-                              Retry
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <PaymentCardElement
-                        onCardElementReady={paymentForm.handleCardElementReady}
-                        onSubmit={paymentForm.handleSubmitPayment}
-                        onCancel={handleCancel}
-                        processing={paymentForm.processing}
-                        loading={paymentForm.loading}
-                        cardError={paymentForm.cardError}
-                        amount={paymentForm.sessionCost}
-                        stripeLoaded={paymentForm.stripeLoaded}
-                        clientSecret={paymentForm.clientSecret}
-                      />
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-          
-          {step === 'processing' && (
-            <div className="overflow-y-auto flex-1 px-6 pb-6">
-              <PaymentSuccessScreen onComplete={handleCancel} />
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+  
+  const startSessionCreation = async (slot: BookingSlot) => {
+    if (!user || !slot) return;
+    
+    try {
+      setCreatingSession(true);
+      toast({
+        title: "Processing",
+        description: "Creating your session...",
+      });
       
-      <AuthRequiredDialog 
-        isOpen={authRequired} 
-        onClose={() => setAuthRequired(false)} 
-      />
-    </>
+      // Simulate creating a session
+      // In a real implementation, this would call your backend API
+      setTimeout(() => {
+        // Mock response data
+        const mockSessionId = `session-${Date.now()}`;
+        const mockClientSecret = `secret-${Date.now()}`;
+        const mockAmount = calculateSessionAmount(slot);
+        
+        setSessionId(mockSessionId);
+        setClientSecret(mockClientSecret);
+        setPaymentAmount(mockAmount);
+        setCreatingSession(false);
+      }, 1000);
+      
+    } catch (error) {
+      console.error("Error creating session:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create session. Please try again.",
+        variant: "destructive",
+      });
+      setCreatingSession(false);
+      setStep('select-slot');
+    }
+  };
+  
+  const calculateSessionAmount = (slot: BookingSlot): number => {
+    if (!slot || !tutor?.hourlyRate) return 0;
+    
+    const durationMinutes = slot.durationMinutes || 60; // Default to 1 hour
+    return (tutor.hourlyRate / 60) * durationMinutes;
+  };
+  
+  const handlePaymentComplete = () => {
+    setStep('processing');
+    
+    // In real implementation, confirm the payment and session
+    setTimeout(() => {
+      toast({
+        title: "Success",
+        description: "Your tutoring session has been booked!",
+      });
+      // You might want to redirect to a confirmation page here
+      onClose();
+    }, 2000);
+  };
+  
+  const handleBackClick = () => {
+    if (step === 'payment') {
+      setStep('select-slot');
+    }
+  };
+  
+  const renderStepContent = () => {
+    if (authRequired) {
+      return <LoginPrompt onClose={onClose} />;
+    }
+    
+    switch (step) {
+      case 'select-slot':
+        return (
+          <BookingStepSelector 
+            tutor={tutor} 
+            onSelectSlot={handleSelectSlot} 
+            onClose={onClose}
+            initialDate={initialDate}
+            initialTime={initialTime}
+          />
+        );
+      case 'payment':
+        return (
+          <BookingPaymentForm 
+            tutor={tutor}
+            selectedSlot={selectedSlot}
+            sessionId={sessionId}
+            amount={paymentAmount}
+            onPaymentComplete={handlePaymentComplete}
+            onBack={handleBackClick}
+            retryPaymentSetup={() => {
+              toast({
+                title: "Retrying",
+                description: "Retrying payment setup...",
+              });
+              startSessionCreation(selectedSlot!);
+            }}
+          />
+        );
+      case 'processing':
+        return <LoadingScreen message="Completing your booking..." />;
+      default:
+        return <SuccessScreen />;
+    }
+  };
+  
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-md md:max-w-lg">
+        <DialogHeader>
+          <div className="flex items-center">
+            {step !== 'select-slot' && !authRequired && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="mr-2 h-8 w-8"
+                onClick={handleBackClick}
+                disabled={creatingSession}
+              >
+                <ArrowLeftIcon className="h-4 w-4" />
+                <span className="sr-only">Back</span>
+              </Button>
+            )}
+            <DialogTitle>
+              {authRequired
+                ? "Login Required"
+                : step === 'select-slot'
+                ? "Book a Tutoring Session"
+                : step === 'payment'
+                ? "Complete Payment"
+                : step === 'processing'
+                ? "Processing"
+                : "Booking Confirmed"}
+            </DialogTitle>
+          </div>
+        </DialogHeader>
+        
+        {renderStepContent()}
+      </DialogContent>
+    </Dialog>
   );
 }

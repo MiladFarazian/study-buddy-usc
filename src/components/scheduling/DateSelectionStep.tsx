@@ -3,10 +3,10 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { BookingSlot } from "@/lib/scheduling";
+import { BookingSlot } from "@/lib/scheduling/types";
 import { useScheduling } from '@/contexts/SchedulingContext';
 import { TimeSelector } from "@/lib/scheduling/ui/TimeSelector";
 
@@ -26,9 +26,10 @@ export function DateSelectionStep({ availableSlots, isLoading }: DateSelectionSt
     
     availableSlots.forEach(slot => {
       if (slot.available) {
-        const dateStr = format(slot.day, 'yyyy-MM-dd');
+        const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
+        const dateStr = format(slotDay, 'yyyy-MM-dd');
         if (!datesMap.has(dateStr)) {
-          datesMap.set(dateStr, slot.day);
+          datesMap.set(dateStr, slotDay);
         }
       }
     });
@@ -43,12 +44,12 @@ export function DateSelectionStep({ availableSlots, isLoading }: DateSelectionSt
     if (!selectedDate) return [];
     
     const slots = availableSlots.filter(slot => {
-      const slotDate = new Date(slot.day);
+      const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
       return (
         slot.available && 
-        slotDate.getDate() === selectedDate.getDate() &&
-        slotDate.getMonth() === selectedDate.getMonth() &&
-        slotDate.getFullYear() === selectedDate.getFullYear()
+        slotDay.getDate() === selectedDate.getDate() &&
+        slotDay.getMonth() === selectedDate.getMonth() &&
+        slotDay.getFullYear() === selectedDate.getFullYear()
       );
     });
     
@@ -68,7 +69,8 @@ export function DateSelectionStep({ availableSlots, isLoading }: DateSelectionSt
   
   const handleTimeSelect = (time: string) => {
     const slot = availableSlots.find(s => {
-      const sameDay = format(s.day, 'yyyy-MM-dd') === format(selectedDate!, 'yyyy-MM-dd');
+      const slotDay = s.day instanceof Date ? s.day : new Date(s.day);
+      const sameDay = selectedDate && format(slotDay, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd');
       return sameDay && s.start === time;
     });
     
@@ -86,68 +88,8 @@ export function DateSelectionStep({ availableSlots, isLoading }: DateSelectionSt
           <div className="md:col-span-1">
             <div className="space-y-2">
               <label className="text-sm font-medium">Date</label>
-              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !selectedDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {selectedDate ? format(selectedDate, 'EEEE, MMMM d, yyyy') : <span>Select date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate || undefined}
-                    onSelect={handleDateSelect}
-                    initialFocus
-                    disabled={(date) => {
-                      // Only enable dates that have available slots
-                      return !datesWithSlots.some(
-                        d => d.toDateString() === date.toDateString()
-                      );
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
             </div>
           </div>
-          
-          <div className="md:col-span-2 space-y-2">
-            <label className="text-sm font-medium">Time</label>
-            {isLoading ? (
-              <div className="flex items-center justify-center p-8 border rounded-md">
-                <Loader2 className="h-6 w-6 animate-spin text-usc-cardinal mr-2" />
-                <span>Loading available times...</span>
-              </div>
-            ) : selectedDate ? (
-              <TimeSelector
-                availableTimeSlots={getTimeSlots()}
-                selectedTime={selectedTimeSlot?.start || null}
-                onSelectTime={handleTimeSelect}
-              />
-            ) : (
-              <div className="flex items-center justify-center p-8 border rounded-md bg-muted/20">
-                <p className="text-muted-foreground">
-                  Please select a date to view available times
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-        
-        <div className="flex justify-end mt-8">
-          <Button 
-            className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white px-8"
-            onClick={continueToNextStep}
-            disabled={!selectedDate || !selectedTimeSlot}
-          >
-            Continue
-          </Button>
         </div>
       </div>
     </div>

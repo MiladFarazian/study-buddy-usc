@@ -11,7 +11,7 @@ import {
   getTutorBookedSessions, 
   generateAvailableSlots, 
   BookingSlot 
-} from "@/lib/scheduling-utils";
+} from "@/lib/scheduling";
 import { Badge } from "@/components/ui/badge";
 import { CalendarDays, Loader2, Clock, AlertCircle } from "lucide-react";
 
@@ -39,7 +39,10 @@ export const BookingCalendar = ({ tutor, onSelectSlot }: BookingCalendarProps) =
     // Filter slots for the selected date
     if (selectedDate && availableSlots.length > 0) {
       const slotsForDate = availableSlots.filter(
-        slot => format(slot.day, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')
+        slot => {
+          const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
+          return format(slotDay, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd');
+        }
       );
       setVisibleSlots(slotsForDate);
     }
@@ -60,7 +63,7 @@ export const BookingCalendar = ({ tutor, onSelectSlot }: BookingCalendarProps) =
       }
       
       // Check if there's any actual availability set
-      const hasAnySlots = Object.values(availability).some(daySlots => daySlots.length > 0);
+      const hasAnySlots = Object.values(availability).some(daySlots => Array.isArray(daySlots) && daySlots.length > 0);
       
       if (!hasAnySlots) {
         console.log("Tutor has no availability slots set:", tutor.id);
@@ -87,7 +90,10 @@ export const BookingCalendar = ({ tutor, onSelectSlot }: BookingCalendarProps) =
       
       // Set initial visible slots for today
       const todaySlots = slotsWithTutor.filter(
-        slot => format(slot.day, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')
+        slot => {
+          const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
+          return format(slotDay, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
+        }
       );
       setVisibleSlots(todaySlots);
       
@@ -121,7 +127,8 @@ export const BookingCalendar = ({ tutor, onSelectSlot }: BookingCalendarProps) =
     const dates = new Set<string>();
     availableSlots.forEach(slot => {
       if (slot.available) {
-        dates.add(format(slot.day, 'yyyy-MM-dd'));
+        const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
+        dates.add(format(slotDay, 'yyyy-MM-dd'));
       }
     });
     return Array.from(dates).map(dateStr => parseISO(dateStr));
@@ -208,16 +215,18 @@ export const BookingCalendar = ({ tutor, onSelectSlot }: BookingCalendarProps) =
                       const startTime = parseISO(`2000-01-01T${slot.start}`);
                       const endTime = parseISO(`2000-01-01T${slot.end}`);
                       const durationMins = differenceInMinutes(endTime, startTime);
+                      const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
                       
                       return (
                         <div
-                          key={`${format(slot.day, 'yyyy-MM-dd')}-${slot.start}-${index}`}
+                          key={`${format(slotDay, 'yyyy-MM-dd')}-${slot.start}-${index}`}
                           className={`
                             rounded-md border p-3 cursor-pointer transition-colors
                             ${selectedSlot && 
-                              selectedSlot.day.getTime() === slot.day.getTime() && 
+                              selectedSlot.day instanceof Date && slotDay instanceof Date ?
+                              (selectedSlot.day.getTime() === slotDay.getTime() && 
                               selectedSlot.start === slot.start
-                              ? 'border-usc-cardinal bg-red-50'
+                              ? 'border-usc-cardinal bg-red-50' : '')
                               : 'hover:border-usc-cardinal hover:bg-red-50/50'
                             }
                           `}
