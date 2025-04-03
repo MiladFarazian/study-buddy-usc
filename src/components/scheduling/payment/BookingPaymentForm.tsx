@@ -6,7 +6,7 @@ import { formatDate, formatTime } from '@/lib/scheduling/time-utils';
 import { useSessionCost } from './hooks/useSessionCost';
 import { StripePaymentForm } from './StripePaymentForm';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface BookingPaymentFormProps {
@@ -20,6 +20,7 @@ interface BookingPaymentFormProps {
   processing: boolean;
   retryPaymentSetup: () => void;
   error?: string | null;
+  isTwoStagePayment?: boolean;
 }
 
 export function BookingPaymentForm({
@@ -32,7 +33,8 @@ export function BookingPaymentForm({
   onBack,
   processing,
   retryPaymentSetup,
-  error
+  error,
+  isTwoStagePayment = false
 }: BookingPaymentFormProps) {
   // Get session cost using the hook (this would provide more accurate cost calculation)
   const { sessionCost } = useSessionCost(selectedSlot, tutor);
@@ -81,14 +83,22 @@ export function BookingPaymentForm({
         </div>
       </div>
       
+      {isTwoStagePayment && (
+        <Alert className="mb-4 bg-blue-50 border-blue-200">
+          <Info className="h-4 w-4 text-blue-600" />
+          <AlertTitle className="text-blue-800">Payment Information</AlertTitle>
+          <AlertDescription className="text-blue-700">
+            Your tutor is in the process of setting up their payment account. Your payment will be processed now and transferred to them once their account setup is complete.
+          </AlertDescription>
+        </Alert>
+      )}
+      
       {error && (
         <Alert variant="destructive" className="mb-4">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>
-            {error.includes('payment account') || error.includes('Stripe Connect') || error.includes('not completed') ? 
-              "The tutor hasn't completed their payment setup. Please try another tutor or check back later." : 
-              error}
+            {error}
           </AlertDescription>
         </Alert>
       )}
@@ -100,6 +110,7 @@ export function BookingPaymentForm({
         onCancel={onBack}
         processing={processing}
         retryPaymentSetup={retryPaymentSetup}
+        isTwoStagePayment={isTwoStagePayment}
       />
     </div>
   );

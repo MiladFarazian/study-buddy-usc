@@ -95,6 +95,7 @@ export interface StripePaymentIntent {
   id: string;
   client_secret: string;
   amount: number;
+  two_stage_payment?: boolean;
 }
 
 // Find existing payment intent for session

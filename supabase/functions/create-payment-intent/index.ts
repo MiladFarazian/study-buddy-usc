@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.23.0';
 import Stripe from 'https://esm.sh/stripe@12.13.0?target=deno';
@@ -204,32 +203,8 @@ serve(async (req) => {
       
     console.log(`Processing for tutor: ${tutorName}, Connect ID: ${tutorProfile.stripe_connect_id || 'not set up'}`);
 
-    if (!tutorProfile.stripe_connect_id) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Tutor has not set up their payment account yet',
-          code: 'connect_not_setup'
-        }), 
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
-      );
-    }
-
-    if (!tutorProfile.stripe_connect_onboarding_complete) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Tutor has not completed their payment account setup',
-          code: 'connect_incomplete' 
-        }), 
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
-      );
-    }
-
+    const hasCompleteConnectAccount = tutorProfile.stripe_connect_id && tutorProfile.stripe_connect_onboarding_complete;
+    
     // Initialize Stripe
     try {
       const stripe = new Stripe(stripeSecretKey, {
@@ -260,28 +235,59 @@ serve(async (req) => {
       // Get transfer group ID based on session for tracking
       const transferGroup = `session_${sessionId}`;
       
-      // Create a new payment intent with Connect integration
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: amountInCents,
-        currency: 'usd',
-        capture_method: 'automatic', // Change to 'automatic' for simpler flow
-        metadata: {
-          sessionId,
-          tutorId,
-          studentId,
-          platformFee: platformFeeAmount,
-          tutorName,
-        },
-        description: description || `Tutoring session payment for ${tutorName}`,
-        application_fee_amount: platformFeeAmount, // Platform fee (10%)
-        transfer_data: {
-          destination: tutorProfile.stripe_connect_id, // Tutor's Connect account
-        },
-        transfer_group: transferGroup, // Used to track related transfers
-        on_behalf_of: tutorProfile.stripe_connect_id, // Show in the connected account's dashboard too
-      });
+      // Create a payment intent
+      // If tutor has completed onboarding, create with Connect parameters
+      // Otherwise, create a regular payment intent to the platform
+      let paymentIntent;
+      let isTwoStagePayment = false;
       
-      console.log(`Created new payment intent: ${paymentIntent.id} with transfer to: ${tutorProfile.stripe_connect_id}`);
+      if (hasCompleteConnectAccount) {
+        // Create a standard Connect payment intent with immediate transfer
+        paymentIntent = await stripe.paymentIntents.create({
+          amount: amountInCents,
+          currency: 'usd',
+          capture_method: 'automatic',
+          metadata: {
+            sessionId,
+            tutorId,
+            studentId,
+            platformFee: platformFeeAmount,
+            tutorName,
+            paymentType: 'connect_direct'
+          },
+          description: description || `Tutoring session payment for ${tutorName}`,
+          application_fee_amount: platformFeeAmount, // Platform fee (10%)
+          transfer_data: {
+            destination: tutorProfile.stripe_connect_id, // Tutor's Connect account
+          },
+          transfer_group: transferGroup, // Used to track related transfers
+          on_behalf_of: tutorProfile.stripe_connect_id, // Show in the connected account's dashboard too
+        });
+        
+        console.log(`Created Connect payment intent: ${paymentIntent.id} with transfer to: ${tutorProfile.stripe_connect_id}`);
+      } else {
+        // Create a regular payment intent to the platform account
+        // The funds will be transferred to the tutor later when they complete onboarding
+        paymentIntent = await stripe.paymentIntents.create({
+          amount: amountInCents,
+          currency: 'usd',
+          capture_method: 'automatic',
+          metadata: {
+            sessionId,
+            tutorId,
+            studentId,
+            platformFee: platformFeeAmount,
+            tutorName,
+            paymentType: 'two_stage',
+            requiresTransfer: 'true'
+          },
+          description: description || `Tutoring session payment for ${tutorName} (pending tutor onboarding)`,
+          transfer_group: transferGroup, // Used to track related transfers
+        });
+        
+        isTwoStagePayment = true;
+        console.log(`Created two-stage payment intent: ${paymentIntent.id} for tutor: ${tutorId} pending onboarding`);
+      }
 
       // Create a payment transaction record in the database
       const { data: paymentTransaction, error: paymentError } = await supabaseAdmin
@@ -295,6 +301,8 @@ serve(async (req) => {
           stripe_payment_intent_id: paymentIntent.id,
           payment_intent_status: paymentIntent.status,
           platform_fee: platformFeeAmount / 100,
+          requires_transfer: isTwoStagePayment,
+          payment_type: isTwoStagePayment ? 'two_stage' : 'connect_direct'
         })
         .select()
         .single();
@@ -306,6 +314,32 @@ serve(async (req) => {
         console.log(`Created payment transaction: ${paymentTransaction.id}`);
       }
       
+      // If this is a two-stage payment, create a pending_transfers record
+      if (isTwoStagePayment) {
+        // Insert a record to track the pending transfer to the tutor once they onboard
+        const tutorAmount = amountInCents - platformFeeAmount;
+        
+        const { error: transferError } = await supabaseAdmin
+          .from('pending_transfers')
+          .insert({
+            payment_transaction_id: paymentTransaction?.id,
+            session_id: sessionId,
+            tutor_id: tutorId,
+            student_id: studentId,
+            amount: tutorAmount / 100, // Convert back to dollars
+            platform_fee: platformFeeAmount / 100,
+            status: 'pending',
+            payment_intent_id: paymentIntent.id,
+            transfer_group: transferGroup
+          });
+          
+        if (transferError) {
+          console.error('Error creating pending transfer record:', transferError);
+        } else {
+          console.log(`Created pending transfer record for tutor: ${tutorId}`);
+        }
+      }
+      
       // Return the client secret to the client
       return new Response(
         JSON.stringify({
@@ -313,6 +347,7 @@ serve(async (req) => {
           client_secret: paymentIntent.client_secret,
           amount: amount, // Keep original amount for display
           payment_transaction_id: paymentTransaction?.id,
+          two_stage_payment: isTwoStagePayment
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

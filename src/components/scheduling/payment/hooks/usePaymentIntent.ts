@@ -31,6 +31,7 @@ export function usePaymentIntent({
   const [retryCount, setRetryCount] = useState(0);
   const [isRetrying, setIsRetrying] = useState(false);
   const [retryTimeout, setRetryTimeout] = useState<number | null>(null);
+  const [isTwoStagePayment, setIsTwoStagePayment] = useState(false);
   
   // Use ref to track mounted state
   const isMounted = useRef(true);
@@ -60,6 +61,7 @@ export function usePaymentIntent({
         if (isMounted.current) {
           setSetupError(null);
           setErrorCode(null);
+          setIsTwoStagePayment(false);
           // Mark that we've attempted payment to prevent multiple simultaneous attempts
           paymentAttempted.current = true;
         }
@@ -120,6 +122,7 @@ export function usePaymentIntent({
         
         if (isMounted.current) {
           setClientSecret(paymentIntent.client_secret);
+          setIsTwoStagePayment(!!paymentIntent.two_stage_payment);
           paymentAttempted.current = false;
         }
       } catch (error: any) {
@@ -181,27 +184,12 @@ export function usePaymentIntent({
             
             setRetryTimeout(timeoutId);
             setIsRetrying(true);
-          } else if (isConnectNotSetup) {
-            setSetupError("The tutor hasn't set up their payment account yet. Please try a different tutor or contact support.");
-            toast({
-              title: 'Tutor Payment Account Not Set Up',
-              description: 'This tutor has not set up their payment account yet. Please try another tutor.',
-              variant: 'destructive',
-            });
-          } else if (isConnectIncomplete) {
-            setSetupError("The tutor hasn't completed their payment account setup. Please try a different tutor or contact support.");
-            toast({
-              title: 'Tutor Payment Setup Incomplete',
-              description: 'This tutor has not completed their payment account setup. Please try another tutor.',
-              variant: 'destructive',
-            });
-          } else if (isConnectVerification) {
-            setSetupError("The tutor's payment account requires verification. Please try a different tutor or contact support.");
-            toast({
-              title: 'Tutor Account Requires Verification',
-              description: 'This tutor\'s payment account requires verification. Please try another tutor.',
-              variant: 'destructive',
-            });
+          } else if (isConnectNotSetup || isConnectIncomplete || isConnectVerification) {
+            // No need for error messages about tutor setup since we'll handle it with two-stage payment
+            // Instead, let's retry the payment setup which should now use the two-stage approach
+            console.log("Tutor Stripe Connect not set up or incomplete. Retrying with two-stage payment...");
+            paymentAttempted.current = false;
+            setRetryCount(prev => prev + 1);
           } else {
             setSetupError(error.message || "Failed to set up payment");
             
@@ -236,6 +224,7 @@ export function usePaymentIntent({
     setupError,
     errorCode,
     isRetrying,
+    isTwoStagePayment,
     retrySetupPayment
   };
 }

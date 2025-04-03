@@ -39,6 +39,8 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
     setPaymentAmount,
     paymentError,
     setPaymentError,
+    isTwoStagePayment,
+    setIsTwoStagePayment,
     setupPayment
   } = usePaymentSetup();
   
@@ -52,9 +54,10 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
         setClientSecret(null);
         setPaymentError(null);
         setCreatingSession(false);
+        setIsTwoStagePayment(false);
       }, 300); // slight delay to avoid visual glitches
     }
-  }, [isOpen, resetBookingFlow, setSelectedSlot, setSessionId, setClientSecret, setPaymentError, setCreatingSession]);
+  }, [isOpen, resetBookingFlow, setSelectedSlot, setSessionId, setClientSecret, setPaymentError, setCreatingSession, setIsTwoStagePayment]);
   
   // Handle slot selection
   const handleSlotSelect = useCallback(async (slot: BookingSlot) => {
@@ -77,10 +80,15 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
       setStep('payment');
       
       // Set up payment intent
-      await setupPayment(session.id, amount, tutor, user);
+      const result = await setupPayment(session.id, amount, tutor, user);
       setCreatingSession(false);
+      
+      // Set two-stage payment flag based on the result
+      if (result && result.isTwoStagePayment !== undefined) {
+        setIsTwoStagePayment(result.isTwoStagePayment);
+      }
     }
-  }, [user, tutor, calculatePaymentAmount, createSession, setupPayment, setStep, setSessionId, setCreatingSession, setSelectedSlot, setAuthRequired]);
+  }, [user, tutor, calculatePaymentAmount, createSession, setupPayment, setStep, setSessionId, setCreatingSession, setSelectedSlot, setAuthRequired, setIsTwoStagePayment]);
   
   // Handle payment completion
   const handlePaymentComplete = useCallback(() => {
@@ -107,10 +115,19 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
       const amount = calculatePaymentAmount(selectedSlot, hourlyRate);
       
       // Try payment setup again
-      setupPayment(sessionId, amount, tutor, user);
-      setCreatingSession(false);
+      setupPayment(sessionId, amount, tutor, user)
+        .then(result => {
+          // Set two-stage payment flag based on the result
+          if (result && result.isTwoStagePayment !== undefined) {
+            setIsTwoStagePayment(result.isTwoStagePayment);
+          }
+          setCreatingSession(false);
+        })
+        .catch(() => {
+          setCreatingSession(false);
+        });
     }
-  }, [sessionId, selectedSlot, user, tutor, calculatePaymentAmount, setupPayment, setCreatingSession]);
+  }, [sessionId, selectedSlot, user, tutor, calculatePaymentAmount, setupPayment, setCreatingSession, setIsTwoStagePayment]);
   
   return {
     user,
@@ -122,6 +139,7 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
     clientSecret,
     paymentAmount,
     paymentError,
+    isTwoStagePayment,
     handleSlotSelect,
     handlePaymentComplete,
     handleCancel,

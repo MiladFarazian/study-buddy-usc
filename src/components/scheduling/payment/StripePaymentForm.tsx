@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Loader2, AlertTriangle, RefreshCcw, CheckCircle } from "lucide-react";
+import { Loader2, AlertTriangle, RefreshCcw, CheckCircle, Info } from "lucide-react";
 import { initializeStripe } from "@/lib/stripe-utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -12,6 +12,7 @@ interface StripePaymentFormProps {
   onCancel: () => void;
   processing: boolean;
   retryPaymentSetup?: () => void;
+  isTwoStagePayment?: boolean;
 }
 
 export function StripePaymentForm({
@@ -20,7 +21,8 @@ export function StripePaymentForm({
   onSuccess,
   onCancel,
   processing,
-  retryPaymentSetup
+  retryPaymentSetup,
+  isTwoStagePayment = false
 }: StripePaymentFormProps) {
   const { toast } = useToast();
   const [stripe, setStripe] = useState<any>(null);
@@ -286,6 +288,15 @@ export function StripePaymentForm({
     <div className="mt-6">
       <form onSubmit={handleSubmit}>
         <div className="space-y-4">
+          {isTwoStagePayment && (
+            <Alert className="mb-4 bg-blue-50 border-blue-200">
+              <Info className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-800">
+                Payment will be collected now and transferred to your tutor when they complete their account setup.
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <div className="p-4 border rounded-md">
             <div className="mb-4">
               <h3 className="text-lg font-medium mb-2">Payment Details</h3>
@@ -384,7 +395,6 @@ export function StripePaymentForm({
                 <AlertDescription className="text-amber-700">
                   We couldn't establish a secure payment connection. This may be due to:
                   <ul className="list-disc pl-5 mt-2 space-y-1">
-                    <li>Tutor hasn't completed their payment setup</li>
                     <li>Network connection issue</li>
                     <li>Temporary payment service unavailability</li>
                   </ul>

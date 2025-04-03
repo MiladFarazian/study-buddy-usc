@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,6 +31,7 @@ export function BookSessionModal({ tutor, isOpen, onClose }: BookSessionModalPro
     clientSecret,
     paymentAmount,
     paymentError,
+    isTwoStagePayment,
     handleSlotSelect,
     handlePaymentComplete,
     handleCancel,
@@ -110,16 +110,7 @@ export function BookSessionModal({ tutor, isOpen, onClose }: BookSessionModalPro
                       <Alert variant="destructive" className="mb-4">
                         <AlertCircle className="h-4 w-4" />
                         <AlertTitle>Payment Error</AlertTitle>
-                        <AlertDescription>
-                          {paymentError.includes('not completed') || paymentError.includes('not set up') ? (
-                            <>
-                              This tutor hasn't completed their payment setup. 
-                              Please try a different tutor or try again later.
-                            </>
-                          ) : (
-                            paymentError
-                          )}
-                        </AlertDescription>
+                        <AlertDescription>{paymentError}</AlertDescription>
                       </Alert>
                     )}
                     
@@ -130,6 +121,7 @@ export function BookSessionModal({ tutor, isOpen, onClose }: BookSessionModalPro
                         onSuccess={handlePaymentComplete}
                         onCancel={handleCancel}
                         processing={false}
+                        isTwoStagePayment={isTwoStagePayment}
                       />
                     ) : paymentError ? (
                       <div className="flex justify-end mt-4">

@@ -1,375 +1,237 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import Stripe from "https://esm.sh/stripe@12.13.0?target=deno";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.23.0';
-import Stripe from 'https://esm.sh/stripe@12.13.0?target=deno';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const stripeSecretKey = Deno.env.get('STRIPE_CONNECT_SECRET_KEY');
+const supabaseUrl = Deno.env.get('SUPABASE_URL');
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+if (!stripeSecretKey) {
+  console.error('Missing STRIPE_CONNECT_SECRET_KEY environment variable');
+}
+
+if (!supabaseUrl) {
+  console.error('Missing SUPABASE_URL environment variable');
+}
+
+if (!supabaseServiceKey) {
+  console.error('Missing SUPABASE_SERVICE_ROLE_KEY environment variable');
+}
+
+async function handleAccountUpdated(event, stripe, supabaseAdmin) {
+  const account = event.data.object;
+  
+  // Check if this is a connect account that just completed onboarding
+  if (account.details_submitted && account.payouts_enabled) {
+    console.log(`Connect account ${account.id} has completed onboarding`);
+    
+    // Find the tutor associated with this connect account
+    const { data: tutorProfiles, error: tutorError } = await supabaseAdmin
+      .from('profiles')
+      .select('id, first_name, last_name')
+      .eq('stripe_connect_id', account.id)
+      .eq('stripe_connect_onboarding_complete', false);
+      
+    if (tutorError || !tutorProfiles || tutorProfiles.length === 0) {
+      console.log('No tutor found for this Connect account or tutor already marked as complete');
+      return { success: true, message: 'No action needed' };
+    }
+    
+    // Update tutor profile to mark onboarding as complete
+    for (const tutor of tutorProfiles) {
+      // Update the tutor's profile
+      const { error: updateError } = await supabaseAdmin
+        .from('profiles')
+        .update({
+          stripe_connect_onboarding_complete: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', tutor.id);
+        
+      if (updateError) {
+        console.error(`Error updating tutor profile ${tutor.id}:`, updateError);
+        continue;
+      }
+      
+      console.log(`Updated tutor ${tutor.id} to mark Stripe Connect onboarding as complete`);
+      
+      // Process any pending transfers for this tutor
+      try {
+        // Get pending transfers for this tutor
+        const { data: pendingTransfers, error: transfersError } = await supabaseAdmin
+          .from('pending_transfers')
+          .select('*')
+          .eq('tutor_id', tutor.id)
+          .eq('status', 'pending');
+          
+        if (transfersError) {
+          console.error(`Error retrieving pending transfers for tutor ${tutor.id}:`, transfersError);
+          continue;
+        }
+        
+        if (!pendingTransfers || pendingTransfers.length === 0) {
+          console.log(`No pending transfers found for tutor ${tutor.id}`);
+          continue;
+        }
+        
+        console.log(`Processing ${pendingTransfers.length} pending transfers for tutor ${tutor.id}`);
+        
+        // Process each pending transfer
+        for (const transfer of pendingTransfers) {
+          try {
+            // Create a transfer to the tutor's connect account
+            const newTransfer = await stripe.transfers.create({
+              amount: Math.round(transfer.amount * 100), // Convert to cents
+              currency: 'usd',
+              destination: account.id,
+              transfer_group: transfer.transfer_group,
+              metadata: {
+                session_id: transfer.session_id,
+                tutor_id: transfer.tutor_id,
+                student_id: transfer.student_id,
+                payment_transaction_id: transfer.payment_transaction_id,
+                pending_transfer_id: transfer.id,
+                processed_by: 'webhook'
+              },
+              description: `Automatic tutor payment for session ${transfer.session_id}`
+            });
+            
+            // Update the pending transfer record
+            await supabaseAdmin
+              .from('pending_transfers')
+              .update({
+                status: 'completed',
+                transfer_id: newTransfer.id,
+                processed_at: new Date().toISOString(),
+                processor: 'webhook'
+              })
+              .eq('id', transfer.id);
+              
+            console.log(`Completed transfer ${transfer.id} for tutor ${tutor.id}: ${newTransfer.id}`);
+          } catch (error) {
+            console.error(`Error processing transfer ${transfer.id}:`, error);
+          }
+        }
+      } catch (error) {
+        console.error(`Error processing transfers for tutor ${tutor.id}:`, error);
+      }
+    }
+    
+    return { 
+      success: true, 
+      message: `Updated ${tutorProfiles.length} tutor profiles and processed pending transfers` 
+    };
+  }
+  
+  return { success: true, message: 'No action needed for this account update' };
+}
+
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders,
+    });
   }
 
   try {
-    // Get Stripe webhook secret
-    const stripeWebhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
-    if (!stripeWebhookSecret) {
-      console.error('Missing STRIPE_WEBHOOK_SECRET environment variable');
-      return new Response(
-        JSON.stringify({ error: 'Webhook secret missing' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500,
+    const supabaseAdmin = createClient(
+      supabaseUrl || '',
+      supabaseServiceKey || '',
+      {
+        auth: {
+          persistSession: false
         }
-      );
-    }
+      }
+    );
 
-    // Get Stripe API key
-    const stripeSecretKey = Deno.env.get('STRIPE_CONNECT_SECRET_KEY');
-    if (!stripeSecretKey) {
-      console.error('Missing STRIPE_CONNECT_SECRET_KEY environment variable');
-      return new Response(
-        JSON.stringify({ error: 'Stripe API key missing' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500,
-        }
-      );
-    }
-
-    // Initialize Stripe
-    const stripe = new Stripe(stripeSecretKey, {
+    const stripe = new Stripe(stripeSecretKey || '', {
       apiVersion: '2023-10-16',
     });
 
-    // Get the signature from the header
-    const signature = req.headers.get('stripe-signature');
-    if (!signature) {
-      console.error('Missing Stripe signature header');
-      return new Response(
-        JSON.stringify({ error: 'No signature provided' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
-      );
-    }
+    const signature = req.headers.get('Stripe-Signature')!;
+    const body = await req.text();
 
-    // Get the raw body as text
-    const rawBody = await req.text();
-    
-    // Verify the webhook signature
     let event;
+
     try {
       event = stripe.webhooks.constructEvent(
-        rawBody,
+        body,
         signature,
-        stripeWebhookSecret
+        Deno.env.get('STRIPE_WEBHOOK_SECRET')!
       );
-    } catch (err) {
+    } catch (err: any) {
       console.error(`Webhook signature verification failed: ${err.message}`);
-      return new Response(
-        JSON.stringify({ error: `Webhook signature verification failed: ${err.message}` }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
-      );
+      return new Response(err.message, {
+        status: 400,
+        headers: corsHeaders,
+      });
     }
 
-    // Initialize Supabase client
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') || '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-    );
+    let result = { success: true, message: 'No action needed' };
 
-    console.log(`Processing webhook event: ${event.type} with id: ${event.id}`);
-
-    // Handle different events
     switch (event.type) {
-      case 'account.updated': {
-        // Handle Connect account update events
-        const account = event.data.object;
-        const userId = account.metadata?.user_id;
-        
-        console.log(`Processing account.updated for user_id: ${userId || 'unknown'}, account_id: ${account.id}`);
-        
-        if (userId && account.id) {
-          // Check if all requirements are met
-          const isComplete = 
-            account.charges_enabled === true && 
-            account.payouts_enabled === true &&
-            account.details_submitted === true;
-          
-          console.log(`Account status: charges_enabled=${account.charges_enabled}, payouts_enabled=${account.payouts_enabled}, details_submitted=${account.details_submitted}`);
-          
-          // Update the user's profile
-          const { error: updateError } = await supabaseAdmin
-            .from('profiles')
-            .update({
-              stripe_connect_onboarding_complete: isComplete,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', userId)
-            .eq('stripe_connect_id', account.id);
-          
-          if (updateError) {
-            console.error('Error updating tutor Connect status:', updateError);
-          } else {
-            console.log(`Updated Connect onboarding status for user ${userId} to ${isComplete}`);
-          }
-        } else {
-          console.warn(`Missing metadata.user_id for account: ${account.id}`);
-        }
-        break;
-      }
-      
-      case 'account.application.deauthorized': {
-        // Handle when a user disconnects the Stripe Connect integration
-        const account = event.data.object;
-        
-        // Find the user by their Connect account ID
-        const { data: profiles, error: findError } = await supabaseAdmin
-          .from('profiles')
-          .select('id')
-          .eq('stripe_connect_id', account.id);
-        
-        if (findError) {
-          console.error('Error finding user with deauthorized Connect account:', findError);
-        } else if (profiles && profiles.length > 0) {
-          const userId = profiles[0].id;
-          
-          // Update the user's profile to clear the Connect info
-          const { error: updateError } = await supabaseAdmin
-            .from('profiles')
-            .update({
-              stripe_connect_id: null,
-              stripe_connect_onboarding_complete: false,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', userId);
-          
-          if (updateError) {
-            console.error('Error updating user after Connect deauthorization:', updateError);
-          } else {
-            console.log(`Updated user ${userId} after Connect deauthorization`);
-          }
-        } else {
-          console.warn(`No user found with Connect account: ${account.id}`);
-        }
-        break;
-      }
-      
-      case 'payment_intent.succeeded': {
-        // Handle payment intent success
+      case 'payment_intent.succeeded':
         const paymentIntent = event.data.object;
-        const sessionId = paymentIntent.metadata?.sessionId;
-        
-        console.log(`Payment intent succeeded: ${paymentIntent.id} for session: ${sessionId || 'unknown'}`);
-        
-        if (sessionId) {
-          // Update payment transaction status
-          const { error: updateError } = await supabaseAdmin
-            .from('payment_transactions')
-            .update({
-              status: 'succeeded',
-              payment_intent_status: paymentIntent.status,
-              updated_at: new Date().toISOString()
-            })
-            .eq('stripe_payment_intent_id', paymentIntent.id);
-          
-          if (updateError) {
-            console.error('Error updating payment status:', updateError);
-          } else {
-            console.log(`Updated payment status for intent ${paymentIntent.id} to succeeded`);
-            
-            // Also update the session status
-            const { error: sessionError } = await supabaseAdmin
-              .from('sessions')
-              .update({
-                payment_status: 'paid',
-                status: 'confirmed',
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', sessionId);
-            
-            if (sessionError) {
-              console.error('Error updating session payment status:', sessionError);
-            } else {
-              console.log(`Updated session ${sessionId} payment status to paid`);
-            }
-          }
+        console.log(`PaymentIntent for ${paymentIntent.metadata.tutorName} succeeded: ${paymentIntent.id}`);
+
+        // Update payment_transactions record
+        const { error: paymentUpdateError } = await supabaseAdmin
+          .from('payment_transactions')
+          .update({
+            payment_intent_status: paymentIntent.status,
+            updated_at: new Date().toISOString()
+          })
+          .eq('stripe_payment_intent_id', paymentIntent.id);
+
+        if (paymentUpdateError) {
+          console.error('Error updating payment transaction:', paymentUpdateError);
         }
         break;
-      }
-      
-      case 'payment_intent.payment_failed': {
-        // Handle payment failure
-        const paymentIntent = event.data.object;
-        const sessionId = paymentIntent.metadata?.sessionId;
-        
-        console.log(`Payment intent failed: ${paymentIntent.id} for session: ${sessionId || 'unknown'}`);
-        
-        if (sessionId) {
-          // Update payment transaction status
-          const { error: updateError } = await supabaseAdmin
-            .from('payment_transactions')
-            .update({
-              status: 'failed',
-              payment_intent_status: paymentIntent.status,
-              updated_at: new Date().toISOString(),
-              error_message: paymentIntent.last_payment_error?.message || 'Payment failed'
-            })
-            .eq('stripe_payment_intent_id', paymentIntent.id);
-          
-          if (updateError) {
-            console.error('Error updating payment status:', updateError);
-          } else {
-            console.log(`Updated payment status for intent ${paymentIntent.id} to failed`);
-          }
-        }
-        break;
-      }
-      
-      case 'charge.succeeded': {
-        // Handle successful charge
+
+      case 'charge.succeeded':
         const charge = event.data.object;
-        const paymentIntentId = charge.payment_intent;
-        
-        console.log(`Charge succeeded: ${charge.id} for payment intent: ${paymentIntentId || 'unknown'}`);
-        
-        if (paymentIntentId) {
-          // Find the related payment transaction
-          const { data: transaction, error: txError } = await supabaseAdmin
-            .from('payment_transactions')
-            .select('id, session_id')
-            .eq('stripe_payment_intent_id', paymentIntentId)
-            .maybeSingle();
-          
-          if (txError) {
-            console.error('Error finding transaction for charge:', txError);
-          } else if (transaction) {
-            // Update with charge details
-            const { error: updateError } = await supabaseAdmin
-              .from('payment_transactions')
-              .update({
-                charge_id: charge.id,
-                charge_status: charge.status,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', transaction.id);
-            
-            if (updateError) {
-              console.error('Error updating charge details:', updateError);
-            } else {
-              console.log(`Updated transaction ${transaction.id} with charge ID ${charge.id}`);
-            }
-          }
+        console.log(`Charge succeeded: ${charge.id}`);
+
+        // Update payment_transactions record with charge ID
+        const { error: chargeUpdateError } = await supabaseAdmin
+          .from('payment_transactions')
+          .update({
+            charge_id: charge.id,
+            updated_at: new Date().toISOString()
+          })
+          .eq('stripe_payment_intent_id', charge.payment_intent);
+
+        if (chargeUpdateError) {
+          console.error('Error updating payment transaction with charge ID:', chargeUpdateError);
         }
         break;
-      }
-      
-      case 'transfer.created':
-      case 'transfer.paid': {
-        // Handle transfer to connected account
-        const transfer = event.data.object;
-        const transferGroup = transfer.transfer_group;
-        
-        console.log(`Transfer ${event.type}: ${transfer.id}, group: ${transferGroup || 'none'}, amount: ${transfer.amount}`);
-        
-        if (transferGroup && transferGroup.startsWith('session_')) {
-          const sessionId = transferGroup.replace('session_', '');
-          
-          // Find the related payment transaction
-          const { data: transaction, error: txError } = await supabaseAdmin
-            .from('payment_transactions')
-            .select('id')
-            .eq('session_id', sessionId)
-            .maybeSingle();
-          
-          if (txError) {
-            console.error('Error finding transaction for transfer:', txError);
-          } else if (transaction) {
-            // Update transfer status
-            const { error: updateError } = await supabaseAdmin
-              .from('payment_transfers')
-              .update({
-                status: event.type === 'transfer.paid' ? 'paid' : 'pending',
-                transfer_id: transfer.id,
-                updated_at: new Date().toISOString()
-              })
-              .eq('payment_id', transaction.id);
-            
-            if (updateError) {
-              // If no record exists, create one
-              const { error: insertError } = await supabaseAdmin
-                .from('payment_transfers')
-                .insert({
-                  payment_id: transaction.id,
-                  session_id: sessionId,
-                  transfer_id: transfer.id,
-                  amount: transfer.amount / 100, // Convert cents to dollars
-                  status: event.type === 'transfer.paid' ? 'paid' : 'pending',
-                  transferred_at: new Date().toISOString()
-                });
-              
-              if (insertError) {
-                console.error('Error creating transfer record:', insertError);
-              } else {
-                console.log(`Created transfer record for session ${sessionId}`);
-              }
-            } else {
-              console.log(`Updated transfer record for session ${sessionId}`);
-            }
-          }
-        }
+
+      case 'account.updated':
+        result = await handleAccountUpdated(event, stripe, supabaseAdmin);
         break;
-      }
-      
-      case 'account.external_account.created':
-      case 'account.external_account.updated': {
-        // Handle when a Connect account adds or updates a bank account
-        const externalAccount = event.data.object;
-        const accountId = externalAccount.account;
-        
-        console.log(`External account ${event.type}: ${externalAccount.id} for account: ${accountId}`);
-        
-        // Find the user by their Connect account ID
-        const { data: profiles, error: findError } = await supabaseAdmin
-          .from('profiles')
-          .select('id')
-          .eq('stripe_connect_id', accountId);
-        
-        if (findError) {
-          console.error('Error finding user with external account update:', findError);
-        } else if (profiles && profiles.length > 0) {
-          console.log(`Found user ${profiles[0].id} for external account update`);
-          // You might want to update some status in your database if needed
-        }
-        break;
-      }
+
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
     }
 
-    // Return a success response
-    return new Response(
-      JSON.stringify({ received: true, event_id: event.id, event_type: event.type }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
-  } catch (error) {
-    console.error('Error processing webhook:', error);
-    return new Response(
-      JSON.stringify({ error: error.message || 'Unknown error processing webhook' }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
-    );
+    return new Response(JSON.stringify({
+      ...result,
+      received: true
+    }), {
+      status: 200,
+      headers: corsHeaders,
+    });
+  } catch (error: any) {
+    console.error('Webhook handler error:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 400,
+      headers: corsHeaders,
+    });
   }
 });

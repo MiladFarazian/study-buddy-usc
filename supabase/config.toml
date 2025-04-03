@@ -3,3 +3,39 @@ project_id = "fzcyzjruixuriqzryppz"
 
 [functions]
 port = 54321
+
+[functions.create-payment-intent]
+verify_jwt = true
+
+[functions.retrieve-payment-intent]
+verify_jwt = true
+
+[functions.check-connect-account]
+verify_jwt = true
+
+[functions.create-connect-account]
+verify_jwt = true
+
+[functions.confirm-session-complete]
+verify_jwt = true
+
+[functions.transfer-pending-funds]
+verify_jwt = true
+
+[functions.fetch-usc-courses]
+verify_jwt = false
+
+[functions.query_term_courses]
+verify_jwt = true
+
+[functions.query_terms]
+verify_jwt = true
+
+[functions.send-session-emails]
+verify_jwt = true
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.get-stripe-config]
+verify_jwt = false
