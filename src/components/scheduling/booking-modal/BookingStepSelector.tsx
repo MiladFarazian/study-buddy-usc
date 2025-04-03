@@ -138,7 +138,7 @@ export const BookingStepSelector = ({
           sessionTimeRange={getSessionTimeRange()}
           calculatedCost={calculatedCost}
           sessionDuration={sessionDuration}
-          onDurationChange={(values) => handleDurationChange([values], tutor.hourlyRate || 25)}
+          onDurationChange={(duration) => handleDurationChange(duration, tutor.hourlyRate || 25)}
           onStartTimeChange={handleStartTimeChange}
           maxDuration={getMaxDuration()}
           hourlyRate={tutor.hourlyRate || 25}

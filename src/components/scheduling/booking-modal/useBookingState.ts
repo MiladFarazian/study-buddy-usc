@@ -87,8 +87,8 @@ export function useBookingState(initialDate?: Date, initialTime?: string) {
   }, [sessionDuration]);
   
   // Handle session duration change
-  const handleDurationChange = useCallback((values: number[], hourlyRate: number) => {
-    const newDuration = values[0];
+  const handleDurationChange = useCallback((values: number, hourlyRate: number) => {
+    const newDuration = values;
     setSessionDuration(newDuration);
     
     // Update cost
@@ -97,10 +97,10 @@ export function useBookingState(initialDate?: Date, initialTime?: string) {
   }, []);
   
   // Handle start time change
-  const handleStartTimeChange = useCallback((time: string, hourlyRate: number) => {
+  const handleStartTimeChange = useCallback((time: string, hourlyRate?: number) => {
     setSelectedStartTime(time);
     
-    if (!selectedTimeSlot) return;
+    if (!selectedTimeSlot || !hourlyRate) return;
     
     // Check if the current duration fits within the new start time
     const startDate = parseISO(`2000-01-01T${time}`);

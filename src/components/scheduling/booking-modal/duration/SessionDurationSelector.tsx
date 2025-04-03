@@ -9,7 +9,7 @@ interface SessionDurationSelectorProps {
   calculatedCost: number;
   sessionDuration: number;
   onDurationChange: (values: number) => void;
-  onStartTimeChange: (time: string) => void;
+  onStartTimeChange: (time: string, hourlyRate?: number) => void;
   maxDuration: number;
   hourlyRate: number;
   availableStartTimes: string[];
@@ -41,6 +41,11 @@ export const SessionDurationSelector = ({
     style: 'currency',
     currency: 'USD',
   }).format(calculatedCost);
+  
+  // Handler to call onStartTimeChange with hourlyRate
+  const handleStartTimeChange = (time: string) => {
+    onStartTimeChange(time, hourlyRate);
+  };
   
   return (
     <div className="space-y-4">
@@ -78,7 +83,7 @@ export const SessionDurationSelector = ({
           
           <Select 
             value={selectedStartTime || undefined} 
-            onValueChange={onStartTimeChange}
+            onValueChange={handleStartTimeChange}
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select a start time" />
