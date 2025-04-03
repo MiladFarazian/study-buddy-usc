@@ -15,6 +15,9 @@ export const PaymentSettingsTab = () => {
   // Check for Stripe redirect success/error
   useEffect(() => {
     const stripeStatus = searchParams.get('stripe');
+    
+    console.log("Stripe redirect status:", stripeStatus);
+    
     if (stripeStatus === 'success') {
       toast({
         title: "Stripe Connect Setup",
@@ -49,3 +52,4 @@ export const PaymentSettingsTab = () => {
     </div>
   );
 };
+

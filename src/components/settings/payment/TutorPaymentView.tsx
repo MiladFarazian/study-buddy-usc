@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -40,28 +39,34 @@ export const TutorPaymentView: React.FC<TutorPaymentViewProps> = ({ user, profil
 
       try {
         console.log("Checking Stripe Connect account status...");
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError || !sessionData.session) throw sessionError;
-
-        const response = await fetch('/api/check-connect-account', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${sessionData.session.access_token}`
-          }
-        });
-
-        if (!response.ok) {
-          console.error("Failed to check Connect account status:", response.status, response.statusText);
-          throw new Error('Failed to check Connect account status');
+        
+        // Use the profile data directly instead of making an API call
+        if (profile) {
+          const hasAccount = !!profile.stripe_connect_id;
+          const needsOnboarding = hasAccount && !profile.stripe_connect_onboarding_complete;
+          
+          console.log("Connect account from profile:", {
+            has_account: hasAccount,
+            account_id: profile.stripe_connect_id,
+            needs_onboarding: needsOnboarding
+          });
+          
+          setConnectAccount({
+            has_account: hasAccount,
+            account_id: profile.stripe_connect_id,
+            needs_onboarding: needsOnboarding,
+            details_submitted: profile.stripe_connect_onboarding_complete,
+            payouts_enabled: profile.stripe_connect_onboarding_complete
+          });
+        } else {
+          console.log("No profile data available");
+          setConnectAccount({
+            has_account: false
+          });
         }
-
-        const data = await response.json();
-        console.log("Connect account status:", data);
-        setConnectAccount(data);
         
         // Fetch pending transfers if account is set up
-        if (data.has_account && data.payouts_enabled) {
+        if (profile?.stripe_connect_id && profile?.stripe_connect_onboarding_complete) {
           fetchPendingTransfers();
         }
       } catch (error) {
@@ -72,7 +77,7 @@ export const TutorPaymentView: React.FC<TutorPaymentViewProps> = ({ user, profil
     };
 
     checkConnectAccount();
-  }, [user]);
+  }, [user, profile]);
 
   const fetchPendingTransfers = async () => {
     if (!user) return;
@@ -103,30 +108,25 @@ export const TutorPaymentView: React.FC<TutorPaymentViewProps> = ({ user, profil
     setLoading(true);
     try {
       console.log("Initiating Stripe Connect account creation...");
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !sessionData.session) throw sessionError;
-
-      const response = await fetch('/api/create-connect-account', {
+      
+      // Use Supabase Edge Function directly instead of fetch API
+      const { data, error } = await supabase.functions.invoke('create-connect-account', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionData.session.access_token}`
-        }
+        body: {}  // Empty body is fine, the function will use the auth token
       });
-
-      if (!response.ok) {
-        console.error("Failed to create Connect account:", response.status, response.statusText);
-        throw new Error('Failed to create Connect account');
+      
+      if (error) {
+        console.error("Failed to create Connect account:", error);
+        throw new Error(`Failed to create Connect account: ${error.message}`);
       }
-
-      const data = await response.json();
+      
       console.log("Connect account creation response:", data);
       
-      if (data.url) {
+      if (data?.url) {
         // Redirect to Stripe Connect onboarding
         window.location.href = data.url;
       } else {
-        throw new Error('No onboarding URL returned');
+        throw new Error('No onboarding URL returned from Edge Function');
       }
     } catch (error) {
       console.error('Error creating Connect account:', error);
@@ -146,30 +146,24 @@ export const TutorPaymentView: React.FC<TutorPaymentViewProps> = ({ user, profil
     setProcessingTransfers(true);
     try {
       console.log("Processing pending transfers...");
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !sessionData.session) throw sessionError;
-
-      const response = await fetch('/api/transfer-pending-funds', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionData.session.access_token}`
-        },
-        body: JSON.stringify({ tutorId: user.id })
-      });
-
-      if (!response.ok) {
-        console.error("Failed to process transfers:", response.status, response.statusText);
-        throw new Error('Failed to process transfers');
-      }
-
-      const result = await response.json();
-      console.log("Transfer processing result:", result);
       
-      if (result.transfersProcessed && result.transfersProcessed.length > 0) {
+      // Use Supabase Edge Function directly
+      const { data, error } = await supabase.functions.invoke('transfer-pending-funds', {
+        method: 'POST',
+        body: { tutorId: user.id }
+      });
+      
+      if (error) {
+        console.error("Failed to process transfers:", error);
+        throw new Error(`Failed to process transfers: ${error.message}`);
+      }
+      
+      console.log("Transfer processing result:", data);
+      
+      if (data?.transfersProcessed && data.transfersProcessed.length > 0) {
         toast({
           title: "Transfers Processed",
-          description: `Successfully processed ${result.transfersProcessed.length} payments.`,
+          description: `Successfully processed ${data.transfersProcessed.length} payments.`,
         });
         // Refresh pending transfers
         await fetchPendingTransfers();
