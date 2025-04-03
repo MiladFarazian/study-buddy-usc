@@ -14,38 +14,41 @@ serve(async (req) => {
 
   try {
     // Get the Stripe publishable key from environment variables
-    const stripePublishableKey = Deno.env.get('STRIPE_PUBLISHABLE_KEY');
+    const publishableKey = Deno.env.get('STRIPE_PUBLISHABLE_KEY');
     
-    if (!stripePublishableKey) {
-      console.error('Missing STRIPE_PUBLISHABLE_KEY environment variable');
+    if (!publishableKey) {
+      console.error("STRIPE_PUBLISHABLE_KEY is not set in environment variables");
       return new Response(
         JSON.stringify({ 
-          error: 'Stripe configuration missing. Please set the STRIPE_PUBLISHABLE_KEY in Supabase edge function secrets.' 
+          error: 'Stripe publishable key not configured',
+          code: 'stripe_config_missing'
         }),
-        {
+        { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500,
+          status: 500 
         }
       );
     }
 
     // Return the publishable key
     return new Response(
-      JSON.stringify({ 
-        publishableKey: stripePublishableKey
-      }),
-      {
+      JSON.stringify({ publishableKey }),
+      { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
+        status: 200 
       }
     );
   } catch (error) {
-    console.error('Error processing request:', error);
+    console.error("Error in get-stripe-config:", error);
     return new Response(
-      JSON.stringify({ error: error.message || 'Failed to get Stripe configuration' }),
-      {
+      JSON.stringify({ 
+        error: 'Failed to retrieve Stripe configuration',
+        code: 'server_error',
+        details: error.message
+      }),
+      { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
+        status: 500 
       }
     );
   }

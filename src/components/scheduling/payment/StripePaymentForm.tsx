@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -94,10 +95,10 @@ export function StripePaymentForm({
             
             setRetryTimeout(timeoutId);
           } else {
-            setInitError('Failed to load payment processor. Please try again later.');
+            setInitError(error.message || 'Failed to load payment processor. Please try again later.');
             toast({
               title: 'Payment Error',
-              description: 'Failed to load payment processor. Please try again.',
+              description: error.message || 'Failed to load payment processor. Please try again.',
               variant: 'destructive',
             });
           }
@@ -265,7 +266,7 @@ export function StripePaymentForm({
       console.error('Payment error:', error);
       toast({
         title: 'Payment Error',
-        description: 'An unexpected error occurred during payment processing.',
+        description: error.message || 'An unexpected error occurred during payment processing.',
         variant: 'destructive',
       });
     } finally {

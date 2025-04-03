@@ -7,22 +7,175 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const stripeSecretKey = Deno.env.get('STRIPE_CONNECT_SECRET_KEY');
-const supabaseUrl = Deno.env.get('SUPABASE_URL');
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders,
+    });
+  }
 
-if (!stripeSecretKey) {
-  console.error('Missing STRIPE_CONNECT_SECRET_KEY environment variable');
-}
+  try {
+    // Check for required environment variables
+    const stripeSecretKey = Deno.env.get('STRIPE_CONNECT_SECRET_KEY');
+    const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-if (!supabaseUrl) {
-  console.error('Missing SUPABASE_URL environment variable');
-}
+    // Validate all required environment variables are present
+    const missingEnvVars = [];
+    if (!stripeSecretKey) missingEnvVars.push('STRIPE_CONNECT_SECRET_KEY');
+    if (!webhookSecret) missingEnvVars.push('STRIPE_WEBHOOK_SECRET');
+    if (!supabaseUrl) missingEnvVars.push('SUPABASE_URL');
+    if (!supabaseServiceKey) missingEnvVars.push('SUPABASE_SERVICE_ROLE_KEY');
 
-if (!supabaseServiceKey) {
-  console.error('Missing SUPABASE_SERVICE_ROLE_KEY environment variable');
-}
+    if (missingEnvVars.length > 0) {
+      console.error(`Missing environment variables: ${missingEnvVars.join(', ')}`);
+      return new Response(
+        JSON.stringify({ 
+          error: `Missing required environment variables: ${missingEnvVars.join(', ')}` 
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
 
+    const supabaseAdmin = createClient(
+      supabaseUrl,
+      supabaseServiceKey,
+      {
+        auth: {
+          persistSession: false
+        }
+      }
+    );
+
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: '2023-10-16',
+    });
+
+    const signature = req.headers.get('Stripe-Signature');
+    if (!signature) {
+      console.error('Missing Stripe-Signature header');
+      return new Response('Missing Stripe-Signature header', {
+        status: 400,
+        headers: corsHeaders,
+      });
+    }
+
+    const body = await req.text();
+
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(
+        body,
+        signature,
+        webhookSecret
+      );
+    } catch (err: any) {
+      console.error(`Webhook signature verification failed: ${err.message}`);
+      return new Response(err.message, {
+        status: 400,
+        headers: corsHeaders,
+      });
+    }
+
+    // Process the webhook event
+    let result = { success: true, message: 'No action needed' };
+
+    switch (event.type) {
+      case 'payment_intent.succeeded':
+        const paymentIntent = event.data.object;
+        console.log(`PaymentIntent succeeded: ${paymentIntent.id}`);
+
+        // Update payment_transactions record
+        const { error: paymentUpdateError } = await supabaseAdmin
+          .from('payment_transactions')
+          .update({
+            status: 'completed',
+            payment_intent_status: paymentIntent.status,
+            updated_at: new Date().toISOString()
+          })
+          .eq('stripe_payment_intent_id', paymentIntent.id);
+
+        if (paymentUpdateError) {
+          console.error('Error updating payment transaction:', paymentUpdateError);
+          result.message = `Payment recorded but database update failed: ${paymentUpdateError.message}`;
+        } else {
+          result.message = `Payment ${paymentIntent.id} recorded successfully`;
+        }
+
+        // Update session status
+        const sessionId = paymentIntent.metadata?.sessionId;
+        if (sessionId) {
+          const { error: sessionUpdateError } = await supabaseAdmin
+            .from('sessions')
+            .update({
+              payment_status: 'paid',
+              status: 'confirmed',
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', sessionId);
+
+          if (sessionUpdateError) {
+            console.error('Error updating session status:', sessionUpdateError);
+          } else {
+            console.log(`Updated session ${sessionId} status to confirmed`);
+          }
+        }
+        break;
+
+      case 'charge.succeeded':
+        const charge = event.data.object;
+        console.log(`Charge succeeded: ${charge.id}`);
+
+        // Update payment_transactions record with charge ID
+        const { error: chargeUpdateError } = await supabaseAdmin
+          .from('payment_transactions')
+          .update({
+            charge_id: charge.id,
+            updated_at: new Date().toISOString()
+          })
+          .eq('stripe_payment_intent_id', charge.payment_intent);
+
+        if (chargeUpdateError) {
+          console.error('Error updating payment transaction with charge ID:', chargeUpdateError);
+        } else {
+          result.message = `Charge ${charge.id} recorded successfully`;
+        }
+        break;
+
+      case 'account.updated':
+        result = await handleAccountUpdated(event, stripe, supabaseAdmin);
+        break;
+
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
+    }
+
+    return new Response(JSON.stringify({
+      ...result,
+      received: true,
+      event: event.type
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error: any) {
+    console.error('Webhook handler error:', error);
+    return new Response(JSON.stringify({ 
+      error: error.message || 'Unknown error processing webhook',
+      stack: error.stack 
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});
+
+// Keep the existing handleAccountUpdated function
 async function handleAccountUpdated(event, stripe, supabaseAdmin) {
   const account = event.data.object;
   
@@ -130,108 +283,3 @@ async function handleAccountUpdated(event, stripe, supabaseAdmin) {
   
   return { success: true, message: 'No action needed for this account update' };
 }
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: corsHeaders,
-    });
-  }
-
-  try {
-    const supabaseAdmin = createClient(
-      supabaseUrl || '',
-      supabaseServiceKey || '',
-      {
-        auth: {
-          persistSession: false
-        }
-      }
-    );
-
-    const stripe = new Stripe(stripeSecretKey || '', {
-      apiVersion: '2023-10-16',
-    });
-
-    const signature = req.headers.get('Stripe-Signature')!;
-    const body = await req.text();
-
-    let event;
-
-    try {
-      event = stripe.webhooks.constructEvent(
-        body,
-        signature,
-        Deno.env.get('STRIPE_WEBHOOK_SECRET')!
-      );
-    } catch (err: any) {
-      console.error(`Webhook signature verification failed: ${err.message}`);
-      return new Response(err.message, {
-        status: 400,
-        headers: corsHeaders,
-      });
-    }
-
-    let result = { success: true, message: 'No action needed' };
-
-    switch (event.type) {
-      case 'payment_intent.succeeded':
-        const paymentIntent = event.data.object;
-        console.log(`PaymentIntent for ${paymentIntent.metadata.tutorName} succeeded: ${paymentIntent.id}`);
-
-        // Update payment_transactions record
-        const { error: paymentUpdateError } = await supabaseAdmin
-          .from('payment_transactions')
-          .update({
-            payment_intent_status: paymentIntent.status,
-            updated_at: new Date().toISOString()
-          })
-          .eq('stripe_payment_intent_id', paymentIntent.id);
-
-        if (paymentUpdateError) {
-          console.error('Error updating payment transaction:', paymentUpdateError);
-        }
-        break;
-
-      case 'charge.succeeded':
-        const charge = event.data.object;
-        console.log(`Charge succeeded: ${charge.id}`);
-
-        // Update payment_transactions record with charge ID
-        const { error: chargeUpdateError } = await supabaseAdmin
-          .from('payment_transactions')
-          .update({
-            charge_id: charge.id,
-            updated_at: new Date().toISOString()
-          })
-          .eq('stripe_payment_intent_id', charge.payment_intent);
-
-        if (chargeUpdateError) {
-          console.error('Error updating payment transaction with charge ID:', chargeUpdateError);
-        }
-        break;
-
-      case 'account.updated':
-        result = await handleAccountUpdated(event, stripe, supabaseAdmin);
-        break;
-
-      default:
-        console.log(`Unhandled event type: ${event.type}`);
-    }
-
-    return new Response(JSON.stringify({
-      ...result,
-      received: true
-    }), {
-      status: 200,
-      headers: corsHeaders,
-    });
-  } catch (error: any) {
-    console.error('Webhook handler error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 400,
-      headers: corsHeaders,
-    });
-  }
-});

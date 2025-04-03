@@ -7,6 +7,8 @@ let stripePromise: Promise<any> | null = null;
 let isLoadingStripe = false;
 // Track failure count
 let stripeLoadFailureCount = 0;
+// Last error message
+let lastStripeLoadError: string | null = null;
 
 // Initialize Stripe
 export const initializeStripe = () => {
@@ -23,7 +25,7 @@ export const initializeStripe = () => {
           if (stripePromise) {
             resolve(stripePromise);
           } else {
-            reject(new Error('Stripe initialization failed'));
+            reject(new Error(lastStripeLoadError || 'Stripe initialization failed'));
           }
         }
       }, 100);
@@ -40,10 +42,19 @@ export const initializeStripe = () => {
         body: {}
       });
       
-      if (configError || !configData?.publishableKey) {
-        console.error("Failed to fetch Stripe configuration:", configError || "No publishable key returned");
+      if (configError) {
+        console.error("Failed to fetch Stripe configuration:", configError);
+        lastStripeLoadError = `Failed to fetch Stripe configuration: ${configError.message}`;
         isLoadingStripe = false;
-        reject(new Error('Failed to fetch Stripe configuration'));
+        reject(new Error(lastStripeLoadError));
+        return;
+      }
+      
+      if (!configData?.publishableKey) {
+        console.error("No publishable key returned from get-stripe-config");
+        lastStripeLoadError = 'No Stripe publishable key returned from server';
+        isLoadingStripe = false;
+        reject(new Error(lastStripeLoadError));
         return;
       }
       
@@ -64,6 +75,7 @@ export const initializeStripe = () => {
           console.log("Stripe script loaded successfully");
           isLoadingStripe = false;
           stripeLoadFailureCount = 0;
+          lastStripeLoadError = null;
           resolve((window as any).Stripe(publishableKey));
         };
         script.onerror = (err) => {
@@ -71,14 +83,16 @@ export const initializeStripe = () => {
           isLoadingStripe = false;
           stripeLoadFailureCount++;
           stripePromise = null;
-          reject(new Error('Failed to load Stripe.js'));
+          lastStripeLoadError = 'Failed to load Stripe.js script';
+          reject(new Error(lastStripeLoadError));
         };
         document.body.appendChild(script);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error initializing Stripe:", err);
       isLoadingStripe = false;
       stripePromise = null;
+      lastStripeLoadError = err.message || 'Unknown error initializing Stripe';
       reject(err);
     }
   }).catch(err => {

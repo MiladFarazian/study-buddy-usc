@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.23.0';
 import Stripe from 'https://esm.sh/stripe@12.13.0?target=deno';
@@ -36,14 +37,26 @@ function shouldRateLimit(clientId: string): boolean {
 }
 
 // Clean up old entries in the request log periodically
-setInterval(() => {
-  const now = Date.now();
-  Object.keys(requestLog).forEach(key => {
-    if (now - requestLog[key].timestamp > RATE_LIMIT_WINDOW) {
-      delete requestLog[key];
+// Note: Using a timeout instead of setInterval to avoid Deno.core.runMicrotasks issues
+function scheduleCleanup() {
+  setTimeout(() => {
+    try {
+      const now = Date.now();
+      Object.keys(requestLog).forEach(key => {
+        if (now - requestLog[key].timestamp > RATE_LIMIT_WINDOW) {
+          delete requestLog[key];
+        }
+      });
+      scheduleCleanup();
+    } catch (err) {
+      console.error("Error in cleanup task:", err);
+      scheduleCleanup();
     }
-  });
-}, RATE_LIMIT_WINDOW);
+  }, RATE_LIMIT_WINDOW);
+}
+
+// Start the cleanup schedule
+scheduleCleanup();
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -122,10 +135,24 @@ serve(async (req) => {
     console.log(`Creating payment intent for session ${sessionId} with amount ${amount}`);
 
     // Initialize Supabase client
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') || '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-    );
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing Supabase environment variables');
+      return new Response(
+        JSON.stringify({ 
+          error: 'Supabase configuration missing',
+          code: 'supabase_config_missing'
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      );
+    }
+    
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
     // Check if a payment transaction already exists for this session
     const { data: existingTransaction, error: txCheckError } = await supabaseAdmin

@@ -195,7 +195,7 @@ export function usePaymentIntent({
             
             toast({
               title: 'Payment Setup Error',
-              description: 'There was an issue setting up your payment. Please try again.',
+              description: error.message || 'There was an issue setting up your payment. Please try again.',
               variant: 'destructive',
             });
           }
