@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 // Cache for Stripe instance
@@ -160,7 +161,7 @@ export const createPaymentIntent = async (
       return existingIntent;
     }
     
-    // Prepare the request body - ensure amount is a number
+    // Ensure amount is a number and valid
     const amountInDollars = parseFloat(amount.toString());
     
     if (isNaN(amountInDollars) || amountInDollars <= 0) {
@@ -209,12 +210,13 @@ export const createPaymentIntent = async (
         console.log("Payment intent created successfully:", data);
         return data as StripePaymentIntent;
       } catch (error: any) {
+        // Format and check error type
+        const errorMessage = error.message || 'Unknown error';
+        
         // Check if we should retry based on error type
-        const isRateLimit = error.message && (
-          error.message.includes("rate limit") || 
-          error.message.includes("Rate limit") ||
-          error.message.includes("Too many requests")
-        );
+        const isRateLimit = errorMessage.includes("rate limit") || 
+                           errorMessage.includes("Rate limit") ||
+                           errorMessage.includes("Too many requests");
         
         if (isRateLimit && retries < maxRetries) {
           retries++;
@@ -225,13 +227,11 @@ export const createPaymentIntent = async (
         }
         
         // Check if the error indicates missing Stripe Connect setup
-        if (error.message && (
-          error.message.includes("payment account") || 
-          error.message.includes("Stripe Connect") ||
-          error.message.includes("not completed") ||
-          error.message.includes("Stripe API error")
-        )) {
-          console.error('Tutor Stripe Connect setup error:', error.message);
+        if (errorMessage.includes("payment account") || 
+            errorMessage.includes("Stripe Connect") ||
+            errorMessage.includes("not completed") ||
+            errorMessage.includes("Stripe API error")) {
+          console.error('Tutor Stripe Connect setup error:', errorMessage);
           throw new Error("The tutor's payment account setup is incomplete. Please check tutor settings or try another tutor.");
         }
         

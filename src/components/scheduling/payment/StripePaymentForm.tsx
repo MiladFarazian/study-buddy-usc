@@ -4,14 +4,15 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Loader2, AlertTriangle, RefreshCcw, CheckCircle } from "lucide-react";
 import { initializeStripe } from "@/lib/stripe-utils";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface StripePaymentFormProps {
-  clientSecret: string;
+  clientSecret: string | null;
   amount: number;
   onSuccess: () => void;
   onCancel: () => void;
   processing: boolean;
+  retryPaymentSetup?: () => void;
 }
 
 export function StripePaymentForm({
@@ -19,7 +20,8 @@ export function StripePaymentForm({
   amount,
   onSuccess,
   onCancel,
-  processing
+  processing,
+  retryPaymentSetup
 }: StripePaymentFormProps) {
   const { toast } = useToast();
   const [stripe, setStripe] = useState<any>(null);
@@ -231,6 +233,18 @@ export function StripePaymentForm({
             description: 'An error occurred while processing your card. Please try again.',
             variant: 'destructive',
           });
+        } else if (result.error.code === 'insufficient_funds') {
+          toast({
+            title: 'Insufficient Funds',
+            description: 'Your card has insufficient funds. Please use a different card.',
+            variant: 'destructive',
+          });
+        } else if (result.error.type === 'validation_error') {
+          toast({
+            title: 'Validation Error',
+            description: result.error.message || 'Please check your card details and try again.',
+            variant: 'destructive',
+          });
         } else {
           toast({
             title: 'Payment Failed',
@@ -238,7 +252,7 @@ export function StripePaymentForm({
             variant: 'destructive',
           });
         }
-      } else if (result.paymentIntent.status === 'succeeded') {
+      } else if (result.paymentIntent.status === 'succeeded' || result.paymentIntent.status === 'processing') {
         console.log('Payment successful:', result.paymentIntent);
         toast({
           title: 'Payment Successful',
@@ -261,6 +275,12 @@ export function StripePaymentForm({
   const retryInitialization = () => {
     setInitAttempt(prev => prev + 1);
     setIsInitRetrying(false);
+  };
+
+  const handleRetryPaymentSetup = () => {
+    if (retryPaymentSetup) {
+      retryPaymentSetup();
+    }
   };
 
   return (
@@ -309,7 +329,7 @@ export function StripePaymentForm({
                     className="mt-2"
                   >
                     <RefreshCcw className="h-3.5 w-3.5 mr-1" />
-                    Retry
+                    Retry Connection
                   </Button>
                 </div>
               )}
@@ -343,7 +363,7 @@ export function StripePaymentForm({
               <Button
                 type="submit"
                 className="bg-usc-cardinal text-white hover:bg-usc-cardinal-dark"
-                disabled={!stripe || !cardComplete || processing || isSubmitting || loading || !!initError || isInitRetrying || !stripeReady}
+                disabled={!stripe || !cardComplete || processing || isSubmitting || loading || !!initError || isInitRetrying || !stripeReady || !clientSecret}
               >
                 {isSubmitting ? (
                   <>
@@ -358,11 +378,30 @@ export function StripePaymentForm({
           </div>
           
           {!clientSecret && !loading && (
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-md mt-4">
-              <p className="text-sm text-amber-800 flex items-center">
-                <AlertTriangle className="h-4 w-4 mr-2 text-amber-600" />
-                Payment system not fully connected. Please ensure Stripe is properly configured.
-              </p>
+            <div className="mt-4">
+              <Alert variant="warning" className="bg-amber-50 border-amber-200">
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+                <AlertTitle className="text-amber-800">Payment Setup Issue</AlertTitle>
+                <AlertDescription className="text-amber-700">
+                  We couldn't establish a secure payment connection. This may be due to:
+                  <ul className="list-disc pl-5 mt-2 space-y-1">
+                    <li>Tutor hasn't completed their payment setup</li>
+                    <li>Network connection issue</li>
+                    <li>Temporary payment service unavailability</li>
+                  </ul>
+                  {retryPaymentSetup && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleRetryPaymentSetup}
+                      className="mt-3 bg-white border-amber-300 text-amber-800 hover:bg-amber-50"
+                    >
+                      <RefreshCcw className="h-3.5 w-3.5 mr-2" />
+                      Retry Payment Setup
+                    </Button>
+                  )}
+                </AlertDescription>
+              </Alert>
             </div>
           )}
         </div>

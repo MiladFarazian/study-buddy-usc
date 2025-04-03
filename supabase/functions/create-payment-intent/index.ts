@@ -59,7 +59,8 @@ serve(async (req) => {
       console.error('Missing STRIPE_CONNECT_SECRET_KEY environment variable');
       return new Response(
         JSON.stringify({ 
-          error: 'Stripe configuration missing. Please set the STRIPE_CONNECT_SECRET_KEY in Supabase edge function secrets.' 
+          error: 'Stripe configuration missing. Please set the STRIPE_CONNECT_SECRET_KEY in Supabase edge function secrets.',
+          code: 'stripe_config_missing'
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -75,7 +76,10 @@ serve(async (req) => {
     } catch (parseError) {
       console.error('Error parsing request body:', parseError);
       return new Response(
-        JSON.stringify({ error: 'Invalid request body format' }), 
+        JSON.stringify({ 
+          error: 'Invalid request body format',
+          code: 'invalid_request'
+        }), 
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400,
@@ -105,7 +109,10 @@ serve(async (req) => {
     // Validate required parameters
     if (!sessionId || amount === undefined || !tutorId || !studentId) {
       return new Response(
-        JSON.stringify({ error: 'Missing required parameters' }), 
+        JSON.stringify({ 
+          error: 'Missing required parameters',
+          code: 'missing_parameters'
+        }), 
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400,
@@ -173,19 +180,29 @@ serve(async (req) => {
     // Get the tutor's Stripe Connect ID
     const { data: tutorProfile, error: tutorError } = await supabaseAdmin
       .from('profiles')
-      .select('stripe_connect_id, stripe_connect_onboarding_complete')
+      .select('stripe_connect_id, stripe_connect_onboarding_complete, first_name, last_name')
       .eq('id', tutorId)
       .single();
 
     if (tutorError || !tutorProfile) {
+      console.error('Error fetching tutor profile:', tutorError);
       return new Response(
-        JSON.stringify({ error: 'Tutor profile not found' }), 
+        JSON.stringify({ 
+          error: 'Tutor profile not found',
+          code: 'tutor_not_found'
+        }), 
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 404,
         }
       );
     }
+
+    const tutorName = tutorProfile.first_name && tutorProfile.last_name 
+      ? `${tutorProfile.first_name} ${tutorProfile.last_name}`
+      : 'Tutor';
+      
+    console.log(`Processing for tutor: ${tutorName}, Connect ID: ${tutorProfile.stripe_connect_id || 'not set up'}`);
 
     if (!tutorProfile.stripe_connect_id) {
       return new Response(
@@ -224,7 +241,10 @@ serve(async (req) => {
       
       if (isNaN(amountInCents) || amountInCents <= 0) {
         return new Response(
-          JSON.stringify({ error: 'Invalid amount value' }), 
+          JSON.stringify({ 
+            error: 'Invalid amount value',
+            code: 'invalid_amount'
+          }), 
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 400,
@@ -232,30 +252,36 @@ serve(async (req) => {
         );
       }
       
-      console.log('Creating new payment intent with amount:', amount);
+      console.log('Creating new payment intent with amount in cents:', amountInCents);
       
       // Calculate platform fee (10% of the amount)
       const platformFeeAmount = Math.round(amountInCents * 0.1);
       
-      // Create a new payment intent with separate charges and transfers
+      // Get transfer group ID based on session for tracking
+      const transferGroup = `session_${sessionId}`;
+      
+      // Create a new payment intent with Connect integration
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amountInCents,
         currency: 'usd',
-        capture_method: 'manual', // This allows us to authorize now but capture later
+        capture_method: 'automatic', // Change to 'automatic' for simpler flow
         metadata: {
           sessionId,
           tutorId,
           studentId,
           platformFee: platformFeeAmount,
+          tutorName,
         },
-        description: description || `Tutoring session payment`,
+        description: description || `Tutoring session payment for ${tutorName}`,
         application_fee_amount: platformFeeAmount, // Platform fee (10%)
         transfer_data: {
           destination: tutorProfile.stripe_connect_id, // Tutor's Connect account
         },
+        transfer_group: transferGroup, // Used to track related transfers
+        on_behalf_of: tutorProfile.stripe_connect_id, // Show in the connected account's dashboard too
       });
       
-      console.log(`Created new payment intent: ${paymentIntent.id}`);
+      console.log(`Created new payment intent: ${paymentIntent.id} with transfer to: ${tutorProfile.stripe_connect_id}`);
 
       // Create a payment transaction record in the database
       const { data: paymentTransaction, error: paymentError } = await supabaseAdmin
@@ -268,7 +294,6 @@ serve(async (req) => {
           status: 'pending',
           stripe_payment_intent_id: paymentIntent.id,
           payment_intent_status: paymentIntent.status,
-          capture_method: 'manual',
           platform_fee: platformFeeAmount / 100,
         })
         .select()
@@ -276,6 +301,9 @@ serve(async (req) => {
 
       if (paymentError) {
         console.error('Error creating payment transaction:', paymentError);
+        // Continue anyway, since the payment intent was created
+      } else {
+        console.log(`Created payment transaction: ${paymentTransaction.id}`);
       }
       
       // Return the client secret to the client

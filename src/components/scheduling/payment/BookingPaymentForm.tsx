@@ -1,13 +1,13 @@
 
 import React from 'react';
-import { format } from 'date-fns';
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { StripePaymentForm } from './StripePaymentForm';
 import { BookingSlot } from '@/lib/scheduling/types';
 import { Tutor } from '@/types/tutor';
-import { useAuth } from '@/contexts/AuthContext';
-import { CalendarDays, Clock, DollarSign } from 'lucide-react';
+import { formatDate, formatTime } from '@/lib/utils';
+import { useSessionCost } from './hooks/useSessionCost';
+import { StripePaymentForm } from './StripePaymentForm';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface BookingPaymentFormProps {
   tutor: Tutor;
@@ -19,6 +19,7 @@ interface BookingPaymentFormProps {
   onBack: () => void;
   processing: boolean;
   retryPaymentSetup: () => void;
+  error?: string | null;
 }
 
 export function BookingPaymentForm({
@@ -30,74 +31,76 @@ export function BookingPaymentForm({
   onPaymentComplete,
   onBack,
   processing,
-  retryPaymentSetup
+  retryPaymentSetup,
+  error
 }: BookingPaymentFormProps) {
-  const { user } = useAuth();
+  // Get session cost using the hook (this would provide more accurate cost calculation)
+  const { sessionCost } = useSessionCost(selectedSlot, tutor);
   
-  if (!selectedSlot || !user) {
+  // Use the provided amount or fall back to calculated sessionCost
+  const displayAmount = amount > 0 ? amount : sessionCost;
+  
+  if (!selectedSlot) {
     return (
-      <div className="text-center py-6">
-        <p>Invalid session details. Please go back and try again.</p>
-        <Button variant="outline" onClick={onBack} className="mt-4">
-          Go Back
-        </Button>
+      <div className="p-4">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>No time slot selected. Please go back and select a time slot.</AlertDescription>
+        </Alert>
+        <Button onClick={onBack} className="mt-4">Go Back</Button>
       </div>
     );
   }
   
-  const slotDay = selectedSlot.day instanceof Date ? selectedSlot.day : new Date(selectedSlot.day);
+  const formattedDate = selectedSlot.day instanceof Date 
+    ? formatDate(selectedSlot.day)
+    : formatDate(new Date(selectedSlot.day as string));
+    
+  const formattedStartTime = formatTime(selectedSlot.start);
+  const formattedEndTime = formatTime(selectedSlot.end);
   
   return (
-    <div className="space-y-6">
-      <div className="space-y-4">
-        <h3 className="font-medium text-lg">Session Details</h3>
-        <Card>
-          <CardContent className="p-4 space-y-4">
-            <div className="flex items-start">
-              <CalendarDays className="h-5 w-5 mt-0.5 mr-3 text-muted-foreground" />
-              <div>
-                <p className="font-medium">Date</p>
-                <p className="text-muted-foreground">
-                  {format(slotDay, 'EEEE, MMMM d, yyyy')}
-                </p>
-              </div>
-            </div>
+    <div className="p-4">
+      <div className="mb-6">
+        <h3 className="text-lg font-medium mb-2">Session Details</h3>
+        <div className="bg-muted p-4 rounded-md">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="text-muted-foreground">Date:</div>
+            <div>{formattedDate}</div>
             
-            <div className="flex items-start">
-              <Clock className="h-5 w-5 mt-0.5 mr-3 text-muted-foreground" />
-              <div>
-                <p className="font-medium">Time</p>
-                <p className="text-muted-foreground">
-                  {format(new Date(`2000-01-01T${selectedSlot.start}`), 'h:mm a')} - 
-                  {format(new Date(`2000-01-01T${selectedSlot.end}`), 'h:mm a')}
-                </p>
-              </div>
-            </div>
+            <div className="text-muted-foreground">Time:</div>
+            <div>{formattedStartTime} - {formattedEndTime}</div>
             
-            <div className="flex items-start">
-              <DollarSign className="h-5 w-5 mt-0.5 mr-3 text-muted-foreground" />
-              <div>
-                <p className="font-medium">Price</p>
-                <p className="text-muted-foreground">
-                  ${amount.toFixed(2)} (${tutor.hourlyRate?.toFixed(2) || "25.00"}/hr)
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            <div className="text-muted-foreground">Tutor:</div>
+            <div>{tutor.firstName} {tutor.lastName}</div>
+            
+            <div className="text-muted-foreground">Total:</div>
+            <div className="font-medium">${displayAmount.toFixed(2)}</div>
+          </div>
+        </div>
       </div>
       
-      <StripePaymentForm 
-        clientSecret={clientSecret || ""}
-        amount={amount}
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            {error.includes('payment account') || error.includes('Stripe Connect') || error.includes('not completed') ? 
+              "The tutor hasn't completed their payment setup. Please try another tutor or check back later." : 
+              error}
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      <StripePaymentForm
+        clientSecret={clientSecret}
+        amount={displayAmount}
         onSuccess={onPaymentComplete}
         onCancel={onBack}
         processing={processing}
+        retryPaymentSetup={retryPaymentSetup}
       />
-      
-      <div className="text-xs text-center text-muted-foreground mt-6">
-        Your card information is processed securely via Stripe and never stored on our servers.
-      </div>
     </div>
   );
 }

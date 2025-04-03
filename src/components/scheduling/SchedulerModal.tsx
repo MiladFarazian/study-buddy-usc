@@ -38,6 +38,7 @@ export function SchedulerModal({
   const [clientSecret, setClientSecret] = useState<string | null>("");
   const [paymentAmount, setPaymentAmount] = useState(0);
   const [processing, setProcessing] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   
   // Reset state when modal is closed
   useEffect(() => {
@@ -50,6 +51,7 @@ export function SchedulerModal({
       setClientSecret("");
       setPaymentAmount(0);
       setProcessing(false);
+      setPaymentError(null);
     }
   }, [isOpen]);
   
@@ -82,6 +84,8 @@ export function SchedulerModal({
     try {
       setCreatingSession(true);
       setProcessing(true);
+      setPaymentError(null);
+      
       toast({
         title: "Processing",
         description: "Creating your session...",
@@ -90,29 +94,49 @@ export function SchedulerModal({
       // Simulate creating a session
       // In a real implementation, this would call your backend API
       setTimeout(() => {
-        // Mock response data
-        const mockSessionId = `session-${Date.now()}`;
-        const mockClientSecret = `secret-${Date.now()}`;
-        const mockAmount = calculateSessionAmount(slot);
-        
-        setSessionId(mockSessionId);
-        setClientSecret(mockClientSecret);
-        setPaymentAmount(mockAmount);
-        setCreatingSession(false);
-        setProcessing(false);
+        try {
+          // Mock response data
+          const mockSessionId = `session-${Date.now()}`;
+          const mockClientSecret = `secret-${Date.now()}`;
+          const mockAmount = calculateSessionAmount(slot);
+          
+          setSessionId(mockSessionId);
+          setClientSecret(mockClientSecret);
+          setPaymentAmount(mockAmount);
+          setCreatingSession(false);
+          setProcessing(false);
+        } catch (error) {
+          handleSessionCreationError(error);
+        }
       }, 1000);
       
     } catch (error) {
-      console.error("Error creating session:", error);
-      toast({
-        title: "Error",
-        description: "Failed to create session. Please try again.",
-        variant: "destructive",
-      });
-      setCreatingSession(false);
-      setProcessing(false);
-      setStep('select-slot');
+      handleSessionCreationError(error);
     }
+  };
+  
+  const handleSessionCreationError = (error: any) => {
+    console.error("Error creating session:", error);
+    
+    // Check if the error is related to the tutor's Stripe Connect setup
+    if (error.message && (
+      error.message.includes("payment account") || 
+      error.message.includes("Stripe Connect") ||
+      error.message.includes("not completed")
+    )) {
+      setPaymentError("The tutor hasn't completed their payment account setup. Please try a different tutor or contact support.");
+    } else {
+      setPaymentError("Failed to set up session. Please try again.");
+    }
+    
+    toast({
+      title: "Error",
+      description: "Failed to create session. Please try again.",
+      variant: "destructive",
+    });
+    
+    setCreatingSession(false);
+    setProcessing(false);
   };
   
   const calculateSessionAmount = (slot: BookingSlot): number => {
@@ -139,6 +163,7 @@ export function SchedulerModal({
   const handleBackClick = () => {
     if (step === 'payment') {
       setStep('select-slot');
+      setPaymentError(null);
     }
   };
   
@@ -176,6 +201,7 @@ export function SchedulerModal({
             onBack={handleBackClick}
             processing={processing}
             retryPaymentSetup={retryPaymentSetup}
+            error={paymentError}
           />
         );
       case 'processing':

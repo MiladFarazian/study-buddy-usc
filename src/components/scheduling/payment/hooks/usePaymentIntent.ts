@@ -98,7 +98,7 @@ export function usePaymentIntent({
         
         // Create a payment intent with Stripe
         const formattedDate = format(new Date(selectedSlot.day), 'MMM dd, yyyy');
-        const description = `Tutoring session with ${tutor.name} on ${formattedDate} at ${selectedSlot.start}`;
+        const description = `Tutoring session with ${tutor.name || tutor.firstName + ' ' + tutor.lastName} on ${formattedDate} at ${selectedSlot.start}`;
         
         console.log("Creating payment intent:", {
           sessionId, sessionCost, tutorId: tutor.id, studentId, description
@@ -126,35 +126,45 @@ export function usePaymentIntent({
         console.error('Error setting up payment:', error);
         
         if (isMounted.current) {
-          // Check for specific error codes
-          const errorData = error.message && error.message.includes('{') 
-            ? JSON.parse(error.message.substring(error.message.indexOf('{')))
-            : null;
-            
-          const errorCode = errorData?.code || null;
+          // Parse error response if it's a JSON string
+          let parsedError = null;
+          let errorCode = null;
+          
+          try {
+            if (typeof error.message === 'string' && error.message.includes('{')) {
+              const jsonStartIndex = error.message.indexOf('{');
+              const jsonEndIndex = error.message.lastIndexOf('}') + 1;
+              const jsonString = error.message.substring(jsonStartIndex, jsonEndIndex);
+              parsedError = JSON.parse(jsonString);
+              errorCode = parsedError?.code || null;
+            }
+          } catch (parseError) {
+            console.error('Error parsing error message:', parseError);
+          }
+          
           setErrorCode(errorCode);
           
           // Check if the error is related to rate limiting
-          const isRateLimit = errorCode === 'rate_limited' || error.message && (
+          const isRateLimit = errorCode === 'rate_limited' || (error.message && (
             error.message.includes("rate limit") || 
             error.message.includes("Rate limit") ||
             error.message.includes("Too many requests")
-          );
+          ));
           
           // Check if the error is related to Connect account setup
-          const isConnectNotSetup = errorCode === 'connect_not_setup' || error.message && (
+          const isConnectNotSetup = errorCode === 'connect_not_setup' || (error.message && (
             error.message.includes("payment account") ||
             error.message.includes("not set up")
-          );
+          ));
           
-          const isConnectIncomplete = errorCode === 'connect_incomplete' || error.message && (
+          const isConnectIncomplete = errorCode === 'connect_incomplete' || (error.message && (
             error.message.includes("not completed") ||
             error.message.includes("incomplete")
-          );
+          ));
           
-          const isConnectVerification = errorCode === 'connect_verification_required' || error.message && (
+          const isConnectVerification = errorCode === 'connect_verification_required' || (error.message && (
             error.message.includes("verification")
-          );
+          ));
           
           if (isRateLimit) {
             setSetupError("Payment system is temporarily busy. We'll retry automatically in a few seconds.");
