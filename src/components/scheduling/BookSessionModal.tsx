@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tutor } from "@/types/tutor";
-import { BookingSlot } from "@/lib/scheduling/types";
 import { BookingStepSelector } from "./booking-modal/BookingStepSelector";
 import { useBookingSession } from "./booking-modal/useBookingSession";
 import { PaymentSuccessScreen } from "./payment/PaymentSuccessScreen";
@@ -14,6 +13,8 @@ import { AuthRequiredDialog } from "./booking-modal/AuthRequiredDialog";
 import { useAvailabilityData } from "./calendar/useAvailabilityData";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 interface BookSessionModalProps {
   tutor: Tutor;
@@ -30,10 +31,12 @@ export function BookSessionModal({ tutor, isOpen, onClose }: BookSessionModalPro
     authRequired,
     clientSecret,
     paymentAmount,
+    paymentError,
     handleSlotSelect,
     handlePaymentComplete,
     handleCancel,
-    setAuthRequired
+    setAuthRequired,
+    retryPaymentSetup
   } = useBookingSession(tutor, isOpen, onClose);
   
   const [activeTab, setActiveTab] = useState<string>("calendar");
@@ -103,6 +106,23 @@ export function BookSessionModal({ tutor, isOpen, onClose }: BookSessionModalPro
                       selectedSlot={selectedSlot} 
                     />
                     
+                    {paymentError && (
+                      <Alert variant="destructive" className="mb-4">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle>Payment Error</AlertTitle>
+                        <AlertDescription>
+                          {paymentError.includes('not completed') || paymentError.includes('not set up') ? (
+                            <>
+                              This tutor hasn't completed their payment setup. 
+                              Please try a different tutor or try again later.
+                            </>
+                          ) : (
+                            paymentError
+                          )}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    
                     {clientSecret ? (
                       <StripePaymentForm
                         clientSecret={clientSecret}
@@ -111,6 +131,15 @@ export function BookSessionModal({ tutor, isOpen, onClose }: BookSessionModalPro
                         onCancel={handleCancel}
                         processing={false}
                       />
+                    ) : paymentError ? (
+                      <div className="flex justify-end mt-4">
+                        <button 
+                          onClick={retryPaymentSetup}
+                          className="bg-usc-gold hover:bg-usc-gold-dark text-black py-2 px-4 rounded"
+                        >
+                          Retry Payment Setup
+                        </button>
+                      </div>
                     ) : (
                       <div className="flex flex-col items-center justify-center py-10">
                         <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal mb-4" />

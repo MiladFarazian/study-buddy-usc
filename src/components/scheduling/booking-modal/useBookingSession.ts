@@ -1,35 +1,124 @@
 
-import { useState, useCallback } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
-import { Tutor } from "@/types/tutor";
-import { BookingSlot } from "@/lib/scheduling/types";
-import { createSessionBooking } from "@/lib/scheduling";
-import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuthState } from '@/hooks/useAuthState';
+import { BookingSlot } from '@/lib/scheduling/types';
+import { Tutor } from '@/types/tutor';
+import { createPaymentIntent } from '@/lib/stripe-utils';
+import { toast } from 'sonner';
 
-export const useBookingSession = (tutor: Tutor, isOpen: boolean, onClose: () => void) => {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  
-  const [step, setStep] = useState<'select-slot' | 'payment' | 'processing'>('select-slot');
+type BookingStep = 'select-slot' | 'payment' | 'processing';
+
+export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => void) {
+  const { user } = useAuthState();
+  const [step, setStep] = useState<BookingStep>('select-slot');
   const [selectedSlot, setSelectedSlot] = useState<BookingSlot | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [creatingSession, setCreatingSession] = useState(false);
   const [authRequired, setAuthRequired] = useState(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  
+  // Payment related states
   const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [paymentAmount, setPaymentAmount] = useState(0);
+  const [paymentAmount, setPaymentAmount] = useState<number>(0);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   
-  // Calculate session cost based on tutor hourly rate and duration
-  const calculateSessionCost = (slot: BookingSlot) => {
-    if (!tutor.hourlyRate) return 25; // Default rate if not set
-    
-    const startTime = new Date(`2000-01-01T${slot.start}`);
-    const endTime = new Date(`2000-01-01T${slot.end}`);
-    const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-    
-    return tutor.hourlyRate * durationHours;
-  };
+  // Reset the flow when the modal is closed
+  useEffect(() => {
+    if (!isOpen) {
+      setTimeout(() => {
+        setStep('select-slot');
+        setSelectedSlot(null);
+        setSessionId(null);
+        setClientSecret(null);
+        setPaymentError(null);
+        setCreatingSession(false);
+      }, 300); // slight delay to avoid visual glitches
+    }
+  }, [isOpen]);
   
+  // Create a session when a slot is selected and set up payment
+  const createSession = useCallback(async (slot: BookingSlot) => {
+    if (!user) {
+      setAuthRequired(true);
+      return null;
+    }
+    
+    setCreatingSession(true);
+    
+    try {
+      // Create the session in the database
+      const { data: session, error } = await supabase
+        .from('sessions')
+        .insert({
+          tutor_id: tutor.id,
+          student_id: user.id,
+          start_time: slot.startTime,
+          end_time: slot.endTime,
+          duration_minutes: slot.durationMinutes,
+          status: 'pending',
+          payment_status: 'pending'
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error creating session:', error);
+        toast.error('Could not create session. Please try again.');
+        setCreatingSession(false);
+        return null;
+      }
+      
+      return session;
+    } catch (error) {
+      console.error('Exception creating session:', error);
+      toast.error('An unexpected error occurred. Please try again.');
+      setCreatingSession(false);
+      return null;
+    }
+  }, [user, tutor]);
+  
+  // Set up payment intent
+  const setupPayment = useCallback(async (sessionId: string, amount: number) => {
+    if (!user || !sessionId) {
+      return;
+    }
+    
+    setPaymentError(null);
+    
+    try {
+      const paymentIntent = await createPaymentIntent(
+        sessionId,
+        amount,
+        tutor.id,
+        user.id,
+        `Tutoring session with ${tutor.name} (${sessionId})`
+      );
+      
+      setClientSecret(paymentIntent.client_secret);
+      setPaymentAmount(amount);
+      setCreatingSession(false);
+    } catch (error: any) {
+      console.error('Payment setup error:', error);
+      
+      // Handle specific error cases
+      if (error.message && (
+        error.message.includes('payment account') || 
+        error.message.includes('Stripe Connect') ||
+        error.message.includes('not completed') ||
+        error.message.includes('not set up')
+      )) {
+        setPaymentError(`Tutor's payment account setup is incomplete. Please try another tutor or contact support.`);
+      } else if (error.message && error.message.includes('rate limit')) {
+        setPaymentError('Too many payment requests. Please wait a moment and try again.');
+      } else {
+        setPaymentError(error.message || 'Could not set up payment. Please try again.');
+      }
+      
+      setCreatingSession(false);
+    }
+  }, [user, tutor]);
+  
+  // Handle slot selection
   const handleSlotSelect = useCallback(async (slot: BookingSlot) => {
     if (!user) {
       setAuthRequired(true);
@@ -38,82 +127,53 @@ export const useBookingSession = (tutor: Tutor, isOpen: boolean, onClose: () => 
     
     setSelectedSlot(slot);
     
-    // Calculate payment amount
-    const cost = calculateSessionCost(slot);
-    setPaymentAmount(cost);
+    // Calculate payment amount (hourly rate prorated by duration)
+    const hourlyRate = tutor.hourlyRate || 50; // default to $50 if not set
+    const hours = slot.durationMinutes / 60;
+    const amount = hourlyRate * hours;
     
-    try {
-      setCreatingSession(true);
+    // Create a new session
+    const session = await createSession(slot);
+    
+    if (session) {
+      setSessionId(session.id);
+      setStep('payment');
       
-      // Parse start and end time
-      const startDate = new Date(slot.day);
-      const [startHour, startMin] = slot.start.split(':').map(Number);
-      startDate.setHours(startHour, startMin, 0, 0);
-      
-      const endDate = new Date(slot.day);
-      const [endHour, endMin] = slot.end.split(':').map(Number);
-      endDate.setHours(endHour, endMin, 0, 0);
-      
-      // Create booking
-      const bookingResult = await createSessionBooking(
-        user.id,
-        tutor.id,
-        null, // courseId
-        startDate.toISOString(),
-        endDate.toISOString(),
-        null, // location
-        null  // notes
-      );
-      
-      if (bookingResult && bookingResult.id) {
-        setSessionId(bookingResult.id);
-        setStep('payment');
-      }
-    } catch (error) {
-      console.error("Error preparing session:", error);
-      toast({
-        title: "Booking Failed",
-        description: "There was an error setting up your booking. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setCreatingSession(false);
+      // Set up payment intent
+      await setupPayment(session.id, amount);
     }
-  }, [user, tutor, toast]);
+  }, [user, tutor, createSession, setupPayment]);
   
+  // Handle payment completion
   const handlePaymentComplete = useCallback(() => {
-    toast({
-      title: "Booking Successful!",
-      description: `Your session with ${tutor.name} has been scheduled.`,
-    });
-    
     setStep('processing');
+    toast.success('Payment successful! Your session is now confirmed.');
     
-    // Automatically close the modal after a delay
+    // After a short delay, close the modal
     setTimeout(() => {
       onClose();
-    }, 2000);
-  }, [tutor.name, toast, onClose]);
+    }, 3000);
+  }, [onClose]);
   
-  const handleCancel = useCallback(async () => {
-    // If we have a session ID but payment wasn't completed, cancel the session
-    if (sessionId && step === 'payment') {
-      try {
-        await supabase
-          .from('sessions')
-          .update({ status: 'cancelled' })
-          .eq('id', sessionId);
-      } catch (error) {
-        console.error("Error cancelling session:", error);
-      }
-    }
-    
-    setStep('select-slot');
-    setSelectedSlot(null);
-    setSessionId(null);
-    setClientSecret(null);
+  // Handle cancellation
+  const handleCancel = useCallback(() => {
     onClose();
-  }, [sessionId, step, onClose]);
+  }, [onClose]);
+  
+  // Retry payment setup
+  const retryPaymentSetup = useCallback(() => {
+    if (sessionId && selectedSlot) {
+      setCreatingSession(true);
+      
+      // Calculate amount again
+      const hourlyRate = tutor.hourlyRate || 50;
+      const hours = selectedSlot.durationMinutes / 60;
+      const amount = hourlyRate * hours;
+      
+      // Try payment setup again
+      setupPayment(sessionId, amount);
+    }
+  }, [sessionId, selectedSlot, tutor, setupPayment]);
   
   return {
     user,
@@ -123,10 +183,11 @@ export const useBookingSession = (tutor: Tutor, isOpen: boolean, onClose: () => 
     authRequired,
     clientSecret,
     paymentAmount,
-    sessionId,
+    paymentError,
     handleSlotSelect,
     handlePaymentComplete,
     handleCancel,
-    setAuthRequired
+    setAuthRequired,
+    retryPaymentSetup
   };
-};
+}

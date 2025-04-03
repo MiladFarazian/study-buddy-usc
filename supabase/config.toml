@@ -25,7 +25,7 @@ port = 54324
 # Port for the Functions service
 port = 54342
 
-# Configure individual functions
+# Configure individual functions with proper formatting
 [functions.create-payment-intent]
 verify_jwt = true
 
