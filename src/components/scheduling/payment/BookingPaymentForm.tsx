@@ -14,8 +14,10 @@ interface BookingPaymentFormProps {
   selectedSlot: BookingSlot | null;
   sessionId: string;
   amount: number;
+  clientSecret: string | null;
   onPaymentComplete: () => void;
   onBack: () => void;
+  processing: boolean;
   retryPaymentSetup: () => void;
 }
 
@@ -24,8 +26,10 @@ export function BookingPaymentForm({
   selectedSlot,
   sessionId,
   amount,
+  clientSecret,
   onPaymentComplete,
   onBack,
+  processing,
   retryPaymentSetup
 }: BookingPaymentFormProps) {
   const { user } = useAuth();
@@ -75,7 +79,7 @@ export function BookingPaymentForm({
               <div>
                 <p className="font-medium">Price</p>
                 <p className="text-muted-foreground">
-                  ${amount.toFixed(2)} (${tutor.hourlyRate.toFixed(2)}/hr)
+                  ${amount.toFixed(2)} (${tutor.hourlyRate?.toFixed(2) || "25.00"}/hr)
                 </p>
               </div>
             </div>
@@ -84,11 +88,11 @@ export function BookingPaymentForm({
       </div>
       
       <StripePaymentForm 
-        clientSecret=""  // In a real app, this would be populated from your backend
+        clientSecret={clientSecret || ""}
         amount={amount}
         onSuccess={onPaymentComplete}
         onCancel={onBack}
-        processing={false}
+        processing={processing}
       />
       
       <div className="text-xs text-center text-muted-foreground mt-6">
