@@ -11,6 +11,16 @@ extra_search_path = ["public", "extensions"]
 # to use webhooks in local development, set the api.webhooks.config under localhost.
 max_rows = 1000
 
+[db]
+# Port for the SQL editor
+port = 54322
+# Port for the DB connection
+major_version = 15
+
+[studio]
+# Port for Supabase Studio
+port = 54324
+
 [functions]
 # Port for the Functions service
 port = 54342
@@ -48,13 +58,3 @@ verify_jwt = false
 
 [functions.get-stripe-config]
 verify_jwt = false
-
-[db]
-# Port for the SQL editor
-port = 54322
-# Port for the DB connection
-major_version = 15
-
-[studio]
-# Port for Supabase Studio
-port = 54324
