@@ -186,34 +186,55 @@ export type Database = {
       payment_transactions: {
         Row: {
           amount: number
+          charge_id: string | null
           created_at: string | null
           id: string
+          payment_intent_status: string | null
+          payment_type: string | null
+          platform_fee: number | null
+          requires_transfer: boolean | null
           session_id: string | null
           status: string
           stripe_payment_intent_id: string | null
           student_id: string | null
+          transfer_id: string | null
+          transfer_status: string | null
           tutor_id: string | null
           updated_at: string | null
         }
         Insert: {
           amount: number
+          charge_id?: string | null
           created_at?: string | null
           id?: string
+          payment_intent_status?: string | null
+          payment_type?: string | null
+          platform_fee?: number | null
+          requires_transfer?: boolean | null
           session_id?: string | null
           status?: string
           stripe_payment_intent_id?: string | null
           student_id?: string | null
+          transfer_id?: string | null
+          transfer_status?: string | null
           tutor_id?: string | null
           updated_at?: string | null
         }
         Update: {
           amount?: number
+          charge_id?: string | null
           created_at?: string | null
           id?: string
+          payment_intent_status?: string | null
+          payment_type?: string | null
+          platform_fee?: number | null
+          requires_transfer?: boolean | null
           session_id?: string | null
           status?: string
           stripe_payment_intent_id?: string | null
           student_id?: string | null
+          transfer_id?: string | null
+          transfer_status?: string | null
           tutor_id?: string | null
           updated_at?: string | null
         }
@@ -280,6 +301,68 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_transfers: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          payment_intent_id: string | null
+          payment_transaction_id: string | null
+          platform_fee: number | null
+          processed_at: string | null
+          processor: string | null
+          session_id: string | null
+          status: string
+          student_id: string
+          transfer_group: string | null
+          transfer_id: string | null
+          tutor_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          payment_intent_id?: string | null
+          payment_transaction_id?: string | null
+          platform_fee?: number | null
+          processed_at?: string | null
+          processor?: string | null
+          session_id?: string | null
+          status?: string
+          student_id: string
+          transfer_group?: string | null
+          transfer_id?: string | null
+          tutor_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          payment_intent_id?: string | null
+          payment_transaction_id?: string | null
+          platform_fee?: number | null
+          processed_at?: string | null
+          processor?: string | null
+          session_id?: string | null
+          status?: string
+          student_id?: string
+          transfer_group?: string | null
+          transfer_id?: string | null
+          tutor_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_transfers_payment_transaction_id_fkey"
+            columns: ["payment_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "payment_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           availability: Json | null
@@ -294,6 +377,8 @@ export type Database = {
           last_name: string | null
           major: string | null
           role: Database["public"]["Enums"]["user_role"]
+          stripe_connect_id: string | null
+          stripe_connect_onboarding_complete: boolean | null
           subjects: string[] | null
           updated_at: string
         }
@@ -310,6 +395,8 @@ export type Database = {
           last_name?: string | null
           major?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          stripe_connect_id?: string | null
+          stripe_connect_onboarding_complete?: boolean | null
           subjects?: string[] | null
           updated_at?: string
         }
@@ -326,6 +413,8 @@ export type Database = {
           last_name?: string | null
           major?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          stripe_connect_id?: string | null
+          stripe_connect_onboarding_complete?: boolean | null
           subjects?: string[] | null
           updated_at?: string
         }

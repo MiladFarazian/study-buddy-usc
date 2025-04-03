@@ -175,7 +175,7 @@ serve(async (req) => {
   }
 });
 
-// Keep the existing handleAccountUpdated function
+// Handle account.updated events, specifically when Connect onboarding is completed
 async function handleAccountUpdated(event, stripe, supabaseAdmin) {
   const account = event.data.object;
   
