@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.23.0';
 import Stripe from 'https://esm.sh/stripe@12.13.0?target=deno';
@@ -7,45 +8,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Improved rate limiting with distributed state
-// Using session IDs as keys to track request counts more accurately
+// Improved rate limiting with persistent state
 const RATE_LIMIT_WINDOW = 60000; // 1 minute window
-const RATE_LIMIT_MAX = 10; // Increased max requests per session to prevent legitimate retries from failing
-const requestLog: Record<string, { count: number, timestamp: number }> = {};
+const RATE_LIMIT_MAX = 5; // Maximum requests per session
+const requestCache = new Map<string, {count: number, timestamp: number}>();
 
-// Periodically clean up old entries (every 5 minutes)
-const CLEANUP_INTERVAL = 300000; // 5 minutes
+// Clean up old entries in the rate limit cache every 5 minutes
 setInterval(() => {
   const now = Date.now();
-  for (const key in requestLog) {
-    if (now - requestLog[key].timestamp > RATE_LIMIT_WINDOW * 2) {
-      delete requestLog[key];
+  for (const [key, data] of requestCache.entries()) {
+    if (now - data.timestamp > RATE_LIMIT_WINDOW * 2) {
+      requestCache.delete(key);
     }
   }
-}, CLEANUP_INTERVAL);
-
-// More granular rate limiting function
-function shouldRateLimit(clientId: string): boolean {
-  const now = Date.now();
-  const clientRequests = requestLog[clientId];
-  
-  if (!clientRequests) {
-    requestLog[clientId] = { count: 1, timestamp: now };
-    return false;
-  }
-  
-  // Reset counter if window has passed
-  if (now - clientRequests.timestamp > RATE_LIMIT_WINDOW) {
-    requestLog[clientId] = { count: 1, timestamp: now };
-    return false;
-  }
-  
-  // Increment request counter
-  clientRequests.count++;
-  clientRequests.timestamp = now; // Update timestamp to keep track of latest activity
-  
-  return clientRequests.count > RATE_LIMIT_MAX;
-}
+}, 300000); // 5 minutes
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -96,24 +72,41 @@ serve(async (req) => {
 
     const { sessionId, amount, tutorId, studentId, description, forceTwoStage } = requestBody;
     
-    // Use a more unique rate limit key that combines sessionId, tutorId, and a timestamp segment
-    // This helps prevent conflicts between different booking attempts for the same session
-    const timeSegment = Math.floor(Date.now() / 10000); // 10 second segments
-    const clientId = `${sessionId}_${tutorId}_${timeSegment}`;
+    // Better rate limiting - use a combination of session and client identity
+    const clientIp = req.headers.get('x-real-ip') || req.headers.get('x-forwarded-for') || 'unknown';
+    const sessionKey = `${sessionId}_${tutorId}_${clientIp}`;
+
+    // Check for rate limiting with a more unique key
+    const now = Date.now();
+    const cachedRequest = requestCache.get(sessionKey);
     
-    // Implement rate limiting with better logging
-    if (shouldRateLimit(clientId)) {
-      console.log(`Rate limit exceeded for session ${sessionId} within time segment ${timeSegment}`);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Too many payment requests. Please try again in a moment.',
-          code: 'rate_limited'
-        }), 
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 429, // Use proper 429 Too Many Requests status code
+    // Initialize or update rate limit tracking
+    if (!cachedRequest) {
+      requestCache.set(sessionKey, { count: 1, timestamp: now });
+    } else {
+      // If window has expired, reset counter
+      if (now - cachedRequest.timestamp > RATE_LIMIT_WINDOW) {
+        requestCache.set(sessionKey, { count: 1, timestamp: now });
+      } else {
+        // Increment counter
+        cachedRequest.count++;
+        cachedRequest.timestamp = now;
+        
+        // Check if limit is exceeded
+        if (cachedRequest.count > RATE_LIMIT_MAX) {
+          console.log(`Rate limit exceeded for ${sessionKey}`);
+          return new Response(
+            JSON.stringify({ 
+              error: 'Too many payment requests. Please try again in a moment.',
+              code: 'rate_limited'
+            }), 
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 429,
+            }
+          );
         }
-      );
+      }
     }
 
     // Validate required parameters
@@ -265,9 +258,7 @@ serve(async (req) => {
       // Get transfer group ID based on session for tracking
       const transferGroup = `session_${sessionId}`;
       
-      // Create a payment intent
-      // If tutor has completed onboarding and we're not forcing two-stage, create with Connect parameters
-      // Otherwise, create a regular payment intent to the platform
+      // Create a payment intent based on whether the tutor has a Connect account set up
       let paymentIntent;
       let isTwoStagePayment = false;
       
@@ -391,7 +382,7 @@ serve(async (req) => {
       console.error('Stripe API error:', stripeError);
       
       // Handle rate limiting errors specifically
-      if (stripeError.code === 'rate_limit') {
+      if (stripeError.type === 'StripeRateLimitError' || stripeError.code === 'rate_limit') {
         return new Response(
           JSON.stringify({
             error: 'Stripe API rate limit exceeded. Please try again in a moment.',

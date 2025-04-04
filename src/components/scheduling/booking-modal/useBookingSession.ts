@@ -151,8 +151,7 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
       const hourlyRate = tutor.hourlyRate || 50;
       const amount = calculatePaymentAmount(selectedSlot, hourlyRate);
       
-      // Try payment setup again, forcing two-stage payment as a fallback
-      // Fix: Remove the fifth argument that was causing the TypeScript error
+      // Try payment setup again
       setupPayment(sessionId, amount, tutor, user)
         .then(result => {
           // Set two-stage payment flag based on the result

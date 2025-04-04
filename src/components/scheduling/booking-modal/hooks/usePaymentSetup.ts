@@ -67,7 +67,7 @@ export function usePaymentSetup() {
         amount,
         tutor.id,
         user.id,
-        `Tutoring session with ${tutor.name} (${sessionId})`,
+        `Tutoring session with ${tutor.name || tutor.firstName + ' ' + tutor.lastName} (${sessionId})`,
         forceTwoStage // Use the parameter
       );
       
@@ -89,6 +89,14 @@ export function usePaymentSetup() {
     } catch (error: any) {
       console.error('Payment setup error:', error);
       
+      // Enhanced error detection for network/connection issues
+      const isNetworkError = error.message && (
+        error.message.includes('Failed to fetch') ||
+        error.message.includes('Failed to send') ||
+        error.message.includes('network') ||
+        error.message.includes('Network Error')
+      );
+      
       // For Connect setup errors, we don't show an error anymore
       // as we'll use two-stage payments instead
       if (error.message && (
@@ -105,7 +113,7 @@ export function usePaymentSetup() {
             amount,
             tutor.id,
             user.id,
-            `Tutoring session with ${tutor.name} (${sessionId})`,
+            `Tutoring session with ${tutor.name || tutor.firstName + ' ' + tutor.lastName} (${sessionId})`,
             true // Force two-stage payment
           );
           
@@ -126,8 +134,10 @@ export function usePaymentSetup() {
           console.error('Retry payment setup error:', retryError);
           setPaymentError('Could not set up payment. Please try again in a moment.');
         }
-      } else if (error.message && error.message.includes('rate limit')) {
-        setPaymentError('Too many payment requests. Please wait a moment and try again.');
+      } else if (error.message && error.message.includes('rate limit') || 
+                 error.message && error.message.includes('429') ||
+                 isNetworkError) {
+        setPaymentError('Too many payment requests or network connectivity issue. Please wait a moment and try again.');
         
         // Set a reasonable delay to prevent overwhelming the API
         const retryDelay = Math.min(2000 * Math.pow(2, retryCount), 10000); // Max 10 seconds
@@ -138,7 +148,7 @@ export function usePaymentSetup() {
           console.log('Attempting automatic retry...');
           setRetryCount(prev => prev + 1);
           requestInProgress.current = false;
-          setupPayment(sessionId, amount, tutor, user);
+          // We'll call setupPayment again from the component
         }, retryDelay);
       } else {
         // Handle other errors
