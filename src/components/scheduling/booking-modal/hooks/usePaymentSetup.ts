@@ -23,6 +23,9 @@ export function usePaymentSetup() {
   // Track the last session ID to avoid duplicate requests
   const lastSessionId = useRef<string | null>(null);
   
+  // Track the timestamp of the last request to implement client-side rate limiting
+  const lastRequestTime = useRef<number>(0);
+  
   /**
    * Set up a payment intent for a session with improved error handling
    */
@@ -31,10 +34,20 @@ export function usePaymentSetup() {
     amount: number,
     tutor: Tutor,
     user: User | null,
-    forceTwoStage: boolean = false // Make forceTwoStage an optional parameter with default value
+    forceTwoStage: boolean = false // Optional parameter with default value
   ) => {
     if (!user || !sessionId) {
       return { success: false };
+    }
+    
+    // First check for too frequent requests (client-side rate limiting)
+    const now = Date.now();
+    const timeSinceLastRequest = now - lastRequestTime.current;
+    const minRequestInterval = 2000; // 2 seconds minimum between requests
+    
+    if (timeSinceLastRequest < minRequestInterval) {
+      console.log(`Request too soon after previous request (${timeSinceLastRequest}ms). Enforcing client-side rate limit.`);
+      return { success: false, alreadyInProgress: true };
     }
     
     // Check if this is a duplicate request for the same session
@@ -55,6 +68,7 @@ export function usePaymentSetup() {
     setPaymentError(null);
     requestInProgress.current = true;
     setIsProcessing(true);
+    lastRequestTime.current = now;
     
     try {
       console.log(`Setting up payment for session ${sessionId} with amount ${amount}`);
@@ -97,6 +111,14 @@ export function usePaymentSetup() {
         error.message.includes('Network Error')
       );
       
+      // Better rate limit error detection
+      const isRateLimitError = error.message && (
+        error.message.includes('rate limit') ||
+        error.message.includes('Rate limit') ||
+        error.message.includes('Too many requests') ||
+        error.message.includes('429')
+      );
+      
       // For Connect setup errors, we don't show an error anymore
       // as we'll use two-stage payments instead
       if (error.message && (
@@ -107,49 +129,58 @@ export function usePaymentSetup() {
       )) {
         // Try again to create a two-stage payment intent
         try {
-          // Force two-stage payment
-          const retryResult = await createPaymentIntent(
-            sessionId,
-            amount,
-            tutor.id,
-            user.id,
-            `Tutoring session with ${tutor.name || tutor.firstName + ' ' + tutor.lastName} (${sessionId})`,
-            true // Force two-stage payment
-          );
-          
-          if (retryResult) {
-            console.log('Created two-stage payment intent as fallback:', retryResult);
-            setClientSecret(retryResult.client_secret);
-            setPaymentAmount(amount);
-            setIsTwoStagePayment(true);
+          // Only if not already trying two-stage payment
+          if (!forceTwoStage) {
+            // Force two-stage payment
+            const retryResult = await createPaymentIntent(
+              sessionId,
+              amount,
+              tutor.id,
+              user.id,
+              `Tutoring session with ${tutor.name || tutor.firstName + ' ' + tutor.lastName} (${sessionId})`,
+              true // Force two-stage payment
+            );
             
-            requestInProgress.current = false;
-            setIsProcessing(false);
-            return { 
-              success: true, 
-              isTwoStagePayment: true
-            };
+            if (retryResult) {
+              console.log('Created two-stage payment intent as fallback:', retryResult);
+              setClientSecret(retryResult.client_secret);
+              setPaymentAmount(amount);
+              setIsTwoStagePayment(true);
+              
+              requestInProgress.current = false;
+              setIsProcessing(false);
+              return { 
+                success: true, 
+                isTwoStagePayment: true
+              };
+            }
+          } else {
+            throw new Error('Two-stage payment creation failed');
           }
         } catch (retryError: any) {
           console.error('Retry payment setup error:', retryError);
           setPaymentError('Could not set up payment. Please try again in a moment.');
         }
-      } else if (error.message && error.message.includes('rate limit') || 
-                 error.message && error.message.includes('429') ||
-                 isNetworkError) {
-        setPaymentError('Too many payment requests or network connectivity issue. Please wait a moment and try again.');
+      } else if (isRateLimitError || isNetworkError) {
+        // Improve feedback message
+        const errorMessage = isRateLimitError 
+          ? 'Payment service is currently busy. Please wait a moment before trying again.' 
+          : 'Network connectivity issue. Please check your connection and try again.';
+          
+        setPaymentError(errorMessage);
         
         // Set a reasonable delay to prevent overwhelming the API
-        const retryDelay = Math.min(2000 * Math.pow(2, retryCount), 10000); // Max 10 seconds
-        console.log(`Will retry automatically after ${retryDelay}ms`);
+        // Exponential backoff with a maximum delay
+        const retryDelay = Math.min(3000 * Math.pow(1.5, retryCount), 15000); // Max 15 seconds
+        console.log(`Will retry automatically after ${retryDelay}ms (attempt ${retryCount + 1})`);
         
-        // Auto-retry after delay
+        // Allow for a new request after the delay
         setTimeout(() => {
-          console.log('Attempting automatic retry...');
-          setRetryCount(prev => prev + 1);
           requestInProgress.current = false;
-          // We'll call setupPayment again from the component
         }, retryDelay);
+        
+        // We'll let the user retry manually rather than auto-retry
+        setRetryCount(prev => prev + 1);
       } else {
         // Handle other errors
         setPaymentError(error.message || 'Could not set up payment. Please try again.');
@@ -170,6 +201,7 @@ export function usePaymentSetup() {
     setRetryCount(0);
     requestInProgress.current = false;
     lastSessionId.current = null;
+    lastRequestTime.current = 0;
   }, []);
   
   return {

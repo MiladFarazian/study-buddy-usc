@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.23.0';
 import Stripe from 'https://esm.sh/stripe@12.13.0?target=deno';
@@ -8,9 +7,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Improved rate limiting with persistent state
+// Improved rate limiting with persistent state and better client identification
 const RATE_LIMIT_WINDOW = 60000; // 1 minute window
-const RATE_LIMIT_MAX = 5; // Maximum requests per session
+const RATE_LIMIT_MAX = 8; // Maximum requests per client per minute
 const requestCache = new Map<string, {count: number, timestamp: number}>();
 
 // Clean up old entries in the rate limit cache every 5 minutes
@@ -72,36 +71,46 @@ serve(async (req) => {
 
     const { sessionId, amount, tutorId, studentId, description, forceTwoStage } = requestBody;
     
-    // Better rate limiting - use a combination of session and client identity
+    // Better rate limiting - use more client parameters for better fingerprinting
     const clientIp = req.headers.get('x-real-ip') || req.headers.get('x-forwarded-for') || 'unknown';
-    const sessionKey = `${sessionId}_${tutorId}_${clientIp}`;
+    const userAgent = req.headers.get('user-agent') || 'unknown';
+    const clientHash = `${clientIp}-${userAgent.substring(0, 20)}`.replace(/[^a-zA-Z0-9-]/g, '');
+    const requestKey = `${sessionId}_${studentId}_${clientHash}`;
 
     // Check for rate limiting with a more unique key
     const now = Date.now();
-    const cachedRequest = requestCache.get(sessionKey);
+    const cachedRequest = requestCache.get(requestKey);
     
     // Initialize or update rate limit tracking
     if (!cachedRequest) {
-      requestCache.set(sessionKey, { count: 1, timestamp: now });
+      requestCache.set(requestKey, { count: 1, timestamp: now });
     } else {
       // If window has expired, reset counter
       if (now - cachedRequest.timestamp > RATE_LIMIT_WINDOW) {
-        requestCache.set(sessionKey, { count: 1, timestamp: now });
+        requestCache.set(requestKey, { count: 1, timestamp: now });
       } else {
         // Increment counter
         cachedRequest.count++;
-        cachedRequest.timestamp = now;
         
         // Check if limit is exceeded
         if (cachedRequest.count > RATE_LIMIT_MAX) {
-          console.log(`Rate limit exceeded for ${sessionKey}`);
+          console.log(`Rate limit exceeded for ${requestKey} (count: ${cachedRequest.count})`);
+          
+          // Calculate retry-after time in seconds
+          const retryAfter = Math.ceil((RATE_LIMIT_WINDOW - (now - cachedRequest.timestamp)) / 1000);
+          
           return new Response(
             JSON.stringify({ 
-              error: 'Too many payment requests. Please try again in a moment.',
-              code: 'rate_limited'
+              error: 'Too many payment requests. Please try again later.',
+              code: 'rate_limited',
+              retryAfter
             }), 
             {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              headers: { 
+                ...corsHeaders, 
+                'Content-Type': 'application/json',
+                'Retry-After': retryAfter.toString()
+              },
               status: 429,
             }
           );
@@ -228,10 +237,11 @@ serve(async (req) => {
 
     const hasCompleteConnectAccount = tutorProfile[connectIdField] && tutorProfile[onboardingCompleteField];
     
-    // Initialize Stripe
+    // Initialize Stripe with error handling and retry logic
     try {
       const stripe = new Stripe(stripeSecretKey, {
         apiVersion: '2023-10-16',
+        maxNetworkRetries: 2, // Add automatic retries for network issues
       });
 
       // Ensure amount is a number and convert to cents (Stripe uses smallest currency unit)
@@ -390,7 +400,7 @@ serve(async (req) => {
             details: stripeError.message
           }),
           {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '5' },
             status: 429,
           }
         );

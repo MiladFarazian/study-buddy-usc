@@ -141,7 +141,7 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
     onClose();
   }, [onClose]);
   
-  // Retry payment setup with exponential backoff
+  // Retry payment setup with improved error handling
   const retryPaymentSetup = useCallback(() => {
     if (sessionId && selectedSlot && user && !setupInProgress.current) {
       setupInProgress.current = true;
@@ -151,7 +151,7 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
       const hourlyRate = tutor.hourlyRate || 50;
       const amount = calculatePaymentAmount(selectedSlot, hourlyRate);
       
-      // Try payment setup again
+      // Try payment setup again - note we're NOT passing the forceTwoStage parameter here
       setupPayment(sessionId, amount, tutor, user)
         .then(result => {
           // Set two-stage payment flag based on the result
