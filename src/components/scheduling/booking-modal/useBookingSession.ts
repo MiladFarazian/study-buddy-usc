@@ -104,25 +104,19 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
         
         if (!result.success && !result.alreadyInProgress) {
           // Only show error toast if it's a genuine failure (not duplicate request)
-          toast({
-            title: "Payment Setup Issue",
-            description: "There was a problem setting up payment. Please try again.",
-            variant: "destructive",
+          toast("Payment Setup Issue", {
+            description: "There was a problem setting up payment. Please try again."
           });
         }
       } else {
-        toast({
-          title: "Session Creation Failed",
-          description: "Could not create your booking session. Please try again.",
-          variant: "destructive",
+        toast("Session Creation Failed", {
+          description: "Could not create your booking session. Please try again."
         });
       }
     } catch (error) {
       console.error("Error in slot selection process:", error);
-      toast({
-        title: "Error",
-        description: "Something went wrong. Please try again.",
-        variant: "destructive",
+      toast("Error", {
+        description: "Something went wrong. Please try again."
       });
     } finally {
       setCreatingSession(false);
@@ -165,10 +159,8 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
         })
         .catch(err => {
           console.error("Retry payment setup error:", err);
-          toast({
-            title: "Retry Failed",
-            description: "Could not retry payment setup. Please try again later.",
-            variant: "destructive",
+          toast("Retry Failed", {
+            description: "Could not retry payment setup. Please try again later."
           });
         })
         .finally(() => {
