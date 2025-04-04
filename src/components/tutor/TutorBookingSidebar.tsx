@@ -6,6 +6,8 @@ import { Tutor } from "@/types/tutor";
 import MessageButton from "@/components/messaging/MessageButton";
 import { useState } from "react";
 import { SchedulerModal } from "@/components/scheduling/SchedulerModal";
+import { BookSessionModal } from "@/components/scheduling/BookSessionModal";
+import { useAuthState } from "@/hooks/useAuthState";
 
 interface TutorBookingSidebarProps {
   tutor: Tutor;
@@ -13,6 +15,7 @@ interface TutorBookingSidebarProps {
 
 export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const { user } = useAuthState();
 
   // Format hourly rate with two decimal places from tutor profile
   const formattedHourlyRate = tutor.hourlyRate ? `$${tutor.hourlyRate.toFixed(2)}` : "$25.00";
@@ -68,8 +71,8 @@ export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
         </CardContent>
       </Card>
 
-      {/* Using our new SchedulerModal component */}
-      <SchedulerModal 
+      {/* Use BookSessionModal for better user experience and error handling */}
+      <BookSessionModal 
         isOpen={showBookingModal} 
         onClose={() => setShowBookingModal(false)}
         tutor={tutor}

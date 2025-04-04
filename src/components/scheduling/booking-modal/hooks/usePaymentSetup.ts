@@ -14,6 +14,7 @@ export function usePaymentSetup() {
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [isTwoStagePayment, setIsTwoStagePayment] = useState<boolean>(false);
+  const [retryCount, setRetryCount] = useState<number>(0);
   
   /**
    * Set up a payment intent for a session
@@ -84,12 +85,23 @@ export function usePaymentSetup() {
         }
       } else if (error.message && error.message.includes('rate limit')) {
         setPaymentError('Too many payment requests. Please wait a moment and try again.');
+        // Automatically retry after a delay if it's a rate limit issue
+        if (retryCount < 3) {
+          setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+          }, 3000); // Wait 3 seconds before retrying
+        }
       } else {
         setPaymentError(error.message || 'Could not set up payment. Please try again.');
       }
       
       return { success: false };
     }
+  }, [retryCount]);
+  
+  // Reset retry count
+  const resetRetryCount = useCallback(() => {
+    setRetryCount(0);
   }, []);
   
   return {
@@ -101,6 +113,8 @@ export function usePaymentSetup() {
     setPaymentError,
     isTwoStagePayment,
     setIsTwoStagePayment,
-    setupPayment
+    setupPayment,
+    retryCount,
+    resetRetryCount
   };
 }

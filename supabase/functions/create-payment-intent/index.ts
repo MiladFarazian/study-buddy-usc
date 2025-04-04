@@ -8,9 +8,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Simple rate limiting mechanism
+// Simple rate limiting mechanism with a more conservative approach
 const RATE_LIMIT_WINDOW = 60000; // 1 minute in milliseconds
-const RATE_LIMIT_MAX = 10; // Maximum allowed requests per minute
+const RATE_LIMIT_MAX = 5; // Reduced maximum allowed requests per minute
 const requestLog: Record<string, { count: number, timestamp: number }> = {};
 
 // Check if a request should be rate limited
@@ -65,13 +65,19 @@ serve(async (req) => {
   }
 
   try {
+    // Determine which Stripe secret key to use based on environment
+    const isProduction = req.headers.get('x-use-production') === 'true';
+    
     // Check if Stripe secret key is configured
-    const stripeSecretKey = Deno.env.get('STRIPE_CONNECT_SECRET_KEY');
+    const stripeSecretKey = isProduction 
+      ? Deno.env.get('STRIPE_CONNECT_LIVE_SECRET_KEY')
+      : Deno.env.get('STRIPE_CONNECT_SECRET_KEY');
+      
     if (!stripeSecretKey) {
-      console.error('Missing STRIPE_CONNECT_SECRET_KEY environment variable');
+      console.error(`Missing ${isProduction ? 'STRIPE_CONNECT_LIVE_SECRET_KEY' : 'STRIPE_CONNECT_SECRET_KEY'} environment variable`);
       return new Response(
         JSON.stringify({ 
-          error: 'Stripe configuration missing. Please set the STRIPE_CONNECT_SECRET_KEY in Supabase edge function secrets.',
+          error: `Stripe configuration missing. Please set the ${isProduction ? 'STRIPE_CONNECT_LIVE_SECRET_KEY' : 'STRIPE_CONNECT_SECRET_KEY'} in Supabase edge function secrets.`,
           code: 'stripe_config_missing'
         }),
         {
@@ -106,6 +112,7 @@ serve(async (req) => {
     
     // Implement rate limiting
     if (shouldRateLimit(clientId)) {
+      console.log(`Rate limit exceeded for session ${sessionId}`);
       return new Response(
         JSON.stringify({ 
           error: 'Too many payment requests. Please try again in a moment.',
@@ -132,7 +139,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Creating payment intent for session ${sessionId} with amount ${amount}`);
+    console.log(`Creating payment intent for session ${sessionId} with amount ${amount} (${isProduction ? 'production' : 'test'} mode)`);
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -204,9 +211,12 @@ serve(async (req) => {
     }
 
     // Get the tutor's Stripe Connect ID
+    const connectIdField = isProduction ? 'stripe_connect_live_id' : 'stripe_connect_id';
+    const onboardingCompleteField = isProduction ? 'stripe_connect_live_onboarding_complete' : 'stripe_connect_onboarding_complete';
+    
     const { data: tutorProfile, error: tutorError } = await supabaseAdmin
       .from('profiles')
-      .select('stripe_connect_id, stripe_connect_onboarding_complete, first_name, last_name')
+      .select(`${connectIdField}, ${onboardingCompleteField}, first_name, last_name`)
       .eq('id', tutorId)
       .single();
 
@@ -228,9 +238,9 @@ serve(async (req) => {
       ? `${tutorProfile.first_name} ${tutorProfile.last_name}`
       : 'Tutor';
       
-    console.log(`Processing for tutor: ${tutorName}, Connect ID: ${tutorProfile.stripe_connect_id || 'not set up'}`);
+    console.log(`Processing for tutor: ${tutorName}, Connect ID: ${tutorProfile[connectIdField] || 'not set up'}`);
 
-    const hasCompleteConnectAccount = tutorProfile.stripe_connect_id && tutorProfile.stripe_connect_onboarding_complete;
+    const hasCompleteConnectAccount = tutorProfile[connectIdField] && tutorProfile[onboardingCompleteField];
     
     // Initialize Stripe
     try {
@@ -280,18 +290,19 @@ serve(async (req) => {
             studentId,
             platformFee: platformFeeAmount,
             tutorName,
-            paymentType: 'connect_direct'
+            paymentType: 'connect_direct',
+            environment: isProduction ? 'production' : 'test'
           },
           description: description || `Tutoring session payment for ${tutorName}`,
           application_fee_amount: platformFeeAmount, // Platform fee (10%)
           transfer_data: {
-            destination: tutorProfile.stripe_connect_id, // Tutor's Connect account
+            destination: tutorProfile[connectIdField], // Tutor's Connect account
           },
           transfer_group: transferGroup, // Used to track related transfers
-          on_behalf_of: tutorProfile.stripe_connect_id, // Show in the connected account's dashboard too
+          on_behalf_of: tutorProfile[connectIdField], // Show in the connected account's dashboard too
         });
         
-        console.log(`Created Connect payment intent: ${paymentIntent.id} with transfer to: ${tutorProfile.stripe_connect_id}`);
+        console.log(`Created Connect payment intent: ${paymentIntent.id} with transfer to: ${tutorProfile[connectIdField]}`);
       } else {
         // Create a regular payment intent to the platform account
         // The funds will be transferred to the tutor later when they complete onboarding
@@ -306,7 +317,8 @@ serve(async (req) => {
             platformFee: platformFeeAmount,
             tutorName,
             paymentType: 'two_stage',
-            requiresTransfer: 'true'
+            requiresTransfer: 'true',
+            environment: isProduction ? 'production' : 'test'
           },
           description: description || `Tutoring session payment for ${tutorName} (pending tutor onboarding)`,
           transfer_group: transferGroup, // Used to track related transfers
@@ -374,7 +386,8 @@ serve(async (req) => {
           client_secret: paymentIntent.client_secret,
           amount: amount, // Keep original amount for display
           payment_transaction_id: paymentTransaction?.id,
-          two_stage_payment: isTwoStagePayment
+          two_stage_payment: isTwoStagePayment,
+          environment: isProduction ? 'production' : 'test'
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -384,11 +397,11 @@ serve(async (req) => {
     } catch (stripeError: any) {
       console.error('Stripe API error:', stripeError);
       
-      // Handle rate limiting errors specially
+      // Handle rate limiting errors specifically
       if (stripeError.code === 'rate_limit') {
         return new Response(
-          JSON.stringify({ 
-            error: 'Stripe rate limit exceeded. Please try again in a moment.',
+          JSON.stringify({
+            error: 'Stripe API rate limit exceeded. Please try again in a moment.',
             code: 'rate_limited',
             details: stripeError.message
           }),
@@ -399,15 +412,13 @@ serve(async (req) => {
         );
       }
       
-      // Handle account verification issues
-      if (stripeError.code === 'account_invalid' || 
-          stripeError.message?.includes('verification') ||
-          stripeError.message?.includes('capability')) {
+      // Handle other Stripe-specific errors
+      if (stripeError.type === 'StripeCardError') {
         return new Response(
-          JSON.stringify({ 
-            error: 'Tutor account requires verification. Please try a different tutor.',
-            code: 'connect_verification_required',
-            details: stripeError.message
+          JSON.stringify({
+            error: stripeError.message,
+            code: stripeError.code,
+            decline_code: stripeError.decline_code
           }),
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -416,11 +427,11 @@ serve(async (req) => {
         );
       }
       
+      // Generic error handling
       return new Response(
-        JSON.stringify({ 
-          error: 'Stripe API error. Please check your Stripe configuration and try again.',
-          code: 'stripe_api_error',
-          details: stripeError.message
+        JSON.stringify({
+          error: stripeError.message || 'An error occurred while processing the payment',
+          code: stripeError.code || 'unknown_error'
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -429,10 +440,12 @@ serve(async (req) => {
       );
     }
   } catch (error: any) {
-    console.error('Error processing request:', error);
+    console.error('Unexpected error in payment intent creation:', error);
+    
     return new Response(
-      JSON.stringify({ 
-        error: error.message || 'Failed to create payment intent',
+      JSON.stringify({
+        error: error.message || 'An unexpected error occurred',
+        stack: error.stack,
         code: 'server_error'
       }),
       {

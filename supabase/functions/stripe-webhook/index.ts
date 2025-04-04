@@ -38,11 +38,11 @@ serve(async (req) => {
     console.log(`Processing webhook in ${environment} mode`);
     
     // Get the appropriate keys based on environment
-    const stripeSecretKey = isProduction()
-      ? Deno.env.get('STRIPE_LIVE_SECRET_KEY') || Deno.env.get('STRIPE_CONNECT_LIVE_SECRET_KEY')
+    const stripeSecretKey = environment === 'production'
+      ? Deno.env.get('STRIPE_CONNECT_LIVE_SECRET_KEY') 
       : Deno.env.get('STRIPE_CONNECT_SECRET_KEY');
       
-    const webhookSecret = isProduction()
+    const webhookSecret = environment === 'production'
       ? Deno.env.get('STRIPE_LIVE_WEBHOOK_SECRET')
       : Deno.env.get('STRIPE_WEBHOOK_SECRET');
       
@@ -51,8 +51,8 @@ serve(async (req) => {
 
     // Validate all required environment variables are present
     const missingEnvVars = [];
-    if (!stripeSecretKey) missingEnvVars.push(isProduction() ? 'STRIPE_CONNECT_LIVE_SECRET_KEY' : 'STRIPE_CONNECT_SECRET_KEY');
-    if (!webhookSecret) missingEnvVars.push(isProduction() ? 'STRIPE_LIVE_WEBHOOK_SECRET' : 'STRIPE_WEBHOOK_SECRET');
+    if (!stripeSecretKey) missingEnvVars.push(environment === 'production' ? 'STRIPE_CONNECT_LIVE_SECRET_KEY' : 'STRIPE_CONNECT_SECRET_KEY');
+    if (!webhookSecret) missingEnvVars.push(environment === 'production' ? 'STRIPE_LIVE_WEBHOOK_SECRET' : 'STRIPE_WEBHOOK_SECRET');
     if (!supabaseUrl) missingEnvVars.push('SUPABASE_URL');
     if (!supabaseServiceKey) missingEnvVars.push('SUPABASE_SERVICE_ROLE_KEY');
 

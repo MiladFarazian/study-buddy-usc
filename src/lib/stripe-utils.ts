@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 // Cache for Stripe instance
@@ -10,6 +11,9 @@ let stripeLoadFailureCount = 0;
 let lastStripeLoadError: string | null = null;
 // Detected environment
 let stripeEnvironment: string | null = null;
+// Exponential backoff for retries
+let lastStripeApiCallTime = 0;
+const MIN_API_CALL_INTERVAL = 1000; // 1 second between API calls to prevent rate limiting
 
 // Initialize Stripe
 export const initializeStripe = () => {
@@ -112,6 +116,11 @@ export const getStripeEnvironment = (): string => {
   return stripeEnvironment || 'test';
 };
 
+// Check if we're in production mode
+export const isProductionMode = (): boolean => {
+  return stripeEnvironment === 'production';
+};
+
 export interface StripePaymentIntent {
   id: string;
   client_secret: string;
@@ -119,9 +128,24 @@ export interface StripePaymentIntent {
   two_stage_payment?: boolean;
 }
 
+// Implement a simple rate-limiting guard
+const rateLimitGuard = async (): Promise<void> => {
+  const now = Date.now();
+  const timeSinceLastCall = now - lastStripeApiCallTime;
+  
+  if (timeSinceLastCall < MIN_API_CALL_INTERVAL) {
+    // Wait for the remaining time
+    const waitTime = MIN_API_CALL_INTERVAL - timeSinceLastCall;
+    await new Promise(resolve => setTimeout(resolve, waitTime));
+  }
+  
+  lastStripeApiCallTime = Date.now();
+};
+
 // Find existing payment intent for session
 export const findExistingPaymentIntent = async (sessionId: string): Promise<StripePaymentIntent | null> => {
   try {
+    await rateLimitGuard();
     console.log("Checking for existing payment intent for session:", sessionId);
     
     const { data, error } = await supabase
@@ -174,6 +198,7 @@ export const createPaymentIntent = async (
   description: string
 ): Promise<StripePaymentIntent> => {
   try {
+    await rateLimitGuard();
     console.log("Creating payment intent:", { sessionId, amount, tutorId, studentId, description });
     
     // First check if there's an existing payment intent for this session
@@ -198,6 +223,12 @@ export const createPaymentIntent = async (
       description
     };
     
+    // Add production flag if in production mode
+    const headers: Record<string, string> = {};
+    if (isProductionMode()) {
+      headers['x-use-production'] = 'true';
+    }
+    
     console.log("Sending payment intent request with payload:", payload);
     
     // Add backoff retry logic
@@ -208,7 +239,8 @@ export const createPaymentIntent = async (
     while (retries <= maxRetries) {
       try {
         const { data, error } = await supabase.functions.invoke('create-payment-intent', {
-          body: payload
+          body: payload,
+          headers
         });
 
         if (error) {
