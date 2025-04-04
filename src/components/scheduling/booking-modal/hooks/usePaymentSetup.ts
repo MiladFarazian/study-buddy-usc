@@ -20,8 +20,11 @@ export function usePaymentSetup() {
   // Use ref to prevent multiple simultaneous requests
   const requestInProgress = useRef<boolean>(false);
   
+  // Track the last session ID to avoid duplicate requests
+  const lastSessionId = useRef<string | null>(null);
+  
   /**
-   * Set up a payment intent for a session
+   * Set up a payment intent for a session with improved error handling
    */
   const setupPayment = useCallback(async (
     sessionId: string, 
@@ -31,6 +34,15 @@ export function usePaymentSetup() {
   ) => {
     if (!user || !sessionId) {
       return { success: false };
+    }
+    
+    // Check if this is a duplicate request for the same session
+    if (sessionId === lastSessionId.current && clientSecret) {
+      console.log('Payment setup already completed for this session, returning cached result');
+      return { 
+        success: true, 
+        isTwoStagePayment 
+      };
     }
     
     // Prevent multiple simultaneous requests
@@ -46,24 +58,33 @@ export function usePaymentSetup() {
     try {
       console.log(`Setting up payment for session ${sessionId} with amount ${amount}`);
       
+      // Store session ID to track duplicates
+      lastSessionId.current = sessionId;
+      
       const paymentIntent = await createPaymentIntent(
         sessionId,
         amount,
         tutor.id,
         user.id,
-        `Tutoring session with ${tutor.name} (${sessionId})`
+        `Tutoring session with ${tutor.name} (${sessionId})`,
+        retryCount > 0 // Force two-stage payment on retry
       );
       
-      setClientSecret(paymentIntent.client_secret);
-      setPaymentAmount(amount);
-      setIsTwoStagePayment(!!paymentIntent.two_stage_payment);
-      
-      requestInProgress.current = false;
-      setIsProcessing(false);
-      return { 
-        success: true, 
-        isTwoStagePayment: !!paymentIntent.two_stage_payment 
-      };
+      if (paymentIntent) {
+        console.log('Payment intent created successfully:', paymentIntent);
+        setClientSecret(paymentIntent.client_secret);
+        setPaymentAmount(amount);
+        setIsTwoStagePayment(!!paymentIntent.two_stage_payment);
+        
+        requestInProgress.current = false;
+        setIsProcessing(false);
+        return { 
+          success: true, 
+          isTwoStagePayment: !!paymentIntent.two_stage_payment 
+        };
+      } else {
+        throw new Error('Empty response from payment intent creation');
+      }
     } catch (error: any) {
       console.error('Payment setup error:', error);
       
@@ -77,7 +98,7 @@ export function usePaymentSetup() {
       )) {
         // Try again to create a two-stage payment intent
         try {
-          // The server should now create a direct platform payment
+          // Force two-stage payment
           const retryResult = await createPaymentIntent(
             sessionId,
             amount,
@@ -87,53 +108,57 @@ export function usePaymentSetup() {
             true // Force two-stage payment
           );
           
-          setClientSecret(retryResult.client_secret);
-          setPaymentAmount(amount);
-          setIsTwoStagePayment(true);
-          
-          requestInProgress.current = false;
-          setIsProcessing(false);
-          return { 
-            success: true, 
-            isTwoStagePayment: true
-          };
+          if (retryResult) {
+            console.log('Created two-stage payment intent as fallback:', retryResult);
+            setClientSecret(retryResult.client_secret);
+            setPaymentAmount(amount);
+            setIsTwoStagePayment(true);
+            
+            requestInProgress.current = false;
+            setIsProcessing(false);
+            return { 
+              success: true, 
+              isTwoStagePayment: true
+            };
+          }
         } catch (retryError: any) {
           console.error('Retry payment setup error:', retryError);
-          setPaymentError(retryError.message || 'Could not set up payment. Please try again.');
-          
-          requestInProgress.current = false;
-          setIsProcessing(false);
-          return { success: false };
+          setPaymentError('Could not set up payment. Please try again in a moment.');
         }
       } else if (error.message && error.message.includes('rate limit')) {
         setPaymentError('Too many payment requests. Please wait a moment and try again.');
         
-        // Automatically retry after a delay with exponential backoff
-        if (retryCount < 3) {
-          const retryDelay = Math.min(2000 * Math.pow(2, retryCount), 10000); // Max 10 seconds
-          console.log(`Will retry in ${retryDelay}ms (attempt ${retryCount + 1})`);
-          
-          setTimeout(() => {
-            setRetryCount(prev => prev + 1);
-            requestInProgress.current = false;
-          }, retryDelay);
-        } else {
+        // Set a reasonable delay to prevent overwhelming the API
+        const retryDelay = Math.min(2000 * Math.pow(2, retryCount), 10000); // Max 10 seconds
+        console.log(`Will retry automatically after ${retryDelay}ms`);
+        
+        // Auto-retry after delay
+        setTimeout(() => {
+          console.log('Attempting automatic retry...');
+          setRetryCount(prev => prev + 1);
           requestInProgress.current = false;
-        }
+          setupPayment(sessionId, amount, tutor, user);
+        }, retryDelay);
       } else {
+        // Handle other errors
         setPaymentError(error.message || 'Could not set up payment. Please try again.');
-        requestInProgress.current = false;
       }
       
+      requestInProgress.current = false;
       setIsProcessing(false);
       return { success: false };
     }
-  }, [retryCount]);
+  }, [retryCount, clientSecret, isTwoStagePayment]);
   
-  // Reset retry count
-  const resetRetryCount = useCallback(() => {
+  // Reset all state
+  const resetPaymentSetup = useCallback(() => {
+    setClientSecret(null);
+    setPaymentAmount(0);
+    setPaymentError(null);
+    setIsTwoStagePayment(false);
     setRetryCount(0);
     requestInProgress.current = false;
+    lastSessionId.current = null;
   }, []);
   
   return {
@@ -147,7 +172,7 @@ export function usePaymentSetup() {
     setIsTwoStagePayment,
     setupPayment,
     retryCount,
-    resetRetryCount,
+    resetPaymentSetup,
     isProcessing
   };
 }

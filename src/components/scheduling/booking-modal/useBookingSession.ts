@@ -43,6 +43,7 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
     isTwoStagePayment,
     setIsTwoStagePayment,
     setupPayment,
+    resetPaymentSetup,
     isProcessing
   } = usePaymentSetup();
   
@@ -56,14 +57,12 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
         resetBookingFlow();
         setSelectedSlot(null);
         setSessionId(null);
-        setClientSecret(null);
-        setPaymentError(null);
+        resetPaymentSetup();
         setCreatingSession(false);
-        setIsTwoStagePayment(false);
         setupInProgress.current = false;
       }, 300); // slight delay to avoid visual glitches
     }
-  }, [isOpen, resetBookingFlow, setSelectedSlot, setSessionId, setClientSecret, setPaymentError, setCreatingSession, setIsTwoStagePayment]);
+  }, [isOpen, resetBookingFlow, setSelectedSlot, setSessionId, resetPaymentSetup, setCreatingSession]);
   
   // Handle slot selection
   const handleSlotSelect = useCallback(async (slot: BookingSlot) => {
@@ -130,6 +129,9 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
     
     // After a short delay, close the modal
     setTimeout(() => {
+      toast("Booking Successful", {
+        description: "Your tutoring session has been booked successfully!"
+      });
       onClose();
     }, 3000);
   }, [onClose, setStep]);
@@ -149,8 +151,8 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
       const hourlyRate = tutor.hourlyRate || 50;
       const amount = calculatePaymentAmount(selectedSlot, hourlyRate);
       
-      // Try payment setup again
-      setupPayment(sessionId, amount, tutor, user)
+      // Try payment setup again, forcing two-stage payment as a fallback
+      setupPayment(sessionId, amount, tutor, user, true)
         .then(result => {
           // Set two-stage payment flag based on the result
           if (result && result.isTwoStagePayment !== undefined) {

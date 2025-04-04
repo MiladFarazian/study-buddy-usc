@@ -11,12 +11,13 @@ let stripeLoadFailureCount = 0;
 let lastStripeLoadError: string | null = null;
 // Detected environment
 let stripeEnvironment: string | null = null;
-// Exponential backoff for retries
+// Better rate limit handling
 let lastStripeApiCallTime = 0;
-const MIN_API_CALL_INTERVAL = 1000; // 1 second between API calls to prevent rate limiting
+const MIN_API_CALL_INTERVAL = 1500; // 1.5 second between API calls to prevent rate limiting
+const BACKOFF_MULTIPLIER = 2; // Exponential backoff multiplier for retries
 
-// Initialize Stripe
-export const initializeStripe = () => {
+// Initialize Stripe with better error handling
+export const initializeStripe = async () => {
   if (stripePromise) {
     return stripePromise;
   }
@@ -76,7 +77,8 @@ export const initializeStripe = () => {
         // Add Stripe.js if it's not loaded yet
         const script = document.createElement('script');
         script.src = 'https://js.stripe.com/v3/';
-        script.async = true; // Add async loading
+        script.async = true;
+        
         script.onload = () => {
           console.log(`Stripe script loaded successfully (${stripeEnvironment} mode)`);
           isLoadingStripe = false;
@@ -84,6 +86,7 @@ export const initializeStripe = () => {
           lastStripeLoadError = null;
           resolve((window as any).Stripe(publishableKey));
         };
+        
         script.onerror = (err) => {
           console.error("Failed to load Stripe.js", err);
           isLoadingStripe = false;
@@ -92,6 +95,7 @@ export const initializeStripe = () => {
           lastStripeLoadError = 'Failed to load Stripe.js script';
           reject(new Error(lastStripeLoadError));
         };
+        
         document.body.appendChild(script);
       }
     } catch (err: any) {
@@ -128,14 +132,18 @@ export interface StripePaymentIntent {
   two_stage_payment?: boolean;
 }
 
-// Implement a simple rate-limiting guard
-const rateLimitGuard = async (): Promise<void> => {
+// Implement a smarter rate-limiting guard with exponential backoff
+const rateLimitGuard = async (retryCount: number = 0): Promise<void> => {
   const now = Date.now();
   const timeSinceLastCall = now - lastStripeApiCallTime;
   
-  if (timeSinceLastCall < MIN_API_CALL_INTERVAL) {
+  // Calculate delay with exponential backoff if retries are happening
+  const minDelay = MIN_API_CALL_INTERVAL * Math.pow(BACKOFF_MULTIPLIER, retryCount);
+  
+  if (timeSinceLastCall < minDelay) {
     // Wait for the remaining time
-    const waitTime = MIN_API_CALL_INTERVAL - timeSinceLastCall;
+    const waitTime = minDelay - timeSinceLastCall;
+    console.log(`Rate limiting - waiting ${waitTime}ms before API call (retry #${retryCount})`);
     await new Promise(resolve => setTimeout(resolve, waitTime));
   }
   
@@ -189,7 +197,7 @@ export const findExistingPaymentIntent = async (sessionId: string): Promise<Stri
   }
 };
 
-// Create a payment intent via Supabase Edge Function
+// Create a payment intent via Supabase Edge Function with improved error handling and retries
 export const createPaymentIntent = async (
   sessionId: string,
   amount: number,
@@ -198,109 +206,123 @@ export const createPaymentIntent = async (
   description: string,
   forceTwoStage: boolean = false
 ): Promise<StripePaymentIntent> => {
-  try {
-    await rateLimitGuard();
-    console.log("Creating payment intent:", { sessionId, amount, tutorId, studentId, description, forceTwoStage });
-    
-    // First check if there's an existing payment intent for this session
-    const existingIntent = await findExistingPaymentIntent(sessionId);
-    if (existingIntent) {
-      console.log("Using existing payment intent:", existingIntent.id);
-      return existingIntent;
-    }
-    
-    // Ensure amount is a number and valid
-    const amountInDollars = parseFloat(amount.toString());
-    
-    if (isNaN(amountInDollars) || amountInDollars <= 0) {
-      throw new Error("Invalid amount: must be a positive number");
-    }
-    
-    const payload = {
-      sessionId,
-      amount: amountInDollars, // Send as a number
-      tutorId,
-      studentId,
-      description,
-      forceTwoStage // Add this parameter to force two-stage payment if needed
-    };
-    
-    // Add production flag if in production mode
-    const headers: Record<string, string> = {};
-    if (isProductionMode()) {
-      headers['x-use-production'] = 'true';
-    }
-    
-    console.log("Sending payment intent request with payload:", payload);
-    
-    // Add backoff retry logic
-    let retries = 0;
-    const maxRetries = 3;
-    const baseDelay = 1000; // 1 second
-    
-    while (retries <= maxRetries) {
-      try {
-        const { data, error } = await supabase.functions.invoke('create-payment-intent', {
-          body: payload,
-          headers
-        });
-
-        if (error) {
-          throw error;
+  // Maximum number of retries
+  const maxRetries = 3;
+  
+  // Helper function for exponential backoff retry
+  const executeWithRetry = async (attempt: number = 0): Promise<StripePaymentIntent> => {
+    try {
+      // Apply rate limiting with backoff based on attempt number
+      await rateLimitGuard(attempt);
+      
+      console.log(`Creating payment intent (attempt ${attempt + 1}/${maxRetries + 1}):`, 
+        { sessionId, amount, tutorId, studentId, description, forceTwoStage });
+      
+      // Check for existing payment intent first
+      if (attempt === 0) { // Only check on first attempt to avoid infinite loops
+        const existingIntent = await findExistingPaymentIntent(sessionId);
+        if (existingIntent) {
+          console.log("Using existing payment intent:", existingIntent.id);
+          return existingIntent;
         }
-        
-        if (!data) {
-          throw new Error('No data returned from create-payment-intent function');
-        }
-        
-        // Check if the response contains an error with rate limiting
-        if (data.error && data.code === 'rate_limited') {
-          throw new Error(`Rate limited: ${data.error}`);
-        }
-        
-        // Check if the response contains any other error message from the edge function
-        if (data.error) {
-          throw new Error(data.error.message || data.error);
-        }
-        
-        console.log("Payment intent created successfully:", data);
-        return data as StripePaymentIntent;
-      } catch (error: any) {
-        // Format and check error type
-        const errorMessage = error.message || 'Unknown error';
-        
-        // Check if we should retry based on error type
-        const isRateLimit = errorMessage.includes("rate limit") || 
-                           errorMessage.includes("Rate limit") ||
-                           errorMessage.includes("Too many requests");
-        
-        if (isRateLimit && retries < maxRetries) {
-          retries++;
-          const delay = baseDelay * Math.pow(2, retries);
-          console.log(`Rate limit hit. Retrying in ${delay}ms (attempt ${retries}/${maxRetries})`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          continue;
-        }
-        
-        // Check if the error indicates missing Stripe Connect setup
-        if (errorMessage.includes("payment account") || 
-            errorMessage.includes("Stripe Connect") ||
-            errorMessage.includes("not completed") ||
-            errorMessage.includes("Stripe API error")) {
-          console.error('Tutor Stripe Connect setup error:', errorMessage);
-          throw new Error("The tutor's payment account setup is incomplete. Please check tutor settings or try another tutor.");
-        }
-        
-        console.error('Error creating payment intent:', error);
-        throw error;
       }
+      
+      // Validate amount
+      const amountInDollars = parseFloat(amount.toString());
+      if (isNaN(amountInDollars) || amountInDollars <= 0) {
+        throw new Error("Invalid amount: must be a positive number");
+      }
+      
+      const payload = {
+        sessionId,
+        amount: amountInDollars,
+        tutorId,
+        studentId,
+        description,
+        forceTwoStage
+      };
+      
+      // Add production flag if in production mode
+      const headers: Record<string, string> = {};
+      if (isProductionMode()) {
+        headers['x-use-production'] = 'true';
+      }
+      
+      console.log("Sending payment intent request with payload:", payload);
+      
+      const { data, error } = await supabase.functions.invoke('create-payment-intent', {
+        body: payload,
+        headers
+      });
+
+      if (error) {
+        console.error("Edge function error:", error);
+        throw new Error(`Edge function error: ${error.message}`);
+      }
+      
+      if (!data) {
+        throw new Error('No data returned from create-payment-intent function');
+      }
+      
+      // Check if the response contains an error with rate limiting
+      if (data.error && data.code === 'rate_limited') {
+        throw new Error(`Rate limited: ${data.error}`);
+      }
+      
+      // Check if the response contains any other error message from the edge function
+      if (data.error) {
+        throw new Error(data.error.message || data.error);
+      }
+      
+      console.log("Payment intent created successfully:", data);
+      return data as StripePaymentIntent;
+      
+    } catch (error: any) {
+      // Format and check error type
+      const errorMessage = error.message || 'Unknown error';
+      
+      // Check if we should retry based on error type
+      const isRateLimit = errorMessage.includes("rate limit") || 
+                         errorMessage.includes("Rate limit") ||
+                         errorMessage.includes("Too many requests") ||
+                         errorMessage.includes("429");
+      
+      const isNetworkError = errorMessage.includes("Failed to fetch") ||
+                           errorMessage.includes("network") ||
+                           errorMessage.includes("Network Error");
+      
+      const shouldRetry = (isRateLimit || isNetworkError) && attempt < maxRetries;
+      
+      if (shouldRetry) {
+        const delay = MIN_API_CALL_INTERVAL * Math.pow(BACKOFF_MULTIPLIER, attempt);
+        console.log(`API call failed with ${isRateLimit ? 'rate limit' : 'network'} error. Retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return executeWithRetry(attempt + 1);
+      }
+      
+      // Check if the error indicates missing Stripe Connect setup
+      if (errorMessage.includes("payment account") || 
+          errorMessage.includes("Stripe Connect") ||
+          errorMessage.includes("not completed") ||
+          errorMessage.includes("not set up")) {
+        console.error('Tutor Stripe Connect setup error:', errorMessage);
+        
+        // If this is the final attempt and we haven't forced two-stage payment yet, try with forceTwoStage=true
+        if (attempt === maxRetries && !forceTwoStage) {
+          console.log("Trying one last attempt with forceTwoStage=true");
+          return createPaymentIntent(sessionId, amount, tutorId, studentId, description, true);
+        }
+        
+        throw new Error("The tutor's payment account setup is incomplete. Payment will be collected now and transferred to them later.");
+      }
+      
+      console.error('Error creating payment intent:', error);
+      throw error;
     }
-    
-    throw new Error('Maximum retry attempts exceeded');
-  } catch (error) {
-    console.error('Error creating payment intent:', error);
-    throw error;
-  }
+  };
+  
+  // Start the retry process
+  return executeWithRetry();
 };
 
 // Process a payment with Stripe

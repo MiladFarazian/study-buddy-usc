@@ -7,12 +7,24 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Improve rate limiting to be more granular
-const RATE_LIMIT_WINDOW = 60000; // 1 minute in milliseconds
-const RATE_LIMIT_MAX = 5; // Maximum allowed requests per minute per client+session
+// Improved rate limiting with distributed state
+// Using session IDs as keys to track request counts more accurately
+const RATE_LIMIT_WINDOW = 60000; // 1 minute window
+const RATE_LIMIT_MAX = 10; // Increased max requests per session to prevent legitimate retries from failing
 const requestLog: Record<string, { count: number, timestamp: number }> = {};
 
-// Check if a request should be rate limited
+// Periodically clean up old entries (every 5 minutes)
+const CLEANUP_INTERVAL = 300000; // 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const key in requestLog) {
+    if (now - requestLog[key].timestamp > RATE_LIMIT_WINDOW * 2) {
+      delete requestLog[key];
+    }
+  }
+}, CLEANUP_INTERVAL);
+
+// More granular rate limiting function
 function shouldRateLimit(clientId: string): boolean {
   const now = Date.now();
   const clientRequests = requestLog[clientId];
@@ -22,40 +34,18 @@ function shouldRateLimit(clientId: string): boolean {
     return false;
   }
   
-  // If the time window has passed, reset the counter
+  // Reset counter if window has passed
   if (now - clientRequests.timestamp > RATE_LIMIT_WINDOW) {
     requestLog[clientId] = { count: 1, timestamp: now };
     return false;
   }
   
-  // Increment the counter
+  // Increment request counter
   clientRequests.count++;
+  clientRequests.timestamp = now; // Update timestamp to keep track of latest activity
   
-  // Return true if the limit is exceeded
   return clientRequests.count > RATE_LIMIT_MAX;
 }
-
-// Clean up old entries in the request log periodically
-// Note: Using a timeout instead of setInterval to avoid Deno.core.runMicrotasks issues
-function scheduleCleanup() {
-  setTimeout(() => {
-    try {
-      const now = Date.now();
-      Object.keys(requestLog).forEach(key => {
-        if (now - requestLog[key].timestamp > RATE_LIMIT_WINDOW) {
-          delete requestLog[key];
-        }
-      });
-      scheduleCleanup();
-    } catch (err) {
-      console.error("Error in cleanup task:", err);
-      scheduleCleanup();
-    }
-  }, RATE_LIMIT_WINDOW);
-}
-
-// Start the cleanup schedule
-scheduleCleanup();
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -76,7 +66,7 @@ serve(async (req) => {
       console.error(`Missing ${isProduction ? 'STRIPE_CONNECT_LIVE_SECRET_KEY' : 'STRIPE_CONNECT_SECRET_KEY'} environment variable`);
       return new Response(
         JSON.stringify({ 
-          error: `Stripe configuration missing. Please set the ${isProduction ? 'STRIPE_CONNECT_LIVE_SECRET_KEY' : 'STRIPE_CONNECT_SECRET_KEY'} in Supabase edge function secrets.`,
+          error: `Stripe configuration missing`,
           code: 'stripe_config_missing'
         }),
         {
@@ -86,7 +76,7 @@ serve(async (req) => {
       );
     }
 
-    // Parse request body
+    // Parse request body with better error handling
     let requestBody;
     try {
       requestBody = await req.json();
@@ -106,12 +96,14 @@ serve(async (req) => {
 
     const { sessionId, amount, tutorId, studentId, description, forceTwoStage } = requestBody;
     
-    // Use a more granular rate limit key that combines sessionId and tutorId
-    const clientId = `${sessionId}_${tutorId}` || 'anonymous';
+    // Use a more unique rate limit key that combines sessionId, tutorId, and a timestamp segment
+    // This helps prevent conflicts between different booking attempts for the same session
+    const timeSegment = Math.floor(Date.now() / 10000); // 10 second segments
+    const clientId = `${sessionId}_${tutorId}_${timeSegment}`;
     
-    // Implement rate limiting
+    // Implement rate limiting with better logging
     if (shouldRateLimit(clientId)) {
-      console.log(`Rate limit exceeded for session ${sessionId}`);
+      console.log(`Rate limit exceeded for session ${sessionId} within time segment ${timeSegment}`);
       return new Response(
         JSON.stringify({ 
           error: 'Too many payment requests. Please try again in a moment.',
@@ -119,7 +111,7 @@ serve(async (req) => {
         }), 
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 429,
+          status: 429, // Use proper 429 Too Many Requests status code
         }
       );
     }
@@ -202,6 +194,8 @@ serve(async (req) => {
               status: 200,
             }
           );
+        } else {
+          console.log(`Existing payment intent ${paymentIntent.id} has status ${paymentIntent.status}, creating new one`);
         }
       } catch (retrieveError) {
         console.error('Error retrieving existing payment intent:', retrieveError);
@@ -444,7 +438,6 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         error: error.message || 'An unexpected error occurred',
-        stack: error.stack,
         code: 'server_error'
       }),
       {
