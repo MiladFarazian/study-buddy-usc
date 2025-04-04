@@ -30,7 +30,8 @@ export function usePaymentSetup() {
     sessionId: string, 
     amount: number,
     tutor: Tutor,
-    user: User | null
+    user: User | null,
+    forceTwoStage: boolean = false // Make forceTwoStage an optional parameter with default value
   ) => {
     if (!user || !sessionId) {
       return { success: false };
@@ -67,7 +68,7 @@ export function usePaymentSetup() {
         tutor.id,
         user.id,
         `Tutoring session with ${tutor.name} (${sessionId})`,
-        retryCount > 0 // Force two-stage payment on retry
+        forceTwoStage // Use the parameter
       );
       
       if (paymentIntent) {
