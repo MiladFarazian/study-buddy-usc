@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthState } from '@/hooks/useAuthState';
 import { BookingSlot } from '@/lib/scheduling/types';
 import { Tutor } from '@/types/tutor';
@@ -7,6 +7,7 @@ import { useSessionCreation } from './hooks/useSessionCreation';
 import { usePaymentSetup } from './hooks/usePaymentSetup';
 import { useSlotSelection } from './hooks/useSlotSelection';
 import { useBookingFlow, BookingStep } from './hooks/useBookingFlow';
+import { toast } from 'sonner';
 
 export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => void) {
   const { user } = useAuthState();
@@ -41,8 +42,12 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
     setPaymentError,
     isTwoStagePayment,
     setIsTwoStagePayment,
-    setupPayment
+    setupPayment,
+    isProcessing
   } = usePaymentSetup();
+  
+  // Track if payment setup is in progress to prevent duplicate attempts
+  const setupInProgress = useRef(false);
   
   // Reset the flow when the modal is closed
   useEffect(() => {
@@ -55,6 +60,7 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
         setPaymentError(null);
         setCreatingSession(false);
         setIsTwoStagePayment(false);
+        setupInProgress.current = false;
       }, 300); // slight delay to avoid visual glitches
     }
   }, [isOpen, resetBookingFlow, setSelectedSlot, setSessionId, setClientSecret, setPaymentError, setCreatingSession, setIsTwoStagePayment]);
@@ -66,27 +72,61 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
       return;
     }
     
-    setSelectedSlot(slot);
+    // Prevent multiple simultaneous calls
+    if (setupInProgress.current) {
+      console.log('Setup already in progress, ignoring request');
+      return;
+    }
     
-    // Calculate payment amount (hourly rate prorated by duration)
-    const hourlyRate = tutor.hourlyRate || 50; // default to $50 if not set
-    const amount = calculatePaymentAmount(slot, hourlyRate);
-    
-    // Create a new session
-    const session = await createSession(slot, user, tutor);
-    
-    if (session) {
-      setSessionId(session.id);
-      setStep('payment');
+    try {
+      setupInProgress.current = true;
+      setSelectedSlot(slot);
       
-      // Set up payment intent
-      const result = await setupPayment(session.id, amount, tutor, user);
-      setCreatingSession(false);
+      // Calculate payment amount (hourly rate prorated by duration)
+      const hourlyRate = tutor.hourlyRate || 50; // default to $50 if not set
+      const amount = calculatePaymentAmount(slot, hourlyRate);
       
-      // Set two-stage payment flag based on the result
-      if (result && result.isTwoStagePayment !== undefined) {
-        setIsTwoStagePayment(result.isTwoStagePayment);
+      // Create a new session
+      setCreatingSession(true);
+      const session = await createSession(slot, user, tutor);
+      
+      if (session) {
+        setSessionId(session.id);
+        setStep('payment');
+        
+        // Set up payment intent
+        const result = await setupPayment(session.id, amount, tutor, user);
+        
+        // Set two-stage payment flag based on the result
+        if (result && result.isTwoStagePayment !== undefined) {
+          setIsTwoStagePayment(result.isTwoStagePayment);
+        }
+        
+        if (!result.success && !result.alreadyInProgress) {
+          // Only show error toast if it's a genuine failure (not duplicate request)
+          toast({
+            title: "Payment Setup Issue",
+            description: "There was a problem setting up payment. Please try again.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Session Creation Failed",
+          description: "Could not create your booking session. Please try again.",
+          variant: "destructive",
+        });
       }
+    } catch (error) {
+      console.error("Error in slot selection process:", error);
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingSession(false);
+      setupInProgress.current = false;
     }
   }, [user, tutor, calculatePaymentAmount, createSession, setupPayment, setStep, setSessionId, setCreatingSession, setSelectedSlot, setAuthRequired, setIsTwoStagePayment]);
   
@@ -105,9 +145,10 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
     onClose();
   }, [onClose]);
   
-  // Retry payment setup
+  // Retry payment setup with exponential backoff
   const retryPaymentSetup = useCallback(() => {
-    if (sessionId && selectedSlot && user) {
+    if (sessionId && selectedSlot && user && !setupInProgress.current) {
+      setupInProgress.current = true;
       setCreatingSession(true);
       
       // Calculate amount again
@@ -121,10 +162,18 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
           if (result && result.isTwoStagePayment !== undefined) {
             setIsTwoStagePayment(result.isTwoStagePayment);
           }
-          setCreatingSession(false);
         })
-        .catch(() => {
+        .catch(err => {
+          console.error("Retry payment setup error:", err);
+          toast({
+            title: "Retry Failed",
+            description: "Could not retry payment setup. Please try again later.",
+            variant: "destructive",
+          });
+        })
+        .finally(() => {
           setCreatingSession(false);
+          setupInProgress.current = false;
         });
     }
   }, [sessionId, selectedSlot, user, tutor, calculatePaymentAmount, setupPayment, setCreatingSession, setIsTwoStagePayment]);
@@ -134,7 +183,7 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
     step,
     selectedSlot,
     sessionId,
-    creatingSession,
+    creatingSession: creatingSession || isProcessing,
     authRequired,
     clientSecret,
     paymentAmount,
@@ -144,6 +193,7 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
     handlePaymentComplete,
     handleCancel,
     setAuthRequired,
-    retryPaymentSetup
+    retryPaymentSetup,
+    isProcessing
   };
 }

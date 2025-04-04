@@ -195,11 +195,12 @@ export const createPaymentIntent = async (
   amount: number,
   tutorId: string,
   studentId: string,
-  description: string
+  description: string,
+  forceTwoStage: boolean = false
 ): Promise<StripePaymentIntent> => {
   try {
     await rateLimitGuard();
-    console.log("Creating payment intent:", { sessionId, amount, tutorId, studentId, description });
+    console.log("Creating payment intent:", { sessionId, amount, tutorId, studentId, description, forceTwoStage });
     
     // First check if there's an existing payment intent for this session
     const existingIntent = await findExistingPaymentIntent(sessionId);
@@ -220,7 +221,8 @@ export const createPaymentIntent = async (
       amount: amountInDollars, // Send as a number
       tutorId,
       studentId,
-      description
+      description,
+      forceTwoStage // Add this parameter to force two-stage payment if needed
     };
     
     // Add production flag if in production mode

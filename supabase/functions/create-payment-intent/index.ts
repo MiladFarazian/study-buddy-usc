@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.23.0';
 import Stripe from 'https://esm.sh/stripe@12.13.0?target=deno';
@@ -8,9 +7,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Simple rate limiting mechanism with a more conservative approach
+// Improve rate limiting to be more granular
 const RATE_LIMIT_WINDOW = 60000; // 1 minute in milliseconds
-const RATE_LIMIT_MAX = 5; // Reduced maximum allowed requests per minute
+const RATE_LIMIT_MAX = 5; // Maximum allowed requests per minute per client+session
 const requestLog: Record<string, { count: number, timestamp: number }> = {};
 
 // Check if a request should be rate limited
@@ -105,10 +104,10 @@ serve(async (req) => {
       );
     }
 
-    const { sessionId, amount, tutorId, studentId, description } = requestBody;
+    const { sessionId, amount, tutorId, studentId, description, forceTwoStage } = requestBody;
     
-    // Client identifier for rate limiting - using session ID
-    const clientId = sessionId || 'anonymous';
+    // Use a more granular rate limit key that combines sessionId and tutorId
+    const clientId = `${sessionId}_${tutorId}` || 'anonymous';
     
     // Implement rate limiting
     if (shouldRateLimit(clientId)) {
@@ -273,12 +272,12 @@ serve(async (req) => {
       const transferGroup = `session_${sessionId}`;
       
       // Create a payment intent
-      // If tutor has completed onboarding, create with Connect parameters
+      // If tutor has completed onboarding and we're not forcing two-stage, create with Connect parameters
       // Otherwise, create a regular payment intent to the platform
       let paymentIntent;
       let isTwoStagePayment = false;
       
-      if (hasCompleteConnectAccount) {
+      if (hasCompleteConnectAccount && !forceTwoStage) {
         // Create a standard Connect payment intent with immediate transfer
         paymentIntent = await stripe.paymentIntents.create({
           amount: amountInCents,
