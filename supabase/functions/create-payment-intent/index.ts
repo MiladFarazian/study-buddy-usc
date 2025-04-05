@@ -1,15 +1,16 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.23.0';
 import Stripe from 'https://esm.sh/stripe@12.13.0?target=deno';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-use-production',
 };
 
 // Improved rate limiting with persistent state and better client identification
 const RATE_LIMIT_WINDOW = 60000; // 1 minute window
-const RATE_LIMIT_MAX = 8; // Maximum requests per client per minute
+const RATE_LIMIT_MAX = 10; // Maximum requests per client per minute
 const requestCache = new Map<string, {count: number, timestamp: number}>();
 
 // Clean up old entries in the rate limit cache every 5 minutes
@@ -23,14 +24,33 @@ setInterval(() => {
 }, 300000); // 5 minutes
 
 serve(async (req) => {
+  // Log all requests to help with debugging
+  console.log(`Request received: ${req.method} with headers: ${JSON.stringify([...req.headers])}`);
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Determine which Stripe secret key to use based on environment
-    const isProduction = req.headers.get('x-use-production') === 'true';
+    // Check if we should use production mode
+    // Read x-use-production header first
+    const useProductionHeader = req.headers.get('x-use-production');
+    
+    // Secondary detection methods as a fallback
+    const url = new URL(req.url);
+    const hostname = url.hostname || '';
+    const envFlag = Deno.env.get('USE_PRODUCTION_STRIPE');
+    
+    // Determine if we should use production keys
+    const isProduction = 
+      useProductionHeader === 'true' || 
+      envFlag === 'true' ||
+      hostname.includes('studybuddyusc.com') || 
+      hostname.includes('prod');
+    
+    console.log(`Operating in ${isProduction ? 'PRODUCTION' : 'TEST'} mode`);
+    console.log(`Hostname: ${hostname}, Header: ${useProductionHeader}, Env: ${envFlag}`);
     
     // Check if Stripe secret key is configured
     const stripeSecretKey = isProduction 
@@ -42,7 +62,8 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           error: `Stripe configuration missing`,
-          code: 'stripe_config_missing'
+          code: 'stripe_config_missing',
+          environment: isProduction ? 'production' : 'test'
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -70,6 +91,7 @@ serve(async (req) => {
     }
 
     const { sessionId, amount, tutorId, studentId, description, forceTwoStage } = requestBody;
+    console.log(`Request params: sessionId=${sessionId}, amount=${amount}, forceTwoStage=${forceTwoStage}`);
     
     // Better rate limiting - use more client parameters for better fingerprinting
     const clientIp = req.headers.get('x-real-ip') || req.headers.get('x-forwarded-for') || 'unknown';
@@ -133,6 +155,7 @@ serve(async (req) => {
     }
 
     console.log(`Creating payment intent for session ${sessionId} with amount ${amount} (${isProduction ? 'production' : 'test'} mode)`);
+    console.log(`forceTwoStage: ${forceTwoStage}`);
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -190,6 +213,7 @@ serve(async (req) => {
               client_secret: paymentIntent.client_secret,
               amount: amount,
               payment_transaction_id: existingTransaction.id,
+              environment: isProduction ? 'production' : 'test'
             }),
             {
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -233,7 +257,7 @@ serve(async (req) => {
       ? `${tutorProfile.first_name} ${tutorProfile.last_name}`
       : 'Tutor';
       
-    console.log(`Processing for tutor: ${tutorName}, Connect ID: ${tutorProfile[connectIdField] || 'not set up'}`);
+    console.log(`Processing for tutor: ${tutorName}, Connect ID: ${tutorProfile[connectIdField] || 'not set up'}, forceTwoStage: ${forceTwoStage}`);
 
     const hasCompleteConnectAccount = tutorProfile[connectIdField] && tutorProfile[onboardingCompleteField];
     
@@ -269,10 +293,12 @@ serve(async (req) => {
       const transferGroup = `session_${sessionId}`;
       
       // Create a payment intent based on whether the tutor has a Connect account set up
+      // Also check if forceTwoStage is true, which takes precedence
       let paymentIntent;
       let isTwoStagePayment = false;
       
       if (hasCompleteConnectAccount && !forceTwoStage) {
+        console.log("Creating standard Connect payment with direct transfer");
         // Create a standard Connect payment intent with immediate transfer
         paymentIntent = await stripe.paymentIntents.create({
           amount: amountInCents,
@@ -298,8 +324,9 @@ serve(async (req) => {
         
         console.log(`Created Connect payment intent: ${paymentIntent.id} with transfer to: ${tutorProfile[connectIdField]}`);
       } else {
+        console.log("Creating two-stage payment (platform first, transfer later)");
         // Create a regular payment intent to the platform account
-        // The funds will be transferred to the tutor later when they complete onboarding
+        // Either because of forceTwoStage=true or because the tutor doesn't have Connect set up
         paymentIntent = await stripe.paymentIntents.create({
           amount: amountInCents,
           currency: 'usd',
@@ -319,7 +346,7 @@ serve(async (req) => {
         });
         
         isTwoStagePayment = true;
-        console.log(`Created two-stage payment intent: ${paymentIntent.id} for tutor: ${tutorId} pending onboarding`);
+        console.log(`Created two-stage payment intent: ${paymentIntent.id} for tutor: ${tutorId}`);
       }
 
       // Create a payment transaction record in the database
@@ -335,7 +362,8 @@ serve(async (req) => {
           payment_intent_status: paymentIntent.status,
           platform_fee: platformFeeAmount / 100,
           requires_transfer: isTwoStagePayment,
-          payment_type: isTwoStagePayment ? 'two_stage' : 'connect_direct'
+          payment_type: isTwoStagePayment ? 'two_stage' : 'connect_direct',
+          environment: isProduction ? 'production' : 'test'
         })
         .select()
         .single();
@@ -363,7 +391,8 @@ serve(async (req) => {
             platform_fee: platformFeeAmount / 100,
             status: 'pending',
             payment_intent_id: paymentIntent.id,
-            transfer_group: transferGroup
+            transfer_group: transferGroup,
+            environment: isProduction ? 'production' : 'test'
           });
           
         if (transferError) {
@@ -402,6 +431,22 @@ serve(async (req) => {
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '5' },
             status: 429,
+          }
+        );
+      }
+      
+      // Handle Connect-specific errors
+      if (stripeError.code === 'account_invalid' || stripeError.code === 'account_incomplete') {
+        console.log("Detected Stripe Connect account issue, recommending two-stage payment");
+        return new Response(
+          JSON.stringify({
+            error: "Tutor's payment account is not fully set up",
+            code: 'connect_incomplete',
+            details: stripeError.message
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400,
           }
         );
       }

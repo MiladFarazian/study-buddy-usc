@@ -49,6 +49,8 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
   
   // Track if payment setup is in progress to prevent duplicate attempts
   const setupInProgress = useRef(false);
+  const lastAttemptTime = useRef(0);
+  const MIN_ATTEMPT_INTERVAL = 3000; // 3 seconds between attempts
   
   // Reset the flow when the modal is closed
   useEffect(() => {
@@ -60,6 +62,7 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
         resetPaymentSetup();
         setCreatingSession(false);
         setupInProgress.current = false;
+        lastAttemptTime.current = 0;
       }, 300); // slight delay to avoid visual glitches
     }
   }, [isOpen, resetBookingFlow, setSelectedSlot, setSessionId, resetPaymentSetup, setCreatingSession]);
@@ -70,6 +73,18 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
       setAuthRequired(true);
       return;
     }
+    
+    // Client-side rate limiting
+    const now = Date.now();
+    const timeSinceLastAttempt = now - lastAttemptTime.current;
+    if (timeSinceLastAttempt < MIN_ATTEMPT_INTERVAL) {
+      console.log(`Attempt too soon after previous attempt (${timeSinceLastAttempt}ms). Please wait a moment.`);
+      toast("Please wait", {
+        description: "Please wait a moment before trying again."
+      });
+      return;
+    }
+    lastAttemptTime.current = now;
     
     // Prevent multiple simultaneous calls
     if (setupInProgress.current) {
@@ -93,8 +108,8 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
         setSessionId(session.id);
         setStep('payment');
         
-        // Set up payment intent
-        const result = await setupPayment(session.id, amount, tutor, user);
+        // Set up payment intent - don't force two-stage payment initially
+        const result = await setupPayment(session.id, amount, tutor, user, false);
         
         // Set two-stage payment flag based on the result
         if (result && result.isTwoStagePayment !== undefined) {
@@ -144,6 +159,18 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
   // Retry payment setup with improved error handling
   const retryPaymentSetup = useCallback(() => {
     if (sessionId && selectedSlot && user && !setupInProgress.current) {
+      // Client-side rate limiting
+      const now = Date.now();
+      const timeSinceLastAttempt = now - lastAttemptTime.current;
+      if (timeSinceLastAttempt < MIN_ATTEMPT_INTERVAL) {
+        console.log(`Retry too soon after previous attempt (${timeSinceLastAttempt}ms). Please wait a moment.`);
+        toast("Please wait", {
+          description: "Please wait a moment before retrying."
+        });
+        return;
+      }
+      lastAttemptTime.current = now;
+      
       setupInProgress.current = true;
       setCreatingSession(true);
       
@@ -151,8 +178,8 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
       const hourlyRate = tutor.hourlyRate || 50;
       const amount = calculatePaymentAmount(selectedSlot, hourlyRate);
       
-      // Try payment setup again - note we're NOT passing the forceTwoStage parameter here
-      setupPayment(sessionId, amount, tutor, user)
+      // Try payment setup again with forceTwoStage=true as a fallback option
+      setupPayment(sessionId, amount, tutor, user, true)
         .then(result => {
           // Set two-stage payment flag based on the result
           if (result && result.isTwoStagePayment !== undefined) {

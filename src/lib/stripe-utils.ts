@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 // Cache for Stripe instance
@@ -12,8 +13,11 @@ let lastStripeLoadError: string | null = null;
 let stripeEnvironment: string | null = null;
 // Better rate limit handling
 let lastStripeApiCallTime = 0;
-const MIN_API_CALL_INTERVAL = 1500; // 1.5 second between API calls to prevent rate limiting
+const MIN_API_CALL_INTERVAL = 2500; // 2.5 second between API calls to prevent rate limiting
 const BACKOFF_MULTIPLIER = 2; // Exponential backoff multiplier for retries
+
+// Debug mode log environment
+console.log("Stripe-utils loaded - environment detection pending");
 
 // Initialize Stripe with better error handling
 export const initializeStripe = async () => {
@@ -205,6 +209,8 @@ export const createPaymentIntent = async (
   description: string,
   forceTwoStage: boolean = false
 ): Promise<StripePaymentIntent> => {
+  console.log(`createPaymentIntent called with forceTwoStage=${forceTwoStage}`);
+  
   // Maximum number of retries
   const maxRetries = 3;
   
@@ -243,8 +249,12 @@ export const createPaymentIntent = async (
       
       // Add production flag if in production mode
       const headers: Record<string, string> = {};
-      if (isProductionMode()) {
+      const env = getStripeEnvironment();
+      console.log(`Current Stripe environment: ${env}`);
+      
+      if (env === 'production') {
         headers['x-use-production'] = 'true';
+        console.log("Using production Stripe API keys");
       }
       
       console.log("Sending payment intent request with payload:", payload);
@@ -279,6 +289,7 @@ export const createPaymentIntent = async (
     } catch (error: any) {
       // Format and check error type
       const errorMessage = error.message || 'Unknown error';
+      console.error(`Payment intent error: ${errorMessage}`);
       
       // Check if we should retry based on error type
       const isRateLimit = errorMessage.includes("rate limit") || 

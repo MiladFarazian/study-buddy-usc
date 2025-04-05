@@ -25,6 +25,7 @@ export function usePaymentSetup() {
   
   // Track the timestamp of the last request to implement client-side rate limiting
   const lastRequestTime = useRef<number>(0);
+  const MIN_REQUEST_INTERVAL = 3000; // 3 seconds minimum between requests
   
   /**
    * Set up a payment intent for a session with improved error handling
@@ -34,8 +35,10 @@ export function usePaymentSetup() {
     amount: number,
     tutor: Tutor,
     user: User | null,
-    forceTwoStage: boolean = false // Optional parameter with default value
+    forceTwoStage: boolean = false // Important parameter - explicitly defined
   ) => {
+    console.log(`setupPayment called with forceTwoStage=${forceTwoStage}`);
+    
     if (!user || !sessionId) {
       return { success: false };
     }
@@ -43,9 +46,8 @@ export function usePaymentSetup() {
     // First check for too frequent requests (client-side rate limiting)
     const now = Date.now();
     const timeSinceLastRequest = now - lastRequestTime.current;
-    const minRequestInterval = 2000; // 2 seconds minimum between requests
     
-    if (timeSinceLastRequest < minRequestInterval) {
+    if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
       console.log(`Request too soon after previous request (${timeSinceLastRequest}ms). Enforcing client-side rate limit.`);
       return { success: false, alreadyInProgress: true };
     }
@@ -71,18 +73,19 @@ export function usePaymentSetup() {
     lastRequestTime.current = now;
     
     try {
-      console.log(`Setting up payment for session ${sessionId} with amount ${amount}`);
+      console.log(`Setting up payment for session ${sessionId} with amount ${amount}, forceTwoStage=${forceTwoStage}`);
       
       // Store session ID to track duplicates
       lastSessionId.current = sessionId;
       
+      // Create payment intent with explicit forceTwoStage parameter
       const paymentIntent = await createPaymentIntent(
         sessionId,
         amount,
         tutor.id,
         user.id,
         `Tutoring session with ${tutor.name || tutor.firstName + ' ' + tutor.lastName} (${sessionId})`,
-        forceTwoStage // Use the parameter
+        forceTwoStage // Explicitly pass the parameter
       );
       
       if (paymentIntent) {
@@ -119,8 +122,7 @@ export function usePaymentSetup() {
         error.message.includes('429')
       );
       
-      // For Connect setup errors, we don't show an error anymore
-      // as we'll use two-stage payments instead
+      // For Connect setup errors, try with two-stage payments
       if (error.message && (
         error.message.includes('payment account') || 
         error.message.includes('Stripe Connect') ||
@@ -129,9 +131,10 @@ export function usePaymentSetup() {
       )) {
         // Try again to create a two-stage payment intent
         try {
-          // Only if not already trying two-stage payment
+          // Only retry if not already trying two-stage payment
           if (!forceTwoStage) {
-            // Force two-stage payment
+            console.log("Creating two-stage payment as fallback due to Connect setup issue");
+            // Force two-stage payment for the retry
             const retryResult = await createPaymentIntent(
               sessionId,
               amount,
@@ -169,7 +172,6 @@ export function usePaymentSetup() {
           
         setPaymentError(errorMessage);
         
-        // Set a reasonable delay to prevent overwhelming the API
         // Exponential backoff with a maximum delay
         const retryDelay = Math.min(3000 * Math.pow(1.5, retryCount), 15000); // Max 15 seconds
         console.log(`Will retry automatically after ${retryDelay}ms (attempt ${retryCount + 1})`);
