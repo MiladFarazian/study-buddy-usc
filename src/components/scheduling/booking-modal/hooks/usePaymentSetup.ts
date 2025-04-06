@@ -25,7 +25,7 @@ export function usePaymentSetup() {
   
   // Track the timestamp of the last request to implement client-side rate limiting
   const lastRequestTime = useRef<number>(0);
-  const MIN_REQUEST_INTERVAL = 3000; // 3 seconds minimum between requests
+  const MIN_REQUEST_INTERVAL = 5000; // Increased to 5 seconds minimum between requests to avoid rate limits
   
   /**
    * Set up a payment intent for a session with improved error handling
@@ -37,9 +37,10 @@ export function usePaymentSetup() {
     user: User | null,
     forceTwoStage: boolean = false // Important parameter - explicitly defined
   ) => {
-    console.log(`setupPayment called with forceTwoStage=${forceTwoStage}`);
+    console.log(`setupPayment called with sessionId=${sessionId}, amount=${amount}, forceTwoStage=${forceTwoStage}`);
     
     if (!user || !sessionId) {
+      console.error("Missing user or sessionId in setupPayment");
       return { success: false };
     }
     
@@ -78,14 +79,22 @@ export function usePaymentSetup() {
       // Store session ID to track duplicates
       lastSessionId.current = sessionId;
       
-      // Create payment intent with explicit forceTwoStage parameter
+      // Detect if we're in a production environment
+      const isProduction = window.location.hostname === 'studybuddyusc.com' ||
+                        window.location.hostname.includes('netlify') ||
+                        window.location.hostname.includes('vercel');
+                        
+      console.log(`Detected environment: ${isProduction ? 'PRODUCTION' : 'DEV/TEST'}`);
+      
+      // Create payment intent with explicit forceTwoStage parameter and production flag
       const paymentIntent = await createPaymentIntent(
         sessionId,
         amount,
         tutor.id,
         user.id,
         `Tutoring session with ${tutor.name || tutor.firstName + ' ' + tutor.lastName} (${sessionId})`,
-        forceTwoStage // Explicitly pass the parameter
+        forceTwoStage, 
+        isProduction // Pass the environment detection to createPaymentIntent
       );
       
       if (paymentIntent) {
@@ -141,7 +150,8 @@ export function usePaymentSetup() {
               tutor.id,
               user.id,
               `Tutoring session with ${tutor.name || tutor.firstName + ' ' + tutor.lastName} (${sessionId})`,
-              true // Force two-stage payment
+              true, // Force two-stage payment
+              window.location.hostname === 'studybuddyusc.com' // Pass production flag again
             );
             
             if (retryResult) {
@@ -173,7 +183,7 @@ export function usePaymentSetup() {
         setPaymentError(errorMessage);
         
         // Exponential backoff with a maximum delay
-        const retryDelay = Math.min(3000 * Math.pow(1.5, retryCount), 15000); // Max 15 seconds
+        const retryDelay = Math.min(5000 * Math.pow(1.5, retryCount), 20000); // Max 20 seconds, starting higher
         console.log(`Will retry automatically after ${retryDelay}ms (attempt ${retryCount + 1})`);
         
         // Allow for a new request after the delay

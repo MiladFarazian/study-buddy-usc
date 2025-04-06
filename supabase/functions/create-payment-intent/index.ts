@@ -33,24 +33,50 @@ serve(async (req) => {
   }
 
   try {
-    // Check if we should use production mode
-    // Read x-use-production header first
+    // Multiple methods for determining environment
+    // 1. Check for x-use-production header 
     const useProductionHeader = req.headers.get('x-use-production');
+    console.log(`x-use-production header: ${useProductionHeader}`);
     
-    // Secondary detection methods as a fallback
+    // 2. Check URL hostname
     const url = new URL(req.url);
     const hostname = url.hostname || '';
-    const envFlag = Deno.env.get('USE_PRODUCTION_STRIPE');
+    console.log(`Request hostname: ${hostname}`);
     
-    // Determine if we should use production keys
+    // 3. Check environment variable
+    const envFlag = Deno.env.get('USE_PRODUCTION_STRIPE');
+    console.log(`USE_PRODUCTION_STRIPE env: ${envFlag}`);
+    
+    // 4. Check if isProduction was passed in the request body
+    let requestBody;
+    try {
+      requestBody = await req.json();
+      console.log(`Request body isProduction: ${requestBody.isProduction}`);
+    } catch (parseError) {
+      console.error('Error parsing request body:', parseError);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid request body format',
+          code: 'invalid_request'
+        }), 
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
+    }
+    
+    // Determine if we should use production keys with multiple fallbacks
     const isProduction = 
       useProductionHeader === 'true' || 
+      requestBody.isProduction === true ||
       envFlag === 'true' ||
       hostname.includes('studybuddyusc.com') || 
-      hostname.includes('prod');
+      hostname.includes('netlify') ||
+      hostname.includes('vercel');
     
-    console.log(`Operating in ${isProduction ? 'PRODUCTION' : 'TEST'} mode`);
-    console.log(`Hostname: ${hostname}, Header: ${useProductionHeader}, Env: ${envFlag}`);
+    console.log(`Final environment decision: ${isProduction ? 'PRODUCTION' : 'TEST'} mode`);
+    console.log(`Decision factors: Header=${useProductionHeader}, Body=${requestBody.isProduction}, Hostname=${hostname}, Env=${envFlag}`);
     
     // Check if Stripe secret key is configured
     const stripeSecretKey = isProduction 
@@ -68,24 +94,6 @@ serve(async (req) => {
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 500,
-        }
-      );
-    }
-
-    // Parse request body with better error handling
-    let requestBody;
-    try {
-      requestBody = await req.json();
-    } catch (parseError) {
-      console.error('Error parsing request body:', parseError);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Invalid request body format',
-          code: 'invalid_request'
-        }), 
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
         }
       );
     }

@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 // Cache for Stripe instance
@@ -207,9 +206,10 @@ export const createPaymentIntent = async (
   tutorId: string,
   studentId: string,
   description: string,
-  forceTwoStage: boolean = false
+  forceTwoStage: boolean = false,
+  isProduction: boolean = false
 ): Promise<StripePaymentIntent> => {
-  console.log(`createPaymentIntent called with forceTwoStage=${forceTwoStage}`);
+  console.log(`createPaymentIntent called with forceTwoStage=${forceTwoStage}, isProduction=${isProduction}`);
   
   // Maximum number of retries
   const maxRetries = 3;
@@ -221,7 +221,7 @@ export const createPaymentIntent = async (
       await rateLimitGuard(attempt);
       
       console.log(`Creating payment intent (attempt ${attempt + 1}/${maxRetries + 1}):`, 
-        { sessionId, amount, tutorId, studentId, description, forceTwoStage });
+        { sessionId, amount, tutorId, studentId, description, forceTwoStage, isProduction });
       
       // Check for existing payment intent first
       if (attempt === 0) { // Only check on first attempt to avoid infinite loops
@@ -244,24 +244,26 @@ export const createPaymentIntent = async (
         tutorId,
         studentId,
         description,
-        forceTwoStage
+        forceTwoStage,
+        isProduction // Add this to the payload
       };
       
-      // Add production flag if in production mode
-      const headers: Record<string, string> = {};
-      const env = getStripeEnvironment();
-      console.log(`Current Stripe environment: ${env}`);
+      // Add production flag to headers explicitly
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
       
-      if (env === 'production') {
+      if (isProduction) {
         headers['x-use-production'] = 'true';
-        console.log("Using production Stripe API keys");
+        console.log("Using production Stripe API keys - added header flag");
       }
       
-      console.log("Sending payment intent request with payload:", payload);
+      console.log("Sending payment intent request with payload:", JSON.stringify(payload));
+      console.log("Headers:", JSON.stringify(headers));
       
       const { data, error } = await supabase.functions.invoke('create-payment-intent', {
         body: payload,
-        headers
+        headers: headers
       });
 
       if (error) {
@@ -299,7 +301,8 @@ export const createPaymentIntent = async (
       
       const isNetworkError = errorMessage.includes("Failed to fetch") ||
                            errorMessage.includes("network") ||
-                           errorMessage.includes("Network Error");
+                           errorMessage.includes("Network Error") ||
+                           errorMessage.includes("Failed to send");
       
       const shouldRetry = (isRateLimit || isNetworkError) && attempt < maxRetries;
       
@@ -320,7 +323,7 @@ export const createPaymentIntent = async (
         // If this is the final attempt and we haven't forced two-stage payment yet, try with forceTwoStage=true
         if (attempt === maxRetries && !forceTwoStage) {
           console.log("Trying one last attempt with forceTwoStage=true");
-          return createPaymentIntent(sessionId, amount, tutorId, studentId, description, true);
+          return createPaymentIntent(sessionId, amount, tutorId, studentId, description, true, isProduction);
         }
         
         throw new Error("The tutor's payment account setup is incomplete. Payment will be collected now and transferred to them later.");
