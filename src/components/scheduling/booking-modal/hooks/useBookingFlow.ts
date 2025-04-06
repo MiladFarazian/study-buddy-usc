@@ -1,7 +1,11 @@
-
 import { useState, useCallback } from 'react';
+import { BookingStep } from '@/contexts/SchedulingContext';
+import { useSessionCreation } from './useSessionCreation';
+import { useSlotSelection } from './useSlotSelection';
+import { usePaymentSetup } from './usePaymentSetup';
+import { useAuthState } from '@/hooks/useAuthState';
+import { Tutor } from '@/types/tutor';
 import { BookingSlot } from '@/lib/scheduling/types';
-import { User } from '@supabase/supabase-js';
 
 export type BookingStep = 'select-slot' | 'payment' | 'processing';
 
