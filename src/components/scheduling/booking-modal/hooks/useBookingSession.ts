@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { useAuthState } from '@/hooks/useAuthState';
 import { BookingSlot } from '@/lib/scheduling/types';
@@ -196,5 +197,5 @@ function useSessionReset(
         setCreatingSession(false);
       }, 300); // slight delay to avoid visual glitches
     }
-  }, [isOpen, resetBookingFlow, setSelectedSlot, setSessionId, resetPaymentSetup, setCreatingSession]);
+  });
 }
