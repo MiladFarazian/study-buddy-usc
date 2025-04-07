@@ -2,11 +2,11 @@
 import { useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { useBookingState } from "./useBookingState";
 import { WeeklyAvailabilityCalendar } from "../calendar/weekly/WeeklyAvailabilityCalendar";
 import { Tutor } from "@/types/tutor";
 import { BookingSlot } from "@/lib/scheduling/types";
-import { formatDate } from "date-fns";
+import { WeeklyAvailability } from "@/lib/scheduling/types";
+import { useAvailabilityData } from "../calendar/useAvailabilityData";
 
 interface BookingStepSelectorProps {
   tutor: Tutor;
@@ -22,7 +22,7 @@ export function BookingStepSelector({
   disabled = false
 }: BookingStepSelectorProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const { state, dispatch } = useBookingState();
+  const { availability, refreshAvailability } = useAvailabilityData(tutor, new Date());
   
   // Handle slot selection
   const handleSlotSelected = (slot: BookingSlot) => {
@@ -35,6 +35,12 @@ export function BookingStepSelector({
     
     // We'll let the parent component handle the state transition to the next step
     setTimeout(() => setIsLoading(false), 500);
+  };
+  
+  // Mock handler for availability changes (unused, but needed for the interface)
+  const handleAvailabilityChange = (newAvailability: WeeklyAvailability) => {
+    // This is a no-op for the booking step
+    console.log("Availability change ignored in booking step");
   };
   
   return (
@@ -57,10 +63,9 @@ export function BookingStepSelector({
         )}
       
         <WeeklyAvailabilityCalendar 
-          tutorId={tutor.id}
-          onSlotSelected={handleSlotSelected}
-          readOnly={false}
-          loading={isLoading}
+          availability={availability}
+          onChange={handleAvailabilityChange}
+          readOnly={true}
         />
       </div>
       

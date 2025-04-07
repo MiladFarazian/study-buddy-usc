@@ -1,26 +1,25 @@
 
-import { Tutor } from '@/types/tutor';
-import { User } from '@supabase/supabase-js';
-
-export interface PaymentSetupState {
-  clientSecret: string | null;
-  paymentAmount: number;
-  paymentError: string | null;
-  isTwoStagePayment: boolean;
-  retryCount: number;
-  isProcessing: boolean;
-}
-
+// Update the PaymentSetupResult type to include the retryWithTwoStage property
 export interface PaymentSetupResult {
   success: boolean;
+  error?: string;
   alreadyInProgress?: boolean;
+  clientSecret?: string;
   isTwoStagePayment?: boolean;
+  retryWithTwoStage?: boolean; // Added this property to fix the TS error
 }
 
 export interface SetupPaymentParams {
   sessionId: string;
   amount: number;
-  tutor: Tutor;
-  user: User | null;
+  tutor: {
+    id: string;
+    name?: string;
+    firstName?: string;
+  };
+  user: {
+    id: string;
+    email?: string;
+  };
   forceTwoStage?: boolean;
 }
