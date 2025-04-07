@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tutor } from "@/types/tutor";
 import { BookingStepSelector } from "./booking-modal/BookingStepSelector";
-import { useBookingSession } from "./booking-modal/useBookingSession";
+import { useBookingSession } from "./booking-modal/hooks/useBookingSession";  // Fixed path
 import { PaymentSuccessScreen } from "./payment/PaymentSuccessScreen";
 import { StripePaymentForm } from "./payment/StripePaymentForm"; 
 import { SessionDetailsDisplay } from "./payment/SessionDetailsDisplay";

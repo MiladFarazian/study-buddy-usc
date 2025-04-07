@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { useAuthState } from '@/hooks/useAuthState';
 import { BookingSlot } from '@/lib/scheduling/types';
@@ -54,14 +53,7 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
   const { isLimited, markAttempt, setupInProgress } = useRateLimiter();
   
   // Reset the flow when the modal is closed
-  useSessionReset({
-    isOpen,
-    resetBookingFlow,
-    setSelectedSlot,
-    setSessionId,
-    resetPaymentSetup,
-    setCreatingSession
-  });
+  useSessionReset(isOpen, resetBookingFlow, setSelectedSlot, setSessionId, resetPaymentSetup, setCreatingSession);
   
   // Handle slot selection
   const handleSlotSelect = useCallback(async (slot: BookingSlot) => {
@@ -186,14 +178,14 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
 /**
  * Hook for resetting the session when the modal is closed
  */
-function useSessionReset({
-  isOpen,
-  resetBookingFlow,
-  setSelectedSlot,
-  setSessionId,
-  resetPaymentSetup,
-  setCreatingSession
-}) {
+function useSessionReset(
+  isOpen: boolean,
+  resetBookingFlow: () => void,
+  setSelectedSlot: (slot: BookingSlot | null) => void,
+  setSessionId: (id: string | null) => void, 
+  resetPaymentSetup: () => void,
+  setCreatingSession: (creating: boolean) => void
+) {
   useState(() => {
     if (!isOpen) {
       setTimeout(() => {
