@@ -68,17 +68,35 @@ export function usePaymentSetup() {
     startRequest(sessionId);
     
     try {
-      const result = await setupPaymentHandler(
-        { sessionId, amount, tutor, user, forceTwoStage },
-        {
-          setClientSecret,
-          setPaymentAmount,
-          setIsTwoStagePayment,
-          setPaymentError,
-          setIsProcessing,
-          incrementRetryCount
+      // Update state before making the request
+      setIsProcessing(true);
+      
+      if (amount > 0) {
+        setPaymentAmount(amount);
+      }
+      
+      // Remove the second argument that was causing the TS error - we'll update state directly here instead
+      const result = await setupPaymentHandler({ 
+        sessionId, 
+        amount, 
+        tutor, 
+        user, 
+        forceTwoStage 
+      });
+      
+      // Update state based on the result
+      if (result.success) {
+        if (result.clientSecret) {
+          setClientSecret(result.clientSecret);
         }
-      );
+        if (result.isTwoStagePayment !== undefined) {
+          setIsTwoStagePayment(result.isTwoStagePayment);
+        }
+        setPaymentError(null);
+      } else {
+        setPaymentError(result.error || "Unknown error occurred");
+        incrementRetryCount();
+      }
       
       // If we need to retry with two-stage payment
       if (!result.success && result.retryWithTwoStage) {
@@ -86,25 +104,40 @@ export function usePaymentSetup() {
         toast.info("Retrying with two-stage payment");
         
         // Instead of recursively calling, we'll try once with the two-stage flag
-        const retryResult = await setupPaymentHandler(
-          { sessionId, amount, tutor, user, forceTwoStage: true },
-          {
-            setClientSecret,
-            setPaymentAmount,
-            setIsTwoStagePayment,
-            setPaymentError,
-            setIsProcessing,
-            incrementRetryCount
+        // Update state before making the retry request
+        setIsProcessing(true);
+        
+        // Remove the second argument that was causing the TS error
+        const retryResult = await setupPaymentHandler({
+          sessionId, 
+          amount, 
+          tutor, 
+          user, 
+          forceTwoStage: true
+        });
+        
+        // Update state based on the retry result
+        if (retryResult.success) {
+          if (retryResult.clientSecret) {
+            setClientSecret(retryResult.clientSecret);
           }
-        );
+          if (retryResult.isTwoStagePayment !== undefined) {
+            setIsTwoStagePayment(retryResult.isTwoStagePayment);
+          }
+          setPaymentError(null);
+        } else {
+          setPaymentError(retryResult.error || "Unknown error during retry");
+          incrementRetryCount();
+        }
         
         return retryResult;
       }
       
       return result;
     } finally {
-      // End request tracking
+      // End request tracking and processing state
       endRequest();
+      setIsProcessing(false);
     }
   }, [
     clientSecret,

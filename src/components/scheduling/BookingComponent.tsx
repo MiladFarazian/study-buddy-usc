@@ -1,127 +1,182 @@
 
-import { useState } from "react";
-import { format } from "date-fns";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tutor } from "@/types/tutor";
-import { BookingSlot } from "@/lib/scheduling/types";
-import { Loader2 } from "lucide-react";
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Tutor } from '@/types/tutor';
+import { BookingSlot } from '@/lib/scheduling/types';
+import { Loader2 } from 'lucide-react';
 
 interface BookingComponentProps {
   tutor: Tutor;
   availableSlots: BookingSlot[];
   onSelectSlot: (slot: BookingSlot) => void;
   onCancel: () => void;
-  loading: boolean;
+  loading?: boolean;
   disabled?: boolean;
 }
 
-export function BookingComponent({ 
-  tutor, 
-  availableSlots, 
-  onSelectSlot, 
+export function BookingComponent({
+  tutor,
+  availableSlots,
+  onSelectSlot,
   onCancel,
-  loading,
+  loading = false,
   disabled = false
 }: BookingComponentProps) {
-  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  
-  // Get unique dates that have available slots
-  const availableDates = [...new Set(
-    availableSlots
-      .filter(slot => slot.available)
-      .map(slot => format(new Date(slot.day), 'yyyy-MM-dd'))
-  )];
-  
-  // Get available time slots for the selected date
-  const availableTimesForDate = selectedDate 
-    ? availableSlots.filter(slot => 
-        format(new Date(slot.day), 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd') && 
-        slot.available
-      )
-    : [];
+  const [step, setStep] = useState(1);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<BookingSlot | null>(null);
+  const [duration, setDuration] = useState(60); // default 1 hour
 
-  // Handle form submission
-  const handleSubmit = () => {
-    if (selectedDate && selectedTime) {
-      const selectedSlot = availableTimesForDate.find(slot => slot.start === selectedTime);
-      if (selectedSlot) {
-        onSelectSlot(selectedSlot);
-      }
+  // Format date for display
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  };
+
+  // Format time for display
+  const formatTime = (time: string) => {
+    const [hour, minute] = time.split(':').map(Number);
+    const period = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 === 0 ? 12 : hour % 12;
+    return `${displayHour}:${minute.toString().padStart(2, '0')} ${period}`;
+  };
+
+  // Handle date selection
+  const handleDateSelect = (date: Date) => {
+    setSelectedDate(date);
+    setSelectedTimeSlot(null);
+    setStep(2);
+  };
+
+  // Handle time slot selection
+  const handleTimeSelect = (slot: BookingSlot) => {
+    setSelectedTimeSlot(slot);
+    setStep(3);
+  };
+
+  // Handle duration change
+  const handleDurationChange = (newDuration: number) => {
+    setDuration(newDuration);
+  };
+
+  // Handle final booking submission
+  const handleBookSession = () => {
+    if (selectedTimeSlot) {
+      onSelectSlot(selectedTimeSlot);
     }
   };
-  
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Book a Session with {tutor.firstName || tutor.name.split(' ')[0]}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {loading ? (
-          <div className="flex justify-center items-center py-10">
-            <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal" />
-            <span className="ml-2">Loading availability...</span>
-          </div>
-        ) : (
-          <>
-            <div className="space-y-2">
-              <Label htmlFor="date">Select a Date</Label>
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => {
-                  setSelectedDate(date);
-                  setSelectedTime(null);
-                }}
-                disabled={(date) => !availableDates.includes(format(date, 'yyyy-MM-dd'))}
-                className="rounded-md border mx-auto"
-              />
+    <div className="space-y-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold">Book a Session with {tutor.firstName || tutor.name.split(' ')[0]}</h2>
+      </div>
+
+      {step === 1 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Select a Date</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {/* Example date selection, you would dynamically generate these from availableSlots */}
+              {Array.from(new Set(availableSlots.map(slot => 
+                new Date(slot.day).toDateString()))).map((dateStr, index) => {
+                const date = new Date(dateStr);
+                return (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    className="h-20 flex flex-col"
+                    onClick={() => handleDateSelect(date)}
+                    disabled={disabled}
+                  >
+                    <span className="text-sm text-muted-foreground">{format(date, 'EEE')}</span>
+                    <span className="text-xl font-medium">{format(date, 'd')}</span>
+                    <span className="text-xs text-muted-foreground">{format(date, 'MMM')}</span>
+                  </Button>
+                );
+              })}
             </div>
-            
-            {selectedDate && (
-              <div className="space-y-2">
-                <Label htmlFor="time">Select a Time</Label>
-                <Select 
-                  value={selectedTime || ""} 
-                  onValueChange={setSelectedTime}
+          </CardContent>
+        </Card>
+      )}
+
+      {step === 2 && selectedDate && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Select Time: {selectedDate && formatDate(selectedDate)}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {availableSlots
+                .filter(slot => new Date(slot.day).toDateString() === selectedDate.toDateString())
+                .map((slot, index) => (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    className="h-16"
+                    onClick={() => handleTimeSelect(slot)}
+                    disabled={disabled}
+                  >
+                    {formatTime(slot.start)}
+                  </Button>
+                ))}
+            </div>
+            <Button 
+              variant="outline" 
+              className="mt-6"
+              onClick={() => setStep(1)}
+              disabled={disabled}
+            >
+              Back
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {step === 3 && selectedDate && selectedTimeSlot && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Review & Confirm</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="p-4 bg-muted/40 rounded-lg">
+                <p><span className="font-medium">Date:</span> {formatDate(selectedDate)}</p>
+                <p><span className="font-medium">Time:</span> {formatTime(selectedTimeSlot.start)} - {formatTime(selectedTimeSlot.end)}</p>
+                <p><span className="font-medium">Tutor:</span> {tutor.name}</p>
+                <p><span className="font-medium">Rate:</span> ${tutor.hourlyRate || 25}/hour</p>
+              </div>
+
+              <div className="flex justify-between mt-6">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setStep(2)}
                   disabled={disabled}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a time" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableTimesForDate.length > 0 ? (
-                      availableTimesForDate.map((slot) => (
-                        <SelectItem key={`${slot.start}-${slot.end}`} value={slot.start}>
-                          {slot.start} - {slot.end}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="" disabled>No times available</SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
+                  Back
+                </Button>
+                <Button 
+                  onClick={handleBookSession}
+                  className="bg-primary text-primary-foreground"
+                  disabled={disabled}
+                >
+                  Book Session
+                </Button>
               </div>
-            )}
-          </>
-        )}
-      </CardContent>
-      <CardFooter className="flex justify-between">
-        <Button variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button 
-          onClick={handleSubmit} 
-          disabled={!selectedDate || !selectedTime || disabled}
-          className="bg-usc-cardinal hover:bg-usc-cardinal-dark"
-        >
-          Continue
-        </Button>
-      </CardFooter>
-    </Card>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }

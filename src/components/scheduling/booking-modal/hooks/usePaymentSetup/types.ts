@@ -32,4 +32,5 @@ export interface PaymentSetupState {
   paymentError: string | null;
   isTwoStagePayment: boolean;
   isProcessing: boolean;
+  retryCount: number; // Added this property to fix the TS error
 }
