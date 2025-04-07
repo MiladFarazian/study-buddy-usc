@@ -41,7 +41,7 @@ const Sidebar = () => {
       title: "Tutors",
       icon: Users,
       path: "/tutors",
-      showWhen: true // Show for everyone, including tutors
+      showWhen: true // Always show
     },
     {
       title: "My Students",
@@ -86,6 +86,12 @@ const Sidebar = () => {
       showWhen: !!user // Only for authenticated users
     }
   ];
+
+  // Adding additional logging to debug item visibility
+  console.log("SidebarItems with showWhen status:", sidebarItems.map(item => ({
+    title: item.title,
+    showWhen: item.showWhen
+  })));
 
   const filteredItems = sidebarItems.filter(item => item.showWhen);
   
