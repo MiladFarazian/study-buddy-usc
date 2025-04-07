@@ -1,5 +1,6 @@
+
 import { useState, useCallback } from 'react';
-import { BookingStep } from '@/contexts/SchedulingContext';
+// Remove the conflicting import
 import { useSessionCreation } from './useSessionCreation';
 import { useSlotSelection } from './useSlotSelection';
 import { usePaymentSetup } from './usePaymentSetup';
@@ -7,6 +8,7 @@ import { useAuthState } from '@/hooks/useAuthState';
 import { Tutor } from '@/types/tutor';
 import { BookingSlot } from '@/lib/scheduling/types';
 
+// Define the BookingStep type here since we're not importing it
 export type BookingStep = 'select-slot' | 'payment' | 'processing';
 
 /**

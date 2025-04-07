@@ -47,18 +47,13 @@ export function usePaymentForm({
   // Handle payment intent
   const {
     clientSecret,
-    setupError,
-    errorCode,
-    isRetrying,
-    retrySetupPayment
-  } = usePaymentIntent({
-    sessionId,
-    studentId,
-    tutor,
+    paymentError,
+    paymentStatus,
+    isProcessing
+  } = usePaymentIntent(
     selectedSlot,
-    sessionCost,
-    stripeLoaded
-  });
+    tutor
+  );
   
   // Handle Stripe Elements
   const {
@@ -90,6 +85,13 @@ export function usePaymentForm({
     // If needed for compatibility with old code
   };
   
+  // Add simplified error and retry functionality
+  const errorCode = paymentError ? 'payment-setup-failed' : null;
+  const isRetrying = isProcessing || isInitRetrying;
+  const retryPaymentSetup = () => {
+    retryInitialization();
+  };
+  
   return {
     loading,
     processing: processing || isSubmitting,
@@ -100,14 +102,14 @@ export function usePaymentForm({
     cardError,
     cardComplete,
     sessionCost,
-    setupError,
+    setupError: paymentError,
     errorCode,
-    isRetrying: isRetrying || isInitRetrying,
+    isRetrying,
     initError,
     submitPayment,
     handleCardElementReady,
     retryInitialization,
-    retryPaymentSetup: retrySetupPayment,
+    retryPaymentSetup,
     setCardError,
   };
 }

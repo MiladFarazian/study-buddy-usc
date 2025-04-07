@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { usePaymentSetup } from '@/components/scheduling/booking-modal/hooks/usePaymentSetup';
 import { BookingSlot } from '@/lib/scheduling/types';
@@ -17,6 +18,7 @@ export function usePaymentIntent(
   const { user } = useAuthState();
   const { setupPayment, clientSecret, paymentError, isTwoStagePayment, isProcessing } = usePaymentSetup();
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   
   // Load user info if available
   useEffect(() => {
@@ -31,6 +33,7 @@ export function usePaymentIntent(
     if (!selectedSlot || !tutor || !user) {
       console.error("Missing data for payment setup");
       toast.error("Missing data for payment setup");
+      setErrorCode('missing-data');
       return;
     }
     
@@ -44,6 +47,7 @@ export function usePaymentIntent(
         console.error("Session ID is missing");
         toast.error("Session ID is missing");
         setPaymentStatus('error');
+        setErrorCode('missing-session-id');
         return;
       }
       
@@ -58,16 +62,27 @@ export function usePaymentIntent(
       if (result.success) {
         console.log('Payment setup successful');
         setPaymentStatus('success');
+        setErrorCode(null);
       } else {
         console.error('Payment setup failed');
         setPaymentStatus('error');
+        setErrorCode('setup-failed');
       }
     } catch (error: any) {
       console.error('Error setting up payment:', error);
       toast.error(error.message || 'Failed to setup payment');
       setPaymentStatus('error');
+      setErrorCode('exception');
     }
   };
+  
+  // Function to retry payment setup
+  const retrySetupPayment = () => {
+    handleSetupPayment();
+  };
+  
+  // Calculate if we're in a retry state
+  const isRetrying = paymentStatus === 'loading' && !!paymentError;
   
   return {
     name,
@@ -79,6 +94,9 @@ export function usePaymentIntent(
     paymentError,
     isTwoStagePayment,
     paymentStatus,
-    isProcessing
+    isProcessing,
+    errorCode,
+    isRetrying,
+    retrySetupPayment
   };
 }

@@ -109,7 +109,13 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
         setStep('payment');
         
         // Set up payment intent - don't force two-stage payment initially
-        const result = await setupPayment(session.id, amount, tutor, user, false);
+        const result = await setupPayment({
+          sessionId: session.id,
+          amount: amount,
+          tutor: tutor,
+          user: user,
+          forceTwoStage: false
+        });
         
         // Set two-stage payment flag based on the result
         if (result && result.isTwoStagePayment !== undefined) {
@@ -179,7 +185,13 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
       const amount = calculatePaymentAmount(selectedSlot, hourlyRate);
       
       // Try payment setup again with forceTwoStage=true as a fallback option
-      setupPayment(sessionId, amount, tutor, user, true)
+      setupPayment({
+        sessionId: sessionId,
+        amount: amount,
+        tutor: tutor,
+        user: user,
+        forceTwoStage: true
+      })
         .then(result => {
           // Set two-stage payment flag based on the result
           if (result && result.isTwoStagePayment !== undefined) {
