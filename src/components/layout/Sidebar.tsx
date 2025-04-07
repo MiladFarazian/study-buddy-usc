@@ -20,6 +20,8 @@ const Sidebar = () => {
   const { isStudent, isTutor, user } = useAuth();
   const isMobile = useIsMobile();
   
+  console.log("Sidebar auth state:", { isStudent, isTutor, user: !!user });
+  
   if (isMobile) return null;
   
   const sidebarItems = [
@@ -86,6 +88,8 @@ const Sidebar = () => {
   ];
 
   const filteredItems = sidebarItems.filter(item => item.showWhen);
+  
+  console.log("Filtered sidebar items:", filteredItems.map(item => item.title));
   
   return (
     <div className="min-h-screen w-64 bg-white text-usc-cardinal border-r border-gray-200 hidden md:block">
