@@ -39,7 +39,7 @@ const Sidebar = () => {
       title: "Tutors",
       icon: Users,
       path: "/tutors",
-      showWhen: isStudent || !user // Show for students or unauthenticated
+      showWhen: true // Show for everyone, including tutors
     },
     {
       title: "My Students",
