@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { TutorAvailabilityCard } from "../scheduling/TutorAvailabilityCard";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,7 @@ import { Calendar } from "lucide-react";
 import { Tutor } from "@/types/tutor";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { SchedulerModal } from "@/components/scheduling/SchedulerModal";
+import { SchedulerModal } from "../scheduling/SchedulerModal";
 import { Badge } from "@/components/ui/badge";
 
 interface TutorAvailabilitySectionProps {

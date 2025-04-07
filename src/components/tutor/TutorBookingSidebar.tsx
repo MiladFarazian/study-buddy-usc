@@ -5,8 +5,8 @@ import { Calendar, Clock, ArrowRightLeft } from "lucide-react";
 import { Tutor } from "@/types/tutor";
 import MessageButton from "@/components/messaging/MessageButton";
 import { useState } from "react";
-import { SchedulerModal } from "@/components/scheduling/SchedulerModal";
-import { BookSessionModal } from "@/components/scheduling/BookSessionModal";
+import { SchedulerModal } from "../scheduling/SchedulerModal";
+import { BookSessionModal } from "../scheduling/BookSessionModal";
 import { useAuthState } from "@/hooks/useAuthState";
 
 interface TutorBookingSidebarProps {

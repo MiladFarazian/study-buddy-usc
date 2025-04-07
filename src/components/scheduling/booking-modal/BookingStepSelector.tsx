@@ -1,78 +1,93 @@
 
-import { useState } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { useState, useEffect } from "react";
+import { format, addDays, startOfToday } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { WeeklyAvailabilityCalendar } from "../calendar/weekly/WeeklyAvailabilityCalendar";
-import { Tutor } from "@/types/tutor";
+import { Calendar } from "@/components/ui/calendar";
+import { Card, CardContent } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { TimeSlotList } from "./time-slot/TimeSlotList";
+import { useAvailabilityData } from "@/hooks/useAvailabilityData";
 import { BookingSlot } from "@/lib/scheduling/types";
-import { WeeklyAvailability } from "@/lib/scheduling/types";
-import { useAvailabilityData } from "../calendar/useAvailabilityData";
+import { Tutor } from "@/types/tutor";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { LoadingState } from "./LoadingState";
 
-interface BookingStepSelectorProps {
+export interface BookingStepSelectorProps {
   tutor: Tutor;
   onSelectSlot: (slot: BookingSlot) => void;
   onClose: () => void;
   disabled?: boolean;
 }
 
-export function BookingStepSelector({ 
-  tutor, 
-  onSelectSlot,
-  onClose,
-  disabled = false
-}: BookingStepSelectorProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const { availability, refreshAvailability } = useAvailabilityData(tutor, new Date());
+export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: BookingStepSelectorProps) {
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const { loading, availableSlots, hasAvailability, errorMessage, refreshAvailability } = useAvailabilityData(tutor, selectedDate);
   
-  // Handle slot selection
-  const handleSlotSelected = (slot: BookingSlot) => {
-    if (disabled) return;
-    
-    setIsLoading(true);
-    
-    // Pass the slot to the parent component
-    onSelectSlot(slot);
-    
-    // We'll let the parent component handle the state transition to the next step
-    setTimeout(() => setIsLoading(false), 500);
-  };
-  
-  // Mock handler for availability changes (unused, but needed for the interface)
-  const handleAvailabilityChange = (newAvailability: WeeklyAvailability) => {
-    // This is a no-op for the booking step
-    console.log("Availability change ignored in booking step");
-  };
-  
+  // Filter slots for the selected date
+  const slotsForSelectedDate = availableSlots.filter(slot => 
+    new Date(slot.day).toDateString() === selectedDate.toDateString() && slot.available
+  );
+
+  if (loading) {
+    return <LoadingState message="Loading tutor's availability..." />;
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="bg-gray-50 rounded-md p-4">
-        <h3 className="font-medium mb-1">Select a time slot on the calendar</h3>
-        <p className="text-sm text-muted-foreground">
-          Click a slot and choose a duration to book a session
-        </p>
-      </div>
-      
-      <div className="relative">
-        {disabled && (
-          <div className="absolute inset-0 bg-white/70 z-10 flex items-center justify-center rounded-md">
-            <div className="bg-white p-4 rounded-md shadow text-center">
-              <p className="font-medium">Booking temporarily disabled</p>
-              <p className="text-sm text-muted-foreground">Please wait a moment before trying again</p>
-            </div>
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="md:col-span-1 space-y-4">
+          <Card>
+            <CardContent className="pt-6">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={(date) => date && setSelectedDate(date)}
+                disabled={{ before: startOfToday() }}
+                className="rounded-md border"
+              />
+            </CardContent>
+          </Card>
+          
+          <div className="text-sm text-muted-foreground">
+            <p>Select a date to see available time slots.</p>
+            <p>All times shown are in your local timezone.</p>
           </div>
-        )}
-      
-        <WeeklyAvailabilityCalendar 
-          availability={availability}
-          onChange={handleAvailabilityChange}
-          readOnly={true}
-        />
-      </div>
-      
-      <div className="flex justify-end space-x-2 mt-4">
-        <Button variant="outline" onClick={onClose}>
-          Cancel
-        </Button>
+        </div>
+
+        <div className="md:col-span-2">
+          <h3 className="text-lg font-medium mb-3">
+            Available Times for {format(selectedDate, 'EEEE, MMMM d')}
+          </h3>
+          
+          {errorMessage && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>
+          )}
+          
+          {slotsForSelectedDate.length > 0 ? (
+            <TimeSlotList 
+              slots={slotsForSelectedDate}
+              onSelectSlot={onSelectSlot}
+              disabled={disabled}
+            />
+          ) : (
+            <div className="py-8 text-center border rounded-md bg-muted/30">
+              <CalendarIcon className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
+              <h3 className="text-lg font-medium mb-1">No Available Time Slots</h3>
+              <p className="text-muted-foreground mb-4">
+                {hasAvailability ? 
+                  `${tutor.firstName || tutor.name.split(' ')[0]} is not available on this date.` : 
+                  `${tutor.firstName || tutor.name.split(' ')[0]} hasn't set their availability yet.`
+                }
+              </p>
+              <Button onClick={() => setSelectedDate(addDays(selectedDate, 1))}>
+                Check Next Day
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -16,10 +16,20 @@ export interface SetupPaymentParams {
     id: string;
     name?: string;
     firstName?: string;
+    lastName?: string; // Added lastName to fix TS error
   };
   user: {
     id: string;
     email?: string;
   };
   forceTwoStage?: boolean;
+}
+
+// Add the PaymentSetupState interface that was missing
+export interface PaymentSetupState {
+  clientSecret: string | null;
+  paymentAmount: number;
+  paymentError: string | null;
+  isTwoStagePayment: boolean;
+  isProcessing: boolean;
 }

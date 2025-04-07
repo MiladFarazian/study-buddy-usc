@@ -1,217 +1,127 @@
 
-import { useState, useEffect } from "react";
-import { format, addDays, startOfWeek, addWeeks } from "date-fns";
+import { useState } from "react";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BookingSlot } from "@/lib/scheduling/types";
-import { Tutor } from "@/types/tutor";
+import { Calendar } from "@/components/ui/calendar";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tutor } from "@/types/tutor";
+import { BookingSlot } from "@/lib/scheduling/types";
+import { Loader2 } from "lucide-react";
 
-export interface BookingComponentProps {
+interface BookingComponentProps {
   tutor: Tutor;
   availableSlots: BookingSlot[];
   onSelectSlot: (slot: BookingSlot) => void;
   onCancel: () => void;
-  loading?: boolean;
+  loading: boolean;
   disabled?: boolean;
 }
 
 export function BookingComponent({ 
   tutor, 
-  availableSlots,
-  onSelectSlot,
+  availableSlots, 
+  onSelectSlot, 
   onCancel,
-  loading = false,
+  loading,
   disabled = false
 }: BookingComponentProps) {
-  const [currentWeekStart, setCurrentWeekStart] = useState(
-    startOfWeek(new Date(), { weekStartsOn: 1 })
-  );
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [selectedDuration, setSelectedDuration] = useState<number>(60);
+  
+  // Get unique dates that have available slots
+  const availableDates = [...new Set(
+    availableSlots
+      .filter(slot => slot.available)
+      .map(slot => format(new Date(slot.day), 'yyyy-MM-dd'))
+  )];
+  
+  // Get available time slots for the selected date
+  const availableTimesForDate = selectedDate 
+    ? availableSlots.filter(slot => 
+        format(new Date(slot.day), 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd') && 
+        slot.available
+      )
+    : [];
 
-  // Group slots by date
-  const slotsByDate = availableSlots.reduce<Record<string, BookingSlot[]>>(
-    (acc, slot) => {
-      const date = format(new Date(slot.startTime), 'yyyy-MM-dd');
-      if (!acc[date]) {
-        acc[date] = [];
+  // Handle form submission
+  const handleSubmit = () => {
+    if (selectedDate && selectedTime) {
+      const selectedSlot = availableTimesForDate.find(slot => slot.start === selectedTime);
+      if (selectedSlot) {
+        onSelectSlot(selectedSlot);
       }
-      acc[date].push(slot);
-      return acc;
-    },
-    {}
-  );
-  
-  // Get available dates in the current week
-  const availableDates = Object.keys(slotsByDate)
-    .filter(date => {
-      const dateObj = new Date(date);
-      const weekEnd = addDays(currentWeekStart, 6);
-      return dateObj >= currentWeekStart && dateObj <= weekEnd;
-    })
-    .sort();
-  
-  // Previous and next week navigation
-  const handlePrevWeek = () => {
-    setCurrentWeekStart(prevWeek => addWeeks(prevWeek, -1));
-    setSelectedDate(null);
-    setSelectedTime(null);
-  };
-  
-  const handleNextWeek = () => {
-    setCurrentWeekStart(prevWeek => addWeeks(prevWeek, 1));
-    setSelectedDate(null);
-    setSelectedTime(null);
-  };
-  
-  // When date is selected, update available times
-  useEffect(() => {
-    if (selectedDate) {
-      const slots = slotsByDate[selectedDate] || [];
-      const times = [...new Set(slots.map(slot => 
-        format(new Date(slot.startTime), 'HH:mm')
-      ))].sort();
-      setAvailableTimes(times);
-      setSelectedTime(null);
-    } else {
-      setAvailableTimes([]);
-      setSelectedTime(null);
-    }
-  }, [selectedDate, slotsByDate]);
-  
-  // Handle final slot selection
-  const handleConfirmBooking = () => {
-    if (selectedDate && selectedTime && !disabled) {
-      const dateTimeString = `${selectedDate}T${selectedTime}:00`;
-      const startTime = new Date(dateTimeString);
-      const endTime = new Date(startTime.getTime() + (selectedDuration * 60000));
-      
-      const slot: BookingSlot = {
-        id: `${selectedDate}-${selectedTime}-${selectedDuration}`,
-        startTime: startTime.toISOString(),
-        endTime: endTime.toISOString(),
-        duration: selectedDuration,
-        tutorId: tutor.id
-      };
-      
-      onSelectSlot(slot);
     }
   };
-
+  
   return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-medium mb-4">Select Date & Time</h3>
-
-        <div className="flex justify-between items-center mb-4">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handlePrevWeek}
-            disabled={disabled}
-          >
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Previous Week
-          </Button>
-          
-          <div className="text-sm font-medium">
-            {format(currentWeekStart, 'MMM d')} - {format(addDays(currentWeekStart, 6), 'MMM d, yyyy')}
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Book a Session with {tutor.firstName || tutor.name.split(' ')[0]}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {loading ? (
+          <div className="flex justify-center items-center py-10">
+            <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal" />
+            <span className="ml-2">Loading availability...</span>
           </div>
-          
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleNextWeek}
-            disabled={disabled}
-          >
-            Next Week
-            <ChevronRight className="h-4 w-4 ml-1" />
-          </Button>
-        </div>
-
-        <div className="mb-6">
-          <Label className="mb-2 block">Available dates</Label>
-          <div className="grid grid-cols-3 gap-2 mb-6">
-            {availableDates.length > 0 ? (
-              availableDates.map((date) => (
-                <Button
-                  key={date}
-                  variant={selectedDate === date ? "default" : "outline"}
-                  onClick={() => setSelectedDate(date)}
-                  className="justify-start"
+        ) : (
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="date">Select a Date</Label>
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={(date) => {
+                  setSelectedDate(date);
+                  setSelectedTime(null);
+                }}
+                disabled={(date) => !availableDates.includes(format(date, 'yyyy-MM-dd'))}
+                className="rounded-md border mx-auto"
+              />
+            </div>
+            
+            {selectedDate && (
+              <div className="space-y-2">
+                <Label htmlFor="time">Select a Time</Label>
+                <Select 
+                  value={selectedTime || ""} 
+                  onValueChange={setSelectedTime}
                   disabled={disabled}
                 >
-                  {format(new Date(date), 'EEE, MMM d')}
-                </Button>
-              ))
-            ) : (
-              <div className="col-span-3 text-muted-foreground text-center py-4">
-                No availability this week
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a time" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableTimesForDate.length > 0 ? (
+                      availableTimesForDate.map((slot) => (
+                        <SelectItem key={`${slot.start}-${slot.end}`} value={slot.start}>
+                          {slot.start} - {slot.end}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="" disabled>No times available</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
             )}
-          </div>
-        </div>
-
-        {selectedDate && (
-          <div className="space-y-4">
-            <div>
-              <Label className="mb-2 block">Available times</Label>
-              <div className="grid grid-cols-4 gap-2">
-                {availableTimes.map(time => (
-                  <Button
-                    key={time}
-                    variant={selectedTime === time ? "default" : "outline"}
-                    onClick={() => setSelectedTime(time)}
-                    disabled={disabled}
-                  >
-                    {format(new Date(`2000-01-01T${time}`), 'h:mm a')}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <Label className="mb-2 block">Session Duration</Label>
-              <Select 
-                value={selectedDuration.toString()} 
-                onValueChange={(value) => setSelectedDuration(parseInt(value))}
-                disabled={disabled}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select duration" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="30">30 minutes</SelectItem>
-                  <SelectItem value="60">1 hour</SelectItem>
-                  <SelectItem value="90">1.5 hours</SelectItem>
-                  <SelectItem value="120">2 hours</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          </>
         )}
-      </div>
-      
-      <Separator />
-      
-      <div className="flex justify-between">
-        <Button variant="outline" onClick={onCancel} disabled={disabled}>
+      </CardContent>
+      <CardFooter className="flex justify-between">
+        <Button variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        
         <Button 
-          onClick={handleConfirmBooking} 
+          onClick={handleSubmit} 
           disabled={!selectedDate || !selectedTime || disabled}
-          className={disabled ? "opacity-50 cursor-not-allowed" : ""}
+          className="bg-usc-cardinal hover:bg-usc-cardinal-dark"
         >
-          Book Session
+          Continue
         </Button>
-      </div>
-    </div>
+      </CardFooter>
+    </Card>
   );
 }

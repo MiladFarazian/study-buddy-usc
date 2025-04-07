@@ -1,28 +1,30 @@
-import { useState, useEffect } from "react";
+
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Tab, Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tutor } from "@/types/tutor";
 import { BookingSlot } from "@/lib/scheduling/types";
 import { BookingStepSelector } from "./booking-modal/BookingStepSelector";
 import { format } from "date-fns";
+import { BookSessionModal } from "./BookSessionModal";
 
-// Updated the component where SchedulerModal is defined to use the correct BookingStepSelector props
-// Only showing the relevant part where the error occurs
+interface SchedulerModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  tutor: Tutor;
+  initialDate?: Date;
+  initialTime?: string;
+}
 
-// In your JSX where BookingStepSelector is used, remove the initialDate and initialTime props:
-export function UpdatableSchedulerModal({ /* your props */ }) {
-  // ... keep existing code
-  
+export function SchedulerModal({ isOpen, onClose, tutor, initialDate, initialTime }: SchedulerModalProps) {
+  // Since we already have BookSessionModal with better UX, let's use it directly
   return (
-    // ... keep existing code
-    <BookingStepSelector 
-      tutor={tutor} 
-      onSelectSlot={handleSlotSelect} 
-      onClose={handleClose} 
-      // initialDate and initialTime props removed as they're not defined in BookingStepSelectorProps
+    <BookSessionModal
+      isOpen={isOpen}
+      onClose={onClose}
+      tutor={tutor}
     />
-    // ... keep existing code
   );
 }

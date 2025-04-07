@@ -1,4 +1,3 @@
-
 import { useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -238,7 +237,7 @@ const TutorProfile = () => {
         </div>
       </div>
       
-      {/* Using our new SchedulerModal component */}
+      {/* Using our fixed SchedulerModal component */}
       <SchedulerModal 
         isOpen={showBookingModal} 
         onClose={() => setShowBookingModal(false)}
