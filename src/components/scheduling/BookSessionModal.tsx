@@ -6,7 +6,6 @@ import { BookingStepSelector } from "./booking-modal/BookingStepSelector";
 import { BookingSlot } from "@/lib/scheduling/types";
 import { ErrorDisplay } from "./booking-modal/ErrorDisplay";
 import { LoadingScreen } from "./booking-modal/LoadingScreen";
-import { v4 as uuidv4 } from "uuid";
 import { useToast } from "@/hooks/use-toast";
 
 interface BookSessionModalProps {
@@ -36,8 +35,8 @@ export function BookSessionModal({
     setLoading(true);
     
     try {
-      // Create a temporary session ID
-      const tempSessionId = uuidv4();
+      // Generate a random session ID instead of using uuid
+      const tempSessionId = Math.random().toString(36).substring(2, 15);
       
       // Here you would normally create a session and payment intent
       // For now, we'll just show a success message
