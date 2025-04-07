@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Tutor } from '@/types/tutor';
 import { BookingSlot } from '@/lib/scheduling/types';
 import { Loader2 } from 'lucide-react';
+import { format } from 'date-fns'; // Added import for format function
 
 interface BookingComponentProps {
   tutor: Tutor;
