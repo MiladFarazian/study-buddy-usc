@@ -1,9 +1,9 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { SetupPaymentParams, PaymentSetupResult } from "./types";
+import { PaymentSetupParams, PaymentSetupResult } from "./types";
 import { toast } from "sonner";
 
-export async function setupPaymentHandler(params: SetupPaymentParams): Promise<PaymentSetupResult> {
+export async function setupPaymentHandler(params: PaymentSetupParams): Promise<PaymentSetupResult> {
   try {
     const { sessionId, amount, tutor, user, forceTwoStage = false } = params;
     
@@ -84,7 +84,8 @@ export async function setupPaymentHandler(params: SetupPaymentParams): Promise<P
     return { 
       success: true, 
       clientSecret: data.clientSecret,
-      isTwoStagePayment: data.isTwoStagePayment || false
+      isTwoStagePayment: data.isTwoStagePayment || false,
+      amount: amount // Return the amount for consistency
     };
     
   } catch (error) {

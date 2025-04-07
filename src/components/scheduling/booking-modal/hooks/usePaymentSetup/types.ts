@@ -1,22 +1,23 @@
 
 // Update the PaymentSetupResult type to include the retryWithTwoStage property
 export interface PaymentSetupResult {
-  success: boolean;
+  success?: boolean;
   error?: string;
   alreadyInProgress?: boolean;
   clientSecret?: string;
   isTwoStagePayment?: boolean;
-  retryWithTwoStage?: boolean; // Added this property to fix the TS error
+  retryWithTwoStage?: boolean;
+  amount?: number; // Added this property to fix the TS error
 }
 
-export interface SetupPaymentParams {
+export interface PaymentSetupParams {
   sessionId: string;
   amount: number;
   tutor: {
     id: string;
     name?: string;
     firstName?: string;
-    lastName?: string; // Added lastName to fix TS error
+    lastName?: string;
   };
   user: {
     id: string;
@@ -32,5 +33,5 @@ export interface PaymentSetupState {
   paymentError: string | null;
   isTwoStagePayment: boolean;
   isProcessing: boolean;
-  retryCount: number; // Added this property to fix the TS error
+  retryCount: number;
 }

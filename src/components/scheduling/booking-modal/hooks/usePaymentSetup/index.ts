@@ -33,15 +33,16 @@ export function usePaymentSetup() {
       // In a real implementation, this would call an API to create a payment intent
       // For this demo, we'll simulate a successful payment setup
       const simulatedResult: PaymentSetupResult = {
+        success: true,
         clientSecret: 'mock_intent_secret_' + Math.random().toString(36).substring(2, 10),
         isTwoStagePayment: params.forceTwoStage || Math.random() > 0.5,
         amount: params.amount
       };
       
       // Update state with the result
-      setClientSecret(simulatedResult.clientSecret);
-      setPaymentAmount(simulatedResult.amount);
-      setIsTwoStagePayment(simulatedResult.isTwoStagePayment);
+      setClientSecret(simulatedResult.clientSecret || '');
+      setPaymentAmount(params.amount);
+      setIsTwoStagePayment(simulatedResult.isTwoStagePayment || false);
       setPaymentError('');
       
       return simulatedResult;
