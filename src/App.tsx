@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -27,7 +26,6 @@ import Students from "./pages/Students";
 import EmailVerification from "./pages/EmailVerification";
 import Messages from "./pages/Messages";
 
-// Create a new QueryClient instance OUTSIDE of the component
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
