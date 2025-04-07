@@ -1,178 +1,136 @@
 
-import { useCallback } from 'react';
-import { usePaymentState } from './usePaymentState';
-import { useRateLimiting } from './useRateLimiting';
-import { setupPaymentHandler } from './setupPaymentHandler';
-import { SetupPaymentParams, PaymentSetupResult } from './types';
-import { toast } from 'sonner';
+import { useState, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { PaymentSetupResult, SetupPaymentParams, PaymentSetupState } from "./types";
+import { useRateLimiter } from "../useRateLimiter";
+import { toast } from "sonner";
+
+// Initial state for the payment setup
+const initialState: PaymentSetupState = {
+  clientSecret: null,
+  paymentAmount: 0,
+  paymentError: null,
+  isTwoStagePayment: false,
+  isProcessing: false,
+  retryCount: 0
+};
 
 /**
- * Hook for setting up payment intents for booking
+ * Hook for setting up payment intent for a tutoring session
  */
 export function usePaymentSetup() {
-  const {
-    clientSecret,
-    paymentAmount,
-    paymentError,
-    isTwoStagePayment,
-    retryCount,
-    isProcessing,
-    setClientSecret,
-    setPaymentAmount,
-    setPaymentError,
-    setIsTwoStagePayment,
-    setIsProcessing,
-    incrementRetryCount,
-    resetState
-  } = usePaymentState();
-  
-  const {
-    checkRateLimit,
-    startRequest,
-    endRequest,
-    resetLimiting,
-    getLastSessionId
-  } = useRateLimiting();
-  
+  const [state, setState] = useState<PaymentSetupState>(initialState);
+  const { isRateLimited, trackRequest } = useRateLimiter('payment-setup', 1500); // 1.5 second cooldown
+
   /**
-   * Set up a payment intent for a session with improved error handling
+   * Sets up a payment intent by calling the Supabase Edge Function
    */
-  const setupPayment = useCallback(async ({
-    sessionId,
-    amount,
-    tutor,
-    user,
-    forceTwoStage = false
-  }: SetupPaymentParams): Promise<PaymentSetupResult> => {
-    console.log(`setupPayment called with sessionId=${sessionId}, amount=${amount}, forceTwoStage=${forceTwoStage}`);
-    
-    const { canProceed, isDuplicate, timeSinceLastRequest } = checkRateLimit(sessionId);
-    
-    if (!canProceed) {
-      console.log(`Request too soon after previous request (${timeSinceLastRequest}ms). Enforcing client-side rate limit.`);
-      toast.warning("Please wait a moment before trying again");
-      return { success: false, alreadyInProgress: true };
-    }
-    
-    // Check if this is a duplicate request for the same session
-    if (isDuplicate && clientSecret) {
-      console.log('Payment setup already completed for this session, returning cached result');
-      toast.info("Using existing payment setup");
-      return { 
-        success: true, 
-        isTwoStagePayment 
+  const setupPayment = useCallback(async (params: SetupPaymentParams): Promise<PaymentSetupResult> => {
+    // Prevent duplicate requests
+    if (state.isProcessing) {
+      console.log('Payment setup already in progress, skipping duplicate request');
+      return {
+        success: false,
+        alreadyInProgress: true,
+        error: 'Payment setup already in progress'
       };
     }
-    
-    // Start tracking this request
-    startRequest(sessionId);
-    
-    try {
-      // Update state before making the request
-      setIsProcessing(true);
-      
-      if (amount > 0) {
-        setPaymentAmount(amount);
-      }
-      
-      // Remove the second argument that was causing the TS error - we'll update state directly here instead
-      const result = await setupPaymentHandler({ 
-        sessionId, 
-        amount, 
-        tutor, 
-        user, 
-        forceTwoStage 
-      });
-      
-      // Update state based on the result
-      if (result.success) {
-        if (result.clientSecret) {
-          setClientSecret(result.clientSecret);
-        }
-        if (result.isTwoStagePayment !== undefined) {
-          setIsTwoStagePayment(result.isTwoStagePayment);
-        }
-        setPaymentError(null);
-      } else {
-        setPaymentError(result.error || "Unknown error occurred");
-        incrementRetryCount();
-      }
-      
-      // If we need to retry with two-stage payment
-      if (!result.success && result.retryWithTwoStage) {
-        console.log("Retrying with two-stage payment");
-        toast.info("Retrying with two-stage payment");
-        
-        // Instead of recursively calling, we'll try once with the two-stage flag
-        // Update state before making the retry request
-        setIsProcessing(true);
-        
-        // Remove the second argument that was causing the TS error
-        const retryResult = await setupPaymentHandler({
-          sessionId, 
-          amount, 
-          tutor, 
-          user, 
-          forceTwoStage: true
-        });
-        
-        // Update state based on the retry result
-        if (retryResult.success) {
-          if (retryResult.clientSecret) {
-            setClientSecret(retryResult.clientSecret);
-          }
-          if (retryResult.isTwoStagePayment !== undefined) {
-            setIsTwoStagePayment(retryResult.isTwoStagePayment);
-          }
-          setPaymentError(null);
-        } else {
-          setPaymentError(retryResult.error || "Unknown error during retry");
-          incrementRetryCount();
-        }
-        
-        return retryResult;
-      }
-      
-      return result;
-    } finally {
-      // End request tracking and processing state
-      endRequest();
-      setIsProcessing(false);
+
+    // Check rate limiting
+    if (isRateLimited()) {
+      console.log('Rate limited, skipping request');
+      toast.error("Please wait before trying again.");
+      return {
+        success: false,
+        error: 'Too many requests, please wait before trying again'
+      };
     }
-  }, [
-    clientSecret,
-    isTwoStagePayment,
-    checkRateLimit,
-    startRequest,
-    endRequest,
-    setClientSecret,
-    setPaymentAmount,
-    setIsTwoStagePayment,
-    setPaymentError,
-    setIsProcessing,
-    incrementRetryCount
-  ]);
-  
-  // Reset all state
-  const resetPaymentSetup = useCallback(() => {
-    resetState();
-    resetLimiting();
-  }, [resetState, resetLimiting]);
-  
+
+    trackRequest();
+    setState(prev => ({ ...prev, isProcessing: true }));
+
+    try {
+      console.log(`Setting up payment for session ${params.sessionId} with amount ${params.amount}`);
+      
+      const { data, error } = await supabase.functions.invoke('create-payment-intent', {
+        body: {
+          sessionId: params.sessionId,
+          amount: params.amount,
+          forceTwoStage: params.forceTwoStage || false,
+        },
+      });
+
+      if (error) {
+        console.error('Error setting up payment:', error);
+        setState(prev => ({ 
+          ...prev, 
+          isProcessing: false,
+          paymentError: error.message
+        }));
+        
+        return {
+          success: false,
+          error: `Error setting up payment: ${error.message}`
+        };
+      }
+
+      if (!data || !data.clientSecret) {
+        console.error('Invalid response from payment setup:', data);
+        setState(prev => ({ 
+          ...prev, 
+          isProcessing: false,
+          paymentError: 'Invalid response from payment setup'
+        }));
+        
+        return {
+          success: false,
+          error: 'Invalid response from payment setup'
+        };
+      }
+
+      // Store client secret in state
+      setState(prev => ({
+        ...prev,
+        clientSecret: data.clientSecret,
+        paymentAmount: params.amount,
+        isTwoStagePayment: data.isTwoStagePayment || false,
+        isProcessing: false,
+        paymentError: null
+      }));
+
+      return {
+        success: true,
+        clientSecret: data.clientSecret,
+        isTwoStagePayment: data.isTwoStagePayment || false
+      };
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Unknown error occurred';
+      console.error('Error setting up payment:', err);
+      
+      setState(prev => ({ 
+        ...prev, 
+        isProcessing: false,
+        paymentError: errorMsg
+      }));
+      
+      return {
+        success: false,
+        error: errorMsg
+      };
+    }
+  }, [state.isProcessing, isRateLimited, trackRequest]);
+
+  const resetPaymentState = useCallback(() => {
+    setState(initialState);
+  }, []);
+
   return {
-    clientSecret,
-    setClientSecret,
-    paymentAmount,
-    setPaymentAmount,
-    paymentError,
-    setPaymentError,
-    isTwoStagePayment,
-    setIsTwoStagePayment,
     setupPayment,
-    retryCount,
-    resetPaymentSetup,
-    isProcessing
+    resetPaymentState,
+    clientSecret: state.clientSecret,
+    paymentAmount: state.paymentAmount,
+    paymentError: state.paymentError,
+    isTwoStagePayment: state.isTwoStagePayment,
+    isProcessing: state.isProcessing
   };
 }
-
-export * from './types';

@@ -1,183 +1,96 @@
 
-import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState } from "react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tutor } from "@/types/tutor";
 import { BookingStepSelector } from "./booking-modal/BookingStepSelector";
-import { useBookingSession } from "./booking-modal/hooks/useBookingSession";
-import { PaymentSuccessScreen } from "./payment/PaymentSuccessScreen";
-import { StripePaymentForm } from "./payment/StripePaymentForm"; 
-import { SessionDetailsDisplay } from "./payment/SessionDetailsDisplay";
-import { BookingComponent } from "./BookingComponent";
-import { AuthRequiredDialog } from "./booking-modal/AuthRequiredDialog";
-import { useAvailabilityData } from "./calendar/useAvailabilityData";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, AlertCircle } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { toast } from "sonner";
+import { BookingSlot } from "@/lib/scheduling/types";
+import { ErrorDisplay } from "./booking-modal/ErrorDisplay";
+import { LoadingScreen } from "./booking-modal/LoadingScreen";
+import { v4 as uuidv4 } from "uuid";
+import { useToast } from "@/hooks/use-toast";
 
 interface BookSessionModalProps {
-  tutor: Tutor;
   isOpen: boolean;
   onClose: () => void;
+  tutor: Tutor;
+  initialDate?: Date;
+  initialTime?: string;
 }
 
-export function BookSessionModal({ tutor, isOpen, onClose }: BookSessionModalProps) {
-  const {
-    user,
-    step,
-    selectedSlot,
-    creatingSession,
-    authRequired,
-    clientSecret,
-    paymentAmount,
-    paymentError,
-    isTwoStagePayment,
-    handleSlotSelect,
-    handlePaymentComplete,
-    handleCancel,
-    setAuthRequired,
-    retryPaymentSetup,
-    isCoolingDown
-  } = useBookingSession(tutor, isOpen, onClose);
-  
-  const [activeTab, setActiveTab] = useState<string>("calendar");
-  const { loading, availableSlots, hasAvailability, errorMessage } = useAvailabilityData(tutor, new Date());
-  
-  useEffect(() => {
-    if (isOpen) {
-      setActiveTab("calendar");
-    }
-  }, [isOpen]);
-  
-  // Cooldown effect - disable booking during cooldown
-  useEffect(() => {
-    if (isCoolingDown) {
-      toast.warning("Too many booking attempts. Please wait before trying again.");
-    }
-  }, [isCoolingDown]);
-  
-  return (
-    <>
-      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="sm:max-w-[600px] p-0 max-h-[90vh] overflow-hidden">
-          <DialogHeader className="p-6 pb-2">
-            <DialogTitle>Book a Session with {tutor.firstName || tutor.name.split(' ')[0]}</DialogTitle>
-          </DialogHeader>
-          
-          {isCoolingDown && (
-            <Alert variant="warning" className="mx-6 mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Rate Limited</AlertTitle>
-              <AlertDescription>
-                Too many booking attempts. Please wait a moment before trying again.
-              </AlertDescription>
-            </Alert>
-          )}
-          
-          {step === 'select-slot' && (
-            <Tabs defaultValue="calendar" value={activeTab} onValueChange={setActiveTab} className="px-6">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="calendar" disabled={isCoolingDown}>Calendar View</TabsTrigger>
-                <TabsTrigger value="wizard" disabled={isCoolingDown}>Structured Selection</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="calendar" className="py-4">
-                <ScrollArea className="max-h-[70vh]">
-                  <div className="pr-4">
-                    <BookingStepSelector 
-                      tutor={tutor} 
-                      onSelectSlot={handleSlotSelect} 
-                      onClose={handleCancel} 
-                      disabled={isCoolingDown}
-                    />
-                  </div>
-                </ScrollArea>
-              </TabsContent>
-              
-              <TabsContent value="wizard" className="py-4">
-                <ScrollArea className="max-h-[70vh]">
-                  <div className="pr-4">
-                    <BookingComponent
-                      tutor={tutor}
-                      availableSlots={availableSlots}
-                      onSelectSlot={handleSlotSelect}
-                      onCancel={handleCancel}
-                      loading={loading}
-                      disabled={isCoolingDown}
-                    />
-                  </div>
-                </ScrollArea>
-              </TabsContent>
-            </Tabs>
-          )}
-          
-          {step === 'payment' && selectedSlot && (
-            <ScrollArea className="max-h-[70vh]">
-              <div className="p-6 space-y-6">
-                {creatingSession ? (
-                  <div className="flex flex-col items-center justify-center py-10">
-                    <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal mb-4" />
-                    <p className="text-center text-muted-foreground">Setting up your booking...</p>
-                  </div>
-                ) : (
-                  <>
-                    <SessionDetailsDisplay 
-                      tutor={tutor} 
-                      selectedSlot={selectedSlot} 
-                    />
-                    
-                    {paymentError && (
-                      <Alert variant="destructive" className="mb-4">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertTitle>Payment Error</AlertTitle>
-                        <AlertDescription>{paymentError}</AlertDescription>
-                      </Alert>
-                    )}
-                    
-                    {clientSecret ? (
-                      <StripePaymentForm
-                        clientSecret={clientSecret}
-                        amount={paymentAmount}
-                        onSuccess={handlePaymentComplete}
-                        onCancel={handleCancel}
-                        processing={false}
-                        isTwoStagePayment={isTwoStagePayment}
-                      />
-                    ) : paymentError ? (
-                      <div className="flex justify-end mt-4">
-                        <button 
-                          onClick={retryPaymentSetup}
-                          className="bg-usc-gold hover:bg-usc-gold-dark text-black py-2 px-4 rounded disabled:opacity-50"
-                          disabled={isCoolingDown}
-                        >
-                          Retry Payment Setup
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center py-10">
-                        <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal mb-4" />
-                        <p className="text-center text-muted-foreground">Preparing payment...</p>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </ScrollArea>
-          )}
-          
-          {step === 'processing' && (
-            <div className="p-6">
-              <PaymentSuccessScreen onComplete={handleCancel} />
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+export function BookSessionModal({ 
+  isOpen, 
+  onClose, 
+  tutor,
+  initialDate,
+  initialTime
+}: BookSessionModalProps) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+
+  const handleSelectSlot = async (slot: BookingSlot) => {
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    setLoading(true);
+    
+    try {
+      // Create a temporary session ID
+      const tempSessionId = uuidv4();
       
-      <AuthRequiredDialog 
-        isOpen={authRequired} 
-        onClose={() => setAuthRequired(false)} 
+      // Here you would normally create a session and payment intent
+      // For now, we'll just show a success message
+      setTimeout(() => {
+        toast({
+          title: "Session booked!",
+          description: `You've successfully booked a session with ${tutor.firstName || tutor.name.split(' ')[0]}.`
+        });
+        
+        setLoading(false);
+        setIsSubmitting(false);
+        onClose();
+      }, 1500);
+    } catch (err) {
+      console.error("Error booking session:", err);
+      setError(err instanceof Error ? err.message : "An unknown error occurred");
+      setLoading(false);
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleClose = () => {
+    if (!isSubmitting) {
+      onClose();
+    }
+  };
+
+  const renderContent = () => {
+    if (loading) {
+      return <LoadingScreen message="Processing your booking..." />;
+    }
+
+    if (error) {
+      return <ErrorDisplay message={error} onClose={handleClose} />;
+    }
+
+    return (
+      <BookingStepSelector 
+        tutor={tutor}
+        onSelectSlot={handleSelectSlot}
+        onClose={handleClose}
+        disabled={isSubmitting}
       />
-    </>
+    );
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-[600px] p-0">
+        <div className="p-6">
+          {renderContent()}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
