@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tutor } from "@/types/tutor";
 import { BookingStepSelector } from "./booking-modal/BookingStepSelector";
-import { useBookingSession } from "./booking-modal/hooks/useBookingSession";  // Fixed path
+import { useBookingSession } from "./booking-modal/hooks/useBookingSession";
 import { PaymentSuccessScreen } from "./payment/PaymentSuccessScreen";
 import { StripePaymentForm } from "./payment/StripePaymentForm"; 
 import { SessionDetailsDisplay } from "./payment/SessionDetailsDisplay";
@@ -12,9 +12,9 @@ import { BookingComponent } from "./BookingComponent";
 import { AuthRequiredDialog } from "./booking-modal/AuthRequiredDialog";
 import { useAvailabilityData } from "./calendar/useAvailabilityData";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { toast } from "sonner";
 
 interface BookSessionModalProps {
   tutor: Tutor;
@@ -37,7 +37,8 @@ export function BookSessionModal({ tutor, isOpen, onClose }: BookSessionModalPro
     handlePaymentComplete,
     handleCancel,
     setAuthRequired,
-    retryPaymentSetup
+    retryPaymentSetup,
+    isCoolingDown
   } = useBookingSession(tutor, isOpen, onClose);
   
   const [activeTab, setActiveTab] = useState<string>("calendar");
@@ -49,6 +50,13 @@ export function BookSessionModal({ tutor, isOpen, onClose }: BookSessionModalPro
     }
   }, [isOpen]);
   
+  // Cooldown effect - disable booking during cooldown
+  useEffect(() => {
+    if (isCoolingDown) {
+      toast.warning("Too many booking attempts. Please wait before trying again.");
+    }
+  }, [isCoolingDown]);
+  
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -57,11 +65,21 @@ export function BookSessionModal({ tutor, isOpen, onClose }: BookSessionModalPro
             <DialogTitle>Book a Session with {tutor.firstName || tutor.name.split(' ')[0]}</DialogTitle>
           </DialogHeader>
           
+          {isCoolingDown && (
+            <Alert variant="warning" className="mx-6 mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Rate Limited</AlertTitle>
+              <AlertDescription>
+                Too many booking attempts. Please wait a moment before trying again.
+              </AlertDescription>
+            </Alert>
+          )}
+          
           {step === 'select-slot' && (
             <Tabs defaultValue="calendar" value={activeTab} onValueChange={setActiveTab} className="px-6">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="calendar">Calendar View</TabsTrigger>
-                <TabsTrigger value="wizard">Structured Selection</TabsTrigger>
+                <TabsTrigger value="calendar" disabled={isCoolingDown}>Calendar View</TabsTrigger>
+                <TabsTrigger value="wizard" disabled={isCoolingDown}>Structured Selection</TabsTrigger>
               </TabsList>
               
               <TabsContent value="calendar" className="py-4">
@@ -71,6 +89,7 @@ export function BookSessionModal({ tutor, isOpen, onClose }: BookSessionModalPro
                       tutor={tutor} 
                       onSelectSlot={handleSlotSelect} 
                       onClose={handleCancel} 
+                      disabled={isCoolingDown}
                     />
                   </div>
                 </ScrollArea>
@@ -85,6 +104,7 @@ export function BookSessionModal({ tutor, isOpen, onClose }: BookSessionModalPro
                       onSelectSlot={handleSlotSelect}
                       onCancel={handleCancel}
                       loading={loading}
+                      disabled={isCoolingDown}
                     />
                   </div>
                 </ScrollArea>
@@ -128,7 +148,8 @@ export function BookSessionModal({ tutor, isOpen, onClose }: BookSessionModalPro
                       <div className="flex justify-end mt-4">
                         <button 
                           onClick={retryPaymentSetup}
-                          className="bg-usc-gold hover:bg-usc-gold-dark text-black py-2 px-4 rounded"
+                          className="bg-usc-gold hover:bg-usc-gold-dark text-black py-2 px-4 rounded disabled:opacity-50"
+                          disabled={isCoolingDown}
                         >
                           Retry Payment Setup
                         </button>

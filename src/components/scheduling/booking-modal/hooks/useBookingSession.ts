@@ -8,6 +8,7 @@ import { usePaymentSetup } from './usePaymentSetup';
 import { useSlotSelection } from './useSlotSelection';
 import { useBookingFlow } from './useBookingFlow';
 import { useRateLimiter } from './useRateLimiter';
+import { toast } from 'sonner';
 
 /**
  * Primary hook for the booking session flow, composing the other specialized hooks
@@ -50,8 +51,9 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
     isProcessing
   } = usePaymentSetup();
   
-  // Use the rate limiter
-  const { isLimited, markAttempt, setupInProgress } = useRateLimiter();
+  // Use the enhanced rate limiter - increased cooldown period
+  const { isLimited, markAttempt, setupInProgress, setInProgress, resetLimiter, isCoolingDown } = 
+    useRateLimiter(3000, 3, 20000);
   
   // Reset the flow when the modal is closed
   useSessionReset(isOpen, resetBookingFlow, setSelectedSlot, setSessionId, resetPaymentSetup, setCreatingSession);
@@ -63,12 +65,18 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
       return;
     }
     
-    // Check rate limiting
+    // Check rate limiting with enhanced checks
+    if (isCoolingDown) {
+      toast.error("Too many attempts. Please wait before trying again.");
+      return;
+    }
+    
     if (isLimited() || setupInProgress()) {
       return;
     }
     
     markAttempt();
+    setInProgress(true);
     
     try {
       setSelectedSlot(slot);
@@ -99,36 +107,51 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
           setIsTwoStagePayment(result.isTwoStagePayment);
         }
       }
+    } catch (error) {
+      console.error("Error in slot selection:", error);
+      toast.error("Failed to set up session. Please try again.");
     } finally {
       setCreatingSession(false);
+      setInProgress(false);
     }
   }, [user, tutor, calculatePaymentAmount, createSession, setupPayment, setStep, 
       setSessionId, setCreatingSession, setSelectedSlot, setAuthRequired, 
-      setIsTwoStagePayment, isLimited, markAttempt, setupInProgress]);
+      setIsTwoStagePayment, isLimited, markAttempt, setupInProgress, 
+      setInProgress, isCoolingDown]);
   
   // Handle payment completion
   const handlePaymentComplete = useCallback(() => {
     setStep('processing');
+    resetLimiter(); // Reset rate limiting after successful payment
     
     // After a short delay, close the modal
     setTimeout(() => {
       onClose();
     }, 3000);
-  }, [onClose, setStep]);
+  }, [onClose, setStep, resetLimiter]);
   
   // Handle cancellation
   const handleCancel = useCallback(() => {
+    resetLimiter(); // Reset rate limiting on cancel
     onClose();
-  }, [onClose]);
+  }, [onClose, resetLimiter]);
   
-  // Retry payment setup
+  // Retry payment setup with enhanced rate limiting
   const retryPaymentSetup = useCallback(() => {
-    if (sessionId && selectedSlot && user && !setupInProgress()) {
-      if (isLimited()) {
+    if (sessionId && selectedSlot && user) {
+      // Check enhanced rate limiting
+      if (isCoolingDown) {
+        toast.error("Too many attempts. Please wait before trying again.");
+        return;
+      }
+      
+      if (isLimited() || setupInProgress()) {
         return;
       }
       
       markAttempt();
+      setInProgress(true);
+      
       setCreatingSession(true);
       
       // Calculate amount again
@@ -151,10 +174,14 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
         })
         .finally(() => {
           setCreatingSession(false);
+          setInProgress(false);
         });
+    } else {
+      toast.error("Missing session information. Please try again.");
     }
   }, [sessionId, selectedSlot, user, tutor, calculatePaymentAmount, setupPayment, 
-      setCreatingSession, setIsTwoStagePayment, isLimited, markAttempt, setupInProgress]);
+      setCreatingSession, setIsTwoStagePayment, isLimited, markAttempt, setupInProgress, 
+      setInProgress, isCoolingDown]);
   
   return {
     user,
@@ -172,7 +199,8 @@ export function useBookingSession(tutor: Tutor, isOpen: boolean, onClose: () => 
     handleCancel,
     setAuthRequired,
     retryPaymentSetup,
-    isProcessing
+    isProcessing,
+    isCoolingDown
   };
 }
 

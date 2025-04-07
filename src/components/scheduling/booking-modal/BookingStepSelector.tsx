@@ -1,164 +1,74 @@
 
-import { useState, useEffect, useCallback } from "react";
-import { Tutor } from "@/types/tutor";
-import { BookingSlot } from "@/lib/scheduling";
-import { useAvailabilityData } from "@/hooks/useAvailabilityData";
-import { DateSelector } from "./date-selector/DateSelector";
-import { TimeSlotList } from "./time-slot/TimeSlotList";
-import { SessionDurationSelector } from "./duration/SessionDurationSelector";
-import { StudentInfoForm } from "./student-info/StudentInfoForm";
-import { SlotSelectionFooter } from "./SlotSelectionFooter";
+import { useState } from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
 import { useBookingState } from "./useBookingState";
-import { LoadingState } from "./LoadingState";
-import { ErrorDisplay } from "./ErrorDisplay";
-import { startOfDay, format, isSameDay } from "date-fns";
+import { WeeklyAvailabilityCalendar } from "../calendar/weekly/WeeklyAvailabilityCalendar";
+import { Tutor } from "@/types/tutor";
+import { BookingSlot } from "@/lib/scheduling/types";
+import { formatDate } from "date-fns";
 
 interface BookingStepSelectorProps {
   tutor: Tutor;
   onSelectSlot: (slot: BookingSlot) => void;
   onClose: () => void;
-  initialDate?: Date;
-  initialTime?: string;
+  disabled?: boolean;
 }
 
-export const BookingStepSelector = ({ 
+export function BookingStepSelector({ 
   tutor, 
-  onSelectSlot, 
+  onSelectSlot,
   onClose,
-  initialDate,
-  initialTime
-}: BookingStepSelectorProps) => {
-  const {
-    date,
-    setDate,
-    selectedTimeSlot,
-    email,
-    setEmail,
-    sessionDuration,
-    calculatedCost,
-    selectedStartTime,
-    availableStartTimes,
-    handleTimeSlotSelect,
-    handleStartTimeChange,
-    handleDurationChange,
-    getMaxDuration,
-    getFinalBookingSlot,
-    getSessionTimeRange,
-    formatTimeForDisplay
-  } = useBookingState(initialDate, initialTime);
+  disabled = false
+}: BookingStepSelectorProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const { state, dispatch } = useBookingState();
   
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const startDate = date || startOfDay(new Date());
-  const { loading, availableSlots, hasAvailability, errorMessage, refreshAvailability } = useAvailabilityData(tutor, startDate);
-  
-  // Filter available slots for the selected date
-  const availableTimeSlotsForDate = useCallback(() => {
-    if (!date) return [];
+  // Handle slot selection
+  const handleSlotSelected = (slot: BookingSlot) => {
+    if (disabled) return;
     
-    return availableSlots.filter(slot => {
-      const slotDate = slot.day instanceof Date ? slot.day : new Date(slot.day as string);
-      return (
-        slotDate.toDateString() === date.toDateString() && 
-        slot.available
-      );
-    });
-  }, [date, availableSlots]);
-  
-  const timeSlotsForSelectedDate = availableTimeSlotsForDate();
-  
-  // When initial date and time are provided, pre-select the matching slot
-  useEffect(() => {
-    if (initialDate && initialTime && availableSlots.length > 0 && !selectedTimeSlot) {
-      const matchingSlot = availableSlots.find(slot => {
-        // Match the slot that contains the initial time
-        const slotDate = slot.day instanceof Date ? slot.day : new Date(slot.day as string);
-        if (!isSameDay(slotDate, initialDate)) return false;
-        const slotStartHour = parseInt(slot.start.split(':')[0]);
-        const initialTimeHour = parseInt(initialTime.split(':')[0]);
-        return slotStartHour === initialTimeHour;
-      });
-      
-      if (matchingSlot) {
-        handleTimeSlotSelect(matchingSlot);
-      }
-    }
-  }, [initialDate, initialTime, availableSlots, selectedTimeSlot, handleTimeSlotSelect]);
-  
-  // Handle confirming the session booking
-  const handleConfirmBooking = () => {
-    setIsSubmitting(true);
-    try {
-      const bookingSlot = getFinalBookingSlot();
-      if (bookingSlot) {
-        onSelectSlot(bookingSlot);
-      }
-    } catch (error) {
-      console.error("Error creating booking slot:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
+    setIsLoading(true);
+    
+    // Pass the slot to the parent component
+    onSelectSlot(slot);
+    
+    // We'll let the parent component handle the state transition to the next step
+    setTimeout(() => setIsLoading(false), 500);
   };
   
-  if (loading && availableSlots.length === 0) {
-    return <LoadingState />;
-  }
-  
-  if (!hasAvailability && !loading) {
-    return (
-      <ErrorDisplay 
-        message={errorMessage || "No availability found for this tutor."} 
-        onClose={onClose} 
-      />
-    );
-  }
-  
   return (
-    <div className="space-y-6 w-full">
-      <DateSelector 
-        date={date} 
-        onDateChange={setDate} 
-        availableSlots={availableSlots}
-        isLoading={loading}
-      />
+    <div className="space-y-6">
+      <div className="bg-gray-50 rounded-md p-4">
+        <h3 className="font-medium mb-1">Select a time slot on the calendar</h3>
+        <p className="text-sm text-muted-foreground">
+          Click a slot and choose a duration to book a session
+        </p>
+      </div>
       
-      {date && (
-        <TimeSlotList 
-          availableTimeSlots={timeSlotsForSelectedDate}
-          selectedTimeSlot={selectedTimeSlot}
-          selectedDuration={sessionDuration}
-          onSelectTimeSlot={handleTimeSlotSelect}
-          formatTimeForDisplay={formatTimeForDisplay}
-          isLoading={loading}
+      <div className="relative">
+        {disabled && (
+          <div className="absolute inset-0 bg-white/70 z-10 flex items-center justify-center rounded-md">
+            <div className="bg-white p-4 rounded-md shadow text-center">
+              <p className="font-medium">Booking temporarily disabled</p>
+              <p className="text-sm text-muted-foreground">Please wait a moment before trying again</p>
+            </div>
+          </div>
+        )}
+      
+        <WeeklyAvailabilityCalendar 
+          tutorId={tutor.id}
+          onSlotSelected={handleSlotSelected}
+          readOnly={false}
+          loading={isLoading}
         />
-      )}
+      </div>
       
-      {selectedTimeSlot && (
-        <SessionDurationSelector
-          sessionTimeRange={getSessionTimeRange()}
-          calculatedCost={calculatedCost}
-          sessionDuration={sessionDuration}
-          onDurationChange={(duration) => handleDurationChange(duration, tutor.hourlyRate || 25)}
-          onStartTimeChange={handleStartTimeChange}
-          maxDuration={getMaxDuration()}
-          hourlyRate={tutor.hourlyRate || 25}
-          availableStartTimes={availableStartTimes}
-          selectedStartTime={selectedStartTime}
-          formatTimeForDisplay={formatTimeForDisplay}
-        />
-      )}
-      
-      <StudentInfoForm 
-        email={email}
-        onEmailChange={(e) => setEmail(e.target.value)}
-      />
-      
-      <SlotSelectionFooter
-        onProceed={handleConfirmBooking}
-        onCancel={onClose}
-        isLoading={isSubmitting || loading}
-        isDisabled={!selectedTimeSlot || !email}
-      />
+      <div className="flex justify-end space-x-2 mt-4">
+        <Button variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+      </div>
     </div>
   );
-};
+}

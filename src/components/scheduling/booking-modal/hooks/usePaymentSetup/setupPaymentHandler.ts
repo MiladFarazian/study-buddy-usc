@@ -93,35 +93,17 @@ export async function setupPaymentHandler({
     )) {
       // Only retry if not already trying two-stage payment
       if (!forceTwoStage) {
-        try {
-          console.log("Creating two-stage payment as fallback due to Connect setup issue");
-          
-          // Try again with forceTwoStage=true
-          return await setupPaymentHandler({
-            sessionId,
-            amount,
-            tutor,
-            user,
-            forceTwoStage: true
-          }, {
-            setClientSecret,
-            setPaymentAmount,
-            setIsTwoStagePayment,
-            setPaymentError,
-            setIsProcessing,
-            incrementRetryCount
-          });
-        } catch (retryError: any) {
-          console.error('Retry payment setup error:', retryError);
-          setPaymentError('Could not set up payment. Please try again in a moment.');
-        }
+        // We're not directly retrying here - just setting up to use two-stage payment
+        // Instead of recursively calling
+        setPaymentError('Using two-stage payment as tutor has not completed setup');
+        return { success: false, retryWithTwoStage: true };
       } else {
         setPaymentError('Two-stage payment creation failed. Please try again later.');
       }
     } else if (isRateLimitError || isNetworkError) {
       // Improve feedback message
       const errorMessage = isRateLimitError 
-        ? 'Payment service is currently busy. Please wait a moment before trying again.' 
+        ? 'Payment service is currently busy. Please wait before trying again.' 
         : 'Network connectivity issue. Please check your connection and try again.';
         
       setPaymentError(errorMessage);
