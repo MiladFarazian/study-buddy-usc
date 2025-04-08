@@ -13,6 +13,17 @@ export const useProfileForm = (profile: Profile | null) => {
   const [bio, setBio] = useState(profile?.bio || "");
   const [hourlyRate, setHourlyRate] = useState(profile?.hourly_rate?.toString() || "");
 
+  // Log initial values for debugging
+  console.log("Profile initial values:", {
+    firstName,
+    lastName,
+    major,
+    gradYear,
+    bio,
+    hourlyRate,
+    profileHourlyRate: profile?.hourly_rate
+  });
+
   const isProfileComplete = Boolean(
     firstName && lastName && major && bio
   );

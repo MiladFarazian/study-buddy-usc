@@ -67,6 +67,8 @@ export const useProfileSettingsState = (profile: Profile | null) => {
   // Create a handleInputChange function
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    console.log(`Input changed: ${name} = ${value}`);
+    
     switch (name) {
       case "first_name":
         setFirstName(value);
@@ -84,10 +86,11 @@ export const useProfileSettingsState = (profile: Profile | null) => {
         setBio(value);
         break;
       case "hourly_rate":
+        console.log("Setting hourly rate to:", value);
         setHourlyRate(value);
         break;
       default:
-        // For other fields, we'll update the formData directly
+        console.log(`Unhandled input field: ${name}`);
         break;
     }
   };
