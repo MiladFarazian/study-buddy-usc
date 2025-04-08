@@ -12,6 +12,7 @@ export const useAuthProfile = (userId: string | undefined) => {
   const fetchProfile = async (id: string) => {
     setLoading(true);
     try {
+      console.log("Fetching profile for user ID:", id);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -26,7 +27,14 @@ export const useAuthProfile = (userId: string | undefined) => {
           variant: "destructive",
         });
       } else if (data) {
+        console.log("Profile fetched successfully:", {
+          first_name: data.first_name,
+          last_name: data.last_name,
+          major: data.major
+        });
         setProfile(data as Profile);
+      } else {
+        console.log("No profile found for user ID:", id);
       }
     } catch (error) {
       console.error('Profile fetch error:', error);

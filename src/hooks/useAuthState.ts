@@ -18,7 +18,8 @@ export const useAuthState = () => {
       setSession(session);
       setUser(session?.user ?? null);
       
-      // Only finished loading once we've checked for session AND loaded profile
+      // Only finish loading once we've checked for session
+      // Profile loading is handled separately to prevent race conditions
       if (!session?.user) {
         setLoading(false);
       }
@@ -41,13 +42,33 @@ export const useAuthState = () => {
   }, []);
 
   // Set loading to false when profile is loaded (after user is set)
+  // This ensures we wait for profile data before making decisions
   useEffect(() => {
     if (user === null || profile !== null) {
-      setLoading(false);
+      // Wait a bit to ensure profile data is fully populated
+      const timer = setTimeout(() => {
+        setLoading(false);
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
   }, [user, profile]);
 
+  // Log profile information for debugging
+  useEffect(() => {
+    if (profile) {
+      console.log("Profile loaded in useAuthState:", {
+        first_name: profile.first_name,
+        last_name: profile.last_name,
+        major: profile.major,
+        role: profile.role,
+        isComplete: !!(profile.first_name && profile.last_name && profile.major)
+      });
+    }
+  }, [profile]);
+
   // Calculate profile completeness and role flags
+  // Make sure this matches the check in RequireProfileCompletion
   const isProfileComplete = !!profile && !!profile.first_name && !!profile.last_name && !!profile.major;
   const isStudent = profile?.role === 'student';
   const isTutor = profile?.role === 'tutor';

@@ -1,30 +1,33 @@
 
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { Loader2 } from "lucide-react";
 
 interface RequireProfileCompletionProps {
   children: React.ReactNode;
 }
 
 const RequireProfileCompletion = ({ children }: RequireProfileCompletionProps) => {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, isProfileComplete } = useAuth();
   const location = useLocation();
 
-  // Check if profile is complete (has required fields)
-  const isProfileComplete = profile && 
-    profile.first_name && 
-    profile.last_name && 
-    profile.major && 
-    profile.bio;
-
+  // If still loading, show a loading indicator to prevent incorrect redirects
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <Loader2 className="h-10 w-10 animate-spin text-usc-cardinal mb-4" />
+        <p className="text-lg">Loading your profile...</p>
+      </div>
+    );
+  }
+  
   // Don't redirect if:
-  // 1. Still loading
-  // 2. User is not logged in (PrivateRoute will handle this)
-  // 3. User is on the profile page already
-  // 4. User is on the verify-email page
-  // 5. User is completing their profile
+  // 1. User is not logged in (PrivateRoute will handle this)
+  // 2. User is on the profile page already
+  // 3. User is on the verify-email page
+  // 4. User is completing their profile
+  // 5. User is on the auth callback page
   if (
-    loading || 
     !user || 
     location.pathname === "/profile" || 
     location.pathname === "/verify-email" || 
@@ -35,6 +38,7 @@ const RequireProfileCompletion = ({ children }: RequireProfileCompletionProps) =
 
   // If profile is incomplete, redirect to the profile page
   if (!isProfileComplete) {
+    console.log("Profile incomplete, redirecting to profile page", profile);
     return <Navigate to="/profile" state={{ requireCompletion: true }} replace />;
   }
 
