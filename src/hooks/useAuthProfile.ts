@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Profile } from "@/contexts/types/auth-types";
+import { Profile } from "@/types/profile";
 
 export const useAuthProfile = (userId: string | undefined) => {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -52,7 +52,7 @@ export const useAuthProfile = (userId: string | undefined) => {
   }, [userId]);
 
   const updateProfile = async (updatedProfile: Partial<Profile>) => {
-    if (!userId || !profile) return null;
+    if (!userId || !profile) return { success: false, error: "No user ID or profile found" };
     
     setLoading(true);
     try {
@@ -73,7 +73,7 @@ export const useAuthProfile = (userId: string | undefined) => {
           description: "Failed to update your profile. Please try again.",
           variant: "destructive",
         });
-        return { error };
+        return { success: false, error };
       }
       
       // Immediately update the local state with the server response
@@ -85,10 +85,10 @@ export const useAuthProfile = (userId: string | undefined) => {
         description: "Your profile has been updated successfully.",
       });
       
-      return { data: data as Profile };
+      return { success: true, error: null };
     } catch (error) {
       console.error('Profile update error:', error);
-      return { error };
+      return { success: false, error };
     } finally {
       setLoading(false);
     }

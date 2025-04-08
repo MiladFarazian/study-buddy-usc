@@ -8,9 +8,11 @@ export type AuthContextType = {
   profile: Profile | null;
   signIn: (provider: string, options?: any) => Promise<any>;
   signOut: () => Promise<void>;
-  loading: boolean; // Make sure loading is defined
+  loading: boolean;
   isStudent: boolean;
   isTutor: boolean;
   isProfileComplete: boolean;
   updateProfile: (data: Partial<Profile>) => Promise<{ success: boolean; error: any | null }>;
 };
+
+export type { Profile };

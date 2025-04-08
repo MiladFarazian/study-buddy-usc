@@ -3,7 +3,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { uploadAvatar } from "@/components/profile/AvatarUtils";
-import { Profile } from "@/contexts/types/auth-types";
+import { Profile } from "@/types/profile";
 
 export const useProfileSubmission = (
   user: any, 
