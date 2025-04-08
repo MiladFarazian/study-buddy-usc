@@ -134,18 +134,6 @@ export const ProfileForm = ({
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="hourly_rate">Hourly Rate ($)</Label>
-          <Input 
-                id="hourly_rate" 
-                name="hourly_rate"
-                value={formData.hourly_rate}
-                onChange={handleInputChange}
-                placeholder="25" 
-                className="pl-10"
-              />
-        </div>
-
         {isTutor && (
           <div className="space-y-2">
             <Label htmlFor="hourly_rate">Hourly Rate ($)</Label>
