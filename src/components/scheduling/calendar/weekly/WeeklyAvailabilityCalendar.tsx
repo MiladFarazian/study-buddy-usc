@@ -2,22 +2,28 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { addDays, format, startOfWeek } from 'date-fns';
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { WeeklyAvailability } from "@/lib/scheduling/types";
 import { WeeklyCalendarHeader } from './WeeklyCalendarHeader';
 import { CalendarGrid } from './CalendarGrid';
 import { CalendarHelpText } from './CalendarHelpText';
 import { useSelectionState } from './hooks/useSelectionState';
+import { Loader2 } from 'lucide-react';
 
 interface WeeklyAvailabilityCalendarProps {
   availability: WeeklyAvailability;
   onChange: (availability: WeeklyAvailability) => void;
   readOnly?: boolean;
+  onSave?: () => Promise<void>;
+  isSaving?: boolean;
 }
 
 export const WeeklyAvailabilityCalendar = ({
   availability,
   onChange,
-  readOnly = false
+  readOnly = false,
+  onSave,
+  isSaving = false
 }: WeeklyAvailabilityCalendarProps) => {
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(
     startOfWeek(new Date(), { weekStartsOn: 0 })
@@ -87,7 +93,24 @@ export const WeeklyAvailabilityCalendar = ({
           </div>
         </div>
         
-        <CalendarHelpText readOnly={readOnly} />
+        <div className="flex justify-between items-center mt-4">
+          <CalendarHelpText readOnly={readOnly} />
+          
+          {!readOnly && onSave && (
+            <Button 
+              onClick={onSave}
+              disabled={isSaving}
+              className="bg-usc-cardinal hover:bg-usc-cardinal-dark"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : 'Save Changes'}
+            </Button>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

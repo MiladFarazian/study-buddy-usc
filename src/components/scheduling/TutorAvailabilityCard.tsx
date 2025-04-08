@@ -1,10 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
-import { getTutorAvailability } from "@/lib/scheduling";
+import { getTutorAvailability, updateTutorAvailability } from "@/lib/scheduling";
 import { WeeklyAvailabilityCalendar } from './calendar';
 import { WeeklyAvailability } from "@/lib/scheduling/types";
 import { Loader2 } from "lucide-react";
 import { format, addDays } from 'date-fns';
+import { useToast } from "@/hooks/use-toast";
 
 interface TutorAvailabilityCardProps {
   tutorId: string;
@@ -19,7 +21,9 @@ export const TutorAvailabilityCard: React.FC<TutorAvailabilityCardProps> = ({
 }) => {
   const [availability, setAvailability] = useState<WeeklyAvailability | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     async function loadAvailability() {
@@ -72,6 +76,33 @@ export const TutorAvailabilityCard: React.FC<TutorAvailabilityCardProps> = ({
     }
   };
 
+  const handleSaveAvailability = async () => {
+    if (!tutorId || !availability) return;
+    
+    setIsSaving(true);
+    try {
+      const success = await updateTutorAvailability(tutorId, availability);
+      
+      if (success) {
+        toast({
+          title: "Availability Saved",
+          description: "Your availability has been updated successfully.",
+        });
+      } else {
+        throw new Error("Failed to update availability");
+      }
+    } catch (error) {
+      console.error("Error saving availability:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save your availability. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <Card className="p-6 flex justify-center items-center h-64">
@@ -96,6 +127,8 @@ export const TutorAvailabilityCard: React.FC<TutorAvailabilityCardProps> = ({
       availability={availability}
       onChange={handleAvailabilityChange}
       readOnly={readOnly}
+      onSave={!readOnly ? handleSaveAvailability : undefined}
+      isSaving={isSaving}
     />
   );
 };
