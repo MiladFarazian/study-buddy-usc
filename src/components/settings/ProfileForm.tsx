@@ -41,6 +41,8 @@ export const ProfileForm = ({
   handleProfileUpdate,
   userEmail
 }: ProfileFormProps) => {
+  console.log("ProfileForm rendering with hourly_rate:", formData.hourly_rate);
+  
   return (
     <Card className="lg:col-span-2">
       <CardHeader>
@@ -143,7 +145,10 @@ export const ProfileForm = ({
                 id="hourly_rate" 
                 name="hourly_rate"
                 value={formData.hourly_rate}
-                onChange={handleInputChange}
+                onChange={(e) => {
+                  console.log("Hourly rate input changed to:", e.target.value);
+                  handleInputChange(e);
+                }}
                 placeholder="25" 
                 className="pl-10"
               />

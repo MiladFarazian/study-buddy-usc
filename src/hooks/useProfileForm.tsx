@@ -58,6 +58,8 @@ export const useProfileFormState = (profile: Profile | null) => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    console.log(`ProfileFormState input changed: ${name} = ${value}`);
+    
     setFormData((prev) => ({
       ...prev,
       [name]: value,
