@@ -4,6 +4,7 @@ import Sidebar from "./Sidebar";
 import NavBar from "./NavBar";
 import MobileNavBar from "./MobileNavBar";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface LayoutProps {
   children: ReactNode;
@@ -11,6 +12,7 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   const isMobile = useIsMobile();
+  const { loading } = useAuth();
   
   return (
     <div className="flex flex-col min-h-screen max-w-full overflow-hidden">

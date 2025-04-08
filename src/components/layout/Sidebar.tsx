@@ -9,18 +9,30 @@ import {
   MessageSquare, 
   Settings, 
   Users,
-  CreditCard
+  CreditCard,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useState, useEffect } from "react";
 
 const Sidebar = () => {
   const location = useLocation();
-  const { isStudent, isTutor, user } = useAuth();
+  const { isStudent, isTutor, user, loading } = useAuth();
   const isMobile = useIsMobile();
+  const [isInitializing, setIsInitializing] = useState(true);
   
-  console.log("Sidebar auth state:", { isStudent, isTutor, user: !!user });
+  // Use effect to track when initial auth check is complete
+  useEffect(() => {
+    if (!loading) {
+      // Add a small delay to ensure UI updates smoothly
+      const timer = setTimeout(() => {
+        setIsInitializing(false);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
   
   if (isMobile) return null;
   
@@ -87,37 +99,45 @@ const Sidebar = () => {
     }
   ];
 
-  // Adding additional logging to debug item visibility
-  console.log("SidebarItems with showWhen status:", sidebarItems.map(item => ({
-    title: item.title,
-    showWhen: item.showWhen
-  })));
-
   const filteredItems = sidebarItems.filter(item => item.showWhen);
-  
-  console.log("Filtered sidebar items:", filteredItems.map(item => item.title));
   
   return (
     <div className="min-h-screen w-64 bg-white text-usc-cardinal border-r border-gray-200 hidden md:block">
       <nav className="p-4 space-y-2">
-        {filteredItems.map((item) => {
-          const isActive = location.pathname === item.path || 
+        {isInitializing ? (
+          // Show skeleton loaders while initializing
+          <>
+            {Array(5).fill(0).map((_, i) => (
+              <div 
+                key={i} 
+                className="flex items-center gap-3 p-3 rounded-md animate-pulse"
+              >
+                <div className="w-5 h-5 bg-gray-200 rounded" />
+                <div className="h-4 bg-gray-200 rounded w-24" />
+              </div>
+            ))}
+          </>
+        ) : (
+          // Show actual sidebar items when ready
+          filteredItems.map((item) => {
+            const isActive = location.pathname === item.path || 
                           (item.path.startsWith('/settings') && location.pathname.startsWith('/settings'));
-          
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={cn(
-                "flex items-center gap-3 p-3 rounded-md transition-colors hover:bg-gray-100",
-                isActive ? "bg-gray-100 text-usc-cardinal font-medium" : "text-usc-cardinal"
-              )}
-            >
-              <item.icon size={20} />
-              <span>{item.title}</span>
-            </Link>
-          );
-        })}
+            
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={cn(
+                  "flex items-center gap-3 p-3 rounded-md transition-colors hover:bg-gray-100",
+                  isActive ? "bg-gray-100 text-usc-cardinal font-medium" : "text-usc-cardinal"
+                )}
+              >
+                <item.icon size={20} />
+                <span>{item.title}</span>
+              </Link>
+            );
+          })
+        )}
       </nav>
     </div>
   );

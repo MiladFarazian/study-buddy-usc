@@ -1,18 +1,16 @@
 
 import { Session, User } from "@supabase/supabase-js";
-import { Database } from "@/integrations/supabase/types";
-
-export type Profile = Database['public']['Tables']['profiles']['Row'];
+import { Profile } from "@/types/profile";
 
 export type AuthContextType = {
   session: Session | null;
   user: User | null;
   profile: Profile | null;
-  signIn: (provider: 'google') => Promise<void>;
+  signIn: (provider: string, options?: any) => Promise<any>;
   signOut: () => Promise<void>;
-  loading: boolean;
+  loading: boolean; // Make sure loading is defined
   isStudent: boolean;
   isTutor: boolean;
   isProfileComplete: boolean;
-  updateProfile: (updatedProfile: Partial<Profile>) => void;
+  updateProfile: (data: Partial<Profile>) => Promise<{ success: boolean; error: any | null }>;
 };
