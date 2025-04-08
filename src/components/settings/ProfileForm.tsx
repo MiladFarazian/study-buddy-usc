@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -141,7 +142,6 @@ export const ProfileForm = ({
               <Input 
                 id="hourly_rate" 
                 name="hourly_rate"
-                type="text"
                 value={formData.hourly_rate}
                 onChange={handleInputChange}
                 placeholder="25" 

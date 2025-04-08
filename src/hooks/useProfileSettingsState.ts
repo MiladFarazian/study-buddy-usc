@@ -3,7 +3,6 @@ import { Profile } from "@/integrations/supabase/types-extension";
 import { useProfileForm } from "./useProfileForm";
 import { useProfileAvatar } from "./useProfileAvatar";
 import { useLoadingState } from "./useLoadingState";
-import { useState } from "react";
 
 export const useProfileSettingsState = (profile: Profile | null) => {
   const { loading, setLoading } = useLoadingState();
