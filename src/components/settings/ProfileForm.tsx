@@ -41,8 +41,6 @@ export const ProfileForm = ({
   handleProfileUpdate,
   userEmail
 }: ProfileFormProps) => {
-  console.log("ProfileForm rendering with hourly_rate:", formData.hourly_rate);
-  
   return (
     <Card className="lg:col-span-2">
       <CardHeader>
@@ -135,30 +133,18 @@ export const ProfileForm = ({
             placeholder="2026" 
           />
         </div>
-        
-        {isTutor && (
-          <div className="space-y-2">
-            <Label htmlFor="hourly_rate">Hourly Rate ($)</Label>
-            <div className="relative">
-              <DollarSign className="absolute left-3 top-2.5 h-5 w-5 text-gray-500" />
-              <Input 
+
+        <div className="space-y-2">
+          <Label htmlFor="hourly_rate">Hourly Rate ($)</Label>
+          <Input 
                 id="hourly_rate" 
                 name="hourly_rate"
-                type="text"
                 value={formData.hourly_rate}
-                onChange={(e) => {
-                  console.log("Hourly rate input changed to:", e.target.value);
-                  handleInputChange(e);
-                }}
+                onChange={handleInputChange}
                 placeholder="25" 
                 className="pl-10"
               />
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Set your hourly tutoring rate - this will be displayed on your profile
-            </p>
-          </div>
-        )}
+        </div>
         
         <div className="space-y-2">
           <Label htmlFor="bio">Bio</Label>
