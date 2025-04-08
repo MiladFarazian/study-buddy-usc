@@ -1,5 +1,5 @@
 
-import { Profile } from "@/integrations/supabase/types-extension";
+import { Profile } from "@/types/profile";
 import { useProfileForm } from "./useProfileForm";
 import { useProfileAvatar } from "./useProfileAvatar";
 import { useLoadingState } from "./useLoadingState";

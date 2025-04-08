@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Profile } from "@/integrations/supabase/types-extension";
+import { Profile } from "@/types/profile";
 
 export const useProfileAvatar = (profile: Profile | null) => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(profile?.avatar_url || null);
