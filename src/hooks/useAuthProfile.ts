@@ -56,12 +56,15 @@ export const useAuthProfile = (userId: string | undefined) => {
     
     setLoading(true);
     try {
+      // Ensure role is properly typed if it's included
+      const profileUpdate = {
+        ...updatedProfile,
+        updated_at: new Date().toISOString()
+      };
+      
       const { data, error } = await supabase
         .from('profiles')
-        .update({
-          ...updatedProfile,
-          updated_at: new Date().toISOString()
-        })
+        .update(profileUpdate)
         .eq('id', userId)
         .select()
         .single();

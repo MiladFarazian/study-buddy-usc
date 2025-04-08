@@ -1,6 +1,6 @@
 
 import { Database } from "@/integrations/supabase/types";
-import { Profile } from "@/integrations/supabase/types-extension";
+import { Profile } from "@/types/profile";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadAvatar as uploadAvatarUtil } from "@/components/profile/AvatarUtils";
 
