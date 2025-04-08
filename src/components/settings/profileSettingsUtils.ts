@@ -73,7 +73,7 @@ export const updateUserProfile = async (
     if (formData.role === 'tutor') {
       console.log("Setting hourly rate in update:", formData.hourly_rate);
       // Only parse if there's a value, otherwise set to null
-      const hourlyRateValue = formData.hourly_rate.trim() !== "" ? 
+      const hourlyRateValue = formData.hourly_rate && formData.hourly_rate.trim() !== "" ? 
         parseFloat(formData.hourly_rate) : null;
       
       updateData.hourly_rate = hourlyRateValue;

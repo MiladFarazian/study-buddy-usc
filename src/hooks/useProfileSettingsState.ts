@@ -3,6 +3,7 @@ import { Profile } from "@/integrations/supabase/types-extension";
 import { useProfileForm } from "./useProfileForm";
 import { useProfileAvatar } from "./useProfileAvatar";
 import { useLoadingState } from "./useLoadingState";
+import { useEffect } from "react";
 
 export const useProfileSettingsState = (profile: Profile | null) => {
   const { loading, setLoading } = useLoadingState();
@@ -31,6 +32,12 @@ export const useProfileSettingsState = (profile: Profile | null) => {
     setAvatarFile 
   } = useProfileAvatar(profile);
 
+  // Debug logging
+  useEffect(() => {
+    console.log("ProfileSettingsState - hourlyRate:", hourlyRate);
+    console.log("ProfileSettingsState - profile hourly_rate:", profile?.hourly_rate);
+  }, [hourlyRate, profile?.hourly_rate]);
+
   // Create a formData object that matches what ProfileSettings expects
   const formData = {
     first_name: firstName,
@@ -39,7 +46,7 @@ export const useProfileSettingsState = (profile: Profile | null) => {
     graduation_year: gradYear,
     bio: bio,
     role: profile?.role || "student",
-    hourly_rate: hourlyRate,
+    hourly_rate: hourlyRate || "",
     subjects: profile?.subjects || [] as string[]
   };
 
@@ -53,6 +60,7 @@ export const useProfileSettingsState = (profile: Profile | null) => {
       setGradYear(updatedData.graduation_year);
       setBio(updatedData.bio);
       setHourlyRate(updatedData.hourly_rate);
+      console.log("setFormData function updated hourly_rate to:", updatedData.hourly_rate);
     } else {
       setFirstName(newFormData.first_name);
       setLastName(newFormData.last_name);
@@ -60,6 +68,7 @@ export const useProfileSettingsState = (profile: Profile | null) => {
       setGradYear(newFormData.graduation_year);
       setBio(newFormData.bio);
       setHourlyRate(newFormData.hourly_rate);
+      console.log("setFormData direct updated hourly_rate to:", newFormData.hourly_rate);
     }
   };
 

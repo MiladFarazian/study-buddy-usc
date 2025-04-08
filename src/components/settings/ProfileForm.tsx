@@ -144,6 +144,7 @@ export const ProfileForm = ({
               <Input 
                 id="hourly_rate" 
                 name="hourly_rate"
+                type="text"
                 value={formData.hourly_rate}
                 onChange={(e) => {
                   console.log("Hourly rate input changed to:", e.target.value);
