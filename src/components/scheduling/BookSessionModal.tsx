@@ -85,7 +85,7 @@ export function BookSessionModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px] p-0">
+      <DialogContent className="sm:max-w-[800px] p-0 max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           {renderContent()}
         </div>

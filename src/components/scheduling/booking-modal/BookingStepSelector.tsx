@@ -35,8 +35,8 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="md:col-span-1 space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+        <div className="md:col-span-5 space-y-4">
           <Card>
             <CardContent className="pt-6">
               <Calendar
@@ -55,7 +55,7 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
           </div>
         </div>
 
-        <div className="md:col-span-2">
+        <div className="md:col-span-7">
           <h3 className="text-lg font-medium mb-3">
             Available Times for {format(selectedDate, 'EEEE, MMMM d')}
           </h3>
@@ -67,11 +67,13 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
           )}
           
           {slotsForSelectedDate.length > 0 ? (
-            <TimeSlotList 
-              slots={slotsForSelectedDate}
-              onSelectSlot={onSelectSlot}
-              disabled={disabled}
-            />
+            <ScrollArea className="h-[400px] pr-4">
+              <TimeSlotList 
+                slots={slotsForSelectedDate}
+                onSelectSlot={onSelectSlot}
+                disabled={disabled}
+              />
+            </ScrollArea>
           ) : (
             <div className="py-8 text-center border rounded-md bg-muted/30">
               <CalendarIcon className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
