@@ -1,6 +1,6 @@
 
 import { Profile } from "@/integrations/supabase/types-extension";
-import { useProfileForm } from "./useProfileForm";
+import { useProfileForm } from "./useProfileForm.tsx"; // Make sure we're using the .tsx version
 import { useProfileAvatar } from "./useProfileAvatar";
 import { useLoadingState } from "./useLoadingState";
 import { useState } from "react";
