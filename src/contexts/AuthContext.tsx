@@ -24,15 +24,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     updateProfile,
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal" />
-        <span className="ml-2">Loading...</span>
-      </div>
-    );
-  }
-
+  // Don't show loading screen on initial auth check to prevent page flashing
+  // The individual protected routes will handle their own loading states
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

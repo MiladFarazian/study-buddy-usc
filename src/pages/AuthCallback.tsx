@@ -1,12 +1,13 @@
 
 import { useEffect, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
 const AuthCallback = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,8 +43,12 @@ const AuthCallback = () => {
             description: "You are now signed in",
           });
           
-          // Navigate to home page or redirect URL
-          navigate("/", { replace: true });
+          // Try to get the original URL they attempted to access
+          const redirectTo = sessionStorage.getItem('redirectAfterAuth') || '/';
+          sessionStorage.removeItem('redirectAfterAuth');
+          
+          // Navigate to the original page or home
+          navigate(redirectTo, { replace: true });
         }
       } catch (err) {
         console.error("Unexpected error during auth callback:", err);
@@ -65,7 +70,9 @@ const AuthCallback = () => {
       console.log("Auth state change:", event);
       
       if (event === 'SIGNED_IN' && session) {
-        navigate('/', { replace: true });
+        const redirectTo = sessionStorage.getItem('redirectAfterAuth') || '/';
+        sessionStorage.removeItem('redirectAfterAuth');
+        navigate(redirectTo, { replace: true });
       }
     });
 

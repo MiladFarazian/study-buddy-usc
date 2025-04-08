@@ -3,22 +3,29 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { Navigate, Link } from "react-router-dom";
+import { Navigate, Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
 const Login = () => {
   const { signIn, user, loading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Get the page user was trying to access
+  const from = location.state?.from?.pathname || "/";
 
   if (user) {
-    return <Navigate to="/" replace />;
+    // Redirect to the page they were trying to access, or home
+    return <Navigate to={from} replace />;
   }
 
   const handleGoogleSignIn = async () => {
     setIsSubmitting(true);
     try {
       await signIn("google");
+      // After signing in, the auth state change will trigger a redirect
     } catch (error) {
       toast({
         title: "Error",
