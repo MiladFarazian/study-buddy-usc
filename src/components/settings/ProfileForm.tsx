@@ -145,6 +145,26 @@ export const ProfileForm = ({
                 className="pl-10"
               />
         </div>
+
+        {isTutor && (
+          <div className="space-y-2">
+            <Label htmlFor="hourly_rate">Hourly Rate ($)</Label>
+            <div className="relative">
+              <DollarSign className="absolute left-3 top-2.5 h-5 w-5 text-gray-500" />
+              <Input 
+                id="hourly_rate" 
+                name="hourly_rate"
+                value={formData.hourly_rate}
+                onChange={handleInputChange}
+                placeholder="25" 
+                className="pl-10"
+              />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Set your hourly tutoring rate - this will be displayed on your profile
+            </p>
+          </div>
+        )}
         
         <div className="space-y-2">
           <Label htmlFor="bio">Bio</Label>
