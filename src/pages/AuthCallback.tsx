@@ -24,6 +24,7 @@ const AuthCallback = () => {
         }
 
         console.log("Processing authentication callback...");
+        console.log("Current URL:", window.location.href);
         
         // The Supabase client will automatically handle the hash processing
         const { data, error } = await supabase.auth.getSession();
