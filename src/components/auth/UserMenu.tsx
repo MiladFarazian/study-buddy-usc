@@ -16,7 +16,21 @@ import { Link } from "react-router-dom";
 import { LogOut, Settings, User } from "lucide-react";
 
 const UserMenu = () => {
-  const { user, profile, signOut } = useAuth();
+  // Wrap access to useAuth in a try/catch to gracefully handle 
+  // any context issues during rendering
+  let user = null;
+  let profile = null;
+  let signOut = () => {};
+  
+  try {
+    const auth = useAuth();
+    user = auth.user;
+    profile = auth.profile;
+    signOut = auth.signOut;
+  } catch (error) {
+    console.error("Auth context not available:", error);
+  }
+  
   const [isOpen, setIsOpen] = useState(false);
 
   if (!user) {

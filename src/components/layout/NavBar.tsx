@@ -8,7 +8,16 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Link } from "react-router-dom";
 
 const NavBar = () => {
-  const { user } = useAuth();
+  // Wrap access to useAuth in a try/catch to gracefully handle 
+  // any context issues during rendering
+  let user = null;
+  try {
+    const auth = useAuth();
+    user = auth.user;
+  } catch (error) {
+    console.error("Auth context not available:", error);
+  }
+
   const isMobile = useIsMobile();
 
   return (

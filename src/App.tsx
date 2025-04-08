@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -26,6 +27,7 @@ import Students from "./pages/Students";
 import EmailVerification from "./pages/EmailVerification";
 import Messages from "./pages/Messages";
 
+// Create a new query client instance
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -36,12 +38,10 @@ const queryClient = new QueryClient({
 
 function App() {
   return (
-    <BrowserRouter>
-      <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
         <AuthProvider>
           <TooltipProvider>
-            <Toaster />
-            <Sonner />
             <Routes>
               <Route path="/" element={<Layout><Index /></Layout>} />
               <Route path="/courses" element={<Layout><Courses /></Layout>} />
@@ -105,10 +105,12 @@ function App() {
               />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <Toaster />
+            <Sonner />
           </TooltipProvider>
         </AuthProvider>
-      </QueryClientProvider>
-    </BrowserRouter>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 }
 

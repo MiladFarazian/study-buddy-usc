@@ -5,6 +5,7 @@ import { useAuthState } from "@/hooks/useAuthState";
 import { useAuthMethods } from "@/hooks/useAuthMethods";
 import { AuthContextType } from "./types/auth-types";
 
+// Create the context outside of any components
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -24,8 +25,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     updateProfile,
   };
 
-  // Don't show loading screen on initial auth check to prevent page flashing
-  // The individual protected routes will handle their own loading states
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

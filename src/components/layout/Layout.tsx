@@ -23,7 +23,7 @@ const Layout = ({ children }: LayoutProps) => {
           </div>
         </main>
       </div>
-      <MobileNavBar />
+      {isMobile && <MobileNavBar />}
     </div>
   );
 };
