@@ -13,11 +13,13 @@ export const useProfileSettingsState = (profile: Profile | null) => {
     major, 
     gradYear, 
     bio, 
+    hourlyRate,
     setFirstName,
     setLastName,
     setMajor,
     setGradYear,
     setBio,
+    setHourlyRate,
     isProfileComplete
   } = useProfileForm(profile);
   
@@ -38,7 +40,7 @@ export const useProfileSettingsState = (profile: Profile | null) => {
     graduation_year: gradYear,
     bio: bio,
     role: profile?.role || "student",
-    hourly_rate: profile?.hourly_rate?.toString() || "",
+    hourly_rate: hourlyRate,
     subjects: profile?.subjects || [] as string[]
   };
 
@@ -51,12 +53,14 @@ export const useProfileSettingsState = (profile: Profile | null) => {
       setMajor(updatedData.major);
       setGradYear(updatedData.graduation_year);
       setBio(updatedData.bio);
+      setHourlyRate(updatedData.hourly_rate);
     } else {
       setFirstName(newFormData.first_name);
       setLastName(newFormData.last_name);
       setMajor(newFormData.major);
       setGradYear(newFormData.graduation_year);
       setBio(newFormData.bio);
+      setHourlyRate(newFormData.hourly_rate);
     }
   };
 
@@ -78,6 +82,9 @@ export const useProfileSettingsState = (profile: Profile | null) => {
         break;
       case "bio":
         setBio(value);
+        break;
+      case "hourly_rate":
+        setHourlyRate(value);
         break;
       default:
         // For other fields, we'll update the formData directly

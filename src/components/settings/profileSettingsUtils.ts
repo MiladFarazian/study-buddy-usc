@@ -69,8 +69,9 @@ export const updateUserProfile = async (
       updated_at: new Date().toISOString(),
     };
     
-    if (formData.role === 'tutor' && formData.hourly_rate) {
-      updateData.hourly_rate = parseFloat(formData.hourly_rate);
+    // Always include hourly_rate for tutors, even if it's empty (will be null in DB)
+    if (formData.role === 'tutor') {
+      updateData.hourly_rate = formData.hourly_rate ? parseFloat(formData.hourly_rate) : null;
     }
 
     console.log("Settings: Updating profile with data", updateData);
