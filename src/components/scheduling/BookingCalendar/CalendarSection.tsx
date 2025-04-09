@@ -29,7 +29,7 @@ export const CalendarSection = ({
   return (
     <div>
       <p className="text-sm font-medium mb-2">Select a Date:</p>
-      <div className="aspect-square border rounded-md p-2 flex items-center justify-center">
+      <div className="aspect-square w-full border rounded-md p-2 flex items-center justify-center">
         <Calendar
           mode="single"
           selected={selectedDate}

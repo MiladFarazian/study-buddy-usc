@@ -54,7 +54,7 @@ export const DateSelector = ({
       </div>
       
       {isLoading ? (
-        <div className="flex justify-center items-center aspect-square w-full border rounded-md">
+        <div className="aspect-square w-full flex justify-center items-center border rounded-md">
           <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal mr-2" />
           <span>Loading availability...</span>
         </div>
