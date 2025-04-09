@@ -40,7 +40,7 @@ export const DateSelector = ({
   };
   
   return (
-    <div className="space-y-4 w-full max-w-full overflow-hidden">
+    <div className="space-y-4 w-full">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Select a Date</h3>
         <div className="flex gap-2">
@@ -54,70 +54,76 @@ export const DateSelector = ({
       </div>
       
       {isLoading ? (
-        <div className="flex justify-center items-center h-64 w-full border rounded-md">
+        <div className="flex justify-center items-center aspect-square w-full border rounded-md">
           <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal mr-2" />
           <span>Loading availability...</span>
         </div>
       ) : (
-        <Calendar
-          mode="single"
-          selected={date}
-          onSelect={onDateChange}
-          month={month}
-          onMonthChange={setMonth}
-          className="rounded-md border max-w-full"
-          classNames={{
-            day_today: "bg-muted",
-            day_selected: "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark focus:bg-usc-cardinal-dark",
-            day_disabled: "text-muted-foreground opacity-50",
-            months: "max-w-full overflow-x-auto",
-            month: "max-w-full"
-          }}
-          modifiersClassNames={{
-            today: "text-usc-gold font-bold",
-            selected: "bg-usc-cardinal text-white",
-          }}
-          modifiers={{
-            available: (day) => hasAvailableSlots(day)
-          }}
-          components={{
-            Day: (props: DayContentProps) => {
-              // Get the date from props
-              const dayDate = props.date;
-              // Check if this date has available slots
-              const isAvailable = hasAvailableSlots(dayDate);
-              // Check if this date is selected
-              const isSelected = date ? isSameDay(dayDate, date) : false;
-              
-              return (
-                <div
-                  className={cn(
-                    "relative p-0",
-                    !isAvailable && "opacity-50"
-                  )}
-                >
-                  <button
-                    type="button"
+        <div className="aspect-square w-full flex items-center justify-center border rounded-md p-2">
+          <Calendar
+            mode="single"
+            selected={date}
+            onSelect={onDateChange}
+            month={month}
+            onMonthChange={setMonth}
+            className="w-full"
+            classNames={{
+              day_today: "bg-muted",
+              day_selected: "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark focus:bg-usc-cardinal-dark",
+              day_disabled: "text-muted-foreground opacity-50",
+              months: "w-full",
+              month: "w-full",
+              table: "w-full",
+              head_row: "w-full flex justify-between",
+              row: "flex w-full justify-between mt-2",
+              cell: "h-9 w-9 text-center p-0 relative [&:has([aria-selected])]:bg-accent focus-within:relative focus-within:z-20"
+            }}
+            modifiersClassNames={{
+              today: "text-usc-gold font-bold",
+              selected: "bg-usc-cardinal text-white",
+            }}
+            modifiers={{
+              available: (day) => hasAvailableSlots(day)
+            }}
+            components={{
+              Day: (props: DayContentProps) => {
+                // Get the date from props
+                const dayDate = props.date;
+                // Check if this date has available slots
+                const isAvailable = hasAvailableSlots(dayDate);
+                // Check if this date is selected
+                const isSelected = date ? isSameDay(dayDate, date) : false;
+                
+                return (
+                  <div
                     className={cn(
-                      "h-10 w-10 p-0 font-normal aria-selected:opacity-100",
-                      isAvailable && !isSelected && "hover:bg-usc-cardinal/10",
-                      isAvailable ? "cursor-pointer" : "cursor-not-allowed"
+                      "relative p-0",
+                      !isAvailable && "opacity-50"
                     )}
-                    onClick={isAvailable ? () => onDateChange(dayDate) : undefined}
-                    disabled={!isAvailable}
                   >
-                    <time dateTime={format(dayDate, 'yyyy-MM-dd')}>
-                      {dayDate.getDate()}
-                    </time>
-                  </button>
-                  {isAvailable && (
-                    <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-usc-cardinal" />
-                  )}
-                </div>
-              );
-            }
-          }}
-        />
+                    <button
+                      type="button"
+                      className={cn(
+                        "h-9 w-9 p-0 font-normal aria-selected:opacity-100",
+                        isAvailable && !isSelected && "hover:bg-usc-cardinal/10",
+                        isAvailable ? "cursor-pointer" : "cursor-not-allowed"
+                      )}
+                      onClick={isAvailable ? () => onDateChange(dayDate) : undefined}
+                      disabled={!isAvailable}
+                    >
+                      <time dateTime={format(dayDate, 'yyyy-MM-dd')}>
+                        {dayDate.getDate()}
+                      </time>
+                    </button>
+                    {isAvailable && (
+                      <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-usc-cardinal" />
+                    )}
+                  </div>
+                );
+              }
+            }}
+          />
+        </div>
       )}
       
       {date && !isLoading && (

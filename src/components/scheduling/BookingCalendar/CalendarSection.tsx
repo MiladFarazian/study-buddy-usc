@@ -29,26 +29,39 @@ export const CalendarSection = ({
   return (
     <div>
       <p className="text-sm font-medium mb-2">Select a Date:</p>
-      <Calendar
-        mode="single"
-        selected={selectedDate}
-        onSelect={onDateSelect}
-        disabled={(date) => {
-          // Disable dates before today
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          if (date < today) return true;
-          
-          // Disable dates more than 4 weeks in the future
-          const fourWeeksFromNow = addDays(today, 28);
-          if (date > fourWeeksFromNow) return true;
-          
-          // Disable dates with no available slots
-          const dateStr = format(date, 'yyyy-MM-dd');
-          return !getDatesWithSlots().some(d => format(d, 'yyyy-MM-dd') === dateStr);
-        }}
-        className="rounded-md border"
-      />
+      <div className="aspect-square border rounded-md p-2 flex items-center justify-center">
+        <Calendar
+          mode="single"
+          selected={selectedDate}
+          onSelect={onDateSelect}
+          disabled={(date) => {
+            // Disable dates before today
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (date < today) return true;
+            
+            // Disable dates more than 4 weeks in the future
+            const fourWeeksFromNow = addDays(today, 28);
+            if (date > fourWeeksFromNow) return true;
+            
+            // Disable dates with no available slots
+            const dateStr = format(date, 'yyyy-MM-dd');
+            return !getDatesWithSlots().some(d => format(d, 'yyyy-MM-dd') === dateStr);
+          }}
+          className="w-full"
+          classNames={{
+            day_today: "bg-muted",
+            day_selected: "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark focus:bg-usc-cardinal-dark",
+            day_disabled: "text-muted-foreground opacity-50",
+            months: "w-full",
+            month: "w-full",
+            table: "w-full",
+            head_row: "w-full flex justify-between",
+            row: "flex w-full justify-between mt-2",
+            cell: "h-9 w-9 text-center p-0 relative [&:has([aria-selected])]:bg-accent focus-within:relative focus-within:z-20"
+          }}
+        />
+      </div>
     </div>
   );
 };

@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import { format, addDays, startOfToday } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TimeSlotList } from "./time-slot/TimeSlotList";
@@ -12,6 +11,7 @@ import { BookingSlot } from "@/lib/scheduling/types";
 import { Tutor } from "@/types/tutor";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LoadingState } from "./LoadingState";
+import { DateSelector } from "./date-selector/DateSelector";
 
 export interface BookingStepSelectorProps {
   tutor: Tutor;
@@ -36,23 +36,17 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-        <div className="md:col-span-5 space-y-4">
-          <Card>
+        <div className="md:col-span-5">
+          <Card className="h-full">
             <CardContent className="pt-6">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => date && setSelectedDate(date)}
-                disabled={{ before: startOfToday() }}
-                className="rounded-md border"
+              <DateSelector
+                date={selectedDate}
+                onDateChange={setSelectedDate}
+                availableSlots={availableSlots}
+                isLoading={false}
               />
             </CardContent>
           </Card>
-          
-          <div className="text-sm text-muted-foreground">
-            <p>Select a date to see available time slots.</p>
-            <p>All times shown are in your local timezone.</p>
-          </div>
         </div>
 
         <div className="md:col-span-7">
