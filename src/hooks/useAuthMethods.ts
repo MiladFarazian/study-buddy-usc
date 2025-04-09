@@ -13,6 +13,9 @@ export const useAuthMethods = () => {
       
       console.log(`Using redirect URL: ${redirectUrl}`);
       
+      // Store the current URL to redirect back to after auth
+      sessionStorage.setItem('redirectAfterAuth', window.location.pathname);
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {

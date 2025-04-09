@@ -16,6 +16,11 @@ const Login = () => {
   // Get the page user was trying to access
   const from = location.state?.from?.pathname || "/";
 
+  // Store the current path for redirect after auth
+  if (from && from !== '/login' && from !== '/auth/callback') {
+    sessionStorage.setItem('redirectAfterAuth', from);
+  }
+
   if (user) {
     // Redirect to the page they were trying to access, or home
     return <Navigate to={from} replace />;

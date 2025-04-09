@@ -22,6 +22,9 @@ const PrivateRoute = ({ children }: PrivateRouteProps) => {
   }
 
   if (!user) {
+    // Store current path to redirect back after login
+    sessionStorage.setItem('redirectAfterAuth', location.pathname);
+    
     // Redirect to login but remember the current location
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
