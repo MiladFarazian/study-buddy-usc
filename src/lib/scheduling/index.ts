@@ -13,4 +13,5 @@ export { DateSelector } from './ui/DateSelector';
 export { TimeSelector } from './ui/TimeSelector';
 export { DurationSelector } from './ui/DurationSelector';
 export { BookingSummary } from './ui/BookingSummary';
+export { createSessionBooking } from './booking-utils';
 // Note: We're not exporting ScheduleCalendar from here to avoid naming conflicts
