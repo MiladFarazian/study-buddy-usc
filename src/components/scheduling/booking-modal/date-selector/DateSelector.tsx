@@ -1,12 +1,10 @@
-
-import { useState } from "react";
-import { Calendar } from "@/components/ui/calendar";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
-import { format, isToday, isSameDay, startOfMonth, addMonths, subMonths, isAfter, isBefore, startOfDay } from "date-fns";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
+import { format, isToday, isSameDay, startOfWeek, addDays, isAfter, isBefore, startOfDay, getDay, subWeeks, addWeeks } from "date-fns";
 import { cn } from "@/lib/utils";
 import { BookingSlot } from "@/lib/scheduling";
-import type { DayContentProps } from "react-day-picker";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface DateSelectorProps {
   date: Date | undefined;
@@ -21,43 +19,127 @@ export const DateSelector = ({
   availableSlots,
   isLoading = false
 }: DateSelectorProps) => {
-  const [month, setMonth] = useState<Date>(date || new Date());
+  const [viewMode, setViewMode] = useState<"week" | "month">("week");
+  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
+    return startOfWeek(date || new Date(), { weekStartsOn: 0 });
+  });
+  
   const today = startOfDay(new Date());
   
-  // Function to check if a date has any available slots
+  const weekDays = Array.from({ length: 7 }, (_, i) => 
+    addDays(currentWeekStart, i)
+  );
+
   const hasAvailableSlots = (day: Date) => {
-    return availableSlots.some(slot => 
-      isSameDay(new Date(slot.day), day) && slot.available
-    );
+    return availableSlots.some(slot => {
+      const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
+      return isSameDay(slotDay, day) && slot.available;
+    });
   };
   
-  // Handle month navigation
-  const handlePrevMonth = () => {
-    setMonth(prevMonth => subMonths(prevMonth, 1));
+  const handlePrevWeek = () => {
+    setCurrentWeekStart(prevWeek => subWeeks(prevWeek, 1));
   };
   
-  const handleNextMonth = () => {
-    setMonth(prevMonth => addMonths(prevMonth, 1));
+  const handleNextWeek = () => {
+    setCurrentWeekStart(prevWeek => addWeeks(prevWeek, 1));
+  };
+  
+  const handleToday = () => {
+    setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 0 }));
+  };
+
+  const getDayAbbreviation = (date: Date) => {
+    return format(date, 'EEE');
   };
   
   return (
     <div className="space-y-4 w-full">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Select a Date</h3>
-        <div className="flex gap-2">
-          <Button variant="outline" size="icon" onClick={handlePrevMonth} disabled={isLoading}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="icon" onClick={handleNextMonth} disabled={isLoading}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+        <h3 className="text-xl font-semibold">Select a Date</h3>
+        <Tabs 
+          defaultValue="week" 
+          value={viewMode} 
+          onValueChange={(value) => setViewMode(value as "week" | "month")}
+          className="hidden sm:block"
+        >
+          <TabsList>
+            <TabsTrigger value="week">
+              <CalendarIcon className="h-4 w-4 mr-2" />
+              Week
+            </TabsTrigger>
+            <TabsTrigger value="month">
+              <CalendarIcon className="h-4 w-4 mr-2" /> 
+              Month
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
       
       {isLoading ? (
-        <div className="min-h-[350px] w-full flex justify-center items-center border rounded-md">
-          <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal mr-2" />
-          <span>Loading availability...</span>
+        <div className="min-h-[200px] w-full flex justify-center items-center border rounded-md">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-usc-cardinal border-t-transparent" />
+          <span className="ml-2">Loading availability...</span>
+        </div>
+      ) : viewMode === "week" ? (
+        <div className="border rounded-md overflow-hidden">
+          <div className="flex justify-between items-center p-3 border-b bg-muted/30">
+            <Button variant="outline" size="icon" onClick={handlePrevWeek}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            
+            <span className="font-medium">
+              {format(currentWeekStart, 'MMM d')} - {format(addDays(currentWeekStart, 6), 'MMM d, yyyy')}
+            </span>
+            
+            <Button variant="outline" size="icon" onClick={handleNextWeek}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          <div className="p-3">
+            <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center">
+              {weekDays.map((day, index) => (
+                <div key={index} className="flex flex-col items-center">
+                  <span className="text-xs sm:text-sm text-muted-foreground mb-1">
+                    {getDayAbbreviation(day)}
+                  </span>
+                  <Button
+                    variant={date && isSameDay(day, date) ? "default" : "outline"}
+                    className={cn(
+                      "h-10 w-10 sm:h-12 sm:w-12 rounded-full p-0 font-normal text-lg",
+                      isToday(day) && !date && "bg-muted border border-usc-cardinal/30",
+                      date && isSameDay(day, date) && "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark",
+                      isBefore(day, today) && !hasAvailableSlots(day) && "opacity-50 cursor-not-allowed",
+                      hasAvailableSlots(day) && !isBefore(day, today) && !date && "hover:border-usc-cardinal"
+                    )}
+                    disabled={isBefore(day, today) || !hasAvailableSlots(day)}
+                    onClick={() => {
+                      if (!isBefore(day, today) && hasAvailableSlots(day)) {
+                        onDateChange(day);
+                      }
+                    }}
+                  >
+                    {format(day, 'd')}
+                    {hasAvailableSlots(day) && !isBefore(day, today) && (
+                      <span className="absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-usc-cardinal"></span>
+                    )}
+                  </Button>
+                </div>
+              ))}
+            </div>
+            
+            <div className="mt-4 flex justify-center">
+              <Button 
+                variant="outline"
+                size="sm"
+                className="rounded-full"
+                onClick={handleToday}
+              >
+                Today
+              </Button>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="min-h-[350px] w-full flex items-center justify-center border rounded-md p-2">
@@ -65,10 +147,8 @@ export const DateSelector = ({
             mode="single"
             selected={date}
             onSelect={onDateChange}
-            month={month}
-            onMonthChange={setMonth}
             className="w-full"
-            disabled={(day) => isBefore(day, today)} // Disable dates before today
+            disabled={(day) => isBefore(day, today) || !hasAvailableSlots(day)}
             classNames={{
               day_today: "bg-muted",
               day_selected: "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark focus:bg-usc-cardinal-dark",
@@ -88,14 +168,9 @@ export const DateSelector = ({
               available: (day) => hasAvailableSlots(day)
             }}
             components={{
-              Day: (props: DayContentProps) => {
-                // Get the date from props
-                const dayDate = props.date;
-                // Check if this date has available slots
+              Day: ({ date: dayDate }) => {
                 const isAvailable = hasAvailableSlots(dayDate);
-                // Check if this date is selected
                 const isSelected = date ? isSameDay(dayDate, date) : false;
-                // Check if this date is in the past
                 const isPast = isBefore(dayDate, today);
                 
                 return (

@@ -1,10 +1,8 @@
 
 import { useState, useEffect } from "react";
 import { format, addDays, startOfToday, isBefore, isToday } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { TimeSlotList } from "./time-slot/TimeSlotList";
 import { useAvailabilityData } from "@/hooks/useAvailabilityData";
 import { BookingSlot } from "@/lib/scheduling/types";
@@ -24,12 +22,12 @@ export interface BookingStepSelectorProps {
   disabled?: boolean;
 }
 
-type BookingStep = "select-date" | "select-time" | "confirm" | "processing" | "complete";
+type BookingStep = "select-date-time" | "confirm" | "processing" | "complete";
 
 export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: BookingStepSelectorProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedSlot, setSelectedSlot] = useState<BookingSlot | null>(null);
-  const [step, setStep] = useState<BookingStep>("select-date");
+  const [step, setStep] = useState<BookingStep>("select-date-time");
   const [isBooking, setIsBooking] = useState(false);
   const { loading, availableSlots, hasAvailability, errorMessage, refreshAvailability } = useAvailabilityData(tutor, selectedDate);
   const { user } = useAuthState();
@@ -56,9 +54,10 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
   });
   
   // Filter slots for the selected date
-  const slotsForSelectedDate = validAvailableSlots.filter(slot => 
-    new Date(slot.day).toDateString() === selectedDate.toDateString() && slot.available
-  );
+  const slotsForSelectedDate = validAvailableSlots.filter(slot => {
+    const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
+    return slotDay.toDateString() === selectedDate.toDateString() && slot.available;
+  });
 
   // Handle slot selection
   const handleSelectTimeSlot = (slot: BookingSlot) => {
@@ -115,24 +114,10 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
 
   // Handle navigation based on step
   const goBack = () => {
-    switch (step) {
-      case "select-time":
-        setStep("select-date");
-        break;
-      case "confirm":
-        setStep("select-time");
-        break;
-      default:
-        break;
+    if (step === "confirm") {
+      setStep("select-date-time");
     }
   };
-
-  // Effect to update step when date changes
-  useEffect(() => {
-    if (selectedDate) {
-      setStep("select-time");
-    }
-  }, [selectedDate]);
 
   if (loading) {
     return <LoadingState message="Loading tutor's availability..." />;
@@ -141,73 +126,40 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
   // Render appropriate content based on current step
   const renderStepContent = () => {
     switch (step) {
-      case "select-date":
+      case "select-date-time":
         return (
-          <div className="md:col-span-2">
-            <Card className="h-full">
-              <CardContent className="pt-6">
-                <DateSelector
-                  date={selectedDate}
-                  onDateChange={setSelectedDate}
-                  availableSlots={availableSlots}
-                  isLoading={false}
-                />
-              </CardContent>
-            </Card>
-          </div>
-        );
-        
-      case "select-time":
-        return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="md:col-span-1">
-              <Card className="h-full">
-                <CardContent className="pt-6">
-                  <DateSelector
-                    date={selectedDate}
-                    onDateChange={setSelectedDate}
-                    availableSlots={availableSlots}
-                    isLoading={false}
-                  />
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="md:col-span-1">
-              <h3 className="text-lg font-medium mb-3">
-                Available Times for {format(selectedDate, 'EEEE, MMMM d')}
-              </h3>
-              
-              {errorMessage && (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertDescription>{errorMessage}</AlertDescription>
-                </Alert>
-              )}
-              
-              {slotsForSelectedDate.length > 0 ? (
-                <ScrollArea className="h-[400px] pr-4">
-                  <TimeSlotList 
-                    slots={slotsForSelectedDate}
-                    onSelectSlot={handleSelectTimeSlot}
-                    disabled={disabled || isBooking}
-                  />
-                </ScrollArea>
-              ) : (
-                <div className="py-8 text-center border rounded-md bg-muted/30">
-                  <CalendarIcon className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
-                  <h3 className="text-lg font-medium mb-1">No Available Time Slots</h3>
-                  <p className="text-muted-foreground mb-4">
-                    {hasAvailability ? 
-                      `${tutor.firstName || tutor.name.split(' ')[0]} is not available on this date.` : 
-                      `${tutor.firstName || tutor.name.split(' ')[0]} hasn't set their availability yet.`
-                    }
-                  </p>
-                  <Button onClick={() => setSelectedDate(addDays(selectedDate, 1))}>
-                    Check Next Day
-                  </Button>
-                </div>
-              )}
-            </div>
+          <div className="space-y-6">
+            <DateSelector
+              date={selectedDate}
+              onDateChange={setSelectedDate}
+              availableSlots={availableSlots}
+              isLoading={false}
+            />
+            
+            {errorMessage && (
+              <Alert variant="destructive">
+                <AlertDescription>{errorMessage}</AlertDescription>
+              </Alert>
+            )}
+            
+            <TimeSlotList 
+              slots={slotsForSelectedDate}
+              onSelectSlot={handleSelectTimeSlot}
+              selectedSlot={selectedSlot}
+              disabled={disabled || isBooking}
+            />
+            
+            {selectedSlot && (
+              <div className="flex justify-end">
+                <Button 
+                  className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
+                  onClick={() => setStep("confirm")}
+                  disabled={isBooking || !selectedSlot}
+                >
+                  Continue
+                </Button>
+              </div>
+            )}
           </div>
         );
         
