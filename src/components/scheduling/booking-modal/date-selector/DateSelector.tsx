@@ -54,12 +54,12 @@ export const DateSelector = ({
       </div>
       
       {isLoading ? (
-        <div className="aspect-square w-full flex justify-center items-center border rounded-md">
+        <div className="min-h-[350px] w-full flex justify-center items-center border rounded-md">
           <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal mr-2" />
           <span>Loading availability...</span>
         </div>
       ) : (
-        <div className="aspect-square w-full flex items-center justify-center border rounded-md p-2">
+        <div className="min-h-[350px] w-full flex items-center justify-center border rounded-md p-2">
           <Calendar
             mode="single"
             selected={date}

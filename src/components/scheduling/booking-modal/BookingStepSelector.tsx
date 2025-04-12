@@ -35,8 +35,8 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-        <div className="md:col-span-5">
+      <div className="grid grid-cols-1 md:grid-cols-10 gap-6">
+        <div className="md:col-span-4">
           <Card className="h-full">
             <CardContent className="pt-6">
               <DateSelector
@@ -49,7 +49,7 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
           </Card>
         </div>
 
-        <div className="md:col-span-7">
+        <div className="md:col-span-6">
           <h3 className="text-lg font-medium mb-3">
             Available Times for {format(selectedDate, 'EEEE, MMMM d')}
           </h3>
