@@ -204,9 +204,9 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
             <div className="bg-muted/30 p-6 rounded-lg space-y-4">
               <div className="flex flex-col items-center mb-4">
                 <div className="relative w-20 h-20 rounded-full bg-usc-cardinal/10 mb-2 flex items-center justify-center">
-                  {tutor.avatar_url ? (
+                  {tutor.imageUrl ? (
                     <img 
-                      src={tutor.avatar_url} 
+                      src={tutor.imageUrl} 
                       alt={tutor.name} 
                       className="w-full h-full object-cover rounded-full"
                     />
@@ -217,7 +217,7 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
                   )}
                 </div>
                 <h3 className="text-lg font-semibold">{tutor.name}</h3>
-                <p className="text-muted-foreground">{tutor.subjects?.join(', ') || 'Tutor'}</p>
+                <p className="text-muted-foreground">{tutor.subjects?.map(s => s.name).join(', ') || 'Tutor'}</p>
               </div>
               
               <div className="space-y-3 divide-y">
@@ -267,29 +267,13 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
         );
         
       case "complete":
+        if (!selectedSlot) return null;
         return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-green-100 mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h2 className="text-2xl font-semibold mb-2">Booking Confirmed!</h2>
-              <p className="text-muted-foreground">
-                Your session with {tutor.name} has been successfully booked.
-              </p>
-            </div>
-            
-            <div className="flex justify-center pt-4">
-              <Button 
-                className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
-                onClick={onClose}
-              >
-                Close
-              </Button>
-            </div>
-          </div>
+          <ConfirmationStep 
+            tutor={tutor} 
+            selectedSlot={selectedSlot} 
+            onClose={onClose}
+          />
         );
         
       default:
