@@ -9,35 +9,49 @@ import { BookingSlot } from "@/lib/scheduling/types";
 interface ConfirmationStepProps {
   tutor: Tutor;
   selectedSlot: BookingSlot;
+  selectedDuration: number;
   onClose: () => void;
   onReset?: () => void;
 }
 
 export function ConfirmationStep({ 
   tutor, 
-  selectedSlot, 
+  selectedSlot,
+  selectedDuration,
   onClose,
   onReset
 }: ConfirmationStepProps) {
   // Format date and time for display
   const slotDay = selectedSlot.day instanceof Date ? selectedSlot.day : new Date(selectedSlot.day);
   const formattedDate = format(slotDay, 'EEEE, MMMM d, yyyy');
-  const formattedStartTime = selectedSlot.start;
-  const formattedEndTime = selectedSlot.end;
+  
+  // Format times for display
+  const formatTimeDisplay = (timeString: string) => {
+    const [hours, minutes] = timeString.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+  };
+  
+  const formattedStartTime = formatTimeDisplay(selectedSlot.start);
+  
+  // Calculate end time based on duration
+  const calculateEndTime = () => {
+    const [hours, minutes] = selectedSlot.start.split(':').map(Number);
+    const startMinutes = hours * 60 + minutes;
+    const endMinutes = startMinutes + selectedDuration;
+    
+    const endHours = Math.floor(endMinutes / 60);
+    const endMins = endMinutes % 60;
+    
+    return `${endHours.toString().padStart(2, '0')}:${endMins.toString().padStart(2, '0')}`;
+  };
+  
+  const formattedEndTime = formatTimeDisplay(calculateEndTime());
   
   // Calculate session cost
-  const hourlyRate = tutor.hourlyRate || 25; // Default to $25 if not set
-  const [startHour, startMinute] = selectedSlot.start.split(':').map(Number);
-  const [endHour, endMinute] = selectedSlot.end.split(':').map(Number);
-  
-  // Calculate duration in minutes
-  const startMinutes = startHour * 60 + startMinute;
-  const endMinutes = endHour * 60 + endMinute;
-  const durationMinutes = endMinutes - startMinutes;
-  const durationHours = durationMinutes / 60;
-  
-  // Calculate session cost
-  const sessionCost = hourlyRate * durationHours;
+  const hourlyRate = tutor.hourlyRate || 60; // Default to $60 if not set
+  const sessionCost = (hourlyRate / 60) * selectedDuration;
   
   return (
     <div className="space-y-6">
@@ -74,7 +88,7 @@ export function ConfirmationStep({
           <div>
             <div>{formattedStartTime} - {formattedEndTime}</div>
             <div className="text-sm text-muted-foreground">
-              {durationMinutes} minutes
+              {selectedDuration} minutes
             </div>
           </div>
         </div>

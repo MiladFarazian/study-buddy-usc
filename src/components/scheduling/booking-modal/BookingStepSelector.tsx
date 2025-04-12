@@ -142,12 +142,6 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
     return <LoadingState message="Loading tutor's availability..." />;
   }
 
-  // Calculate session cost based on duration and tutor's hourly rate
-  const calculateSessionCost = () => {
-    const hourlyRate = tutor.hourlyRate || 60; // Default to $60 if not set
-    return (hourlyRate / 60) * selectedDuration;
-  };
-
   // Render appropriate content based on current step
   const renderStepContent = () => {
     switch (step) {
@@ -211,11 +205,6 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
       case "confirm":
         if (!selectedSlot) return null;
         
-        const slotDay = selectedSlot.day instanceof Date ? selectedSlot.day : new Date(selectedSlot.day);
-        const formattedDate = format(slotDay, 'EEEE, MMMM d, yyyy');
-        const formattedTime = `${selectedSlot.start} - ${selectedSlot.end}`;
-        const sessionCost = calculateSessionCost();
-        
         return (
           <div className="space-y-6">
             <h2 className="text-xl font-semibold text-center">Confirm Your Booking</h2>
@@ -242,11 +231,16 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
               <div className="space-y-3 divide-y">
                 <div className="flex justify-between py-2">
                   <span className="text-muted-foreground">Date:</span>
-                  <span className="font-medium">{formattedDate}</span>
+                  <span className="font-medium">
+                    {format(
+                      selectedSlot.day instanceof Date ? selectedSlot.day : new Date(selectedSlot.day),
+                      'EEEE, MMMM d, yyyy'
+                    )}
+                  </span>
                 </div>
                 <div className="flex justify-between py-2">
                   <span className="text-muted-foreground">Time:</span>
-                  <span className="font-medium">{formattedTime}</span>
+                  <span className="font-medium">{selectedSlot.start}</span>
                 </div>
                 <div className="flex justify-between py-2">
                   <span className="text-muted-foreground">Duration:</span>
@@ -254,7 +248,9 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
                 </div>
                 <div className="flex justify-between py-2">
                   <span className="text-muted-foreground">Price:</span>
-                  <span className="font-medium text-usc-cardinal">${sessionCost.toFixed(2)}</span>
+                  <span className="font-medium text-usc-cardinal">
+                    ${((tutor.hourlyRate || 60) / 60 * selectedDuration).toFixed(2)}
+                  </span>
                 </div>
               </div>
             </div>
@@ -295,6 +291,7 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
           <ConfirmationStep 
             tutor={tutor} 
             selectedSlot={selectedSlot} 
+            selectedDuration={selectedDuration}
             onClose={onClose}
           />
         );
