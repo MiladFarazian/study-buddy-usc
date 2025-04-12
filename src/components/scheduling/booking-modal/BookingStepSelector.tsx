@@ -64,12 +64,22 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
   // Handle slot selection
   const handleSelectTimeSlot = (slot: BookingSlot) => {
     setSelectedSlot(slot);
-    setStep("select-duration");
+  };
+
+  // Handle proceeding to duration selection step
+  const handleContinueToSelectDuration = () => {
+    if (selectedSlot) {
+      setStep("select-duration");
+    }
   };
 
   // Handle duration selection
   const handleSelectDuration = (duration: number) => {
     setSelectedDuration(duration);
+  };
+
+  // Handle proceeding to confirmation step
+  const handleContinueToConfirmation = () => {
     setStep("confirm");
   };
 
@@ -163,6 +173,16 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
               selectedSlot={selectedSlot}
               disabled={disabled || isBooking}
             />
+            
+            <div className="mt-6 flex justify-end">
+              <Button 
+                className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white px-8"
+                onClick={handleContinueToSelectDuration}
+                disabled={!selectedSlot}
+              >
+                Continue
+              </Button>
+            </div>
           </div>
         );
       
@@ -183,6 +203,7 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
             selectedDuration={selectedDuration} 
             onSelectDuration={handleSelectDuration}
             onBack={goBack}
+            onContinue={handleContinueToConfirmation}
             hourlyRate={hourlyRate}
           />
         );

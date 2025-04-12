@@ -16,6 +16,7 @@ interface DurationSelectorProps {
   selectedDuration: number;
   onSelectDuration: (minutes: number) => void;
   onBack: () => void;
+  onContinue: () => void;
   hourlyRate: number;
 }
 
@@ -25,6 +26,7 @@ export function DurationSelector({
   selectedDuration,
   onSelectDuration,
   onBack,
+  onContinue,
   hourlyRate
 }: DurationSelectorProps) {
   // Format the date for display
@@ -99,7 +101,8 @@ export function DurationSelector({
         
         <Button 
           className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white px-8"
-          onClick={() => onSelectDuration(selectedDuration)}
+          onClick={onContinue}
+          disabled={!selectedDuration}
         >
           Continue
         </Button>
