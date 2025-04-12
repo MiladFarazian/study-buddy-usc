@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
-import { format, isToday, isSameDay, startOfMonth, addMonths, subMonths } from "date-fns";
+import { format, isToday, isSameDay, startOfMonth, addMonths, subMonths, isAfter, isBefore, startOfDay } from "date-fns";
 import { cn } from "@/lib/utils";
 import { BookingSlot } from "@/lib/scheduling";
 import type { DayContentProps } from "react-day-picker";
@@ -22,6 +22,7 @@ export const DateSelector = ({
   isLoading = false
 }: DateSelectorProps) => {
   const [month, setMonth] = useState<Date>(date || new Date());
+  const today = startOfDay(new Date());
   
   // Function to check if a date has any available slots
   const hasAvailableSlots = (day: Date) => {
@@ -67,6 +68,7 @@ export const DateSelector = ({
             month={month}
             onMonthChange={setMonth}
             className="w-full"
+            disabled={(day) => isBefore(day, today)} // Disable dates before today
             classNames={{
               day_today: "bg-muted",
               day_selected: "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark focus:bg-usc-cardinal-dark",
@@ -93,29 +95,31 @@ export const DateSelector = ({
                 const isAvailable = hasAvailableSlots(dayDate);
                 // Check if this date is selected
                 const isSelected = date ? isSameDay(dayDate, date) : false;
+                // Check if this date is in the past
+                const isPast = isBefore(dayDate, today);
                 
                 return (
                   <div
                     className={cn(
                       "relative p-0",
-                      !isAvailable && "opacity-50"
+                      (!isAvailable || isPast) && "opacity-50"
                     )}
                   >
                     <button
                       type="button"
                       className={cn(
                         "h-8 w-8 p-0 font-normal aria-selected:opacity-100",
-                        isAvailable && !isSelected && "hover:bg-usc-cardinal/10",
-                        isAvailable ? "cursor-pointer" : "cursor-not-allowed"
+                        isAvailable && !isPast && !isSelected && "hover:bg-usc-cardinal/10",
+                        (isAvailable && !isPast) ? "cursor-pointer" : "cursor-not-allowed"
                       )}
-                      onClick={isAvailable ? () => onDateChange(dayDate) : undefined}
-                      disabled={!isAvailable}
+                      onClick={(isAvailable && !isPast) ? () => onDateChange(dayDate) : undefined}
+                      disabled={!isAvailable || isPast}
                     >
                       <time dateTime={format(dayDate, 'yyyy-MM-dd')}>
                         {dayDate.getDate()}
                       </time>
                     </button>
-                    {isAvailable && (
+                    {isAvailable && !isPast && (
                       <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-usc-cardinal" />
                     )}
                   </div>

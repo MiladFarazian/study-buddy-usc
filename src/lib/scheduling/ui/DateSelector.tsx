@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { format, addDays, isSameDay, startOfWeek, isSameMonth, isToday } from 'date-fns';
+import { format, addDays, isSameDay, startOfWeek, isSameMonth, isToday, isBefore } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
@@ -15,6 +15,8 @@ interface DateSelectorProps {
 export function DateSelector({ selectedDate, onSelectDate, availableDates }: DateSelectorProps) {
   const [viewMode, setViewMode] = useState<"week" | "month">("week");
   const [weekStart, setWeekStart] = useState<Date>(startOfWeek(new Date(), { weekStartsOn: 0 }));
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   
   // Generate array of 8 days starting from weekStart
   const weekDays = Array.from({ length: 8 }, (_, i) => addDays(weekStart, i));
@@ -30,6 +32,10 @@ export function DateSelector({ selectedDate, onSelectDate, availableDates }: Dat
   const isDateAvailable = (date: Date) => {
     if (!availableDates) return true;
     return availableDates.some(availableDate => isSameDay(availableDate, date));
+  };
+  
+  const isDateInPast = (date: Date) => {
+    return isBefore(date, today);
   };
   
   return (
@@ -63,9 +69,9 @@ export function DateSelector({ selectedDate, onSelectDate, availableDates }: Dat
                   "h-10 w-10 sm:h-12 sm:w-12 rounded-full p-0 font-normal text-sm sm:text-lg",
                   isToday(date) && !selectedDate && "bg-gray-100 font-medium",
                   selectedDate && isSameDay(date, selectedDate) && "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark",
-                  !isDateAvailable(date) && "opacity-50 cursor-not-allowed"
+                  (isDateInPast(date) || !isDateAvailable(date)) && "opacity-50 cursor-not-allowed"
                 )}
-                disabled={!isDateAvailable(date)}
+                disabled={isDateInPast(date) || !isDateAvailable(date)}
                 onClick={() => onSelectDate(date)}
               >
                 {format(date, 'd')}

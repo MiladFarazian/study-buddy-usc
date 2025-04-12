@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { format, addDays, startOfToday } from "date-fns";
+import { format, addDays, startOfToday, isBefore, isToday } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,9 +33,30 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
   const [isBooking, setIsBooking] = useState(false);
   const { loading, availableSlots, hasAvailability, errorMessage, refreshAvailability } = useAvailabilityData(tutor, selectedDate);
   const { user } = useAuthState();
+  const today = startOfToday();
+  
+  // Filter out past dates and slots
+  const validAvailableSlots = availableSlots.filter(slot => {
+    const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
+    
+    // Filter out past dates
+    if (isBefore(slotDay, today)) return false;
+    
+    // If it's today, filter out past time slots
+    if (isToday(slotDay)) {
+      const now = new Date();
+      const [hour, minute] = slot.start.split(':').map(Number);
+      const slotTime = new Date();
+      slotTime.setHours(hour, minute, 0, 0);
+      
+      return !isBefore(slotTime, now);
+    }
+    
+    return slot.available;
+  });
   
   // Filter slots for the selected date
-  const slotsForSelectedDate = availableSlots.filter(slot => 
+  const slotsForSelectedDate = validAvailableSlots.filter(slot => 
     new Date(slot.day).toDateString() === selectedDate.toDateString() && slot.available
   );
 
