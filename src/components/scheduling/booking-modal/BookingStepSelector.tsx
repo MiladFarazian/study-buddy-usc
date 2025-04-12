@@ -14,6 +14,7 @@ import { ConfirmationStep } from "./ConfirmationStep";
 import { useAuthState } from "@/hooks/useAuthState";
 import { createSessionBooking } from "@/lib/scheduling";
 import { toast } from "sonner";
+import { DurationSelector } from "./duration/DurationSelector";
 
 export interface BookingStepSelectorProps {
   tutor: Tutor;
@@ -22,11 +23,12 @@ export interface BookingStepSelectorProps {
   disabled?: boolean;
 }
 
-type BookingStep = "select-date-time" | "confirm" | "processing" | "complete";
+type BookingStep = "select-date-time" | "select-duration" | "confirm" | "processing" | "complete";
 
 export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: BookingStepSelectorProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedSlot, setSelectedSlot] = useState<BookingSlot | null>(null);
+  const [selectedDuration, setSelectedDuration] = useState<number>(60); // Default to 1 hour
   const [step, setStep] = useState<BookingStep>("select-date-time");
   const [isBooking, setIsBooking] = useState(false);
   const { loading, availableSlots, hasAvailability, errorMessage, refreshAvailability } = useAvailabilityData(tutor, selectedDate);
@@ -62,6 +64,12 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
   // Handle slot selection
   const handleSelectTimeSlot = (slot: BookingSlot) => {
     setSelectedSlot(slot);
+    setStep("select-duration");
+  };
+
+  // Handle duration selection
+  const handleSelectDuration = (duration: number) => {
+    setSelectedDuration(duration);
     setStep("confirm");
   };
 
@@ -83,10 +91,9 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
       const [startHour, startMinute] = selectedSlot.start.split(':').map(Number);
       startTime.setHours(startHour, startMinute, 0, 0);
       
-      // Create end time
-      const endTime = new Date(day);
-      const [endHour, endMinute] = selectedSlot.end.split(':').map(Number);
-      endTime.setHours(endHour, endMinute, 0, 0);
+      // Calculate end time based on duration
+      const endTime = new Date(startTime);
+      endTime.setMinutes(endTime.getMinutes() + selectedDuration);
       
       // Create session in database
       await createSessionBooking(
@@ -114,14 +121,22 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
 
   // Handle navigation based on step
   const goBack = () => {
-    if (step === "confirm") {
+    if (step === "select-duration") {
       setStep("select-date-time");
+    } else if (step === "confirm") {
+      setStep("select-duration");
     }
   };
 
   if (loading) {
     return <LoadingState message="Loading tutor's availability..." />;
   }
+
+  // Calculate session cost based on duration and tutor's hourly rate
+  const calculateSessionCost = () => {
+    const hourlyRate = tutor.hourlyRate || 60; // Default to $60 if not set
+    return (hourlyRate / 60) * selectedDuration;
+  };
 
   // Render appropriate content based on current step
   const renderStepContent = () => {
@@ -148,19 +163,28 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
               selectedSlot={selectedSlot}
               disabled={disabled || isBooking}
             />
-            
-            {selectedSlot && (
-              <div className="flex justify-end">
-                <Button 
-                  className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
-                  onClick={() => setStep("confirm")}
-                  disabled={isBooking || !selectedSlot}
-                >
-                  Continue
-                </Button>
-              </div>
-            )}
           </div>
+        );
+      
+      case "select-duration":
+        if (!selectedSlot) return null;
+        
+        const hourlyRate = tutor.hourlyRate || 60; // Default to $60 if not set
+        const durationOptions = [
+          { minutes: 30, cost: hourlyRate / 2 },
+          { minutes: 60, cost: hourlyRate },
+          { minutes: 90, cost: hourlyRate * 1.5 }
+        ];
+        
+        return (
+          <DurationSelector 
+            selectedSlot={selectedSlot}
+            durationOptions={durationOptions}
+            selectedDuration={selectedDuration} 
+            onSelectDuration={handleSelectDuration}
+            onBack={goBack}
+            hourlyRate={hourlyRate}
+          />
         );
         
       case "confirm":
@@ -169,6 +193,7 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
         const slotDay = selectedSlot.day instanceof Date ? selectedSlot.day : new Date(selectedSlot.day);
         const formattedDate = format(slotDay, 'EEEE, MMMM d, yyyy');
         const formattedTime = `${selectedSlot.start} - ${selectedSlot.end}`;
+        const sessionCost = calculateSessionCost();
         
         return (
           <div className="space-y-6">
@@ -203,8 +228,12 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
                   <span className="font-medium">{formattedTime}</span>
                 </div>
                 <div className="flex justify-between py-2">
+                  <span className="text-muted-foreground">Duration:</span>
+                  <span className="font-medium">{selectedDuration} minutes</span>
+                </div>
+                <div className="flex justify-between py-2">
                   <span className="text-muted-foreground">Price:</span>
-                  <span className="font-medium">${tutor.hourlyRate?.toFixed(2) || '25.00'}/hour</span>
+                  <span className="font-medium text-usc-cardinal">${sessionCost.toFixed(2)}</span>
                 </div>
               </div>
             </div>
