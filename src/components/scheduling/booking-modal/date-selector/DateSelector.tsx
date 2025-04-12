@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
@@ -5,6 +6,7 @@ import { format, isToday, isSameDay, startOfWeek, addDays, isAfter, isBefore, st
 import { cn } from "@/lib/utils";
 import { BookingSlot } from "@/lib/scheduling";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar } from "@/components/ui/calendar"; // Added missing Calendar import
 
 interface DateSelectorProps {
   date: Date | undefined;
