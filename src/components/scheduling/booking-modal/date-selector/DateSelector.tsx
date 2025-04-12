@@ -74,9 +74,9 @@ export const DateSelector = ({
               months: "w-full",
               month: "w-full",
               table: "w-full",
-              head_row: "w-full flex justify-between",
+              head_row: "flex w-full justify-between",
               row: "flex w-full justify-between mt-2",
-              cell: "h-9 w-9 text-center p-0 relative [&:has([aria-selected])]:bg-accent focus-within:relative focus-within:z-20"
+              cell: "h-8 w-8 text-center p-0 relative [&:has([aria-selected])]:bg-accent focus-within:relative focus-within:z-20"
             }}
             modifiersClassNames={{
               today: "text-usc-gold font-bold",
@@ -104,7 +104,7 @@ export const DateSelector = ({
                     <button
                       type="button"
                       className={cn(
-                        "h-9 w-9 p-0 font-normal aria-selected:opacity-100",
+                        "h-8 w-8 p-0 font-normal aria-selected:opacity-100",
                         isAvailable && !isSelected && "hover:bg-usc-cardinal/10",
                         isAvailable ? "cursor-pointer" : "cursor-not-allowed"
                       )}

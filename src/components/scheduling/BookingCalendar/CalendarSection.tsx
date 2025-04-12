@@ -29,7 +29,7 @@ export const CalendarSection = ({
   return (
     <div>
       <p className="text-sm font-medium mb-2">Select a Date:</p>
-      <div className="min-h-[350px] w-full border rounded-md p-2 flex items-center justify-center overflow-visible">
+      <div className="min-h-[350px] w-full border rounded-md p-2 flex items-center justify-center">
         <Calendar
           mode="single"
           selected={selectedDate}
@@ -56,9 +56,9 @@ export const CalendarSection = ({
             months: "w-full",
             month: "w-full",
             table: "w-full",
-            head_row: "w-full flex justify-between",
+            head_row: "flex w-full justify-between",
             row: "flex w-full justify-between mt-2",
-            cell: "h-9 w-9 text-center p-0 relative [&:has([aria-selected])]:bg-accent focus-within:relative focus-within:z-20"
+            cell: "h-8 w-8 text-center p-0 relative [&:has([aria-selected])]:bg-accent focus-within:relative focus-within:z-20"
           }}
         />
       </div>
