@@ -208,7 +208,7 @@ export async function getTutorUpcomingSessions(tutorId: string) {
     if (error) throw error;
     
     // Process each session to fetch course data separately
-    const sessionsWithCourses = await Promise.all((sessions || []).map(async (session) => {
+    const processedSessions = await Promise.all((sessions || []).map(async (session) => {
       let courseData = null;
       
       // If there's a course_id, fetch the course details
@@ -216,9 +216,9 @@ export async function getTutorUpcomingSessions(tutorId: string) {
         try {
           const { data: course, error: courseError } = await supabase
             .from('courses-20251')
-            .select(`"Course number", "Course title"`)
+            .select('"Course number", "Course title"')
             .eq('id', session.course_id)
-            .single();
+            .maybeSingle();
             
           if (!courseError && course) {
             courseData = {
@@ -237,7 +237,7 @@ export async function getTutorUpcomingSessions(tutorId: string) {
       };
     }));
     
-    return sessionsWithCourses;
+    return processedSessions;
   } catch (error) {
     console.error("Error fetching tutor sessions:", error);
     return [];
@@ -265,7 +265,7 @@ export async function getStudentUpcomingSessions(studentId: string) {
     if (error) throw error;
     
     // Process each session to fetch course data separately
-    const sessionsWithCourses = await Promise.all((sessions || []).map(async (session) => {
+    const processedSessions = await Promise.all((sessions || []).map(async (session) => {
       let courseData = null;
       
       // If there's a course_id, fetch the course details
@@ -273,9 +273,9 @@ export async function getStudentUpcomingSessions(studentId: string) {
         try {
           const { data: course, error: courseError } = await supabase
             .from('courses-20251')
-            .select(`"Course number", "Course title"`)
+            .select('"Course number", "Course title"')
             .eq('id', session.course_id)
-            .single();
+            .maybeSingle();
             
           if (!courseError && course) {
             courseData = {
@@ -294,7 +294,7 @@ export async function getStudentUpcomingSessions(studentId: string) {
       };
     }));
     
-    return sessionsWithCourses;
+    return processedSessions;
   } catch (error) {
     console.error("Error fetching student sessions:", error);
     return [];
