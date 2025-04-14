@@ -208,34 +208,39 @@ export async function getTutorUpcomingSessions(tutorId: string) {
     if (error) throw error;
     
     // Process each session to fetch course data separately
-    const processedSessions = await Promise.all((sessions || []).map(async (session) => {
-      let courseData = null;
-      
-      // If there's a course_id, fetch the course details
-      if (session.course_id) {
-        try {
-          const { data: course, error: courseError } = await supabase
-            .from('courses-20251')
-            .select('"Course number", "Course title"')
-            .eq('id', session.course_id)
-            .maybeSingle();
-            
-          if (!courseError && course) {
-            courseData = {
-              course_number: course["Course number"],
-              course_title: course["Course title"]
-            };
+    const processedSessions = [];
+    
+    // Process sessions sequentially to avoid type recursion issues
+    if (sessions) {
+      for (const session of sessions) {
+        let courseData = null;
+        
+        // If there's a course_id, fetch the course details
+        if (session.course_id) {
+          try {
+            const { data: course, error: courseError } = await supabase
+              .from('courses-20251')
+              .select('"Course number", "Course title"')
+              .eq('id', session.course_id)
+              .maybeSingle();
+              
+            if (!courseError && course) {
+              courseData = {
+                course_number: course["Course number"],
+                course_title: course["Course title"]
+              };
+            }
+          } catch (courseError) {
+            console.warn("Error fetching course for session:", courseError);
           }
-        } catch (courseError) {
-          console.warn("Error fetching course for session:", courseError);
         }
+        
+        processedSessions.push({
+          ...session,
+          course: courseData
+        });
       }
-      
-      return {
-        ...session,
-        course: courseData
-      };
-    }));
+    }
     
     return processedSessions;
   } catch (error) {
@@ -265,34 +270,39 @@ export async function getStudentUpcomingSessions(studentId: string) {
     if (error) throw error;
     
     // Process each session to fetch course data separately
-    const processedSessions = await Promise.all((sessions || []).map(async (session) => {
-      let courseData = null;
-      
-      // If there's a course_id, fetch the course details
-      if (session.course_id) {
-        try {
-          const { data: course, error: courseError } = await supabase
-            .from('courses-20251')
-            .select('"Course number", "Course title"')
-            .eq('id', session.course_id)
-            .maybeSingle();
-            
-          if (!courseError && course) {
-            courseData = {
-              course_number: course["Course number"],
-              course_title: course["Course title"]
-            };
+    const processedSessions = [];
+    
+    // Process sessions sequentially to avoid type recursion issues
+    if (sessions) {
+      for (const session of sessions) {
+        let courseData = null;
+        
+        // If there's a course_id, fetch the course details
+        if (session.course_id) {
+          try {
+            const { data: course, error: courseError } = await supabase
+              .from('courses-20251')
+              .select('"Course number", "Course title"')
+              .eq('id', session.course_id)
+              .maybeSingle();
+              
+            if (!courseError && course) {
+              courseData = {
+                course_number: course["Course number"],
+                course_title: course["Course title"]
+              };
+            }
+          } catch (courseError) {
+            console.warn("Error fetching course for session:", courseError);
           }
-        } catch (courseError) {
-          console.warn("Error fetching course for session:", courseError);
         }
+        
+        processedSessions.push({
+          ...session,
+          course: courseData
+        });
       }
-      
-      return {
-        ...session,
-        course: courseData
-      };
-    }));
+    }
     
     return processedSessions;
   } catch (error) {
