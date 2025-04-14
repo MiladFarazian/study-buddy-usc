@@ -20,7 +20,6 @@ const Schedule = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Load sessions when the user is logged in
   useEffect(() => {
     if (user) {
       loadSessions();
@@ -32,18 +31,28 @@ const Schedule = () => {
     
     setLoading(true);
     try {
-      // If user is a tutor, fetch sessions where they are the tutor
-      // If user is a student, fetch sessions where they are the student
-      const userField = isTutor ? 'tutor_id' : 'student_id';
-      
       const { data, error } = await supabase
         .from('sessions')
         .select(`
           *,
-          tutor:profiles!tutor_id(id, first_name, last_name, avatar_url),
-          student:profiles!student_id(id, first_name, last_name, avatar_url)
+          tutor:profiles!tutor_id (
+            id,
+            first_name,
+            last_name,
+            avatar_url
+          ),
+          student:profiles!student_id (
+            id,
+            first_name,
+            last_name,
+            avatar_url
+          ),
+          course:courses-20251 (
+            course_number,
+            course_title
+          )
         `)
-        .eq(userField, user.id)
+        .eq(isTutor ? 'tutor_id' : 'student_id', user.id)
         .order('start_time', { ascending: true });
         
       if (error) throw error;

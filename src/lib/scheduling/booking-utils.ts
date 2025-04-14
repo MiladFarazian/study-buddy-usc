@@ -110,7 +110,7 @@ export async function bookSession(
   tutorId: string,
   studentId: string,
   slot: BookingSlot,
-  duration: number // in minutes
+  duration: number
 ): Promise<{ success: boolean; sessionId?: string; error?: string }> {
   try {
     // Convert date and time strings to ISO format
@@ -139,7 +139,7 @@ export async function bookSession(
     
     return {
       success: true,
-      sessionId: data?.id
+      sessionId: data.id
     };
   } catch (error) {
     console.error("Error booking session:", error);
@@ -186,16 +186,21 @@ export async function createSessionBooking(
   }
 }
 
-// Get tutor's upcoming sessions
+// Get tutor's upcoming sessions with extended details
 export async function getTutorUpcomingSessions(tutorId: string) {
   try {
     const { data, error } = await supabase
       .from('sessions')
       .select(`
         *,
-        profiles!student_id (
+        student:profiles!student_id (
           first_name,
-          last_name
+          last_name,
+          avatar_url
+        ),
+        course:courses-20251 (
+          course_number,
+          course_title
         )
       `)
       .eq('tutor_id', tutorId)
@@ -211,17 +216,21 @@ export async function getTutorUpcomingSessions(tutorId: string) {
   }
 }
 
-// Get student's upcoming sessions
+// Get student's upcoming sessions with extended details
 export async function getStudentUpcomingSessions(studentId: string) {
   try {
     const { data, error } = await supabase
       .from('sessions')
       .select(`
         *,
-        profiles!tutor_id (
+        tutor:profiles!tutor_id (
           first_name,
           last_name,
           avatar_url
+        ),
+        course:courses-20251 (
+          course_number,
+          course_title
         )
       `)
       .eq('student_id', studentId)
