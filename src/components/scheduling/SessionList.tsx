@@ -50,6 +50,13 @@ export const SessionList = ({ sessions, loading, onCancelSession, onBookSession 
     }
   };
   
+  const calculateDuration = (startTime: string, endTime: string) => {
+    const start = parseISO(startTime);
+    const end = parseISO(endTime);
+    const durationMinutes = Math.round((end.getTime() - start.getTime()) / (1000 * 60));
+    return durationMinutes;
+  };
+  
   const handleCancelSession = (sessionId: string) => {
     setSelectedSessionId(sessionId);
     setShowDialog(true);
@@ -106,7 +113,12 @@ export const SessionList = ({ sessions, loading, onCancelSession, onBookSession 
                               </div>
                               <div className="flex items-center gap-2">
                                 <Clock className="h-3 w-3" />
-                                <span>{formatSessionTime(session.start_time)} - {formatSessionTime(session.end_time)}</span>
+                                <span>
+                                  {formatSessionTime(session.start_time)} - {formatSessionTime(session.end_time)}
+                                  <span className="ml-1 text-xs text-gray-400">
+                                    ({calculateDuration(session.start_time, session.end_time)} mins)
+                                  </span>
+                                </span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <User className="h-3 w-3" />
@@ -187,7 +199,12 @@ export const SessionList = ({ sessions, loading, onCancelSession, onBookSession 
                               </div>
                               <div className="flex items-center gap-2">
                                 <Clock className="h-3 w-3" />
-                                <span>{formatSessionTime(session.start_time)} - {formatSessionTime(session.end_time)}</span>
+                                <span>
+                                  {formatSessionTime(session.start_time)} - {formatSessionTime(session.end_time)}
+                                  <span className="ml-1 text-xs text-gray-400">
+                                    ({calculateDuration(session.start_time, session.end_time)} mins)
+                                  </span>
+                                </span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <User className="h-3 w-3" />
@@ -247,7 +264,12 @@ export const SessionList = ({ sessions, loading, onCancelSession, onBookSession 
                               </div>
                               <div className="flex items-center gap-2">
                                 <Clock className="h-3 w-3" />
-                                <span>{formatSessionTime(session.start_time)} - {formatSessionTime(session.end_time)}</span>
+                                <span>
+                                  {formatSessionTime(session.start_time)} - {formatSessionTime(session.end_time)}
+                                  <span className="ml-1 text-xs text-gray-400">
+                                    ({calculateDuration(session.start_time, session.end_time)} mins)
+                                  </span>
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -298,3 +320,4 @@ export const SessionList = ({ sessions, loading, onCancelSession, onBookSession 
     </>
   );
 };
+

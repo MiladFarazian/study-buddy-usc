@@ -1,4 +1,3 @@
-
 import { addDays, format, isAfter, isBefore, isSameDay, parse, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { BookingSlot, WeeklyAvailability } from "./types";
