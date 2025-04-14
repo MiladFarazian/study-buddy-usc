@@ -1,3 +1,4 @@
+
 import { addDays, format, isAfter, isBefore, isSameDay, parse, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { BookingSlot, WeeklyAvailability } from "./types";
@@ -198,9 +199,9 @@ export async function getTutorUpcomingSessions(tutorId: string) {
           last_name,
           avatar_url
         ),
-        course:courses-20251 (
-          course_number,
-          course_title
+        course:"courses-20251" (
+          "Course number",
+          "Course title"
         )
       `)
       .eq('tutor_id', tutorId)
@@ -209,7 +210,16 @@ export async function getTutorUpcomingSessions(tutorId: string) {
       
     if (error) throw error;
     
-    return data || [];
+    // Transform course data to match expected format
+    const transformedData = data?.map(session => ({
+      ...session,
+      course: session.course ? {
+        course_number: session.course["Course number"],
+        course_title: session.course["Course title"]
+      } : null
+    }));
+    
+    return transformedData || [];
   } catch (error) {
     console.error("Error fetching tutor sessions:", error);
     return [];
@@ -228,9 +238,9 @@ export async function getStudentUpcomingSessions(studentId: string) {
           last_name,
           avatar_url
         ),
-        course:courses-20251 (
-          course_number,
-          course_title
+        course:"courses-20251" (
+          "Course number",
+          "Course title"
         )
       `)
       .eq('student_id', studentId)
@@ -239,7 +249,16 @@ export async function getStudentUpcomingSessions(studentId: string) {
       
     if (error) throw error;
     
-    return data || [];
+    // Transform course data to match expected format
+    const transformedData = data?.map(session => ({
+      ...session,
+      course: session.course ? {
+        course_number: session.course["Course number"],
+        course_title: session.course["Course title"]
+      } : null
+    }));
+    
+    return transformedData || [];
   } catch (error) {
     console.error("Error fetching student sessions:", error);
     return [];

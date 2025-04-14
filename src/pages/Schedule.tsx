@@ -47,9 +47,9 @@ const Schedule = () => {
             last_name,
             avatar_url
           ),
-          course:courses-20251 (
-            course_number,
-            course_title
+          course:"courses-20251" (
+            "Course number",
+            "Course title"
           )
         `)
         .eq(isTutor ? 'tutor_id' : 'student_id', user.id)
@@ -57,7 +57,17 @@ const Schedule = () => {
         
       if (error) throw error;
       
-      setSessions(data || []);
+      // Transform the data to match our Session type
+      const formattedSessions = data.map(session => ({
+        ...session,
+        course: session.course ? {
+          id: session.course_id || '',
+          course_number: session.course?.["Course number"] || '',
+          course_title: session.course?.["Course title"] || null
+        } : undefined
+      }));
+      
+      setSessions(formattedSessions);
     } catch (error) {
       console.error("Error loading sessions:", error);
       toast({
