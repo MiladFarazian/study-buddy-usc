@@ -190,7 +190,8 @@ export async function createSessionBooking(
 // Get tutor's upcoming sessions with extended details
 export async function getTutorUpcomingSessions(tutorId: string) {
   try {
-    const { data, error } = await supabase
+    // Fetch basic session data with profiles
+    const { data: sessions, error } = await supabase
       .from('sessions')
       .select(`
         *,
@@ -198,10 +199,6 @@ export async function getTutorUpcomingSessions(tutorId: string) {
           first_name,
           last_name,
           avatar_url
-        ),
-        course:"courses-20251" (
-          "Course number",
-          "Course title"
         )
       `)
       .eq('tutor_id', tutorId)
@@ -210,16 +207,37 @@ export async function getTutorUpcomingSessions(tutorId: string) {
       
     if (error) throw error;
     
-    // Transform course data to match expected format
-    const transformedData = data?.map(session => ({
-      ...session,
-      course: session.course ? {
-        course_number: session.course["Course number"],
-        course_title: session.course["Course title"]
-      } : null
+    // Process each session to fetch course data separately
+    const sessionsWithCourses = await Promise.all((sessions || []).map(async (session) => {
+      let courseData = null;
+      
+      // If there's a course_id, fetch the course details
+      if (session.course_id) {
+        try {
+          const { data: course, error: courseError } = await supabase
+            .from('courses-20251')
+            .select(`"Course number", "Course title"`)
+            .eq('id', session.course_id)
+            .single();
+            
+          if (!courseError && course) {
+            courseData = {
+              course_number: course["Course number"],
+              course_title: course["Course title"]
+            };
+          }
+        } catch (courseError) {
+          console.warn("Error fetching course for session:", courseError);
+        }
+      }
+      
+      return {
+        ...session,
+        course: courseData
+      };
     }));
     
-    return transformedData || [];
+    return sessionsWithCourses;
   } catch (error) {
     console.error("Error fetching tutor sessions:", error);
     return [];
@@ -229,7 +247,8 @@ export async function getTutorUpcomingSessions(tutorId: string) {
 // Get student's upcoming sessions with extended details
 export async function getStudentUpcomingSessions(studentId: string) {
   try {
-    const { data, error } = await supabase
+    // Fetch basic session data with profiles
+    const { data: sessions, error } = await supabase
       .from('sessions')
       .select(`
         *,
@@ -237,10 +256,6 @@ export async function getStudentUpcomingSessions(studentId: string) {
           first_name,
           last_name,
           avatar_url
-        ),
-        course:"courses-20251" (
-          "Course number",
-          "Course title"
         )
       `)
       .eq('student_id', studentId)
@@ -249,16 +264,37 @@ export async function getStudentUpcomingSessions(studentId: string) {
       
     if (error) throw error;
     
-    // Transform course data to match expected format
-    const transformedData = data?.map(session => ({
-      ...session,
-      course: session.course ? {
-        course_number: session.course["Course number"],
-        course_title: session.course["Course title"]
-      } : null
+    // Process each session to fetch course data separately
+    const sessionsWithCourses = await Promise.all((sessions || []).map(async (session) => {
+      let courseData = null;
+      
+      // If there's a course_id, fetch the course details
+      if (session.course_id) {
+        try {
+          const { data: course, error: courseError } = await supabase
+            .from('courses-20251')
+            .select(`"Course number", "Course title"`)
+            .eq('id', session.course_id)
+            .single();
+            
+          if (!courseError && course) {
+            courseData = {
+              course_number: course["Course number"],
+              course_title: course["Course title"]
+            };
+          }
+        } catch (courseError) {
+          console.warn("Error fetching course for session:", courseError);
+        }
+      }
+      
+      return {
+        ...session,
+        course: courseData
+      };
     }));
     
-    return transformedData || [];
+    return sessionsWithCourses;
   } catch (error) {
     console.error("Error fetching student sessions:", error);
     return [];

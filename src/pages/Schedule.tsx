@@ -31,7 +31,8 @@ const Schedule = () => {
     
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // First, fetch sessions with user profiles
+      const { data: sessionData, error: sessionError } = await supabase
         .from('sessions')
         .select(`
           *,
@@ -46,27 +47,53 @@ const Schedule = () => {
             first_name,
             last_name,
             avatar_url
-          ),
-          course:"courses-20251" (
-            "Course number",
-            "Course title"
           )
         `)
         .eq(isTutor ? 'tutor_id' : 'student_id', user.id)
         .order('start_time', { ascending: true });
         
-      if (error) throw error;
+      if (sessionError) throw sessionError;
       
-      // Transform the data to match our Session type
-      const formattedSessions = data.map(session => ({
-        ...session,
-        course: session.course ? {
-          id: session.course_id || '',
-          course_number: session.course?.["Course number"] || '',
-          course_title: session.course?.["Course title"] || null
-        } : undefined
-      }));
+      // Initialize sessions with the data we have
+      const sessionsWithProfiles = sessionData || [];
       
+      // Create an array to hold the final sessions data
+      const formattedSessions: Session[] = [];
+      
+      // Process each session
+      for (const session of sessionsWithProfiles) {
+        // If there's a course_id, fetch the course details
+        let courseDetails = undefined;
+        
+        if (session.course_id) {
+          try {
+            const { data: courseData, error: courseError } = await supabase
+              .from('courses-20251')
+              .select(`"Course number", "Course title"`)
+              .eq('id', session.course_id)
+              .single();
+            
+            if (!courseError && courseData) {
+              courseDetails = {
+                id: session.course_id,
+                course_number: courseData["Course number"],
+                course_title: courseData["Course title"]
+              };
+            }
+          } catch (courseError) {
+            console.warn("Error fetching course details:", courseError);
+            // Continue even if course fetch fails
+          }
+        }
+        
+        // Add the processed session to our array
+        formattedSessions.push({
+          ...session,
+          course: courseDetails
+        });
+      }
+      
+      // Update state with the formatted sessions
       setSessions(formattedSessions);
     } catch (error) {
       console.error("Error loading sessions:", error);
