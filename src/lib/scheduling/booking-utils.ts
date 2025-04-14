@@ -1,4 +1,3 @@
-
 import { addDays, format, isAfter, isBefore, isSameDay, parse, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { BookingSlot, WeeklyAvailability } from "./types";
@@ -207,42 +206,8 @@ export async function getTutorUpcomingSessions(tutorId: string) {
       
     if (error) throw error;
     
-    // Process each session to fetch course data separately
-    const processedSessions = [];
-    
-    // Process sessions sequentially to avoid type recursion issues
-    if (sessions) {
-      for (const session of sessions) {
-        let courseData = null;
-        
-        // If there's a course_id, fetch the course details
-        if (session.course_id) {
-          try {
-            const { data: course, error: courseError } = await supabase
-              .from('courses-20251')
-              .select('"Course number", "Course title"')
-              .eq('id', session.course_id)
-              .maybeSingle();
-              
-            if (!courseError && course) {
-              courseData = {
-                course_number: course["Course number"],
-                course_title: course["Course title"]
-              };
-            }
-          } catch (courseError) {
-            console.warn("Error fetching course for session:", courseError);
-          }
-        }
-        
-        processedSessions.push({
-          ...session,
-          course: courseData
-        });
-      }
-    }
-    
-    return processedSessions;
+    // We no longer try to fetch course details here
+    return sessions || [];
   } catch (error) {
     console.error("Error fetching tutor sessions:", error);
     return [];
@@ -269,42 +234,8 @@ export async function getStudentUpcomingSessions(studentId: string) {
       
     if (error) throw error;
     
-    // Process each session to fetch course data separately
-    const processedSessions = [];
-    
-    // Process sessions sequentially to avoid type recursion issues
-    if (sessions) {
-      for (const session of sessions) {
-        let courseData = null;
-        
-        // If there's a course_id, fetch the course details
-        if (session.course_id) {
-          try {
-            const { data: course, error: courseError } = await supabase
-              .from('courses-20251')
-              .select('"Course number", "Course title"')
-              .eq('id', session.course_id)
-              .maybeSingle();
-              
-            if (!courseError && course) {
-              courseData = {
-                course_number: course["Course number"],
-                course_title: course["Course title"]
-              };
-            }
-          } catch (courseError) {
-            console.warn("Error fetching course for session:", courseError);
-          }
-        }
-        
-        processedSessions.push({
-          ...session,
-          course: courseData
-        });
-      }
-    }
-    
-    return processedSessions;
+    // We no longer try to fetch course details here
+    return sessions || [];
   } catch (error) {
     console.error("Error fetching student sessions:", error);
     return [];
