@@ -1,17 +1,17 @@
 
-// Export scheduling types
-export * from './types';
+export * from './types/booking';
+export * from './availability-manager';
+export * from './session-manager';
+export * from './booking-manager';
 
-// Export scheduling utilities
-export * from './booking-utils';
-export * from './availability-utils';
+// Re-export existing types and utilities
+export * from './types';
 export * from './time-utils';
 export * from './payment-utils';
+export * from './email-utils';
 
-// Export UI components
-export { DateSelector } from './ui/DateSelector';
-export { TimeSelector } from './ui/TimeSelector';
-export { DurationSelector } from './ui/DurationSelector';
-export { BookingSummary } from './ui/BookingSummary';
-export { createSessionBooking } from './booking-utils';
-// Note: We're not exporting ScheduleCalendar from here to avoid naming conflicts
+// Re-export UI components
+export * from './ui/BookingSummary';
+export * from './ui/DateSelector';
+export * from './ui/DurationSelector';
+export * from './ui/TimeSelector';
