@@ -1,94 +1,90 @@
 
-import { format } from "date-fns";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import React from 'react';
+import { Card, CardContent } from "@/components/ui/card";
+import { format } from 'date-fns';
+import { Calendar, Clock, User, MapPin, DollarSign } from 'lucide-react';
 
-interface BookingSummaryProps {
-  selectedDate: Date;
-  selectedTime: string;
-  durationMinutes: number;
+export interface BookingSummaryProps {
+  tutorName: string;
+  date: Date | null;
+  startTime: string | null;
+  duration: number | null;
+  location?: string;
   cost: number;
-  notes: string;
-  onNotesChange: (notes: string) => void;
+  className?: string;
 }
 
-export function BookingSummary({ 
-  selectedDate,
-  selectedTime,
-  durationMinutes,
+export function BookingSummary({
+  tutorName,
+  date,
+  startTime,
+  duration,
+  location,
   cost,
-  notes,
-  onNotesChange
+  className = ''
 }: BookingSummaryProps) {
-  // Format the time for display
-  const formatTimeDisplay = (time24: string): string => {
-    try {
-      const [hours, minutes] = time24.split(':').map(Number);
-      const date = new Date();
-      date.setHours(hours, minutes);
-      return format(date, 'h:mm a');
-    } catch (e) {
-      return time24;
-    }
+  // Calculate end time based on start time and duration
+  const getEndTime = () => {
+    if (!startTime || !duration) return null;
+    
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const startMinutes = hours * 60 + minutes;
+    const endMinutes = startMinutes + duration;
+    
+    const endHours = Math.floor(endMinutes / 60);
+    const endMins = endMinutes % 60;
+    
+    return `${endHours.toString().padStart(2, '0')}:${endMins.toString().padStart(2, '0')}`;
+  };
+  
+  // Format time for display (e.g., "14:30" -> "2:30 PM")
+  const formatTimeDisplay = (time: string) => {
+    const [hours, minutes] = time.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12; // Convert 0 to 12 for 12 AM
+    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
   };
 
+  const endTime = getEndTime();
+
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Complete Your Booking</h2>
-      
-      <div className="bg-gray-50 p-6 rounded-md">
-        <h3 className="text-sm font-medium text-muted-foreground mb-2">Selected Time:</h3>
-        <p className="text-xl font-medium">
-          {format(selectedDate, 'MMMM d, yyyy')} at {formatTimeDisplay(selectedTime)}
-        </p>
-      </div>
-      
-      <div>
-        <Label htmlFor="duration">Session Duration</Label>
-        <Select defaultValue={`${durationMinutes}`} disabled>
-          <SelectTrigger id="duration" className="mt-1">
-            <SelectValue placeholder="Select duration" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={`${durationMinutes}`}>
-              {durationMinutes} minutes (${cost})
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      
-      <div>
-        <Label htmlFor="notes">Notes (Optional)</Label>
-        <Textarea
-          id="notes"
-          placeholder="Any specific topics you'd like to cover?"
-          className="mt-1 resize-none h-32"
-          value={notes}
-          onChange={(e) => onNotesChange(e.target.value)}
-        />
-      </div>
-      
-      <Separator />
-      
-      <div className="flex justify-between items-center">
-        <div>
-          <p className="text-muted-foreground">Session duration</p>
-          <p className="text-muted-foreground">Total</p>
+    <Card className={`border shadow-sm ${className}`}>
+      <CardContent className="p-4 space-y-3">
+        <h3 className="text-lg font-medium mb-2">Booking Summary</h3>
+        
+        <div className="space-y-3">
+          <div className="flex items-center text-sm">
+            <User className="h-4 w-4 mr-2 text-muted-foreground" />
+            <span>{tutorName}</span>
+          </div>
+          
+          {date && (
+            <div className="flex items-center text-sm">
+              <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+              <span>{format(date, 'EEEE, MMMM d, yyyy')}</span>
+            </div>
+          )}
+          
+          {startTime && endTime && (
+            <div className="flex items-center text-sm">
+              <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+              <span>{formatTimeDisplay(startTime)} - {formatTimeDisplay(endTime)}</span>
+            </div>
+          )}
+          
+          {location && (
+            <div className="flex items-center text-sm">
+              <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
+              <span>{location}</span>
+            </div>
+          )}
+          
+          <div className="flex items-center text-sm font-medium">
+            <DollarSign className="h-4 w-4 mr-2 text-muted-foreground" />
+            <span>${cost.toFixed(2)}</span>
+          </div>
         </div>
-        <div className="text-right">
-          <p>{durationMinutes} minutes</p>
-          <p className="font-bold text-lg">${cost}</p>
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

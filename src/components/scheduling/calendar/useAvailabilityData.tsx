@@ -33,7 +33,9 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
       }
       
       // Check if there's any actual availability set
-      const hasAnySlots = Object.values(availability).some(daySlots => daySlots.length > 0);
+      const hasAnySlots = Object.values(availability).some(daySlots => 
+        Array.isArray(daySlots) && daySlots.length > 0
+      );
       
       if (!hasAnySlots) {
         console.log("Tutor has no availability slots set:", tutor.id);

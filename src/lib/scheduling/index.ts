@@ -1,14 +1,18 @@
 
+// Export types
 export * from './types/booking';
+export * from './types/availability';
+
+// Export managers
 export * from './availability-manager';
 export * from './session-manager';
 export * from './booking-manager';
 
-// Re-export existing types and utilities
-export * from './types';
+// Export utility functions
+export * from './availability-utils';
 export * from './time-utils';
-export * from './payment-utils';
 export * from './email-utils';
+export * from './payment-utils';
 
 // Re-export UI components
 export * from './ui/BookingSummary';

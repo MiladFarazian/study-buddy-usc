@@ -1,127 +1,60 @@
 
-import { format, parseISO, addMinutes, isValid, parse } from "date-fns";
+import { format, addMinutes, parseISO, setMinutes, setHours } from 'date-fns';
 
-// Format time from 24-hour format to 12-hour format
-export function formatTime(time: string): string {
-  try {
-    // For time strings like "14:30"
-    if (time.includes(':')) {
-      const [hours, minutes] = time.split(':').map(Number);
-      const date = new Date();
-      date.setHours(hours, minutes, 0, 0);
-      return format(date, "h:mm a");
-    }
-    
-    // For ISO strings
-    const date = parseISO(time);
-    if (isValid(date)) {
-      return format(date, "h:mm a");
-    }
-    
-    return time;
-  } catch (error) {
-    console.error("Error formatting time:", error);
-    return time;
-  }
+// Format a time string from a Date object (HH:MM format)
+export function formatTimeString(date: Date | string): string {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  return format(dateObj, 'HH:mm');
 }
 
-// Alias for formatTime for consistent naming
-export function formatTimeDisplay(time: string): string {
-  return formatTime(time);
+// Parse a time string (HH:MM) into a Date object for the given day
+export function parseTimeString(timeString: string, date: Date): Date {
+  const [hours, minutes] = timeString.split(':').map(Number);
+  const result = new Date(date);
+  result.setHours(hours, minutes, 0, 0);
+  return result;
 }
 
-// Format date to a readable string
-export function formatDate(date: Date | null): string {
-  if (!date) return "";
-  return format(date, "EEEE, MMMM d, yyyy");
+// Add minutes to a time string (HH:MM) and return a new time string
+export function addMinutesToTimeString(timeString: string, minutesToAdd: number): string {
+  const [hours, minutes] = timeString.split(':').map(Number);
+  const date = new Date();
+  date.setHours(hours, minutes, 0, 0);
+  const newDate = addMinutes(date, minutesToAdd);
+  return format(newDate, 'HH:mm');
 }
 
-// Format duration minutes to a readable string
-export function formatDuration(minutes: number): string {
-  if (minutes < 60) {
-    return `${minutes} minutes`;
-  } else if (minutes === 60) {
-    return "1 hour";
-  } else {
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    
-    if (remainingMinutes === 0) {
-      return `${hours} hour${hours > 1 ? 's' : ''}`;
-    } else {
-      return `${hours} hour${hours > 1 ? 's' : ''} ${remainingMinutes} minute${remainingMinutes > 1 ? 's' : ''}`;
-    }
-  }
+// Convert a date and time string to an ISO string
+export function toISOString(date: Date, timeString: string): string {
+  const [hours, minutes] = timeString.split(':').map(Number);
+  const dateTime = new Date(date);
+  dateTime.setHours(hours, minutes, 0, 0);
+  return dateTime.toISOString();
 }
 
-// Calculate end time based on start time and duration in minutes
-export function calculateEndTime(startTime: string, durationMinutes: number): string {
-  try {
-    // For ISO strings (full dates)
-    if (startTime.includes('T')) {
-      const startDate = parseISO(startTime);
-      const endDate = addMinutes(startDate, durationMinutes);
-      return endDate.toISOString();
-    }
-    
-    // For time strings like "14:30"
-    if (startTime.includes(':')) {
-      const [hours, minutes] = startTime.split(':').map(Number);
-      const date = new Date();
-      date.setHours(hours, minutes, 0, 0);
-      const endDate = addMinutes(date, durationMinutes);
-      return format(endDate, "HH:mm");
-    }
-    
-    return startTime;
-  } catch (error) {
-    console.error("Error calculating end time:", error);
-    return startTime;
-  }
+// Get the duration in minutes between two time strings
+export function getDurationMinutes(startTime: string, endTime: string): number {
+  const [startHours, startMinutes] = startTime.split(':').map(Number);
+  const [endHours, endMinutes] = endTime.split(':').map(Number);
+  
+  const startTotalMinutes = startHours * 60 + startMinutes;
+  const endTotalMinutes = endHours * 60 + endMinutes;
+  
+  return endTotalMinutes - startTotalMinutes;
 }
 
-// Format price as currency
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(amount);
+// Format time range for display
+export function formatTimeRange(startTime: string, endTime: string): string {
+  // This would convert time strings like "14:30" to "2:30 PM"
+  const start = parseTimeDisplayFormat(startTime);
+  const end = parseTimeDisplayFormat(endTime);
+  return `${start} - ${end}`;
 }
 
-// Convert time in "HH:MM" format to minutes since midnight
-export function convertTimeToMinutes(time: string): number {
-  try {
-    const [hours, minutes] = time.split(':').map(Number);
-    return hours * 60 + minutes;
-  } catch (error) {
-    console.error("Error converting time to minutes:", error);
-    return 0;
-  }
+// Parse time for display (convert 24h format to 12h with AM/PM)
+export function parseTimeDisplayFormat(timeString: string): string {
+  const [hours, minutes] = timeString.split(':').map(Number);
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const displayHours = hours % 12 || 12; // Convert 0 to 12 for 12 AM
+  return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
 }
-
-// Convert minutes since midnight to "HH:MM" format
-export function convertMinutesToTime(minutes: number): string {
-  try {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-  } catch (error) {
-    console.error("Error converting minutes to time:", error);
-    return "00:00";
-  }
-}
-
-// Format time string with proper padding
-export function formatTimeString(hour: number, minute: number): string {
-  return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-}
-
-// Parse a time string to get hours and minutes
-export function parseTimeString(timeStr: string): { hour: number; minute: number } {
-  const [hourStr, minuteStr] = timeStr.split(':');
-  return {
-    hour: parseInt(hourStr, 10),
-    minute: parseInt(minuteStr, 10)
-  };
-}
-

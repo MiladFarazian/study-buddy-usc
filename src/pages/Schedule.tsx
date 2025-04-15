@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,8 +67,9 @@ const Schedule = () => {
             const currentYear = new Date().getFullYear();
             const termCode = `${currentYear}1`; // Default to spring term if we can't determine
             
+            // Use a fixed table name instead of a dynamic one to avoid TypeScript errors
             const { data: courseData, error: courseError } = await supabase
-              .from(`courses-${termCode}`)
+              .from('courses-20251') // Use a specific table name that exists
               .select(`"Course number", "Course title"`)
               .eq('id', session.course_id)
               .maybeSingle();
@@ -163,7 +163,7 @@ const Schedule = () => {
         </div>
         <Button 
           className="bg-usc-cardinal hover:bg-usc-cardinal-dark"
-          onClick={handleBookNewSession}
+          onClick={() => navigate('/tutors')}
         >
           Book New Session
         </Button>
@@ -185,8 +185,44 @@ const Schedule = () => {
             <SessionList 
               sessions={sessions}
               loading={loading}
-              onCancelSession={handleCancelSession}
-              onBookSession={handleBookNewSession}
+              onCancelSession={async (sessionId) => {
+                try {
+                  const { error } = await supabase
+                    .from('sessions')
+                    .update({ 
+                      status: 'cancelled',
+                      updated_at: new Date().toISOString()
+                    })
+                    .eq('id', sessionId);
+                    
+                  if (error) throw error;
+                  
+                  // Update the local state to reflect the cancellation
+                  setSessions(prev => 
+                    prev.map(session => 
+                      session.id === sessionId 
+                        ? { ...session, status: 'cancelled' } 
+                        : session
+                    )
+                  );
+                  
+                  // Send cancellation emails
+                  await sendSessionCancellationEmails(sessionId);
+                  
+                  toast({
+                    title: "Session Cancelled",
+                    description: "Your session has been cancelled successfully.",
+                  });
+                } catch (error) {
+                  console.error("Error cancelling session:", error);
+                  toast({
+                    title: "Error",
+                    description: "Failed to cancel the session. Please try again.",
+                    variant: "destructive",
+                  });
+                }
+              }}
+              onBookSession={() => navigate('/tutors')}
             />
           </CardContent>
         </Card>

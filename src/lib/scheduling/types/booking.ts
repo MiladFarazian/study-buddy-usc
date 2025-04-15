@@ -1,6 +1,4 @@
 
-import { WeeklyAvailability } from './availability';
-
 export type BookedSession = {
   start: string;
   end: string;
