@@ -46,15 +46,38 @@ export function getDurationMinutes(startTime: string, endTime: string): number {
 // Format time range for display
 export function formatTimeRange(startTime: string, endTime: string): string {
   // This would convert time strings like "14:30" to "2:30 PM"
-  const start = parseTimeDisplayFormat(startTime);
-  const end = parseTimeDisplayFormat(endTime);
+  const start = formatTimeDisplay(startTime);
+  const end = formatTimeDisplay(endTime);
   return `${start} - ${end}`;
 }
 
-// Parse time for display (convert 24h format to 12h with AM/PM)
-export function parseTimeDisplayFormat(timeString: string): string {
+// Format a time string for display (convert 24h format to 12h with AM/PM)
+export function formatTimeDisplay(timeString: string): string {
   const [hours, minutes] = timeString.split(':').map(Number);
   const period = hours >= 12 ? 'PM' : 'AM';
   const displayHours = hours % 12 || 12; // Convert 0 to 12 for 12 AM
   return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+}
+
+// Convert time string (HH:MM) to minutes since midnight
+export function convertTimeToMinutes(timeStr: string): number {
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
+// Convert minutes since midnight to time string (HH:MM)
+export function convertMinutesToTime(totalMinutes: number): string {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+}
+
+// Format date for display
+export function formatDate(date: Date): string {
+  return format(date, 'EEEE, MMMM d, yyyy');
+}
+
+// Format time for display
+export function formatTime(timeString: string): string {
+  return formatTimeDisplay(timeString);
 }

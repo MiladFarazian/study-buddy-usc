@@ -9,6 +9,7 @@ export * from './session-manager';
 export * from './booking-manager';
 
 // Export utility functions
+export * from './booking-utils';
 export * from './availability-utils';
 export * from './time-utils';
 export * from './email-utils';

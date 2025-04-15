@@ -9,6 +9,7 @@ export interface DateSelectorProps {
   disabled?: boolean;
   minDate?: Date;
   maxDate?: Date;
+  onSelectDate?: (date: Date) => void; // Add this for compatibility
 }
 
 export function DateSelector({
@@ -17,14 +18,25 @@ export function DateSelector({
   availableDates = [],
   disabled = false,
   minDate = new Date(),
-  maxDate
+  maxDate,
+  onSelectDate, // Add this for compatibility
 }: DateSelectorProps) {
+  // Handle date selection, using onSelectDate if provided (for backward compatibility)
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      if (onSelectDate) {
+        onSelectDate(date);
+      }
+      onDateChange(date);
+    }
+  };
+
   return (
     <div className="p-1">
       <Calendar
         mode="single"
         selected={selectedDate}
-        onSelect={(date) => date && onDateChange(date)}
+        onSelect={handleDateSelect}
         disabled={(date) => {
           // Disable dates before today
           if (date < minDate) return true;
