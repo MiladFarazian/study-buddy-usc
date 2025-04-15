@@ -31,7 +31,7 @@ const Schedule = () => {
     
     setLoading(true);
     try {
-      // First, fetch sessions with user profiles
+      // Determine which function to call based on user role
       const { data: sessionData, error: sessionError } = await supabase
         .from('sessions')
         .select(`
@@ -54,24 +54,25 @@ const Schedule = () => {
         
       if (sessionError) throw sessionError;
       
-      // Initialize sessions with the data we have
-      const sessionsWithProfiles = sessionData || [];
-      
-      // Create an array to hold the final sessions data
+      // Create an array to hold the final sessions data with course info if available
       const formattedSessions: Session[] = [];
       
       // Process each session
-      for (const session of sessionsWithProfiles) {
-        // If there's a course_id, fetch the course details
+      for (const session of sessionData || []) {
         let courseDetails = undefined;
         
+        // If there's a course_id, fetch the course details separately
         if (session.course_id) {
           try {
+            // Get current year to decide which table to query
+            const currentYear = new Date().getFullYear();
+            const termCode = `${currentYear}1`; // Default to spring term if we can't determine
+            
             const { data: courseData, error: courseError } = await supabase
-              .from('courses-20251')
+              .from(`courses-${termCode}`)
               .select(`"Course number", "Course title"`)
               .eq('id', session.course_id)
-              .single();
+              .maybeSingle();
             
             if (!courseError && courseData) {
               courseDetails = {

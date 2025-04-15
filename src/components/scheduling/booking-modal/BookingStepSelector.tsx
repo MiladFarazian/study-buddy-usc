@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { format, addDays, startOfToday, isBefore, isToday } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,7 @@ import { LoadingState } from "./LoadingState";
 import { DateSelector } from "./date-selector/DateSelector";
 import { ConfirmationStep } from "./ConfirmationStep";
 import { useAuthState } from "@/hooks/useAuthState";
-import { createSessionBooking } from "@/lib/scheduling";
+import { createSessionBooking } from "@/lib/scheduling/booking-utils";
 import { toast } from "sonner";
 import { DurationSelector } from "./duration/DurationSelector";
 
@@ -35,14 +34,11 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
   const { user } = useAuthState();
   const today = startOfToday();
   
-  // Filter out past dates and slots
   const validAvailableSlots = availableSlots.filter(slot => {
     const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
     
-    // Filter out past dates
     if (isBefore(slotDay, today)) return false;
     
-    // If it's today, filter out past time slots
     if (isToday(slotDay)) {
       const now = new Date();
       const [hour, minute] = slot.start.split(':').map(Number);
@@ -55,35 +51,29 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
     return slot.available;
   });
   
-  // Filter slots for the selected date
   const slotsForSelectedDate = validAvailableSlots.filter(slot => {
     const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
     return slotDay.toDateString() === selectedDate.toDateString() && slot.available;
   });
 
-  // Handle slot selection
   const handleSelectTimeSlot = (slot: BookingSlot) => {
     setSelectedSlot(slot);
   };
 
-  // Handle proceeding to duration selection step
   const handleContinueToSelectDuration = () => {
     if (selectedSlot) {
       setStep("select-duration");
     }
   };
 
-  // Handle duration selection
   const handleSelectDuration = (duration: number) => {
     setSelectedDuration(duration);
   };
 
-  // Handle proceeding to confirmation step
   const handleContinueToConfirmation = () => {
     setStep("confirm");
   };
 
-  // Handle booking confirmation
   const handleConfirmBooking = async () => {
     if (!user || !selectedSlot) {
       toast.error("You must be logged in to book a session");
@@ -93,34 +83,40 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
     setIsBooking(true);
     
     try {
-      // Extract day and time info from selected slot
       const day = selectedSlot.day instanceof Date ? selectedSlot.day : new Date(selectedSlot.day);
       
-      // Create start time
       const startTime = new Date(day);
       const [startHour, startMinute] = selectedSlot.start.split(':').map(Number);
       startTime.setHours(startHour, startMinute, 0, 0);
       
-      // Calculate end time based on duration
       const endTime = new Date(startTime);
       endTime.setMinutes(endTime.getMinutes() + selectedDuration);
       
-      // Create session in database
-      await createSessionBooking(
+      const session = await createSessionBooking(
         user.id,
         tutor.id,
-        null, // No course ID
+        null,
         startTime.toISOString(),
         endTime.toISOString(),
-        null, // No location
-        null // No notes
+        null,
+        null
       );
+      
+      if (!session) {
+        throw new Error("Failed to create booking");
+      }
+      
+      console.log("Session created successfully:", session);
       
       toast.success("Session booked successfully!");
       setStep("complete");
       
-      // Refresh availability data to reflect the booked slot
       refreshAvailability();
+      
+      if (window.location.pathname === '/schedule') {
+        window.location.reload();
+      }
+      
     } catch (error) {
       console.error("Error booking session:", error);
       toast.error("Failed to book session. Please try again.");
@@ -129,7 +125,6 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
     }
   };
 
-  // Handle navigation based on step
   const goBack = () => {
     if (step === "select-duration") {
       setStep("select-date-time");
@@ -142,7 +137,6 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
     return <LoadingState message="Loading tutor's availability..." />;
   }
 
-  // Render appropriate content based on current step
   const renderStepContent = () => {
     switch (step) {
       case "select-date-time":
@@ -183,7 +177,7 @@ export function BookingStepSelector({ tutor, onSelectSlot, onClose, disabled }: 
       case "select-duration":
         if (!selectedSlot) return null;
         
-        const hourlyRate = tutor.hourlyRate || 60; // Default to $60 if not set
+        const hourlyRate = tutor.hourlyRate || 60;
         const durationOptions = [
           { minutes: 30, cost: hourlyRate / 2 },
           { minutes: 60, cost: hourlyRate },

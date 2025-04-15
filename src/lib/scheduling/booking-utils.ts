@@ -1,3 +1,4 @@
+
 import { addDays, format, isAfter, isBefore, isSameDay, parse, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { BookingSlot, WeeklyAvailability } from "./types";
@@ -161,6 +162,16 @@ export async function createSessionBooking(
   notes: string | null
 ) {
   try {
+    console.log("Creating session booking with params:", {
+      studentId,
+      tutorId,
+      courseId,
+      startTime,
+      endTime,
+      location,
+      notes
+    });
+
     const { data, error } = await supabase
       .from('sessions')
       .insert({
@@ -177,8 +188,12 @@ export async function createSessionBooking(
       .select()
       .single();
       
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase error creating session:", error);
+      throw error;
+    }
     
+    console.log("Session successfully created:", data);
     return data;
   } catch (error) {
     console.error("Error creating session booking:", error);
