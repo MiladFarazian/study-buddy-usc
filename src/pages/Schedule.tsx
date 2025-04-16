@@ -49,29 +49,31 @@ const Schedule = () => {
       const formattedSessions: Session[] = [];
       
       for (const session of basicSessionData) {
-        // Step 3: Get tutor details
+        // Step 3: Get tutor details - using .maybeSingle() to avoid errors
         const { data: tutorData } = await supabase
           .from('profiles')
           .select('id, first_name, last_name, avatar_url')
           .eq('id', session.tutor_id)
-          .single();
+          .maybeSingle();
           
-        // Step 4: Get student details
+        // Step 4: Get student details - using .maybeSingle() to avoid errors
         const { data: studentData } = await supabase
           .from('profiles')
           .select('id, first_name, last_name, avatar_url')
           .eq('id', session.student_id)
-          .single();
+          .maybeSingle();
         
         // Step 5: Get course details if available
         let courseDetails = null;
         if (session.course_id) {
           try {
+            // Use a specific table name instead of dynamic reference to avoid type issues
+            // We're using courses-20251 as it seems to be the current term
             const { data: courseData } = await supabase
               .from('courses-20251')
               .select('*')
-              .eq('id', session.course_id)
-              .single();
+              .eq('Course number', session.course_id)
+              .maybeSingle();
             
             if (courseData) {
               courseDetails = {
