@@ -31,27 +31,40 @@ const Schedule = () => {
     
     setLoading(true);
     try {
-      // Simplified query to avoid deep type instantiation issues
-      const { data: sessionData, error: sessionError } = await supabase
+      // Step 1: Fetch basic session data first
+      const { data: basicSessionData, error: sessionError } = await supabase
         .from('sessions')
-        .select(`
-          *,
-          tutor:profiles!tutor_id (id, first_name, last_name, avatar_url),
-          student:profiles!student_id (id, first_name, last_name, avatar_url)
-        `)
+        .select('*')
         .eq(isTutor ? 'tutor_id' : 'student_id', user.id)
         .order('start_time', { ascending: true });
         
       if (sessionError) throw sessionError;
+      if (!basicSessionData) {
+        setSessions([]);
+        setLoading(false);
+        return;
+      }
       
-      // Create an array to hold the final sessions data
+      // Step 2: Process sessions one by one to avoid deep type instantiation
       const formattedSessions: Session[] = [];
       
-      // Process each session
-      for (const session of sessionData || []) {
-        let courseDetails = null;
+      for (const session of basicSessionData) {
+        // Step 3: Get tutor details
+        const { data: tutorData } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, avatar_url')
+          .eq('id', session.tutor_id)
+          .single();
+          
+        // Step 4: Get student details
+        const { data: studentData } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, avatar_url')
+          .eq('id', session.student_id)
+          .single();
         
-        // If there's a course_id, fetch the course details separately
+        // Step 5: Get course details if available
+        let courseDetails = null;
         if (session.course_id) {
           try {
             const { data: courseData } = await supabase
@@ -72,14 +85,15 @@ const Schedule = () => {
           }
         }
         
-        // Add the processed session to our array
+        // Step 6: Construct the complete session object
         formattedSessions.push({
           ...session,
+          tutor: tutorData || undefined,
+          student: studentData || undefined,
           course: courseDetails
         });
       }
       
-      // Update state with the formatted sessions
       setSessions(formattedSessions);
     } catch (error) {
       console.error("Error loading sessions:", error);
