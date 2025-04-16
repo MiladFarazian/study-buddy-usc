@@ -19,17 +19,25 @@ export * from './ui/DateSelector';
 export * from './ui/DurationSelector';
 export * from './ui/TimeSelector';
 
-// Export the booking utils but rename conflicting functions
-// to avoid ambiguity with session-manager exports
+// Export the booking utils with explicit naming to avoid conflicts
 import * as bookingUtils from './booking-utils';
+
+// Re-export specific functions from booking-utils
 export { 
   createPaymentTransaction,
   createPaymentIntent,
-  processPaymentForSession
+  processPaymentForSession,
+  createSessionBooking
 } from './booking-utils';
 
-// Explicitly re-export other functions to avoid conflicts
+// Explicitly export mapDateToDayOfWeek from time-utils
+export { mapDateToDayOfWeek } from './time-utils';
+
+// Export utility functions used in TimeSlotSelectionStep
 export { 
-  bookingUtils as BookingUtils,
-  mapDateToDayOfWeek 
+  convertTimeToMinutes, 
+  convertMinutesToTime 
 } from './time-utils';
+
+// Export BookingUtils namespace for backward compatibility
+export { bookingUtils as BookingUtils };
