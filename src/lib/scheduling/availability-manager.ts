@@ -58,16 +58,42 @@ export async function updateTutorAvailability(tutorId: string, availability: Wee
       }));
     });
     
-    const { error } = await supabase
+    // First, check if a record already exists for this tutor
+    const { data: existingData, error: fetchError } = await supabase
       .from('tutor_availability')
-      .upsert({
-        tutor_id: tutorId,
-        availability: availabilityJson,
-        updated_at: new Date().toISOString()
-      });
+      .select('id')
+      .eq('tutor_id', tutorId)
+      .maybeSingle();
+      
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      console.error("Error checking for existing tutor availability:", fetchError);
+      return false;
+    }
+    
+    let result;
+    
+    if (existingData) {
+      // Update existing record
+      result = await supabase
+        .from('tutor_availability')
+        .update({
+          availability: availabilityJson,
+          updated_at: new Date().toISOString()
+        })
+        .eq('tutor_id', tutorId);
+    } else {
+      // Insert new record
+      result = await supabase
+        .from('tutor_availability')
+        .insert({
+          tutor_id: tutorId,
+          availability: availabilityJson,
+          updated_at: new Date().toISOString()
+        });
+    }
 
-    if (error) {
-      console.error("Error updating tutor availability:", error);
+    if (result.error) {
+      console.error("Error updating tutor availability:", result.error);
       return false;
     }
 
