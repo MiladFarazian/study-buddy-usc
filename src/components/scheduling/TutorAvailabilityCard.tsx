@@ -4,10 +4,9 @@ import { Card } from "@/components/ui/card";
 import { getTutorAvailability, updateTutorAvailability } from "@/lib/scheduling";
 import { WeeklyAvailabilityCalendar } from './calendar';
 import { WeeklyAvailability } from "@/lib/scheduling/types/availability";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { format, addDays } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
 
 interface TutorAvailabilityCardProps {
   tutorId: string;
@@ -28,21 +27,17 @@ export const TutorAvailabilityCard: React.FC<TutorAvailabilityCardProps> = ({
 
   useEffect(() => {
     async function loadAvailability() {
-      if (!tutorId) return;
-      
       setLoading(true);
       setError(null);
       
       try {
-        console.log("Loading availability for tutor ID:", tutorId);
         const tutorAvailability = await getTutorAvailability(tutorId);
         
+        // Convert to the correct type if needed
         if (tutorAvailability) {
-          console.log("Availability loaded successfully:", tutorAvailability);
           const typedAvailability: WeeklyAvailability = { ...tutorAvailability };
           setAvailability(typedAvailability);
         } else {
-          console.error("Failed to load tutor availability");
           setError("Could not load tutor's availability.");
         }
       } catch (err) {
@@ -111,29 +106,6 @@ export const TutorAvailabilityCard: React.FC<TutorAvailabilityCardProps> = ({
     }
   };
 
-  const handleRetry = () => {
-    setError(null);
-    setLoading(true);
-    
-    // Load availability again
-    getTutorAvailability(tutorId)
-      .then(tutorAvailability => {
-        if (tutorAvailability) {
-          setAvailability(tutorAvailability);
-          setError(null);
-        } else {
-          setError("Could not load tutor's availability.");
-        }
-      })
-      .catch(err => {
-        console.error("Error retrying availability load:", err);
-        setError("Failed to load availability. Please try again.");
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  };
-
   if (loading) {
     return (
       <Card className="p-6 flex justify-center items-center h-64">
@@ -147,9 +119,7 @@ export const TutorAvailabilityCard: React.FC<TutorAvailabilityCardProps> = ({
     return (
       <Card className="p-6">
         <div className="text-center py-8">
-          <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <p className="text-muted-foreground mb-4">{error || "No availability information found."}</p>
-          <Button variant="outline" onClick={handleRetry}>Retry</Button>
+          <p className="text-muted-foreground">{error || "No availability information found."}</p>
         </div>
       </Card>
     );

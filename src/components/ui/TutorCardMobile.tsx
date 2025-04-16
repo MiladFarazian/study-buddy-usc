@@ -1,11 +1,12 @@
 
-import React from "react";
-import { Tutor } from "@/types/tutor";
-import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { GraduationCap, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Tutor } from "@/types/tutor";
+import StarRating from "./StarRating";
 
 interface TutorCardMobileProps {
   tutor: Tutor;
@@ -14,57 +15,65 @@ interface TutorCardMobileProps {
 
 const TutorCardMobile = ({ tutor, getInitials }: TutorCardMobileProps) => {
   return (
-    <Card className="overflow-hidden h-full">
-      <CardContent className="p-4">
-        <div className="flex items-center space-x-3">
-          <Avatar className="h-12 w-12">
-            <AvatarImage src={tutor.imageUrl} alt={tutor.name} />
-            <AvatarFallback>{getInitials(tutor.name)}</AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold truncate">{tutor.name}</h3>
-            <p className="text-sm text-muted-foreground truncate">{tutor.field}</p>
+    <Card className="overflow-hidden hover:shadow-md transition-shadow w-full">
+      <div className="bg-gradient-to-r from-yellow-500 to-red-600 h-2"></div>
+      <CardContent className="p-3">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-start gap-2">
+            <Avatar className="h-12 w-12 border-2 border-white shadow-md flex-shrink-0">
+              <AvatarImage src={tutor.imageUrl} alt={tutor.name} />
+              <AvatarFallback className="bg-usc-cardinal text-white text-sm">
+                {getInitials(tutor.name)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-base font-bold truncate">{tutor.name}</h3>
+              <div className="flex items-center mt-0.5">
+                <GraduationCap className="h-3 w-3 text-gray-500 mr-1 flex-shrink-0" />
+                <p className="text-gray-600 text-xs truncate">{tutor.field}</p>
+              </div>
+              <div className="flex items-center mt-0.5">
+                <MapPin className="h-3 w-3 text-gray-500 mr-1 flex-shrink-0" />
+                <p className="text-gray-600 text-xs truncate">USC Campus</p>
+              </div>
+              <StarRating rating={tutor.rating} className="mt-1" />
+            </div>
           </div>
-        </div>
-
-        <div className="flex items-center mt-3">
-          <div className="flex items-center">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <svg
-                key={i}
-                className={`w-4 h-4 ${
-                  i < Math.floor(tutor.rating) ? "text-yellow-500" : "text-gray-300"
-                } fill-current`}
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            ))}
-            <span className="ml-1 text-sm">{tutor.rating.toFixed(1)}</span>
+          
+          <div className="space-y-2">
+            <div className="flex items-center justify-between py-1 border-b">
+              <span className="font-medium text-xs">Hourly Rate</span>
+              <span className="font-bold text-usc-cardinal text-sm">${tutor.hourlyRate}/hr</span>
+            </div>
+            
+            <div>
+              <h4 className="font-medium text-xs mb-1">Available for:</h4>
+              <div className="flex flex-wrap gap-1">
+                {tutor.subjects.slice(0, 2).map((subject) => (
+                  <Badge
+                    key={subject.code}
+                    variant="outline"
+                    className="bg-red-50 hover:bg-red-100 text-usc-cardinal border-red-100 text-xs py-0.5"
+                  >
+                    {subject.code}
+                  </Badge>
+                ))}
+                {tutor.subjects.length > 2 && (
+                  <Badge 
+                    variant="outline" 
+                    className="bg-red-50 hover:bg-red-100 text-usc-cardinal border-red-100 text-xs py-0.5"
+                  >
+                    +{tutor.subjects.length - 2} more
+                  </Badge>
+                )}
+              </div>
+            </div>
           </div>
-          <p className="ml-auto text-sm">${tutor.hourlyRate?.toFixed(2)}/hr</p>
-        </div>
-
-        <div className="mt-3 flex flex-wrap gap-1">
-          {tutor.subjects.slice(0, 2).map((subject) => (
-            <Badge variant="secondary" key={subject.code} className="text-xs">
-              {subject.code}
-            </Badge>
-          ))}
-          {tutor.subjects.length > 2 && (
-            <Badge variant="outline" className="text-xs">
-              +{tutor.subjects.length - 2} more
-            </Badge>
-          )}
-        </div>
-
-        <div className="mt-3 flex justify-end">
-          <Button asChild size="sm" className="w-full">
+          
+          <Button 
+            className="w-full mt-1 bg-usc-cardinal hover:bg-usc-cardinal-dark text-white text-xs py-1 h-8"
+            asChild
+          >
             <Link to={`/tutors/${tutor.id}`}>View Profile</Link>
           </Button>
         </div>

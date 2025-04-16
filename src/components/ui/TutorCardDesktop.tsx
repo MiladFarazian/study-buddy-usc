@@ -1,11 +1,12 @@
 
-import React from "react";
-import { Tutor } from "@/types/tutor";
-import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { GraduationCap, MapPin, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Tutor } from "@/types/tutor";
+import StarRating from "./StarRating";
 
 interface TutorCardDesktopProps {
   tutor: Tutor;
@@ -14,58 +15,70 @@ interface TutorCardDesktopProps {
 
 const TutorCardDesktop = ({ tutor, getInitials }: TutorCardDesktopProps) => {
   return (
-    <Card className="overflow-hidden h-full flex flex-col">
-      <div className="bg-usc-cardinal h-20 relative">
-        <Avatar className="h-16 w-16 absolute bottom-0 translate-y-1/2 left-4 border-4 border-background">
-          <AvatarImage src={tutor.imageUrl} alt={tutor.name} />
-          <AvatarFallback>{getInitials(tutor.name)}</AvatarFallback>
-        </Avatar>
-      </div>
-      
-      <CardContent className="pt-10 pb-4 px-4 flex flex-col flex-1">
-        <div className="mb-2 min-h-[48px]">
-          <h3 className="font-semibold line-clamp-1">{tutor.name}</h3>
-          <p className="text-sm text-muted-foreground line-clamp-1">{tutor.field}</p>
-        </div>
-        
-        <div className="flex items-center mb-3">
-          <div className="flex items-center">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <svg
-                key={i}
-                className={`w-4 h-4 ${
-                  i < Math.floor(tutor.rating) ? "text-yellow-500" : "text-gray-300"
-                } fill-current`}
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            ))}
-            <span className="ml-1 text-sm">{tutor.rating.toFixed(1)}</span>
+    <Card className="overflow-hidden hover:shadow-md transition-shadow w-full">
+      <div className="bg-gradient-to-r from-yellow-500 to-red-600 h-4"></div>
+      <CardContent className="p-4 md:p-6">
+        <div className="flex flex-col gap-4 md:gap-6">
+          <div className="flex items-start md:items-center gap-3 md:gap-4">
+            <Avatar className="h-16 w-16 md:h-20 md:w-20 border-2 border-white shadow-md flex-shrink-0">
+              <AvatarImage src={tutor.imageUrl} alt={tutor.name} />
+              <AvatarFallback className="bg-usc-cardinal text-white text-lg md:text-xl">
+                {getInitials(tutor.name)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-lg md:text-xl font-bold truncate">{tutor.name}</h3>
+              <div className="flex items-center mt-1">
+                <GraduationCap className="h-4 w-4 text-gray-500 mr-1 flex-shrink-0" />
+                <p className="text-gray-600 text-sm truncate">{tutor.field}</p>
+              </div>
+              <div className="flex items-center mt-1">
+                <MapPin className="h-4 w-4 text-gray-500 mr-1 flex-shrink-0" />
+                <p className="text-gray-600 text-sm truncate">USC Campus</p>
+              </div>
+              <div className="flex items-center mt-2">
+                <StarRating rating={tutor.rating} />
+                <span className="text-sm text-gray-500 ml-1 hidden sm:inline">({tutor.subjects.length} courses)</span>
+              </div>
+            </div>
           </div>
-          <p className="ml-auto text-sm font-medium">${tutor.hourlyRate?.toFixed(2)}/hr</p>
-        </div>
-        
-        <div className="flex flex-wrap gap-1 mb-3 min-h-[56px]">
-          {tutor.subjects.slice(0, 3).map((subject) => (
-            <Badge variant="secondary" key={subject.code} className="text-xs">
-              {subject.code}
-            </Badge>
-          ))}
-          {tutor.subjects.length > 3 && (
-            <Badge variant="outline" className="text-xs">
-              +{tutor.subjects.length - 3} more
-            </Badge>
-          )}
-        </div>
-        
-        <div className="mt-auto">
-          <Button asChild className="w-full">
+          
+          <div className="space-y-3 md:space-y-4">
+            <div className="flex items-center justify-between py-2 border-b">
+              <span className="font-medium text-sm">Hourly Rate</span>
+              <span className="font-bold text-usc-cardinal">${tutor.hourlyRate}/hr</span>
+            </div>
+            
+            <div>
+              <h4 className="font-medium mb-2 text-sm">Available for:</h4>
+              <div className="flex flex-wrap gap-1.5 md:gap-2">
+                {tutor.subjects.slice(0, 3).map((subject) => (
+                  <Badge
+                    key={subject.code}
+                    variant="outline"
+                    className="bg-red-50 hover:bg-red-100 text-usc-cardinal border-red-100 text-xs md:text-sm"
+                  >
+                    {subject.code}
+                  </Badge>
+                ))}
+                {tutor.subjects.length > 3 && (
+                  <Badge variant="outline" className="bg-red-50 hover:bg-red-100 text-usc-cardinal border-red-100 text-xs md:text-sm">
+                    +{tutor.subjects.length - 3} more
+                  </Badge>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex items-center text-xs md:text-sm text-gray-500">
+              <Calendar className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2 flex-shrink-0" />
+              <span className="truncate">Available for in-person or online sessions</span>
+            </div>
+          </div>
+          
+          <Button 
+            className="w-full mt-1 bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
+            asChild
+          >
             <Link to={`/tutors/${tutor.id}`}>View Profile</Link>
           </Button>
         </div>

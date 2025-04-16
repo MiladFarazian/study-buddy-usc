@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { addDays, format, startOfWeek } from 'date-fns';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,6 @@ import { CalendarGrid } from './CalendarGrid';
 import { CalendarHelpText } from './CalendarHelpText';
 import { useSelectionState } from './hooks/useSelectionState';
 import { Loader2 } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 interface WeeklyAvailabilityCalendarProps {
   availability: WeeklyAvailability;
@@ -29,7 +28,6 @@ export const WeeklyAvailabilityCalendar = ({
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(
     startOfWeek(new Date(), { weekStartsOn: 0 })
   );
-  const isMobile = useIsMobile();
   
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const day = addDays(currentWeekStart, i);
@@ -73,7 +71,7 @@ export const WeeklyAvailabilityCalendar = ({
 
   return (
     <Card className="border shadow-sm">
-      <CardContent className={isMobile ? "p-2 sm:p-3" : "p-4"}>
+      <CardContent className="p-4">
         <WeeklyCalendarHeader 
           currentWeekStart={currentWeekStart}
           onPrevWeek={handlePrevWeek}
@@ -81,7 +79,7 @@ export const WeeklyAvailabilityCalendar = ({
         />
         
         <div className="overflow-x-auto">
-          <div className={isMobile ? "min-w-[500px]" : "min-w-[700px]"}>
+          <div className="min-w-[700px]">
             <CalendarGrid 
               weekDays={weekDays}
               hours={hours}
@@ -95,14 +93,14 @@ export const WeeklyAvailabilityCalendar = ({
           </div>
         </div>
         
-        <div className={`${isMobile ? "flex-col space-y-3" : "flex justify-between items-center"} mt-4`}>
+        <div className="flex justify-between items-center mt-4">
           <CalendarHelpText readOnly={readOnly} />
           
           {!readOnly && onSave && (
             <Button 
               onClick={onSave}
               disabled={isSaving}
-              className={`bg-usc-cardinal hover:bg-usc-cardinal-dark ${isMobile ? "w-full" : ""}`}
+              className="bg-usc-cardinal hover:bg-usc-cardinal-dark"
             >
               {isSaving ? (
                 <>

@@ -11,14 +11,11 @@ import { SessionList } from "@/components/scheduling/SessionList";
 import { ScheduleCalendar } from "@/components/scheduling/ScheduleCalendar"; 
 import { TutorAvailabilityCard } from "@/components/scheduling/TutorAvailabilityCard";
 import { sendSessionCancellationEmails } from "@/lib/scheduling/email-utils";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { fetchCourseDetails } from "@/lib/scheduling/course-utils";
 
 const Schedule = () => {
   const { user, profile, isTutor } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
   
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,8 +67,28 @@ const Schedule = () => {
         let courseDetails = null;
         if (session.course_id) {
           try {
-            // Get course details using the utility function
-            courseDetails = await fetchCourseDetails(session.course_id);
+            // Fix: Don't try to join with courses-20251 directly
+            // Instead, treat course_id as a direct course number identifier
+            courseDetails = {
+              id: session.course_id,
+              course_number: session.course_id,
+              course_title: '' // Default empty title if we can't retrieve it
+            };
+            
+            // Try to get the course title if available
+            try {
+              const { data: courseData } = await supabase
+                .from('courses-20251')
+                .select('Course number, Course title')
+                .eq('Course number', session.course_id)
+                .maybeSingle();
+                
+              if (courseData) {
+                courseDetails.course_title = courseData["Course title"] || '';
+              }
+            } catch (courseError) {
+              console.warn("Error fetching course details:", courseError);
+            }
           } catch (courseError) {
             console.warn("Error processing course details:", courseError);
           }
@@ -145,14 +162,14 @@ const Schedule = () => {
   };
 
   return (
-    <div className={`${isMobile ? 'py-3 px-1' : 'py-6'}`}>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 md:mb-8">
+    <div className="py-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-          <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold mb-1 md:mb-2`}>Schedule</h1>
-          <p className={`${isMobile ? 'text-sm' : 'text-base'} text-muted-foreground`}>Book and manage your tutoring sessions</p>
+          <h1 className="text-3xl font-bold mb-2">Schedule</h1>
+          <p className="text-muted-foreground">Book and manage your tutoring sessions</p>
         </div>
         <Button 
-          className="bg-usc-cardinal hover:bg-usc-cardinal-dark w-full md:w-auto"
+          className="bg-usc-cardinal hover:bg-usc-cardinal-dark"
           onClick={() => navigate('/tutors')}
         >
           Book New Session
@@ -160,18 +177,18 @@ const Schedule = () => {
       </div>
 
       {isTutor && (
-        <div className="mb-4 md:mb-8">
+        <div className="mb-8">
           <TutorAvailabilityCard tutorId={user?.id} readOnly={false} />
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
-        <Card className="lg:col-span-2 h-full">
-          <CardHeader className={isMobile ? "p-3" : ""}>
-            <CardTitle className={isMobile ? "text-lg" : ""}>Your Sessions</CardTitle>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Your Sessions</CardTitle>
             <CardDescription>Your scheduled tutoring appointments</CardDescription>
           </CardHeader>
-          <CardContent className={isMobile ? "p-3 pt-0" : "pt-0"}>
+          <CardContent>
             <SessionList 
               sessions={sessions}
               loading={loading}
@@ -181,9 +198,7 @@ const Schedule = () => {
           </CardContent>
         </Card>
 
-        <div className="h-full">
-          <ScheduleCalendar sessions={sessions} />
-        </div>
+        <ScheduleCalendar sessions={sessions} />
       </div>
     </div>
   );
