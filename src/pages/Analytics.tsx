@@ -1,55 +1,64 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChartContainer } from "@/components/ui/chart";
 import { Area, AreaChart, Bar, BarChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ChartContainer } from "@/components/ui/chart";
+import { ArrowUpIcon, ArrowDownIcon } from "lucide-react";
 
 const Analytics = () => {
-  const sessionData = [
-    {
-      name: "Jan",
-      Sessions: 38,
-    },
-    {
-      name: "Feb",
-      Sessions: 45,
-    },
-    {
-      name: "Mar",
-      Sessions: 60,
-    },
-    {
-      name: "Apr",
-      Sessions: 72,
-    },
-    {
-      name: "May",
-      Sessions: 64,
-    }
-  ];
+  const { data, loading, error } = useAnalytics();
+  
+  // Growth indicator component
+  const GrowthIndicator = ({ value }: { value: number }) => {
+    if (value === 0) return null;
+    
+    return value > 0 ? (
+      <p className="text-sm text-green-600 flex items-center mt-1">
+        <ArrowUpIcon className="w-4 h-4 mr-1" />
+        +{value}% from last month
+      </p>
+    ) : (
+      <p className="text-sm text-red-600 flex items-center mt-1">
+        <ArrowDownIcon className="w-4 h-4 mr-1" />
+        {value}% from last month
+      </p>
+    );
+  };
 
-  const popularCoursesData = [
-    {
-      name: "CSCI 104",
-      Sessions: 85,
-    },
-    {
-      name: "ECON 203",
-      Sessions: 62,
-    },
-    {
-      name: "MATH 125",
-      Sessions: 58,
-    },
-    {
-      name: "CHEM 105A",
-      Sessions: 45,
-    },
-    {
-      name: "WRIT 150",
-      Sessions: 40,
-    },
-  ];
+  // Analytics card with loading state
+  const AnalyticsCard = ({ 
+    title, 
+    value, 
+    growthPercentage,
+    isLoading 
+  }: { 
+    title: string, 
+    value: string | number, 
+    growthPercentage?: number,
+    isLoading: boolean 
+  }) => (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <>
+            <Skeleton className="h-8 w-20 mb-2" />
+            <Skeleton className="h-4 w-32" />
+          </>
+        ) : (
+          <>
+            <div className="text-3xl font-bold">{value}</div>
+            {growthPercentage !== undefined && (
+              <GrowthIndicator value={growthPercentage} />
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="py-6">
@@ -61,98 +70,30 @@ const Analytics = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Sessions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">278</div>
-            <p className="text-sm text-green-600 flex items-center mt-1">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                className="w-4 h-4 mr-1"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 17a.75.75 0 01-.75-.75V5.612L5.29 9.77a.75.75 0 01-1.08-1.04l5.25-5.5a.75.75 0 011.08 0l5.25 5.5a.75.75 0 11-1.08 1.04l-3.96-4.158V16.25A.75.75 0 0110 17z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              +15.3% from last month
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Active Tutors</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">42</div>
-            <p className="text-sm text-green-600 flex items-center mt-1">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                className="w-4 h-4 mr-1"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 17a.75.75 0 01-.75-.75V5.612L5.29 9.77a.75.75 0 01-1.08-1.04l5.25-5.5a.75.75 0 011.08 0l5.25 5.5a.75.75 0 11-1.08 1.04l-3.96-4.158V16.25A.75.75 0 0110 17z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              +8.1% from last month
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Active Students</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">156</div>
-            <p className="text-sm text-green-600 flex items-center mt-1">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                className="w-4 h-4 mr-1"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 17a.75.75 0 01-.75-.75V5.612L5.29 9.77a.75.75 0 01-1.08-1.04l5.25-5.5a.75.75 0 011.08 0l5.25 5.5a.75.75 0 11-1.08 1.04l-3.96-4.158V16.25A.75.75 0 0110 17z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              +12.5% from last month
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Avg. Session Rating</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">4.8</div>
-            <p className="text-sm text-green-600 flex items-center mt-1">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                className="w-4 h-4 mr-1"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 17a.75.75 0 01-.75-.75V5.612L5.29 9.77a.75.75 0 01-1.08-1.04l5.25-5.5a.75.75 0 011.08 0l5.25 5.5a.75.75 0 11-1.08 1.04l-3.96-4.158V16.25A.75.75 0 0110 17z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              +0.2 from last month
-            </p>
-          </CardContent>
-        </Card>
+        <AnalyticsCard 
+          title="Total Sessions" 
+          value={data?.totalSessions || 0} 
+          growthPercentage={data?.growthPercentage.sessions}
+          isLoading={loading} 
+        />
+        <AnalyticsCard 
+          title="Active Tutors" 
+          value={data?.activeTutors || 0} 
+          growthPercentage={data?.growthPercentage.tutors}
+          isLoading={loading} 
+        />
+        <AnalyticsCard 
+          title="Active Students" 
+          value={data?.activeStudents || 0} 
+          growthPercentage={data?.growthPercentage.students}
+          isLoading={loading} 
+        />
+        <AnalyticsCard 
+          title="Avg. Session Rating" 
+          value={data?.averageRating || 0}
+          growthPercentage={data?.growthPercentage.rating}
+          isLoading={loading} 
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -162,15 +103,25 @@ const Analytics = () => {
             <CardDescription>Total tutoring sessions over time</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={sessionData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Area type="monotone" dataKey="Sessions" stroke="#990000" fill="#990000" fillOpacity={0.6} />
-              </AreaChart>
-            </ResponsiveContainer>
+            {loading ? (
+              <div className="w-full h-[300px] flex items-center justify-center bg-gray-50 rounded-md">
+                <Skeleton className="h-[250px] w-[90%]" />
+              </div>
+            ) : error ? (
+              <div className="w-full h-[300px] flex items-center justify-center bg-gray-50 rounded-md">
+                <p className="text-red-500">Error loading data</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={data?.sessionGrowth || []}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Area type="monotone" dataKey="Sessions" stroke="#990000" fill="#990000" fillOpacity={0.6} />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -180,15 +131,25 @@ const Analytics = () => {
             <CardDescription>Most frequently tutored subjects</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={popularCoursesData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="Sessions" fill="#FFCC00" />
-              </BarChart>
-            </ResponsiveContainer>
+            {loading ? (
+              <div className="w-full h-[300px] flex items-center justify-center bg-gray-50 rounded-md">
+                <Skeleton className="h-[250px] w-[90%]" />
+              </div>
+            ) : error ? (
+              <div className="w-full h-[300px] flex items-center justify-center bg-gray-50 rounded-md">
+                <p className="text-red-500">Error loading data</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={data?.popularCourses || []}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="Sessions" fill="#FFCC00" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
       </div>
