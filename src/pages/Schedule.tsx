@@ -1,16 +1,16 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Session } from "@/types/session";
 import { SessionList } from "@/components/scheduling/SessionList";
 import { ScheduleCalendar } from "@/components/scheduling/ScheduleCalendar"; 
 import { TutorAvailabilityCard } from "@/components/scheduling/TutorAvailabilityCard";
 import { sendSessionCancellationEmails } from "@/lib/scheduling/email-utils";
+import { getUserSessions } from "@/lib/scheduling/session-manager";
+import { supabase } from "@/integrations/supabase/client";
 
 const Schedule = () => {
   const { user, profile, isTutor } = useAuth();
@@ -31,79 +31,9 @@ const Schedule = () => {
     
     setLoading(true);
     try {
-      // Step 1: Fetch basic session data first
-      const { data: basicSessionData, error: sessionError } = await supabase
-        .from('sessions')
-        .select('*')
-        .eq(isTutor ? 'tutor_id' : 'student_id', user.id)
-        .order('start_time', { ascending: true });
-        
-      if (sessionError) throw sessionError;
-      if (!basicSessionData) {
-        setSessions([]);
-        setLoading(false);
-        return;
-      }
-      
-      // Step 2: Process sessions one by one to avoid deep type instantiation
-      const formattedSessions: Session[] = [];
-      
-      for (const session of basicSessionData) {
-        // Step 3: Get tutor details - using .maybeSingle() to avoid errors
-        const { data: tutorData } = await supabase
-          .from('profiles')
-          .select('id, first_name, last_name, avatar_url')
-          .eq('id', session.tutor_id)
-          .maybeSingle();
-          
-        // Step 4: Get student details - using .maybeSingle() to avoid errors
-        const { data: studentData } = await supabase
-          .from('profiles')
-          .select('id, first_name, last_name, avatar_url')
-          .eq('id', session.student_id)
-          .maybeSingle();
-        
-        // Step 5: Get course details if available
-        let courseDetails = null;
-        if (session.course_id) {
-          try {
-            // Fix: Don't try to join with courses-20251 directly
-            // Instead, treat course_id as a direct course number identifier
-            courseDetails = {
-              id: session.course_id,
-              course_number: session.course_id,
-              course_title: '' // Default empty title if we can't retrieve it
-            };
-            
-            // Try to get the course title if available
-            try {
-              const { data: courseData } = await supabase
-                .from('courses-20251')
-                .select('Course number, Course title')
-                .eq('Course number', session.course_id)
-                .maybeSingle();
-                
-              if (courseData) {
-                courseDetails.course_title = courseData["Course title"] || '';
-              }
-            } catch (courseError) {
-              console.warn("Error fetching course details:", courseError);
-            }
-          } catch (courseError) {
-            console.warn("Error processing course details:", courseError);
-          }
-        }
-        
-        // Step 6: Construct the complete session object
-        formattedSessions.push({
-          ...session,
-          tutor: tutorData || undefined,
-          student: studentData || undefined,
-          course: courseDetails
-        });
-      }
-      
-      setSessions(formattedSessions);
+      // Use our new getUserSessions function to fetch sessions
+      const userSessions = await getUserSessions(user.id, !!isTutor);
+      setSessions(userSessions);
     } catch (error) {
       console.error("Error loading sessions:", error);
       toast({
@@ -151,6 +81,9 @@ const Schedule = () => {
         title: "Session Cancelled",
         description: "Your session has been cancelled successfully.",
       });
+      
+      // Reload sessions to ensure we have the latest data
+      loadSessions();
     } catch (error) {
       console.error("Error cancelling session:", error);
       toast({

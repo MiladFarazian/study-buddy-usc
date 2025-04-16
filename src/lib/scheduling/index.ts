@@ -40,4 +40,7 @@ export {
 } from './time-utils';
 
 // Export BookingUtils namespace for backward compatibility
-export { bookingUtils as BookingUtils };
+export { bookingUtils };
+
+// Export getUserSessions function
+export { getUserSessions } from './session-manager';

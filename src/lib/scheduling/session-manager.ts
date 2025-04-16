@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { BookedSession } from "./types/booking";
 import { format } from "date-fns";
+import { Session } from "@/types/session";
 
 /**
  * Fetch a tutor's booked sessions within a date range
@@ -53,3 +54,91 @@ export async function getTutorBookedSessions(
     return [];
   }
 }
+
+/**
+ * Fetch sessions for a specific user (either as tutor or student)
+ */
+export async function getUserSessions(
+  userId: string,
+  isTutor: boolean
+): Promise<Session[]> {
+  try {
+    // Step 1: Fetch basic session data first
+    const { data: basicSessionData, error: sessionError } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq(isTutor ? 'tutor_id' : 'student_id', userId)
+      .order('start_time', { ascending: true });
+      
+    if (sessionError) {
+      console.error("Error fetching user sessions:", sessionError);
+      return [];
+    }
+    
+    if (!basicSessionData || basicSessionData.length === 0) {
+      return [];
+    }
+    
+    // Step 2: Process sessions one by one to avoid deep type instantiation
+    const formattedSessions: Session[] = [];
+    
+    for (const session of basicSessionData) {
+      // Step 3: Get tutor details
+      const { data: tutorData } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, avatar_url')
+        .eq('id', session.tutor_id)
+        .maybeSingle();
+        
+      // Step 4: Get student details
+      const { data: studentData } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, avatar_url')
+        .eq('id', session.student_id)
+        .maybeSingle();
+      
+      // Step 5: Get course details if available
+      let courseDetails = null;
+      if (session.course_id) {
+        try {
+          courseDetails = {
+            id: session.course_id,
+            course_number: session.course_id,
+            course_title: '' // Default empty title
+          };
+          
+          // Try to get the course title if available
+          try {
+            const { data: courseData } = await supabase
+              .from('courses-20251')
+              .select('Course number, Course title')
+              .eq('Course number', session.course_id)
+              .maybeSingle();
+              
+            if (courseData) {
+              courseDetails.course_title = courseData["Course title"] || '';
+            }
+          } catch (courseError) {
+            console.warn("Error fetching course details:", courseError);
+          }
+        } catch (courseError) {
+          console.warn("Error processing course details:", courseError);
+        }
+      }
+      
+      // Step 6: Construct the complete session object
+      formattedSessions.push({
+        ...session,
+        tutor: tutorData || undefined,
+        student: studentData || undefined,
+        course: courseDetails
+      });
+    }
+    
+    return formattedSessions;
+  } catch (error) {
+    console.error("Error loading user sessions:", error);
+    return [];
+  }
+}
+
