@@ -9,6 +9,7 @@ import { Session } from "@/types/session";
 import { useNavigate } from "react-router-dom";
 import { useTutors } from "@/hooks/useTutors";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ScheduleCalendarProps {
   sessions: Session[];
@@ -18,6 +19,7 @@ export const ScheduleCalendar = ({ sessions }: ScheduleCalendarProps) => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const navigate = useNavigate();
   const { tutors, loading } = useTutors();
+  const isMobile = useIsMobile();
   
   // Get top 2 tutors by rating
   const recommendedTutors = [...tutors]
@@ -37,18 +39,27 @@ export const ScheduleCalendar = ({ sessions }: ScheduleCalendarProps) => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Calendar</CardTitle>
+    <Card className="h-full">
+      <CardHeader className={isMobile ? "p-3" : ""}>
+        <CardTitle className={isMobile ? "text-lg" : ""}>Calendar</CardTitle>
         <CardDescription>View your schedule</CardDescription>
       </CardHeader>
-      <CardContent>
-        <Calendar
-          mode="single"
-          selected={date}
-          onSelect={setDate}
-          className="rounded-md border"
-        />
+      <CardContent className={isMobile ? "p-3" : ""}>
+        <div className="w-full">
+          <Calendar
+            mode="single"
+            selected={date}
+            onSelect={setDate}
+            className="rounded-md border w-full max-w-full"
+            classNames={{
+              month: "w-full",
+              table: "w-full",
+              row: "w-full flex justify-between",
+              cell: "text-center p-0 relative [&:has([aria-selected])]:bg-primary first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+              day: "h-8 w-8 p-0 sm:h-9 sm:w-9 aria-selected:opacity-100 hover:bg-muted rounded-md"
+            }}
+          />
+        </div>
         {calendarDates.length > 0 && (
           <div className="mt-4">
             <p className="text-sm text-gray-500 mb-2">Upcoming Sessions:</p>
@@ -59,8 +70,8 @@ export const ScheduleCalendar = ({ sessions }: ScheduleCalendarProps) => {
                 .slice(0, 5)
                 .map((item, i) => (
                   <div key={i} className="flex items-center gap-2 text-sm">
-                    <div className="h-2 w-2 bg-usc-cardinal rounded-full"></div>
-                    <span>{format(new Date(item.date), 'MMM d')} - {item.title}</span>
+                    <div className="h-2 w-2 bg-usc-cardinal rounded-full flex-shrink-0"></div>
+                    <span className="truncate">{format(new Date(item.date), 'MMM d')} - {item.title}</span>
                   </div>
                 ))}
             </div>
@@ -77,21 +88,21 @@ export const ScheduleCalendar = ({ sessions }: ScheduleCalendarProps) => {
             ) : (
               recommendedTutors.map(tutor => (
                 <div key={tutor.id} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-8 w-8">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Avatar className="h-8 w-8 flex-shrink-0">
                       <AvatarImage src={tutor.imageUrl} alt={tutor.name} />
                       <AvatarFallback>
                         {tutor.firstName?.charAt(0) || tutor.name.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
-                      <p className="text-sm font-medium">{tutor.name}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{tutor.name}</p>
                       <div className="flex items-center">
                         <svg 
                           xmlns="http://www.w3.org/2000/svg" 
                           viewBox="0 0 24 24" 
                           fill="currentColor" 
-                          className="h-3 w-3 fill-usc-gold text-usc-gold"
+                          className="h-3 w-3 flex-shrink-0 fill-usc-gold text-usc-gold"
                         >
                           <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clipRule="evenodd" />
                         </svg>
@@ -102,7 +113,7 @@ export const ScheduleCalendar = ({ sessions }: ScheduleCalendarProps) => {
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="h-8 w-8 p-0"
+                    className="h-8 w-8 p-0 flex-shrink-0"
                     onClick={() => handleViewTutorProfile(tutor.id)}
                   >
                     <ArrowRight className="h-4 w-4" />
