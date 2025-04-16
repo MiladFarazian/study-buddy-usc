@@ -16,11 +16,12 @@ export {
   createPaymentTransaction
 } from './booking-utils';
 
-// Export booking manager functions (except getTutorBookedSessions which is already exported from session-manager)
+// Export booking manager functions
 export {
   createBookingSession,
   updateBookingStatus,
-  isBookingSlotAvailable
+  isBookingSlotAvailable,
+  getTutorBookedSessions
 } from './booking-manager';
 
 // Export UI components

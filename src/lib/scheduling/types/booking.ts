@@ -1,4 +1,3 @@
-
 import { Tutor } from '@/types/tutor';
 
 export interface BookingSlot {
@@ -7,7 +6,8 @@ export interface BookingSlot {
   end: string;    // Format: "HH:MM" in 24-hour format
   available: boolean;
   tutorId: string;
-  // Add the missing properties
+  
+  // Optional properties to resolve previous errors
   startTime?: Date;
   endTime?: Date;
   durationMinutes?: number;
@@ -18,9 +18,9 @@ export interface BookedSession {
   id: string;
   tutorId: string;
   studentId: string;
-  date: string | Date;  // Format: "YYYY-MM-DD" or Date object
-  start: string; // Format: "HH:MM" in 24-hour format
-  end: string;   // Format: "HH:MM" in 24-hour format
+  date: string | Date;
+  start: string;
+  end: string;
   status: string;
 }
 
