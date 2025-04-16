@@ -31,56 +31,44 @@ const Schedule = () => {
     
     setLoading(true);
     try {
-      // Determine which function to call based on user role
+      // Simplified query to avoid deep type instantiation issues
       const { data: sessionData, error: sessionError } = await supabase
         .from('sessions')
         .select(`
           *,
-          tutor:profiles!tutor_id (
-            id,
-            first_name,
-            last_name,
-            avatar_url
-          ),
-          student:profiles!student_id (
-            id,
-            first_name,
-            last_name,
-            avatar_url
-          )
+          tutor:profiles!tutor_id (id, first_name, last_name, avatar_url),
+          student:profiles!student_id (id, first_name, last_name, avatar_url)
         `)
         .eq(isTutor ? 'tutor_id' : 'student_id', user.id)
         .order('start_time', { ascending: true });
         
       if (sessionError) throw sessionError;
       
-      // Create an array to hold the final sessions data with course info if available
+      // Create an array to hold the final sessions data
       const formattedSessions: Session[] = [];
       
       // Process each session
       for (const session of sessionData || []) {
-        let courseDetails = undefined;
+        let courseDetails = null;
         
         // If there's a course_id, fetch the course details separately
         if (session.course_id) {
           try {
-            // Use a fixed table name instead of a dynamic one to avoid TypeScript errors
-            const { data: courseData, error: courseError } = await supabase
+            const { data: courseData } = await supabase
               .from('courses-20251')
               .select('*')
               .eq('id', session.course_id)
-              .maybeSingle();
+              .single();
             
-            if (!courseError && courseData) {
+            if (courseData) {
               courseDetails = {
                 id: session.course_id,
-                course_number: courseData["Course number"],
-                course_title: courseData["Course title"]
+                course_number: courseData["Course number"] || '',
+                course_title: courseData["Course title"] || ''
               };
             }
           } catch (courseError) {
             console.warn("Error fetching course details:", courseError);
-            // Continue even if course fetch fails
           }
         }
         
@@ -134,7 +122,6 @@ const Schedule = () => {
       const emailResult = await sendSessionCancellationEmails(sessionId);
       if (!emailResult.success) {
         console.warn("Email notification failed:", emailResult.error);
-        // We continue anyway since the cancellation was successful
       }
       
       toast({
@@ -182,44 +169,8 @@ const Schedule = () => {
             <SessionList 
               sessions={sessions}
               loading={loading}
-              onCancelSession={async (sessionId) => {
-                try {
-                  const { error } = await supabase
-                    .from('sessions')
-                    .update({ 
-                      status: 'cancelled',
-                      updated_at: new Date().toISOString()
-                    })
-                    .eq('id', sessionId);
-                    
-                  if (error) throw error;
-                  
-                  // Update the local state to reflect the cancellation
-                  setSessions(prev => 
-                    prev.map(session => 
-                      session.id === sessionId 
-                        ? { ...session, status: 'cancelled' } 
-                        : session
-                    )
-                  );
-                  
-                  // Send cancellation emails
-                  await sendSessionCancellationEmails(sessionId);
-                  
-                  toast({
-                    title: "Session Cancelled",
-                    description: "Your session has been cancelled successfully.",
-                  });
-                } catch (error) {
-                  console.error("Error cancelling session:", error);
-                  toast({
-                    title: "Error",
-                    description: "Failed to cancel the session. Please try again.",
-                    variant: "destructive",
-                  });
-                }
-              }}
-              onBookSession={() => navigate('/tutors')}
+              onCancelSession={handleCancelSession}
+              onBookSession={handleBookNewSession}
             />
           </CardContent>
         </Card>
