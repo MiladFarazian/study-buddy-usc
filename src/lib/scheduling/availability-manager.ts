@@ -1,5 +1,5 @@
 
-import { WeeklyAvailability, AvailabilitySlot } from './types/availability';
+import { WeeklyAvailability, AvailabilitySlot, WeeklyAvailabilityJson } from './types/availability';
 import { BookedSession } from './types/booking';
 import { format, parseISO, isEqual, addDays, startOfDay } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,7 +18,8 @@ export async function getTutorAvailability(tutorId: string): Promise<WeeklyAvail
       return null;
     }
     
-    return data?.availability as WeeklyAvailability || null;
+    // Cast to WeeklyAvailability with proper typing
+    return data?.availability as unknown as WeeklyAvailability || null;
   } catch (error) {
     console.error('Error in getTutorAvailability:', error);
     return null;
@@ -28,9 +29,15 @@ export async function getTutorAvailability(tutorId: string): Promise<WeeklyAvail
 // Update a tutor's availability settings
 export async function updateTutorAvailability(tutorId: string, availability: WeeklyAvailability): Promise<boolean> {
   try {
+    // Convert WeeklyAvailability to a JSON object for database storage
+    const availabilityJson = availability as unknown as WeeklyAvailabilityJson;
+    
     const { error } = await supabase
       .from('tutor_availability')
-      .upsert({ tutor_id: tutorId, availability }, { onConflict: 'tutor_id' });
+      .upsert({ 
+        tutor_id: tutorId, 
+        availability: availabilityJson 
+      }, { onConflict: 'tutor_id' });
       
     if (error) {
       console.error('Error updating tutor availability:', error);

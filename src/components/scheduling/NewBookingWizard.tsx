@@ -7,14 +7,20 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Tutor } from "@/types/tutor";
 import { format, parseISO, addMinutes } from "date-fns";
-import { createSessionBooking, createPaymentTransaction } from "@/lib/scheduling";
+import { 
+  createSessionBooking, 
+  createPaymentTransaction,
+  getTutorAvailability, 
+  getTutorBookedSessions, 
+  generateAvailableSlots 
+} from "@/lib/scheduling";
 import { 
   DateSelector,
   TimeSelector,
   DurationSelector,
   BookingSummary
 } from "@/lib/scheduling";
-import { BookingSlot, getTutorAvailability, getTutorBookedSessions, generateAvailableSlots } from "@/lib/scheduling";
+import { BookingSlot } from "@/lib/scheduling";
 import { TimeSlot } from "@/lib/scheduling/ui/TimeSelector";
 import { DurationOption } from "@/lib/scheduling/ui/DurationSelector";
 
@@ -42,7 +48,6 @@ export function NewBookingWizard({ tutor, onClose }: NewBookingWizardProps) {
 
   const hourlyRate = tutor.hourlyRate || 60;
   
-  // Duration options
   const durationOptions: DurationOption[] = [
     { minutes: 30, cost: Math.round(hourlyRate * 0.5) },
     { minutes: 60, cost: hourlyRate },
@@ -64,7 +69,6 @@ export function NewBookingWizard({ tutor, onClose }: NewBookingWizardProps) {
   const loadAvailability = async () => {
     setLoading(true);
     try {
-      // Get tutor's availability settings
       const availability = await getTutorAvailability(tutor.id);
       
       if (!availability) {
@@ -77,28 +81,22 @@ export function NewBookingWizard({ tutor, onClose }: NewBookingWizardProps) {
         return;
       }
       
-      // Get tutor's booked sessions
       const today = new Date();
-      const bookedSessions = await getTutorBookedSessions(tutor.id, today, addMinutes(today, 60 * 24 * 28));
+      const bookedSessions = await getTutorBookedSessions(tutor.id, today, addMinutes(today, 60 * 28));
       
-      // Generate available slots
       const slots = generateAvailableSlots(availability, bookedSessions, today, 28);
       
-      // Add tutor ID to each slot
       const slotsWithTutor = slots.map(slot => ({
         ...slot,
         tutorId: tutor.id
       }));
       
-      // Extract unique available dates
       const dates = slotsWithTutor
         .filter(slot => slot.available)
         .map(slot => {
-          // Ensure slot.day is a Date object
           return slot.day instanceof Date ? slot.day : new Date(slot.day);
         });
       
-      // Remove duplicates
       const uniqueDates = Array.from(
         new Set(
           dates.map(d => d.toDateString())
@@ -107,11 +105,9 @@ export function NewBookingWizard({ tutor, onClose }: NewBookingWizardProps) {
       
       setAvailableDates(uniqueDates);
       
-      // Set the first available date as selected if not already set
       if (!selectedDate && uniqueDates.length > 0) {
         setSelectedDate(uniqueDates[0]);
       }
-      
     } catch (error) {
       console.error("Error loading tutor availability:", error);
       toast({
@@ -126,12 +122,10 @@ export function NewBookingWizard({ tutor, onClose }: NewBookingWizardProps) {
 
   const loadTimeSlotsForDate = async (date: Date) => {
     try {
-      // Get tutor's availability settings
       const availability = await getTutorAvailability(tutor.id);
       
       if (!availability) return;
       
-      // Get tutor's booked sessions for this date
       const startOfDay = new Date(date);
       startOfDay.setHours(0, 0, 0, 0);
       
@@ -140,10 +134,8 @@ export function NewBookingWizard({ tutor, onClose }: NewBookingWizardProps) {
       
       const bookedSessions = await getTutorBookedSessions(tutor.id, startOfDay, endOfDay);
       
-      // Generate available slots
       const slots = generateAvailableSlots(availability, bookedSessions, startOfDay, 1);
       
-      // Convert to TimeSlot format for the UI
       const timeSlots: TimeSlot[] = slots
         .filter(slot => slot.available)
         .map(slot => ({
@@ -151,14 +143,11 @@ export function NewBookingWizard({ tutor, onClose }: NewBookingWizardProps) {
           available: true
         }));
       
-      // Sort by time
       timeSlots.sort((a, b) => a.time.localeCompare(b.time));
       
       setAvailableTimeSlots(timeSlots);
       
-      // Clear selected time when date changes
       setSelectedTime(null);
-      
     } catch (error) {
       console.error("Error loading time slots:", error);
     }
@@ -192,33 +181,28 @@ export function NewBookingWizard({ tutor, onClose }: NewBookingWizardProps) {
     setCreating(true);
     
     try {
-      // Format the date and times for the session
       const sessionDate = format(selectedDate, 'yyyy-MM-dd');
       const startTime = `${sessionDate}T${selectedTime}:00`;
       
-      // Calculate end time
       const startDate = parseISO(startTime);
       const endDate = addMinutes(startDate, selectedDuration);
       const endTime = endDate.toISOString();
       
-      // Create the session in the database
       const session = await createSessionBooking(
         user.id,
         tutor.id,
-        null, // No course selected for now
+        null,
         startTime,
         endTime,
-        null, // No location for now
+        null,
         notes || null
       );
       
       if (!session) throw new Error("Failed to create session");
       
-      // Calculate session cost
       const durationHours = selectedDuration / 60;
       const sessionCost = hourlyRate * durationHours;
       
-      // Create a payment transaction
       await createPaymentTransaction(
         session.id,
         user.id,
@@ -231,7 +215,6 @@ export function NewBookingWizard({ tutor, onClose }: NewBookingWizardProps) {
         description: "Your session has been successfully booked!",
       });
       
-      // Navigate to the schedule page
       navigate('/schedule');
       
     } catch (error) {
@@ -288,7 +271,7 @@ export function NewBookingWizard({ tutor, onClose }: NewBookingWizardProps) {
         {step === "date" && (
           <DateSelector 
             selectedDate={selectedDate} 
-            onSelectDate={handleDateSelect}
+            onDateChange={handleDateSelect}
             availableDates={availableDates}
           />
         )}
@@ -296,9 +279,9 @@ export function NewBookingWizard({ tutor, onClose }: NewBookingWizardProps) {
         {step === "time" && selectedDate && (
           <>
             <TimeSelector 
-              availableTimeSlots={availableTimeSlots}
+              timeSlots={availableTimeSlots}
               selectedTime={selectedTime}
-              onSelectTime={handleTimeSelect}
+              onTimeChange={handleTimeSelect}
             />
             
             <div className="mt-8 flex justify-end">
@@ -318,7 +301,7 @@ export function NewBookingWizard({ tutor, onClose }: NewBookingWizardProps) {
             <DurationSelector 
               options={durationOptions}
               selectedDuration={selectedDuration}
-              onSelectDuration={handleDurationSelect}
+              onDurationChange={handleDurationSelect}
               hourlyRate={hourlyRate}
             />
             
@@ -349,7 +332,7 @@ export function NewBookingWizard({ tutor, onClose }: NewBookingWizardProps) {
             />
             
             <div className="mt-8 flex justify-between">
-              <Button variant="outline" onClick={handleBack}>
+              <Button variant="outline" onClick={handleBack} disabled={creating}>
                 Back
               </Button>
               <Button 

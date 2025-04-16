@@ -1,20 +1,47 @@
 
-// Email utility functions for the scheduling system
+// Placeholder for email functionality that could be implemented later
 
-export async function sendSessionConfirmationEmails(sessionId: string): Promise<{ success: boolean; error?: string }> {
-  // This would be implemented with actual email sending logic
-  console.log(`Sending confirmation emails for session ${sessionId}`);
-  return { success: true };
+// Send session confirmation emails to both student and tutor
+export async function sendSessionConfirmationEmails(sessionId: string): Promise<{success: boolean, error?: string}> {
+  try {
+    console.log(`Would send confirmation emails for session ${sessionId}`);
+    // This would be implemented with actual email sending logic
+    return { success: true };
+  } catch (error) {
+    console.error("Error sending confirmation emails:", error);
+    return {
+      success: false, 
+      error: error instanceof Error ? error.message : "Unknown error sending emails"
+    };
+  }
 }
 
-export async function sendSessionCancellationEmails(sessionId: string): Promise<{ success: boolean; error?: string }> {
-  // This would be implemented with actual email sending logic
-  console.log(`Sending cancellation emails for session ${sessionId}`);
-  return { success: true };
+// Send session cancellation emails to both student and tutor
+export async function sendSessionCancellationEmails(sessionId: string): Promise<{success: boolean, error?: string}> {
+  try {
+    console.log(`Would send cancellation emails for session ${sessionId}`);
+    // This would be implemented with actual email sending logic
+    return { success: true };
+  } catch (error) {
+    console.error("Error sending cancellation emails:", error);
+    return {
+      success: false, 
+      error: error instanceof Error ? error.message : "Unknown error sending emails"
+    };
+  }
 }
 
-export async function sendSessionReminderEmails(sessionId: string): Promise<{ success: boolean; error?: string }> {
-  // This would be implemented with actual email sending logic
-  console.log(`Sending reminder emails for session ${sessionId}`);
-  return { success: true };
+// Send session reminder emails
+export async function sendSessionReminderEmails(sessionId: string): Promise<{success: boolean, error?: string}> {
+  try {
+    console.log(`Would send reminder emails for session ${sessionId}`);
+    // This would be implemented with actual email sending logic
+    return { success: true };
+  } catch (error) {
+    console.error("Error sending reminder emails:", error);
+    return {
+      success: false, 
+      error: error instanceof Error ? error.message : "Unknown error sending emails"
+    };
+  }
 }

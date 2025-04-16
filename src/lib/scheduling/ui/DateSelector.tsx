@@ -9,7 +9,8 @@ export interface DateSelectorProps {
   disabled?: boolean;
   minDate?: Date;
   maxDate?: Date;
-  onSelectDate?: (date: Date) => void; // Add this for compatibility
+  // For backwards compatibility
+  onSelectDate?: (date: Date) => void;
 }
 
 export function DateSelector({
@@ -19,7 +20,7 @@ export function DateSelector({
   disabled = false,
   minDate = new Date(),
   maxDate,
-  onSelectDate, // Add this for compatibility
+  onSelectDate, // For backwards compatibility
 }: DateSelectorProps) {
   // Handle date selection, using onSelectDate if provided (for backward compatibility)
   const handleDateSelect = (date: Date | undefined) => {

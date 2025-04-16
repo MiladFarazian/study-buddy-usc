@@ -1,68 +1,65 @@
 
 import React from 'react';
+import { format } from 'date-fns';
 import { Textarea } from "@/components/ui/textarea";
-import { formatDate, formatTimeDisplay } from "../time-utils";
+import { Label } from "@/components/ui/label";
 
 export interface BookingSummaryProps {
+  selectedDate: Date;
+  selectedTime: string;
+  durationMinutes: number;
   cost: number;
-  notes: string;
-  onNotesChange: (notes: string) => void;
-  selectedDate?: Date; // Add for compatibility
-  selectedTime?: string; // Add for compatibility
-  durationMinutes?: number; // Add for compatibility
+  notes?: string;
+  onNotesChange?: (value: string) => void;
 }
 
 export function BookingSummary({
-  cost,
-  notes,
-  onNotesChange,
   selectedDate,
   selectedTime,
-  durationMinutes = 60,
+  durationMinutes,
+  cost,
+  notes,
+  onNotesChange
 }: BookingSummaryProps) {
+  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (onNotesChange) {
+      onNotesChange(e.target.value);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-medium mb-2">Booking Summary</h3>
-        <div className="bg-gray-50 p-4 rounded-md space-y-2">
-          {selectedDate && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Date:</span>
-              <span>{formatDate(selectedDate)}</span>
-            </div>
-          )}
-          
-          {selectedTime && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Time:</span>
-              <span>{formatTimeDisplay(selectedTime)}</span>
-            </div>
-          )}
-          
-          {durationMinutes && (
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Duration:</span>
-              <span>{durationMinutes} minutes</span>
-            </div>
-          )}
-          
-          <div className="flex justify-between font-medium">
-            <span>Total:</span>
-            <span>${cost.toFixed(2)}</span>
+      <h3 className="text-lg font-medium">Booking Summary</h3>
+
+      <div className="rounded-lg border p-4">
+        <div className="space-y-4">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Date:</span>
+            <span>{format(selectedDate, 'EEEE, MMMM d, yyyy')}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Time:</span>
+            <span>{selectedTime}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Duration:</span>
+            <span>{durationMinutes} minutes</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Cost:</span>
+            <span className="font-bold">${cost.toFixed(2)}</span>
           </div>
         </div>
       </div>
-      
+
       <div className="space-y-2">
-        <label htmlFor="notes" className="block text-sm font-medium">
-          Additional Notes (Optional)
-        </label>
+        <Label htmlFor="notes">Additional notes (optional)</Label>
         <Textarea
           id="notes"
-          placeholder="Add any specific topics or questions you'd like to cover..."
-          value={notes}
-          onChange={(e) => onNotesChange(e.target.value)}
-          rows={4}
+          value={notes || ''}
+          onChange={handleNotesChange}
+          placeholder="Add any specific requirements or information for your tutor..."
+          rows={3}
         />
       </div>
     </div>

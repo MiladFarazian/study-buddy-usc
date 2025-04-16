@@ -13,8 +13,9 @@ export interface TimeSelectorProps {
   onTimeChange: (time: string) => void;
   timeSlots?: TimeSlot[];
   disabled?: boolean;
-  availableTimeSlots?: TimeSlot[]; // Add this for compatibility
-  onSelectTime?: (time: string) => void; // Add this for compatibility
+  // For backwards compatibility
+  availableTimeSlots?: TimeSlot[];
+  onSelectTime?: (time: string) => void;
 }
 
 export function TimeSelector({
@@ -22,8 +23,8 @@ export function TimeSelector({
   onTimeChange,
   timeSlots = [],
   disabled = false,
-  availableTimeSlots = [], // For compatibility with NewBookingWizard
-  onSelectTime // For compatibility with NewBookingWizard
+  availableTimeSlots = [], // For compatibility with existing code
+  onSelectTime // For compatibility with existing code
 }: TimeSelectorProps) {
   // Use either timeSlots or availableTimeSlots based on which is provided
   const slots = availableTimeSlots.length > 0 ? availableTimeSlots : timeSlots;

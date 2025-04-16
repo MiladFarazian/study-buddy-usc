@@ -13,7 +13,8 @@ export interface DurationSelectorProps {
   options?: DurationOption[];
   disabled?: boolean;
   hourlyRate?: number;
-  onSelectDuration?: (minutes: number) => void; // Add for compatibility
+  // For compatibility with NewBookingWizard
+  onSelectDuration?: (minutes: number) => void;
 }
 
 export function DurationSelector({
