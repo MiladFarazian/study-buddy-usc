@@ -63,13 +63,9 @@ const Schedule = () => {
         // If there's a course_id, fetch the course details separately
         if (session.course_id) {
           try {
-            // Get current year to decide which table to query
-            const currentYear = new Date().getFullYear();
-            const termCode = `${currentYear}1`; // Default to spring term if we can't determine
-            
             // Use a fixed table name instead of a dynamic one to avoid TypeScript errors
             const { data: courseData, error: courseError } = await supabase
-              .from('courses-20251') // Use a specific table name that exists
+              .from('courses-20251')
               .select(`"Course number", "Course title"`)
               .eq('id', session.course_id)
               .maybeSingle();

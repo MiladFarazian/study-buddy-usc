@@ -6,7 +6,7 @@ export interface BookingSlot {
   day: Date | string;
   start: string; // Format: "HH:MM" in 24-hour format
   end: string;   // Format: "HH:MM" in 24-hour format
-  available: boolean;
+  available: boolean; // Making this required
   tutorId: string; // Make sure tutorId is required
 }
 

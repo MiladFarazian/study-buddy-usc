@@ -1,7 +1,9 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatTimeDisplay } from "../time-utils";
+import { Clock } from "lucide-react";
 
 export interface TimeSlot {
   time: string;
@@ -9,58 +11,43 @@ export interface TimeSlot {
 }
 
 export interface TimeSelectorProps {
+  timeSlots: TimeSlot[];
   selectedTime: string | null;
   onTimeChange: (time: string) => void;
-  timeSlots?: TimeSlot[];
-  disabled?: boolean;
-  // For backwards compatibility
-  availableTimeSlots?: TimeSlot[];
-  onSelectTime?: (time: string) => void;
 }
 
 export function TimeSelector({
+  timeSlots,
   selectedTime,
   onTimeChange,
-  timeSlots = [],
-  disabled = false,
-  availableTimeSlots = [], // For compatibility with existing code
-  onSelectTime // For compatibility with existing code
 }: TimeSelectorProps) {
-  // Use either timeSlots or availableTimeSlots based on which is provided
-  const slots = availableTimeSlots.length > 0 ? availableTimeSlots : timeSlots;
-  
-  // Handle time selection with compatibility for both callback styles
-  const handleSelectTime = (time: string) => {
-    if (onSelectTime) {
-      onSelectTime(time);
-    }
-    onTimeChange(time);
-  };
-
-  if (slots.length === 0) {
-    return (
-      <div className="p-4 text-center">
-        <p className="text-muted-foreground">No available time slots for the selected date.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium">Select a Time</h3>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-        {slots.map((slot, index) => (
-          <Button
-            key={index}
-            variant={selectedTime === slot.time ? "default" : "outline"}
-            className={`py-2 px-4 h-auto ${!slot.available ? "opacity-50 cursor-not-allowed" : ""}`}
-            disabled={!slot.available || disabled}
-            onClick={() => handleSelectTime(slot.time)}
-          >
-            {formatTimeDisplay(slot.time)}
-          </Button>
-        ))}
-      </div>
+      <h3 className="text-xl font-semibold">Select a Time</h3>
+      
+      {timeSlots.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/30 rounded-md">
+          <Clock className="h-12 w-12 text-muted-foreground mb-3" />
+          <p className="text-muted-foreground">No available time slots for this date.</p>
+        </div>
+      ) : (
+        <ScrollArea className="h-64">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {timeSlots
+              .filter(slot => slot.available)
+              .map((slot, index) => (
+                <Button
+                  key={index}
+                  variant={selectedTime === slot.time ? "default" : "outline"}
+                  className={`h-12 ${selectedTime === slot.time ? "bg-usc-cardinal hover:bg-usc-cardinal-dark" : ""}`}
+                  onClick={() => onTimeChange(slot.time)}
+                >
+                  {formatTimeDisplay(slot.time)}
+                </Button>
+              ))}
+          </div>
+        </ScrollArea>
+      )}
     </div>
   );
 }

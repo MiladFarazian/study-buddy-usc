@@ -1,67 +1,76 @@
 
-import { format, parse, addMinutes } from 'date-fns';
+import { format, parse, parseISO } from 'date-fns';
 
-// Format a time string (HH:MM) for display
-export function formatTimeDisplay(timeString: string): string {
-  try {
-    const date = parse(timeString, 'HH:mm', new Date());
-    return format(date, 'h:mm a');
-  } catch (error) {
-    console.error(`Error formatting time: ${timeString}`, error);
-    return timeString;
-  }
-}
-
-// Convert time string (HH:MM) to minutes since midnight
+/**
+ * Convert time string (HH:MM) to minutes since start of day
+ */
 export function convertTimeToMinutes(timeString: string): number {
   const [hours, minutes] = timeString.split(':').map(Number);
   return hours * 60 + minutes;
 }
 
-// Convert minutes since midnight to time string (HH:MM)
+/**
+ * Convert minutes since start of day back to time string (HH:MM)
+ */
 export function convertMinutesToTime(minutes: number): string {
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
   return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
 }
 
-// Format date for display
-export function formatDate(date: Date | string): string {
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
-  return format(dateObj, 'EEEE, MMMM d, yyyy');
-}
-
-// Format time for display
-export function formatTime(time: string | Date): string {
-  if (typeof time === 'string' && time.includes(':')) {
-    return formatTimeDisplay(time);
+/**
+ * Format time display for UI (e.g., "14:00" to "2:00 PM")
+ */
+export function formatTimeDisplay(timeString: string): string {
+  try {
+    // Parse the time string as a date
+    const time = parse(timeString, 'HH:mm', new Date());
+    return format(time, 'h:mm a');
+  } catch (error) {
+    console.error('Error formatting time display:', error);
+    return timeString;
   }
-  const timeObj = typeof time === 'string' ? new Date(time) : time;
-  return format(timeObj, 'h:mm a');
 }
 
-// Get day of week name from a date
+/**
+ * Format a date (e.g., "Apr 12, 2025")
+ */
+export function formatDate(date: Date | string): string {
+  try {
+    const dateObj = typeof date === 'string' ? parseISO(date) : date;
+    return format(dateObj, 'MMM d, yyyy');
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return typeof date === 'string' ? date : date.toLocaleDateString();
+  }
+}
+
+/**
+ * Format time (e.g., "2:30 PM")
+ */
+export function formatTime(time: string): string {
+  return formatTimeDisplay(time);
+}
+
+/**
+ * Calculate duration in minutes between two time strings
+ */
+export function calculateDurationMinutes(start: string, end: string): number {
+  return convertTimeToMinutes(end) - convertTimeToMinutes(start);
+}
+
+/**
+ * Add minutes to a time string
+ */
+export function addMinutesToTime(time: string, minutes: number): string {
+  const timeInMinutes = convertTimeToMinutes(time);
+  return convertMinutesToTime(timeInMinutes + minutes);
+}
+
+/**
+ * Map date to day of week string (e.g., "monday", "tuesday")
+ */
 export function mapDateToDayOfWeek(date: Date): string {
-  return format(date, 'EEEE').toLowerCase();
-}
-
-// Calculate end time based on start time and duration
-export function calculateEndTime(startTime: string, durationMinutes: number): string {
-  const [hours, minutes] = startTime.split(':').map(Number);
-  const startDate = new Date();
-  startDate.setHours(hours, minutes, 0, 0);
-  
-  const endDate = addMinutes(startDate, durationMinutes);
-  return format(endDate, 'HH:mm');
-}
-
-// Parse time string to Date object
-export function parseTimeString(timeString: string, baseDate?: Date): Date {
-  const base = baseDate || new Date();
-  const [hours, minutes] = timeString.split(':').map(Number);
-  
-  const result = new Date(base);
-  result.setHours(hours, minutes, 0, 0);
-  
-  return result;
+  const weekDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  return weekDays[date.getDay()];
 }

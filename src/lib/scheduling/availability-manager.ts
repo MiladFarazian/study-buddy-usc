@@ -1,129 +1,138 @@
 
-import { WeeklyAvailability, AvailabilitySlot, WeeklyAvailabilityJson } from './types/availability';
-import { BookedSession } from './types/booking';
-import { format, parseISO, isEqual, addDays, startOfDay } from 'date-fns';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from "@/integrations/supabase/client";
+import { WeeklyAvailability, WeeklyAvailabilityJson } from "./types/availability";
+import { BookingSlot, BookedSession } from "./types/booking";
+import { format, addDays, parse, isWithinInterval, parseISO } from 'date-fns';
 
-// Get a tutor's availability settings
+/**
+ * Fetch the tutor's availability settings
+ */
 export async function getTutorAvailability(tutorId: string): Promise<WeeklyAvailability | null> {
   try {
+    // Query the database for tutor availability
     const { data, error } = await supabase
       .from('tutor_availability')
-      .select('availability')
+      .select('*')
       .eq('tutor_id', tutorId)
       .single();
-      
-    if (error) {
-      console.error('Error fetching tutor availability:', error);
+
+    if (error || !data) {
+      console.error("Error fetching tutor availability:", error);
       return null;
     }
+
+    // Parse the availability JSON safely
+    const availabilityData = data.availability as WeeklyAvailabilityJson;
+    if (!availabilityData) return null;
     
-    // Cast to WeeklyAvailability with proper typing
-    return data?.availability as unknown as WeeklyAvailability || null;
-  } catch (error) {
-    console.error('Error in getTutorAvailability:', error);
+    // Convert the JSON to our proper type with day property
+    const weeklyAvailability: WeeklyAvailability = {};
+    Object.entries(availabilityData).forEach(([day, slots]) => {
+      weeklyAvailability[day] = slots.map(slot => ({
+        day,
+        start: slot.start,
+        end: slot.end
+      }));
+    });
+    
+    return weeklyAvailability;
+  } catch (err) {
+    console.error("Failed to fetch tutor availability:", err);
     return null;
   }
 }
 
-// Update a tutor's availability settings
+/**
+ * Update a tutor's availability settings
+ */
 export async function updateTutorAvailability(tutorId: string, availability: WeeklyAvailability): Promise<boolean> {
   try {
-    // Convert WeeklyAvailability to a JSON object for database storage
-    const availabilityJson = availability as unknown as WeeklyAvailabilityJson;
+    // Convert the typed availability to the storage format
+    const availabilityJson: WeeklyAvailabilityJson = {};
+    
+    Object.entries(availability).forEach(([day, slots]) => {
+      availabilityJson[day] = slots.map(slot => ({
+        day, // Include the day property
+        start: slot.start,
+        end: slot.end
+      }));
+    });
     
     const { error } = await supabase
       .from('tutor_availability')
-      .upsert({ 
-        tutor_id: tutorId, 
-        availability: availabilityJson 
-      }, { onConflict: 'tutor_id' });
-      
+      .upsert({
+        tutor_id: tutorId,
+        availability: availabilityJson,
+        updated_at: new Date().toISOString()
+      });
+
     if (error) {
-      console.error('Error updating tutor availability:', error);
+      console.error("Error updating tutor availability:", error);
       return false;
     }
-    
+
     return true;
-  } catch (error) {
-    console.error('Error in updateTutorAvailability:', error);
+  } catch (err) {
+    console.error("Failed to update tutor availability:", err);
     return false;
   }
 }
 
-// Generate available slots based on tutor's availability and existing bookings
+/**
+ * Generate available booking slots based on tutor's availability and booked sessions
+ */
 export function generateAvailableSlots(
   availability: WeeklyAvailability,
   bookedSessions: BookedSession[],
   startDate: Date,
   daysToGenerate: number
-) {
-  const availableSlots = [];
-  const today = startOfDay(new Date());
+): BookingSlot[] {
+  const availableSlots: BookingSlot[] = [];
+  const weekDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   
   // Generate slots for the specified number of days
   for (let i = 0; i < daysToGenerate; i++) {
     const currentDate = addDays(startDate, i);
-    const dayOfWeek = format(currentDate, 'EEEE').toLowerCase();
+    const dayOfWeek = weekDays[currentDate.getDay()];
     
-    // Skip days with no availability
-    if (!availability[dayOfWeek] || !Array.isArray(availability[dayOfWeek]) || availability[dayOfWeek].length === 0) {
-      continue;
-    }
+    // Get available time slots for this day of the week
+    const dayAvailability = availability[dayOfWeek] || [];
     
-    // Process each availability slot for the current day
-    for (const slot of availability[dayOfWeek]) {
-      const [startHour, startMinute] = slot.start.split(':').map(Number);
-      const [endHour, endMinute] = slot.end.split(':').map(Number);
+    // For each available time slot in the day
+    dayAvailability.forEach(timeSlot => {
+      // Create a slot
+      const slot: BookingSlot = {
+        day: currentDate,
+        start: timeSlot.start,
+        end: timeSlot.end,
+        available: true,
+        tutorId: ''
+      };
       
-      // Create 30-minute interval slots
-      for (let hour = startHour; hour < endHour || (hour === endHour && startMinute < endMinute); hour++) {
-        for (let minute = (hour === startHour ? startMinute : 0); minute < 60; minute += 30) {
-          // Skip if we've gone past the end time
-          if (hour > endHour || (hour === endHour && minute >= endMinute)) {
-            break;
-          }
+      // Check if this slot overlaps with any booked session
+      bookedSessions.forEach(session => {
+        const sessionDate = new Date(session.date);
+        
+        // Only check sessions on the same day
+        if (sessionDate.toDateString() === currentDate.toDateString()) {
+          const sessionStartTime = session.start;
+          const sessionEndTime = session.end;
           
-          const slotStart = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-          const slotEndMinutes = (minute + 30) % 60;
-          const slotEndHour = (minute + 30 >= 60) ? hour + 1 : hour;
-          const slotEnd = `${slotEndHour.toString().padStart(2, '0')}:${slotEndMinutes.toString().padStart(2, '0')}`;
-          
-          // Check if this slot overlaps with any booked sessions
-          let isAvailable = true;
-          for (const bookedSession of bookedSessions) {
-            const sessionDate = new Date(bookedSession.date);
-            
-            // Only check sessions on the same day
-            if (isEqual(startOfDay(sessionDate), startOfDay(currentDate))) {
-              const sessionStart = bookedSession.start;
-              const sessionEnd = bookedSession.end;
-              
-              // Check for overlap
-              if (
-                (slotStart >= sessionStart && slotStart < sessionEnd) ||
-                (slotEnd > sessionStart && slotEnd <= sessionEnd) ||
-                (slotStart <= sessionStart && slotEnd >= sessionEnd)
-              ) {
-                isAvailable = false;
-                break;
-              }
-            }
-          }
-          
-          // Add available slots to the result
-          if (isAvailable) {
-            availableSlots.push({
-              day: new Date(currentDate),
-              start: slotStart,
-              end: slotEnd,
-              available: isAvailable,
-              tutorId: ''  // This will be filled in by the calling function
-            });
+          // Check for overlap
+          if (
+            (slot.start >= sessionStartTime && slot.start < sessionEndTime) ||
+            (slot.end > sessionStartTime && slot.end <= sessionEndTime) ||
+            (slot.start <= sessionStartTime && slot.end >= sessionEndTime)
+          ) {
+            // This slot is not available
+            slot.available = false;
           }
         }
-      }
-    }
+      });
+      
+      // Add to available slots
+      availableSlots.push(slot);
+    });
   }
   
   return availableSlots;

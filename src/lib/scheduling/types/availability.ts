@@ -1,6 +1,7 @@
 
 // Represents a single availability time slot
 export interface AvailabilitySlot {
+  day: string;  // This was missing in one definition but required in another
   start: string;  // Format: "HH:MM" in 24-hour format
   end: string;    // Format: "HH:MM" in 24-hour format
 }
@@ -18,4 +19,4 @@ export interface WeeklyAvailability {
 }
 
 // Type for database representation (for type safety)
-export type WeeklyAvailabilityJson = Record<string, Array<{start: string; end: string}>>;
+export type WeeklyAvailabilityJson = Record<string, Array<{start: string; end: string; day: string}>>;

@@ -1,6 +1,6 @@
 
 import { useState, useMemo } from 'react';
-import { BookingSlot } from "@/lib/scheduling";
+import { BookingSlot } from "@/lib/scheduling/types/booking";
 import { useScheduling, BookingStep } from "@/contexts/SchedulingContext";
 import { format, isSameDay, parseISO } from 'date-fns';
 import { Button } from "@/components/ui/button";

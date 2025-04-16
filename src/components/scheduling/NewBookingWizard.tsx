@@ -20,7 +20,7 @@ import {
   DurationSelector,
   BookingSummary
 } from "@/lib/scheduling";
-import { BookingSlot } from "@/lib/scheduling";
+import { BookingSlot } from "@/lib/scheduling/types/booking";
 import { TimeSlot } from "@/lib/scheduling/ui/TimeSelector";
 import { DurationOption } from "@/lib/scheduling/ui/DurationSelector";
 

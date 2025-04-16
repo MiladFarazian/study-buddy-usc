@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { getTutorAvailability, updateTutorAvailability } from "@/lib/scheduling";
 import { WeeklyAvailabilityCalendar } from './calendar';
-import { WeeklyAvailability } from "@/lib/scheduling/types";
+import { WeeklyAvailability } from "@/lib/scheduling/types/availability";
 import { Loader2 } from "lucide-react";
 import { format, addDays } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
@@ -32,9 +32,12 @@ export const TutorAvailabilityCard: React.FC<TutorAvailabilityCardProps> = ({
       
       try {
         const tutorAvailability = await getTutorAvailability(tutorId);
-        setAvailability(tutorAvailability);
         
-        if (!tutorAvailability) {
+        // Convert to the correct type if needed
+        if (tutorAvailability) {
+          const typedAvailability: WeeklyAvailability = { ...tutorAvailability };
+          setAvailability(typedAvailability);
+        } else {
           setError("Could not load tutor's availability.");
         }
       } catch (err) {

@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { Button } from "@/components/ui/button";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 export interface DurationOption {
   minutes: number;
@@ -8,54 +9,55 @@ export interface DurationOption {
 }
 
 export interface DurationSelectorProps {
+  options: DurationOption[];
   selectedDuration: number | null;
   onDurationChange: (minutes: number) => void;
-  options?: DurationOption[];
-  disabled?: boolean;
   hourlyRate?: number;
-  // For compatibility with NewBookingWizard
-  onSelectDuration?: (minutes: number) => void;
 }
 
 export function DurationSelector({
+  options,
   selectedDuration,
   onDurationChange,
-  options = [
-    { minutes: 30, cost: 25 },
-    { minutes: 60, cost: 50 },
-    { minutes: 90, cost: 75 }
-  ],
-  disabled = false,
-  hourlyRate,
-  onSelectDuration, // For compatibility with NewBookingWizard
+  hourlyRate = 0
 }: DurationSelectorProps) {
-  // Handle duration selection with both callback styles
-  const handleSelectDuration = (minutes: number) => {
-    if (onSelectDuration) {
-      onSelectDuration(minutes);
-    }
-    onDurationChange(minutes);
-  };
-
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium">Select Session Duration</h3>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {options.map((option) => (
-          <Button
-            key={option.minutes}
-            variant={selectedDuration === option.minutes ? "default" : "outline"}
-            className={`p-4 h-auto flex flex-col items-center justify-center ${
-              selectedDuration === option.minutes ? "bg-usc-cardinal text-white" : ""
-            }`}
-            disabled={disabled}
-            onClick={() => handleSelectDuration(option.minutes)}
-          >
-            <span className="text-lg font-medium">{option.minutes} min</span>
-            <span className="mt-1">${option.cost.toFixed(2)}</span>
-          </Button>
-        ))}
-      </div>
+      <h3 className="text-xl font-semibold">Select Session Duration</h3>
+      
+      <RadioGroup 
+        value={selectedDuration?.toString() || ""} 
+        onValueChange={(value) => onDurationChange(parseInt(value))}
+      >
+        <div className="space-y-3">
+          {options.map((option) => (
+            <div
+              key={option.minutes}
+              className={`
+                flex items-center justify-between rounded-lg border p-4
+                ${selectedDuration === option.minutes ? "border-usc-cardinal" : ""}
+              `}
+            >
+              <div className="flex items-center space-x-3">
+                <RadioGroupItem value={option.minutes.toString()} id={`duration-${option.minutes}`} />
+                <Label htmlFor={`duration-${option.minutes}`} className="cursor-pointer">
+                  <div>
+                    <span className="font-medium">{option.minutes} minutes</span>
+                    <p className="text-sm text-muted-foreground">
+                      {option.minutes >= 60 ? 
+                        `${option.minutes / 60} ${option.minutes === 60 ? 'hour' : 'hours'}` : 
+                        `${option.minutes} minutes`}
+                    </p>
+                  </div>
+                </Label>
+              </div>
+              <div className="text-right font-semibold">
+                ${option.cost}
+              </div>
+            </div>
+          ))}
+        </div>
+      </RadioGroup>
     </div>
   );
 }
