@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { format, parseISO, isFuture, isPast } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,22 +22,37 @@ export const SessionList = ({ sessions, loading, onCancelSession, onBookSession 
   console.log("All sessions:", sessions);
   
   const upcomingSessions = sessions.filter(session => {
-    const isFutureSession = isFuture(parseISO(session.start_time));
-    console.log(`Session ${session.id} start time: ${session.start_time}, isFuture: ${isFutureSession}, status: ${session.status}`);
-    return isFutureSession && session.status !== 'cancelled';
+    try {
+      // Fix possible date parsing issues by ensuring valid date format
+      const sessionStartTime = parseISO(session.start_time);
+      const isUpcoming = isFuture(sessionStartTime);
+      const notCancelled = session.status !== 'cancelled';
+      
+      console.log(`Session ${session.id} - Start: ${session.start_time}, Is future: ${isUpcoming}, Status: ${session.status}`);
+      
+      return isUpcoming && notCancelled;
+    } catch (error) {
+      console.error(`Error processing session ${session.id}:`, error);
+      return false;
+    }
   });
   
-  const pastSessions = sessions.filter(session => 
-    isPast(parseISO(session.end_time)) && session.status !== 'cancelled'
-  );
+  const pastSessions = sessions.filter(session => {
+    try {
+      return isPast(parseISO(session.end_time)) && session.status !== 'cancelled';
+    } catch (error) {
+      console.error(`Error processing session ${session.id}:`, error);
+      return false;
+    }
+  });
   
   const cancelledSessions = sessions.filter(session => 
     session.status === 'cancelled'
   );
   
-  console.log("Upcoming sessions:", upcomingSessions);
-  console.log("Past sessions:", pastSessions);
-  console.log("Cancelled sessions:", cancelledSessions);
+  console.log("Upcoming sessions:", upcomingSessions.length);
+  console.log("Past sessions:", pastSessions.length);
+  console.log("Cancelled sessions:", cancelledSessions.length);
   
   const formatSessionTime = (timeString: string) => {
     try {
@@ -55,10 +71,15 @@ export const SessionList = ({ sessions, loading, onCancelSession, onBookSession 
   };
   
   const calculateDuration = (startTime: string, endTime: string) => {
-    const start = parseISO(startTime);
-    const end = parseISO(endTime);
-    const durationMinutes = Math.round((end.getTime() - start.getTime()) / (1000 * 60));
-    return durationMinutes;
+    try {
+      const start = parseISO(startTime);
+      const end = parseISO(endTime);
+      const durationMinutes = Math.round((end.getTime() - start.getTime()) / (1000 * 60));
+      return durationMinutes;
+    } catch (e) {
+      console.error("Error calculating duration:", e);
+      return 0;
+    }
   };
   
   const handleCancelSession = (sessionId: string) => {

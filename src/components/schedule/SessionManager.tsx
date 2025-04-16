@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -10,6 +10,7 @@ import { ScheduleCalendar } from "@/components/scheduling/ScheduleCalendar";
 import { sendSessionCancellationEmails } from "@/lib/scheduling/email-utils";
 import { getUserSessions } from "@/lib/scheduling/session-manager";
 import { supabase } from "@/integrations/supabase/client";
+import { LoadingDisplay } from "@/components/scheduling/calendar/LoadingDisplay";
 
 export const SessionManager = () => {
   const { user, isTutor } = useAuth();
@@ -19,13 +20,7 @@ export const SessionManager = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   
-  useEffect(() => {
-    if (user) {
-      loadSessions();
-    }
-  }, [user]);
-  
-  const loadSessions = async () => {
+  const loadSessions = useCallback(async () => {
     if (!user) return;
     
     setLoading(true);
@@ -44,7 +39,13 @@ export const SessionManager = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, isTutor, toast]);
+  
+  useEffect(() => {
+    if (user) {
+      loadSessions();
+    }
+  }, [user, loadSessions]);
   
   const handleBookNewSession = () => {
     navigate('/tutors');
@@ -81,6 +82,7 @@ export const SessionManager = () => {
         description: "Your session has been cancelled successfully.",
       });
       
+      // Reload sessions to ensure UI is in sync with the database
       loadSessions();
     } catch (error) {
       console.error("Error cancelling session:", error);
@@ -91,6 +93,24 @@ export const SessionManager = () => {
       });
     }
   };
+
+  if (loading && sessions.length === 0) {
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Your Sessions</CardTitle>
+            <CardDescription>Your scheduled tutoring appointments</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <LoadingDisplay message="Loading your sessions..." />
+          </CardContent>
+        </Card>
+
+        <ScheduleCalendar sessions={[]} />
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

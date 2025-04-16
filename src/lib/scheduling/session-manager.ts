@@ -57,88 +57,89 @@ export async function getTutorBookedSessions(
 
 /**
  * Fetch sessions for a specific user (either as tutor or student)
+ * Optimized version with a single join query instead of multiple separate queries
  */
 export async function getUserSessions(
   userId: string,
   isTutor: boolean
 ): Promise<Session[]> {
   try {
-    // Step 1: Fetch basic session data first
-    const { data: basicSessionData, error: sessionError } = await supabase
+    console.log("Getting sessions for user:", userId, "as tutor:", isTutor);
+    
+    // Use a more efficient query with joins to get all data in a single request
+    const { data: sessions, error } = await supabase
       .from('sessions')
-      .select('*')
+      .select(`
+        *,
+        tutor:profiles!sessions_tutor_id_fkey (
+          id, 
+          first_name, 
+          last_name, 
+          avatar_url
+        ),
+        student:profiles!sessions_student_id_fkey (
+          id, 
+          first_name, 
+          last_name, 
+          avatar_url
+        )
+      `)
       .eq(isTutor ? 'tutor_id' : 'student_id', userId)
       .order('start_time', { ascending: true });
-      
-    if (sessionError) {
-      console.error("Error fetching user sessions:", sessionError);
+    
+    if (error) {
+      console.error("Error fetching sessions:", error);
+      throw error;
+    }
+    
+    if (!sessions || sessions.length === 0) {
+      console.log("No sessions found for user:", userId);
       return [];
     }
     
-    if (!basicSessionData || basicSessionData.length === 0) {
-      return [];
-    }
+    console.log(`Found ${sessions.length} sessions for user ${userId}`);
     
-    // Step 2: Process sessions one by one to avoid deep type instantiation
-    const formattedSessions: Session[] = [];
+    // Process the sessions to include course information if needed
+    const processedSessions: Session[] = [];
     
-    for (const session of basicSessionData) {
-      // Step 3: Get tutor details
-      const { data: tutorData } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, avatar_url')
-        .eq('id', session.tutor_id)
-        .maybeSingle();
-        
-      // Step 4: Get student details
-      const { data: studentData } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, avatar_url')
-        .eq('id', session.student_id)
-        .maybeSingle();
-      
-      // Step 5: Get course details if available
+    for (const session of sessions) {
+      // Format the session with default course details
       let courseDetails = null;
+      
+      // If there's a course ID, try to get its details
       if (session.course_id) {
         try {
           courseDetails = {
             id: session.course_id,
             course_number: session.course_id,
-            course_title: '' // Default empty title
+            course_title: '' 
           };
           
           // Try to get the course title if available
-          try {
-            const { data: courseData } = await supabase
-              .from('courses-20251')
-              .select('Course number, Course title')
-              .eq('Course number', session.course_id)
-              .maybeSingle();
-              
-            if (courseData) {
-              courseDetails.course_title = courseData["Course title"] || '';
-            }
-          } catch (courseError) {
-            console.warn("Error fetching course details:", courseError);
+          const { data: courseData } = await supabase
+            .from('courses-20251')
+            .select('Course number, Course title')
+            .eq('Course number', session.course_id)
+            .maybeSingle();
+            
+          if (courseData) {
+            courseDetails.course_title = courseData["Course title"] || '';
           }
         } catch (courseError) {
-          console.warn("Error processing course details:", courseError);
+          console.warn("Error fetching course details:", courseError);
         }
       }
       
-      // Step 6: Construct the complete session object
-      formattedSessions.push({
+      processedSessions.push({
         ...session,
-        tutor: tutorData || undefined,
-        student: studentData || undefined,
         course: courseDetails
       });
     }
     
-    return formattedSessions;
+    console.log("Processed sessions:", processedSessions);
+    return processedSessions;
   } catch (error) {
     console.error("Error loading user sessions:", error);
     return [];
   }
 }
-
