@@ -56,7 +56,7 @@ export async function getTutorBookedSessions(
 }
 
 /**
- * Fetch sessions for a specific user (either as tutor or student)
+ * Fetch ALL sessions for a specific user (both as tutor AND student)
  * Optimized version with a single join query instead of multiple separate queries
  */
 export async function getUserSessions(
@@ -64,9 +64,9 @@ export async function getUserSessions(
   isTutor: boolean
 ): Promise<Session[]> {
   try {
-    console.log("Getting sessions for user:", userId, "as tutor:", isTutor);
+    console.log("Getting sessions for user:", userId);
     
-    // Use a more efficient query with joins to get all data in a single request
+    // Make two queries - one for sessions where user is tutor, one where user is student
     const { data: sessions, error } = await supabase
       .from('sessions')
       .select(`
@@ -84,7 +84,7 @@ export async function getUserSessions(
           avatar_url
         )
       `)
-      .eq(isTutor ? 'tutor_id' : 'student_id', userId)
+      .or(`tutor_id.eq.${userId},student_id.eq.${userId}`) // Get sessions where user is either tutor or student
       .order('start_time', { ascending: true });
     
     if (error) {

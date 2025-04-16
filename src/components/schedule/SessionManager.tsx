@@ -25,7 +25,8 @@ export const SessionManager = () => {
     
     setLoading(true);
     try {
-      console.log("Loading sessions for user:", user.id, "isTutor:", !!isTutor);
+      console.log("Loading sessions for user:", user.id);
+      // Pass isTutor just for logging purposes, but we'll get all sessions regardless
       const userSessions = await getUserSessions(user.id, !!isTutor);
       console.log("Loaded sessions:", userSessions);
       setSessions(userSessions);
