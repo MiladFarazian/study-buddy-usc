@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { SessionCreationParams, SessionDetails } from "./types/booking";
 
@@ -15,11 +14,6 @@ export async function createSessionBooking(
   notes: string | null
 ): Promise<SessionDetails | null> {
   try {
-    // Calculate duration in minutes
-    const startDateTime = new Date(startTime);
-    const endDateTime = new Date(endTime);
-    const durationMinutes = Math.round((endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60));
-    
     // Create the session record - ensuring courseId is stored as a string value
     const { data, error } = await supabase
       .from('sessions')
@@ -29,7 +23,6 @@ export async function createSessionBooking(
         course_id: courseId, // Store course_id as the course number string
         start_time: startTime,
         end_time: endTime,
-        duration_minutes: durationMinutes,
         location: location,
         notes: notes,
         status: 'pending' as const,

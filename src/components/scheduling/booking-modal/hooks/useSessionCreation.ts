@@ -37,13 +37,9 @@ export function useSessionCreation() {
       const [endHour, endMinute] = slot.end.split(':').map(Number);
       endTime.setHours(endHour, endMinute, 0, 0);
       
-      // Calculate duration in minutes
-      const durationMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
-      
       // Enhance the slot with calculated properties
       slot.startTime = startTime;
       slot.endTime = endTime;
-      slot.durationMinutes = durationMinutes;
       
       // Create the session in the database
       const { data: session, error } = await supabase
@@ -53,7 +49,6 @@ export function useSessionCreation() {
           student_id: user.id,
           start_time: startTime.toISOString(),
           end_time: endTime.toISOString(),
-          duration_minutes: durationMinutes,
           status: 'pending',
           payment_status: 'pending'
         })
