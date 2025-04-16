@@ -1,16 +1,17 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { format, startOfDay, addDays } from 'date-fns';
+import { format, startOfDay, addDays, parseISO } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import { 
   BookingSlot,
   getTutorAvailability, 
   getTutorBookedSessions,
-  generateAvailableSlots
+  generateAvailableSlots,
+  calculateDurationMinutes
 } from "@/lib/scheduling";
 import { Tutor } from "@/types/tutor";
 
-export function useAvailabilityData(tutor: Tutor, startDate: Date) {
+export function useAvailabilityData(tutor: Tutor | null, startDate: Date) {
   const { toast } = useToast();
   const [loading, setLoading] = useState<boolean>(true);
   const [availableSlots, setAvailableSlots] = useState<BookingSlot[]>([]);
@@ -115,6 +116,7 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
   }, [tutorId, memoizedStartDate, fetchTrigger, loadAvailability]);
 
   const refreshAvailability = useCallback(() => {
+    console.log("Refreshing availability data...");
     setFetchTrigger(prev => prev + 1);
   }, []);
 
@@ -126,9 +128,17 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
     if (slotsNeeded <= 1) return [startSlot];
     
     // Get all slots for the same day
-    const sameDay = availableSlots.filter(slot => 
-      new Date(slot.day).toDateString() === new Date(startSlot.day).toDateString()
-    );
+    const sameDay = availableSlots.filter(slot => {
+      const slotDayString = slot.day instanceof Date 
+        ? slot.day.toDateString() 
+        : new Date(slot.day).toDateString();
+        
+      const startSlotDayString = startSlot.day instanceof Date 
+        ? startSlot.day.toDateString() 
+        : new Date(startSlot.day).toDateString();
+        
+      return slotDayString === startSlotDayString;
+    });
     
     // Sort by start time
     sameDay.sort((a, b) => a.start.localeCompare(b.start));

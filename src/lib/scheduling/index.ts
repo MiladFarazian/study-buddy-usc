@@ -18,5 +18,6 @@ export * from './ui/DateSelector';
 export * from './ui/DurationSelector';
 export * from './ui/TimeSelector';
 
-// Export the booking utils for backward compatibility
+// Export the booking utils
 export * from './booking-utils';
+

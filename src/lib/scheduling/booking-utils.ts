@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { SessionCreationParams, SessionDetails } from "./types/booking";
+import { format } from "date-fns";
+import { BookingSlot } from "./types/booking";
 
 /**
  * Create a new session booking
@@ -13,30 +14,24 @@ export async function createSessionBooking(
   endTime: string,
   location: string | null,
   notes: string | null
-): Promise<SessionDetails | null> {
+): Promise<{ id: string } | null> {
   try {
-    // Calculate duration in minutes
-    const startDateTime = new Date(startTime);
-    const endDateTime = new Date(endTime);
-    const durationMinutes = Math.round((endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60));
+    console.log(`Creating session booking using booking-utils for student ${studentId} with tutor ${tutorId}`);
     
-    // Create the session record - ensuring courseId is stored as a string value
     const { data, error } = await supabase
       .from('sessions')
       .insert({
         student_id: studentId,
         tutor_id: tutorId,
-        course_id: courseId, // Store course_id as the course number string
+        course_id: courseId,
         start_time: startTime,
         end_time: endTime,
-        duration_minutes: durationMinutes,
         location: location,
         notes: notes,
-        status: 'pending' as const,
-        payment_status: 'unpaid' as const,
-        created_at: new Date().toISOString()
+        status: 'pending',
+        payment_status: 'unpaid'
       })
-      .select()
+      .select('id')
       .single();
     
     if (error) {
@@ -44,18 +39,8 @@ export async function createSessionBooking(
       return null;
     }
     
-    return {
-      id: data.id,
-      studentId: data.student_id,
-      tutorId: data.tutor_id,
-      courseId: data.course_id || undefined,
-      startTime: data.start_time,
-      endTime: data.end_time,
-      location: data.location || undefined,
-      notes: data.notes || undefined,
-      status: data.status as 'pending' | 'confirmed' | 'cancelled' | 'completed',
-      paymentStatus: data.payment_status as 'unpaid' | 'paid' | 'refunded'
-    };
+    console.log(`Session created successfully with ID: ${data.id}`);
+    return { id: data.id };
   } catch (err) {
     console.error("Failed to create session booking:", err);
     return null;
@@ -63,49 +48,43 @@ export async function createSessionBooking(
 }
 
 /**
- * Create a new payment transaction for a session
+ * Check if a booking slot is available
  */
-export async function createPaymentTransaction(
-  sessionId: string,
-  studentId: string,
-  tutorId: string,
-  amount: number
-): Promise<boolean> {
-  try {
-    // Create payment transaction
-    const { error } = await supabase
-      .from('payment_transactions')
-      .insert({
-        session_id: sessionId,
-        student_id: studentId,
-        tutor_id: tutorId,
-        amount: amount,
-        status: 'pending',
-        created_at: new Date().toISOString()
-      });
+export function isSlotAvailable(
+  slot: BookingSlot,
+  bookedSessions: any[]
+): boolean {
+  if (!slot.available) return false;
+  
+  const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
+  const slotStart = slot.start;
+  const slotEnd = slot.end;
+
+  // Check if this slot overlaps with any booked session
+  for (const session of bookedSessions) {
+    const sessionStart = format(new Date(session.start_time), 'HH:mm');
+    const sessionEnd = format(new Date(session.end_time), 'HH:mm');
+    const sessionDay = new Date(session.start_time);
     
-    if (error) {
-      console.error("Error creating payment transaction:", error);
-      return false;
+    // Only check sessions on the same day
+    if (sessionDay.toDateString() === slotDay.toDateString()) {
+      // Check for overlap
+      if (
+        (slotStart >= sessionStart && slotStart < sessionEnd) ||
+        (slotEnd > sessionStart && slotEnd <= sessionEnd) ||
+        (slotStart <= sessionStart && slotEnd >= sessionEnd)
+      ) {
+        return false;
+      }
     }
-    
-    return true;
-  } catch (err) {
-    console.error("Failed to create payment transaction:", err);
-    return false;
   }
+  
+  return true;
 }
 
 /**
- * Create a placeholder for future payment utility
+ * Calculate session price based on duration and hourly rate
  */
-export function createPaymentIntent(): Promise<any> {
-  return Promise.resolve(null);
-}
-
-/**
- * Process a payment for a session
- */
-export async function processPaymentForSession(): Promise<boolean> {
-  return Promise.resolve(true);
+export function calculateSessionPrice(durationMinutes: number, hourlyRate: number): number {
+  return (hourlyRate / 60) * durationMinutes;
 }
