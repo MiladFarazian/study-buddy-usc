@@ -67,23 +67,30 @@ const Schedule = () => {
         let courseDetails = null;
         if (session.course_id) {
           try {
-            // Use a specific table name instead of dynamic reference to avoid type issues
-            // We're using courses-20251 as it seems to be the current term
-            const { data: courseData } = await supabase
-              .from('courses-20251')
-              .select('*')
-              .eq('Course number', session.course_id)
-              .maybeSingle();
+            // Fix: Don't try to join with courses-20251 directly
+            // Instead, treat course_id as a direct course number identifier
+            courseDetails = {
+              id: session.course_id,
+              course_number: session.course_id,
+              course_title: '' // Default empty title if we can't retrieve it
+            };
             
-            if (courseData) {
-              courseDetails = {
-                id: session.course_id,
-                course_number: courseData["Course number"] || '',
-                course_title: courseData["Course title"] || ''
-              };
+            // Try to get the course title if available
+            try {
+              const { data: courseData } = await supabase
+                .from('courses-20251')
+                .select('Course number, Course title')
+                .eq('Course number', session.course_id)
+                .maybeSingle();
+                
+              if (courseData) {
+                courseDetails.course_title = courseData["Course title"] || '';
+              }
+            } catch (courseError) {
+              console.warn("Error fetching course details:", courseError);
             }
           } catch (courseError) {
-            console.warn("Error fetching course details:", courseError);
+            console.warn("Error processing course details:", courseError);
           }
         }
         

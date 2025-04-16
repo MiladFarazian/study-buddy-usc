@@ -20,13 +20,13 @@ export async function createSessionBooking(
     const endDateTime = new Date(endTime);
     const durationMinutes = Math.round((endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60));
     
-    // Create the session record
+    // Create the session record - ensuring courseId is stored as a string value
     const { data, error } = await supabase
       .from('sessions')
       .insert({
         student_id: studentId,
         tutor_id: tutorId,
-        course_id: courseId,
+        course_id: courseId, // Store course_id as the course number string
         start_time: startTime,
         end_time: endTime,
         duration_minutes: durationMinutes,
