@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { format, parseISO, isFuture, isPast } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,10 +18,13 @@ export const SessionList = ({ sessions, loading, onCancelSession, onBookSession 
   const [showDialog, setShowDialog] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   
-  // Filter sessions based on tab
-  const upcomingSessions = sessions.filter(session => 
-    isFuture(parseISO(session.start_time)) && session.status !== 'cancelled'
-  );
+  console.log("All sessions:", sessions);
+  
+  const upcomingSessions = sessions.filter(session => {
+    const isFutureSession = isFuture(parseISO(session.start_time));
+    console.log(`Session ${session.id} start time: ${session.start_time}, isFuture: ${isFutureSession}, status: ${session.status}`);
+    return isFutureSession && session.status !== 'cancelled';
+  });
   
   const pastSessions = sessions.filter(session => 
     isPast(parseISO(session.end_time)) && session.status !== 'cancelled'
@@ -31,6 +33,10 @@ export const SessionList = ({ sessions, loading, onCancelSession, onBookSession 
   const cancelledSessions = sessions.filter(session => 
     session.status === 'cancelled'
   );
+  
+  console.log("Upcoming sessions:", upcomingSessions);
+  console.log("Past sessions:", pastSessions);
+  console.log("Cancelled sessions:", cancelledSessions);
   
   const formatSessionTime = (timeString: string) => {
     try {

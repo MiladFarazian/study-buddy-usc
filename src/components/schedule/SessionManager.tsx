@@ -30,7 +30,9 @@ export const SessionManager = () => {
     
     setLoading(true);
     try {
+      console.log("Loading sessions for user:", user.id, "isTutor:", !!isTutor);
       const userSessions = await getUserSessions(user.id, !!isTutor);
+      console.log("Loaded sessions:", userSessions);
       setSessions(userSessions);
     } catch (error) {
       console.error("Error loading sessions:", error);
@@ -50,6 +52,7 @@ export const SessionManager = () => {
   
   const handleCancelSession = async (sessionId: string) => {
     try {
+      console.log("Cancelling session:", sessionId);
       const { error } = await supabase
         .from('sessions')
         .update({ 
