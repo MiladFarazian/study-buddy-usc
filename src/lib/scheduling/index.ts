@@ -18,6 +18,7 @@ export * from './ui/BookingSummary';
 export * from './ui/DateSelector';
 export * from './ui/DurationSelector';
 export * from './ui/TimeSelector';
+export * from './ui/ScheduleCalendar';
 
 // Export the booking utils with explicit naming to avoid conflicts
 import * as bookingUtils from './booking-utils';
