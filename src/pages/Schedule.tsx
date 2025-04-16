@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -66,7 +67,7 @@ const Schedule = () => {
             // Use a fixed table name instead of a dynamic one to avoid TypeScript errors
             const { data: courseData, error: courseError } = await supabase
               .from('courses-20251')
-              .select(`"Course number", "Course title"`)
+              .select('*')
               .eq('id', session.course_id)
               .maybeSingle();
             

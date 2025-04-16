@@ -8,6 +8,12 @@ export interface BookingSlot {
   end: string;   // Format: "HH:MM" in 24-hour format
   available: boolean; // Making this required
   tutorId: string; // Make sure tutorId is required
+  
+  // Additional properties that are used in the application
+  startTime?: Date;
+  endTime?: Date;
+  durationMinutes?: number;
+  id?: string;
 }
 
 // BookedSession represents an already booked session
@@ -44,3 +50,6 @@ export interface SessionDetails {
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   paymentStatus?: 'unpaid' | 'paid' | 'refunded';
 }
+
+// Re-export Session type from the existing session.ts type file
+export type { Session } from '@/types/session';

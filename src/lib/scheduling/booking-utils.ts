@@ -32,8 +32,8 @@ export async function createSessionBooking(
         duration_minutes: durationMinutes,
         location: location,
         notes: notes,
-        status: 'pending',
-        payment_status: 'unpaid',
+        status: 'pending' as const,
+        payment_status: 'unpaid' as const,
         created_at: new Date().toISOString()
       })
       .select()
@@ -53,8 +53,8 @@ export async function createSessionBooking(
       endTime: data.end_time,
       location: data.location || undefined,
       notes: data.notes || undefined,
-      status: data.status,
-      paymentStatus: data.payment_status
+      status: data.status as 'pending' | 'confirmed' | 'cancelled' | 'completed',
+      paymentStatus: data.payment_status as 'unpaid' | 'paid' | 'refunded'
     };
   } catch (err) {
     console.error("Failed to create session booking:", err);

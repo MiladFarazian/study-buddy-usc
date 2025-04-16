@@ -4,8 +4,10 @@ export * from './types/availability';
 export * from './types/booking';
 
 // Legacy types kept for backward compatibility
-export interface CalendarViewMode {
-  MONTH: 'month';
-  WEEK: 'week';
-  DAY: 'day';
-}
+export const CalendarViewMode = {
+  MONTH: 'month',
+  WEEK: 'week',
+  DAY: 'day'
+} as const;
+
+export type CalendarViewMode = typeof CalendarViewMode[keyof typeof CalendarViewMode];

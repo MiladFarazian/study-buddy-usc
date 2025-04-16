@@ -1,47 +1,52 @@
 
-// Placeholder for email functionality that could be implemented later
-
-// Send session confirmation emails to both student and tutor
-export async function sendSessionConfirmationEmails(sessionId: string): Promise<{success: boolean, error?: string}> {
-  try {
-    console.log(`Would send confirmation emails for session ${sessionId}`);
-    // This would be implemented with actual email sending logic
-    return { success: true };
-  } catch (error) {
-    console.error("Error sending confirmation emails:", error);
-    return {
-      success: false, 
-      error: error instanceof Error ? error.message : "Unknown error sending emails"
-    };
-  }
-}
-
-// Send session cancellation emails to both student and tutor
+/**
+ * Send email notifications for session cancellation
+ */
 export async function sendSessionCancellationEmails(sessionId: string): Promise<{success: boolean, error?: string}> {
   try {
-    console.log(`Would send cancellation emails for session ${sessionId}`);
-    // This would be implemented with actual email sending logic
+    // This is a placeholder for the email sending functionality
+    // In a production app, you would implement actual email sending logic here
+    console.log(`Email notification would be sent for cancelled session: ${sessionId}`);
     return { success: true };
   } catch (error) {
     console.error("Error sending cancellation emails:", error);
-    return {
+    return { 
       success: false, 
-      error: error instanceof Error ? error.message : "Unknown error sending emails"
+      error: error instanceof Error ? error.message : "Unknown error sending emails" 
     };
   }
 }
 
-// Send session reminder emails
+/**
+ * Send email notifications for a new session booking
+ */
+export async function sendSessionBookingEmails(sessionId: string): Promise<{success: boolean, error?: string}> {
+  try {
+    // Placeholder for booking confirmation emails
+    console.log(`Email notification would be sent for new booking: ${sessionId}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Error sending booking emails:", error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : "Unknown error sending emails" 
+    };
+  }
+}
+
+/**
+ * Send reminder emails for upcoming sessions
+ */
 export async function sendSessionReminderEmails(sessionId: string): Promise<{success: boolean, error?: string}> {
   try {
-    console.log(`Would send reminder emails for session ${sessionId}`);
-    // This would be implemented with actual email sending logic
+    // Placeholder for reminder emails
+    console.log(`Reminder email would be sent for session: ${sessionId}`);
     return { success: true };
   } catch (error) {
     console.error("Error sending reminder emails:", error);
-    return {
+    return { 
       success: false, 
-      error: error instanceof Error ? error.message : "Unknown error sending emails"
+      error: error instanceof Error ? error.message : "Unknown error sending emails" 
     };
   }
 }
