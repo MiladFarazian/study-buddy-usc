@@ -7,13 +7,18 @@ export interface BookingSlot {
   end: string;    // Format: "HH:MM" in 24-hour format
   available: boolean;
   tutorId: string;
+  // Add the missing properties
+  startTime?: Date;
+  endTime?: Date;
+  durationMinutes?: number;
+  id?: string;
 }
 
 export interface BookedSession {
   id: string;
   tutorId: string;
   studentId: string;
-  date: string;  // Format: "YYYY-MM-DD"
+  date: string | Date;  // Format: "YYYY-MM-DD" or Date object
   start: string; // Format: "HH:MM" in 24-hour format
   end: string;   // Format: "HH:MM" in 24-hour format
   status: string;

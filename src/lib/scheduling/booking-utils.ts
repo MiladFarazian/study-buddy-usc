@@ -2,6 +2,7 @@
 // Utility functions for bookings
 import { BookingSlot, BookedSession } from './types/booking';
 import { format, parseISO, addMinutes } from 'date-fns';
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Format a booking slot for display
@@ -38,5 +39,80 @@ export function createEndTime(startTime: string, durationMinutes: number): strin
   } catch (err) {
     console.error("Error creating end time:", err);
     return startTime;
+  }
+}
+
+/**
+ * Create a new booking session in the database
+ */
+export async function createSessionBooking(
+  studentId: string,
+  tutorId: string,
+  courseId: string | null,
+  startTime: string,
+  endTime: string,
+  location: string | null,
+  notes: string | null
+): Promise<{ id: string } | null> {
+  try {
+    const { data, error } = await supabase
+      .from('sessions')
+      .insert({
+        student_id: studentId,
+        tutor_id: tutorId,
+        course_id: courseId,
+        start_time: startTime,
+        end_time: endTime,
+        location: location,
+        notes: notes,
+        status: 'pending',
+        payment_status: 'unpaid'
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      console.error("Error creating session booking:", error);
+      return null;
+    }
+
+    return { id: data.id };
+  } catch (err) {
+    console.error("Failed to create session booking:", err);
+    return null;
+  }
+}
+
+/**
+ * Create a payment transaction for a session
+ */
+export async function createPaymentTransaction(
+  sessionId: string,
+  studentId: string,
+  tutorId: string,
+  amount: number
+): Promise<{ id: string } | null> {
+  try {
+    const { data, error } = await supabase
+      .from('payment_transactions')
+      .insert({
+        session_id: sessionId,
+        student_id: studentId,
+        tutor_id: tutorId,
+        amount: amount,
+        status: 'pending'
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      console.error("Error creating payment transaction:", error);
+      return null;
+    }
+
+    return { id: data.id };
+  } catch (err) {
+    console.error("Failed to create payment transaction:", err);
+    return null;
   }
 }

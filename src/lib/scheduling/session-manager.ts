@@ -45,7 +45,8 @@ export async function getTutorBookedSessions(
         start: format(startTime, 'HH:mm'),
         end: format(endTime, 'HH:mm'),
         tutorId: session.tutor_id,
-        studentId: session.student_id
+        studentId: session.student_id,
+        status: session.status // Add the status property
       };
     });
   } catch (err) {

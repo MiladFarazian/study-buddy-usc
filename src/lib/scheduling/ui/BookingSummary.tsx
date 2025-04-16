@@ -1,11 +1,11 @@
 
 import React from 'react';
+import { format } from 'date-fns';
+import { CalendarIcon, Clock, DollarSign, FileText } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import { format } from "date-fns";
-import { formatTimeDisplay } from "../time-utils";
-import { Clock, CalendarDays, DollarSign, FileText } from "lucide-react";
+import { formatTimeDisplay } from '../time-utils';
 
-export interface BookingSummaryProps {
+interface BookingSummaryProps {
   selectedDate: Date;
   selectedTime: string;
   durationMinutes: number;
@@ -22,59 +22,56 @@ export function BookingSummary({
   notes,
   onNotesChange
 }: BookingSummaryProps) {
+  // Calculate end time
+  const startDate = new Date(selectedDate);
+  const [hours, minutes] = selectedTime.split(':').map(Number);
+  startDate.setHours(hours, minutes, 0, 0);
+  
+  const endDate = new Date(startDate);
+  endDate.setMinutes(endDate.getMinutes() + durationMinutes);
+  
+  const endTime = format(endDate, 'HH:mm');
+  
   return (
     <div className="space-y-6">
-      <h3 className="text-xl font-semibold">Booking Summary</h3>
+      <h2 className="text-xl font-semibold">Confirm Your Booking</h2>
       
-      <div className="space-y-4">
-        <div className="flex items-start space-x-3">
-          <CalendarDays className="h-5 w-5 text-muted-foreground mt-0.5" />
-          <div>
-            <p className="font-medium">Date</p>
-            <p className="text-muted-foreground">{format(selectedDate, 'EEEE, MMMM d, yyyy')}</p>
-          </div>
-        </div>
+      <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
+        <h3 className="text-lg font-medium mb-3">Booking Summary</h3>
         
-        <div className="flex items-start space-x-3">
-          <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
-          <div>
-            <p className="font-medium">Time</p>
-            <p className="text-muted-foreground">
-              {formatTimeDisplay(selectedTime)} - {formatTimeDisplay(addMinutesToTime(selectedTime, durationMinutes))}
-            </p>
+        <div className="space-y-3">
+          <div className="flex items-center">
+            <CalendarIcon className="h-5 w-5 mr-3 text-muted-foreground" />
+            <span>{format(selectedDate, 'EEEE, MMMM d, yyyy')}</span>
           </div>
-        </div>
-        
-        <div className="flex items-start space-x-3">
-          <DollarSign className="h-5 w-5 text-muted-foreground mt-0.5" />
-          <div>
-            <p className="font-medium">Cost</p>
-            <p className="text-muted-foreground">${cost}</p>
+          
+          <div className="flex items-center">
+            <Clock className="h-5 w-5 mr-3 text-muted-foreground" />
+            <span>{formatTimeDisplay(selectedTime)} - {formatTimeDisplay(endTime)}</span>
+          </div>
+          
+          <div className="flex items-center">
+            <DollarSign className="h-5 w-5 mr-3 text-muted-foreground" />
+            <span>${cost.toFixed(2)}</span>
           </div>
         </div>
       </div>
       
       <div className="space-y-2">
-        <div className="flex items-center space-x-2">
-          <FileText className="h-4 w-4" />
-          <p className="font-medium">Session Notes (optional)</p>
-        </div>
+        <label className="text-sm font-medium flex items-center">
+          <FileText className="h-4 w-4 mr-2" />
+          Notes for your tutor (optional)
+        </label>
         <Textarea
-          placeholder="Add any specific topics or questions you'd like to cover in the session..."
+          placeholder="Anything specific you'd like to cover in this session?"
           value={notes}
           onChange={(e) => onNotesChange(e.target.value)}
-          rows={4}
+          className="resize-none"
+          rows={3}
         />
       </div>
     </div>
   );
 }
 
-// Helper function for calculating end time
-function addMinutesToTime(time: string, minutes: number): string {
-  const [hours, mins] = time.split(':').map(Number);
-  const totalMinutes = hours * 60 + mins + minutes;
-  const newHours = Math.floor(totalMinutes / 60) % 24;
-  const newMins = totalMinutes % 60;
-  return `${newHours.toString().padStart(2, '0')}:${newMins.toString().padStart(2, '0')}`;
-}
+export default BookingSummary;

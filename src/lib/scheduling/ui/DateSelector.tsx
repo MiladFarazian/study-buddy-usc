@@ -1,64 +1,48 @@
 
 import React from 'react';
+import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { format } from 'date-fns';
+import { Calendar as CalendarIcon } from "lucide-react";
 
-export interface DateSelectorProps {
+interface DateSelectorProps {
   selectedDate?: Date;
   onDateChange: (date: Date) => void;
-  availableDates?: Date[];
-  disabled?: boolean;
-  minDate?: Date;
-  maxDate?: Date;
-  // For backwards compatibility
-  onSelectDate?: (date: Date) => void;
+  availableDates: Date[];
 }
 
-export function DateSelector({
-  selectedDate,
-  onDateChange,
-  availableDates = [],
-  disabled = false,
-  minDate = new Date(),
-  maxDate,
-  onSelectDate, // For backwards compatibility
-}: DateSelectorProps) {
-  // Handle date selection, using onSelectDate if provided (for backward compatibility)
-  const handleDateSelect = (date: Date | undefined) => {
-    if (date) {
-      if (onSelectDate) {
-        onSelectDate(date);
-      }
-      onDateChange(date);
-    }
-  };
-
+export function DateSelector({ selectedDate, onDateChange, availableDates }: DateSelectorProps) {
   return (
-    <div className="p-1">
-      <Calendar
-        mode="single"
-        selected={selectedDate}
-        onSelect={handleDateSelect}
-        disabled={(date) => {
-          // Disable dates before today
-          if (date < minDate) return true;
-          
-          // Disable dates after maxDate if provided
-          if (maxDate && date > maxDate) return true;
-          
-          // If availableDates is provided, only enable those dates
-          if (availableDates.length > 0) {
+    <div className="space-y-4">
+      <h2 className="text-lg font-semibold">Select a Date</h2>
+      
+      <div className="border rounded-lg p-4">
+        <Calendar
+          mode="single"
+          selected={selectedDate}
+          onSelect={(date) => date && onDateChange(date)}
+          disabled={(date) => {
+            // Disable dates with no availability
+            const formattedDate = format(date, 'yyyy-MM-dd');
             return !availableDates.some(
-              availableDate => 
-                availableDate.getFullYear() === date.getFullYear() &&
-                availableDate.getMonth() === date.getMonth() &&
-                availableDate.getDate() === date.getDate()
+              (availableDate) => format(availableDate, 'yyyy-MM-dd') === formattedDate
             );
-          }
-          
-          return false;
-        }}
-        className="rounded-md border"
-      />
+          }}
+          className="rounded-md"
+        />
+      </div>
+      
+      {selectedDate && (
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">You selected:</p>
+          <div className="inline-flex items-center justify-center bg-muted px-3 py-1 rounded-md mt-1">
+            <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+            <span>{format(selectedDate, 'EEEE, MMMM d, yyyy')}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+export default DateSelector;
