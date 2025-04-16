@@ -1,76 +1,43 @@
 
-import { format, parse, parseISO } from 'date-fns';
+import { format, parse, addMinutes } from 'date-fns';
 
 /**
- * Convert time string (HH:MM) to minutes since start of day
+ * Format time from 24-hour format to AM/PM display
  */
-export function convertTimeToMinutes(timeString: string): number {
-  const [hours, minutes] = timeString.split(':').map(Number);
-  return hours * 60 + minutes;
-}
-
-/**
- * Convert minutes since start of day back to time string (HH:MM)
- */
-export function convertMinutesToTime(minutes: number): string {
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-}
-
-/**
- * Format time display for UI (e.g., "14:00" to "2:00 PM")
- */
-export function formatTimeDisplay(timeString: string): string {
+export function formatTimeDisplay(time: string): string {
   try {
-    // Parse the time string as a date
-    const time = parse(timeString, 'HH:mm', new Date());
-    return format(time, 'h:mm a');
+    // Parse the time string to a Date object
+    const timeDate = parse(time, 'HH:mm', new Date());
+    // Format to AM/PM display
+    return format(timeDate, 'h:mm a');
   } catch (error) {
-    console.error('Error formatting time display:', error);
-    return timeString;
+    console.error("Error formatting time:", error);
+    return time;
   }
 }
 
 /**
- * Format a date (e.g., "Apr 12, 2025")
+ * Generate time slots for a day based on interval
  */
-export function formatDate(date: Date | string): string {
-  try {
-    const dateObj = typeof date === 'string' ? parseISO(date) : date;
-    return format(dateObj, 'MMM d, yyyy');
-  } catch (error) {
-    console.error('Error formatting date:', error);
-    return typeof date === 'string' ? date : date.toLocaleDateString();
+export function generateTimeSlots(startHour: number = 8, endHour: number = 22, intervalMinutes: number = 30): string[] {
+  const slots: string[] = [];
+  const today = new Date();
+  
+  // Set to startHour:00
+  today.setHours(startHour, 0, 0, 0);
+  
+  // Loop until endHour:00
+  while (today.getHours() < endHour) {
+    slots.push(format(today, 'HH:mm'));
+    today.setTime(today.getTime() + intervalMinutes * 60 * 1000);
   }
+  
+  return slots;
 }
 
 /**
- * Format time (e.g., "2:30 PM")
+ * Check if a time is within a given range
  */
-export function formatTime(time: string): string {
-  return formatTimeDisplay(time);
-}
-
-/**
- * Calculate duration in minutes between two time strings
- */
-export function calculateDurationMinutes(start: string, end: string): number {
-  return convertTimeToMinutes(end) - convertTimeToMinutes(start);
-}
-
-/**
- * Add minutes to a time string
- */
-export function addMinutesToTime(time: string, minutes: number): string {
-  const timeInMinutes = convertTimeToMinutes(time);
-  return convertMinutesToTime(timeInMinutes + minutes);
-}
-
-/**
- * Map date to day of week string (e.g., "monday", "tuesday")
- */
-export function mapDateToDayOfWeek(date: Date): string {
-  const weekDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  return weekDays[date.getDay()];
+export function isTimeInRange(time: string, startTime: string, endTime: string): boolean {
+  return time >= startTime && time < endTime;
 }

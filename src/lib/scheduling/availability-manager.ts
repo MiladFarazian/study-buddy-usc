@@ -14,13 +14,24 @@ export async function getTutorAvailability(tutorId: string): Promise<WeeklyAvail
       .from('tutor_availability')
       .select('*')
       .eq('tutor_id', tutorId)
-      .single();
+      .maybeSingle(); // Use maybeSingle instead of single to allow for no rows
 
-    if (error || !data) {
+    if (error) {
       console.error("Error fetching tutor availability:", error);
       return null;
     }
 
+    // If no data exists, create a default availability record
+    if (!data) {
+      console.log("No availability record found for tutor. Creating default record.");
+      const defaultAvailability = createDefaultAvailability();
+      const success = await updateTutorAvailability(tutorId, defaultAvailability);
+      if (success) {
+        return defaultAvailability;
+      }
+      return null;
+    }
+    
     // Parse the availability JSON safely
     const availabilityData = data.availability as WeeklyAvailabilityJson;
     if (!availabilityData) return null;
@@ -40,6 +51,21 @@ export async function getTutorAvailability(tutorId: string): Promise<WeeklyAvail
     console.error("Failed to fetch tutor availability:", err);
     return null;
   }
+}
+
+/**
+ * Create a default availability schedule
+ */
+function createDefaultAvailability(): WeeklyAvailability {
+  return {
+    monday: [],
+    tuesday: [],
+    wednesday: [],
+    thursday: [],
+    friday: [],
+    saturday: [],
+    sunday: []
+  };
 }
 
 /**
