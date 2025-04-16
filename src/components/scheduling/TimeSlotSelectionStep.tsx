@@ -5,7 +5,8 @@ import { useScheduling, BookingStep } from "@/contexts/SchedulingContext";
 import { format, isSameDay, parseISO } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-import { convertTimeToMinutes, convertMinutesToTime, formatTimeDisplay } from "@/lib/scheduling/time-utils";
+import { formatTimeDisplay } from "@/lib/scheduling/time-utils";
+import { convertTimeToMinutes, convertMinutesToTime } from "@/lib/scheduling";
 
 interface TimeSlotSelectionStepProps {
   availableSlots: BookingSlot[];
