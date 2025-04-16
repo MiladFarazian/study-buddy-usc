@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Session } from "@/types/session";
 import { formatDistanceToNow, isFuture } from "date-fns";
-import { CalendarDays, Clock, User, MapPin } from "lucide-react";
+import { CalendarDays, Clock, User, MapPin, GraduationCap, BookOpen } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface SessionItemProps {
@@ -25,7 +25,15 @@ export const SessionItem = ({
   variant,
   onBookSession
 }: SessionItemProps) => {
-  const { isTutor } = useAuth();
+  const { user, isTutor } = useAuth();
+  
+  // Determine if the current user is the tutor in this session
+  const isUserTutor = user?.id === session.tutor_id;
+  
+  // Set the appropriate style class based on whether the user is the tutor or student
+  const roleStyleClass = isUserTutor 
+    ? "border-l-4 border-usc-cardinal" 
+    : "border-l-4 border-usc-gold";
 
   // Determine the badge appearance based on session status and variant
   const getBadge = () => {
@@ -51,11 +59,30 @@ export const SessionItem = ({
     }
   };
 
+  // Get role badge to show if user is tutor or student in this session
+  const getRoleBadge = () => {
+    if (isUserTutor) {
+      return (
+        <Badge variant="outline" className="bg-usc-cardinal/10 text-usc-cardinal border-usc-cardinal/30 ml-2">
+          You're tutoring
+        </Badge>
+      );
+    } else {
+      return (
+        <Badge variant="outline" className="bg-usc-gold/10 text-usc-gold-dark border-usc-gold/30 ml-2">
+          You're learning
+        </Badge>
+      );
+    }
+  };
+
   // Determine the icon container style based on variant
   const getIconContainerClass = () => {
     switch (variant) {
       case 'upcoming':
-        return "bg-usc-gold/20 text-usc-cardinal-dark";
+        return isUserTutor 
+          ? "bg-usc-cardinal/20 text-usc-cardinal-dark" 
+          : "bg-usc-gold/20 text-usc-gold-dark";
       case 'past':
         return "bg-gray-100 text-gray-500";
       case 'cancelled':
@@ -63,12 +90,21 @@ export const SessionItem = ({
     }
   };
 
+  // Choose the appropriate icon based on user role
+  const getSessionIcon = () => {
+    return isUserTutor ? (
+      <GraduationCap className="h-5 w-5" />
+    ) : (
+      <BookOpen className="h-5 w-5" />
+    );
+  };
+
   return (
-    <div className="border rounded-lg p-4 hover:shadow-sm transition-shadow">
+    <div className={`border rounded-lg p-4 hover:shadow-sm transition-shadow ${roleStyleClass}`}>
       <div className="flex items-start justify-between">
         <div className="flex gap-4">
           <div className={`${getIconContainerClass()} rounded-md p-3 h-fit`}>
-            <CalendarDays className="h-5 w-5" />
+            {getSessionIcon()}
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -78,6 +114,7 @@ export const SessionItem = ({
                   : "Tutoring Session"}
               </h3>
               {getBadge()}
+              {getRoleBadge()}
             </div>
             <div className="text-sm text-gray-500 mt-1 space-y-1">
               <div className="flex items-center gap-2">
@@ -95,13 +132,13 @@ export const SessionItem = ({
               </div>
               <div className="flex items-center gap-2">
                 <User className="h-3 w-3" />
-                <span>
-                  {isTutor 
+                <span className="font-medium">
+                  {isUserTutor 
                     ? session.student?.first_name && session.student?.last_name 
-                      ? `${session.student.first_name} ${session.student.last_name}`
+                      ? `Student: ${session.student.first_name} ${session.student.last_name}`
                       : "Student"
                     : session.tutor?.first_name && session.tutor?.last_name
-                      ? `${session.tutor.first_name} ${session.tutor.last_name}`
+                      ? `Tutor: ${session.tutor.first_name} ${session.tutor.last_name}`
                       : "Tutor"
                   }
                 </span>
@@ -130,7 +167,7 @@ export const SessionItem = ({
         )}
         {variant === 'past' && (
           <Button variant="outline" size="sm">
-            {isTutor ? "View Session" : "Leave Review"}
+            {isUserTutor ? "View Session" : "Leave Review"}
           </Button>
         )}
         {variant === 'cancelled' && (
