@@ -1,13 +1,27 @@
 
 // Export all scheduling functionality from the module
 export * from './availability-manager';
-export * from './booking-manager';
 export * from './types/availability';
 export * from './types/booking';
 export * from './time-utils';
 export * from './availability-utils';
-export * from './booking-utils';
 export * from './session-manager';
+
+// Export booking functions
+export { 
+  formatBookingSlot,
+  calculateSlotDurationMinutes,
+  createEndTime,
+  createSessionBooking,
+  createPaymentTransaction
+} from './booking-utils';
+
+// Export booking manager functions (except getTutorBookedSessions which is already exported from session-manager)
+export {
+  createBookingSession,
+  updateBookingStatus,
+  isBookingSlotAvailable
+} from './booking-manager';
 
 // Export UI components
 export { DateSelector } from './ui/DateSelector';

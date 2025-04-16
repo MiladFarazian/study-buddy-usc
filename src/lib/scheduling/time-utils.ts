@@ -1,57 +1,42 @@
 
-import { format, parse, addMinutes, parseISO } from 'date-fns';
+import { format, parse, isValid } from 'date-fns';
 
 /**
- * Format time from 24-hour format to AM/PM display
+ * Format time display from 24-hour format to 12-hour format
  */
-export function formatTimeDisplay(time: string): string {
+export function formatTimeDisplay(time24h: string): string {
   try {
-    // Parse the time string to a Date object
-    const timeDate = parse(time, 'HH:mm', new Date());
-    // Format to AM/PM display
-    return format(timeDate, 'h:mm a');
-  } catch (error) {
-    console.error("Error formatting time:", error);
-    return time;
+    const [hours, minutes] = time24h.split(':').map(Number);
+    
+    if (isNaN(hours) || isNaN(minutes)) {
+      return time24h;
+    }
+    
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const hour12 = hours % 12 || 12;
+    
+    return `${hour12}:${minutes.toString().padStart(2, '0')} ${period}`;
+  } catch (err) {
+    console.error("Error formatting time display:", err);
+    return time24h;
   }
 }
 
 /**
- * Generate time slots for a day based on interval
- */
-export function generateTimeSlots(startHour: number = 8, endHour: number = 22, intervalMinutes: number = 30): string[] {
-  const slots: string[] = [];
-  const today = new Date();
-  
-  // Set to startHour:00
-  today.setHours(startHour, 0, 0, 0);
-  
-  // Loop until endHour:00
-  while (today.getHours() < endHour) {
-    slots.push(format(today, 'HH:mm'));
-    today.setTime(today.getTime() + intervalMinutes * 60 * 1000);
-  }
-  
-  return slots;
-}
-
-/**
- * Check if a time is within a given range
- */
-export function isTimeInRange(time: string, startTime: string, endTime: string): boolean {
-  return time >= startTime && time < endTime;
-}
-
-/**
- * Convert time string (HH:MM) to minutes since midnight
+ * Convert time string to minutes
  */
 export function convertTimeToMinutes(time: string): number {
-  const [hours, minutes] = time.split(':').map(Number);
-  return hours * 60 + minutes;
+  try {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  } catch (err) {
+    console.error("Error converting time to minutes:", err);
+    return 0;
+  }
 }
 
 /**
- * Convert minutes since midnight to time string (HH:MM)
+ * Convert minutes to time string in 24-hour format
  */
 export function convertMinutesToTime(minutes: number): string {
   const hours = Math.floor(minutes / 60);
@@ -60,21 +45,56 @@ export function convertMinutesToTime(minutes: number): string {
 }
 
 /**
- * Format date for display
+ * Format a date object to a human-readable string
  */
 export function formatDate(date: Date | string): string {
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
-  return format(dateObj, 'EEEE, MMMM d, yyyy');
+  try {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    return isValid(dateObj) ? format(dateObj, 'EEEE, MMMM d, yyyy') : 'Invalid date';
+  } catch (err) {
+    console.error("Error formatting date:", err);
+    return 'Invalid date';
+  }
 }
 
 /**
- * Format time for display
+ * Format a time string to a human-readable format
  */
 export function formatTime(time: string): string {
   try {
-    const timeDate = parse(time, 'HH:mm', new Date());
-    return format(timeDate, 'h:mm a');
-  } catch (error) {
+    if (time.includes('T')) {
+      // If time is a full ISO string
+      const dateObj = new Date(time);
+      return isValid(dateObj) ? format(dateObj, 'h:mm a') : formatTimeDisplay(time);
+    } else {
+      // If time is in HH:MM format
+      return formatTimeDisplay(time);
+    }
+  } catch (err) {
+    console.error("Error formatting time:", err);
     return time;
+  }
+}
+
+/**
+ * Parse a time string (HH:MM) to a Date object
+ */
+export function parseTimeString(timeStr: string, baseDate?: Date): Date | null {
+  try {
+    const date = baseDate || new Date();
+    
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    
+    if (isNaN(hours) || isNaN(minutes)) {
+      return null;
+    }
+    
+    const result = new Date(date);
+    result.setHours(hours, minutes, 0, 0);
+    
+    return result;
+  } catch (err) {
+    console.error("Error parsing time string:", err);
+    return null;
   }
 }
