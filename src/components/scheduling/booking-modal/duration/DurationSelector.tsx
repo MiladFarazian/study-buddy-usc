@@ -18,6 +18,7 @@ interface DurationSelectorProps {
   onBack: () => void;
   onContinue: () => void;
   hourlyRate: number;
+  consecutiveSlots?: BookingSlot[]; // Add this prop to receive consecutive slots
 }
 
 export function DurationSelector({
@@ -27,11 +28,19 @@ export function DurationSelector({
   onSelectDuration,
   onBack,
   onContinue,
-  hourlyRate
+  hourlyRate,
+  consecutiveSlots = [] // Default to empty array if not provided
 }: DurationSelectorProps) {
-  // Calculate available duration in minutes for the selected slot
+  // Calculate available duration in minutes for the selected slot chain
   const calculateAvailableDuration = () => {
-    // If end time is provided in the slot, calculate the difference
+    // If we have consecutive slots, calculate total available time
+    if (consecutiveSlots && consecutiveSlots.length > 0) {
+      // Calculate total minutes available from all consecutive slots
+      // Each slot is typically 30 minutes
+      return consecutiveSlots.length * 30;
+    }
+    
+    // Fallback to single slot calculation if no consecutive slots provided
     if (selectedSlot.end) {
       const [startHour, startMinute] = selectedSlot.start.split(':').map(Number);
       const [endHour, endMinute] = selectedSlot.end.split(':').map(Number);
@@ -49,7 +58,6 @@ export function DurationSelector({
     }
     
     // Default to 120 minutes (2 hours) if no end time is specified
-    // This is a reasonable default for tutoring sessions
     return 120;
   };
 
@@ -58,6 +66,9 @@ export function DurationSelector({
   
   console.log("Available duration for slot:", availableDuration, "minutes");
   console.log("Selected slot:", selectedSlot);
+  if (consecutiveSlots.length > 0) {
+    console.log("Consecutive slots found:", consecutiveSlots.length, "slots");
+  }
 
   // Filter duration options based on available time (for auto-selection purposes)
   const availableDurationOptions = durationOptions.filter(option => {

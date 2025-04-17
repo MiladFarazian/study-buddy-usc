@@ -47,9 +47,10 @@ export function BookSessionModal({
       const [startHour, startMinute] = slot.start.split(':').map(Number);
       startTime.setHours(startHour, startMinute, 0, 0);
       
-      const endTime = new Date(slot.day);
-      const [endHour, endMinute] = slot.end.split(':').map(Number);
-      endTime.setHours(endHour, endMinute, 0, 0);
+      // Use the slot's duration to calculate end time, fallback to 30 minutes
+      const durationMinutes = slot.durationMinutes || 30;
+      const endTime = new Date(startTime);
+      endTime.setMinutes(startTime.getMinutes() + durationMinutes);
       
       // Create the session in the database
       const session = await createSessionBooking(
@@ -68,7 +69,7 @@ export function BookSessionModal({
       
       toast({
         title: "Session booked!",
-        description: `You've successfully booked a session with ${tutor.firstName || tutor.name.split(' ')[0]}.`
+        description: `You've successfully booked a ${durationMinutes}-minute session with ${tutor.firstName || tutor.name.split(' ')[0]}.`
       });
       
       setLoading(false);
