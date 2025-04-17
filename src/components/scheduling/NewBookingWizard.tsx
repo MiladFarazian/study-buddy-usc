@@ -8,13 +8,26 @@ import { DateStep } from "./booking-wizard/steps/DateStep";
 import { TimeStep } from "./booking-wizard/steps/TimeStep";
 import { DurationStep } from "./booking-wizard/steps/DurationStep";
 import { ConfirmationStep } from "./booking-wizard/steps/ConfirmationStep";
+import { useEffect } from "react";
+import { useScheduling } from "@/contexts/SchedulingContext";
 
 interface NewBookingWizardProps {
   tutor: Tutor;
   onClose: () => void;
+  initialDate?: Date;
+  initialTime?: string;
 }
 
-export function NewBookingWizard({ tutor, onClose }: NewBookingWizardProps) {
+export function NewBookingWizard({ tutor, onClose, initialDate, initialTime }: NewBookingWizardProps) {
+  const { setTutor } = useScheduling();
+  
+  // Set the tutor in the context when the component mounts
+  useEffect(() => {
+    if (tutor) {
+      setTutor(tutor);
+    }
+  }, [tutor, setTutor]);
+  
   const {
     step,
     setStep,
@@ -32,6 +45,16 @@ export function NewBookingWizard({ tutor, onClose }: NewBookingWizardProps) {
     creating,
     handleConfirmBooking
   } = useBookingWizard(tutor);
+
+  // Set initial date and time if provided
+  useEffect(() => {
+    if (initialDate) {
+      setSelectedDate(initialDate);
+    }
+    if (initialTime) {
+      setSelectedTime(initialTime);
+    }
+  }, [initialDate, initialTime, setSelectedDate, setSelectedTime]);
 
   const handleBack = () => {
     switch (step) {
@@ -65,7 +88,7 @@ export function NewBookingWizard({ tutor, onClose }: NewBookingWizardProps) {
       <CardContent className="p-0">
         <StepNavigation 
           onBack={handleBack} 
-          backLabel={step === "date" ? "Back to Tutors" : "Back"} 
+          backLabel={step === "date" ? "Back to Tutor Profile" : "Back"} 
         />
 
         {step === "date" && (
