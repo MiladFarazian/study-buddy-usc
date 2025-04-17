@@ -21,7 +21,9 @@ export function TimeSlotList({
   // Format time for display (e.g., "2:30 PM")
   const formatTime = (timeString: string) => {
     const [hour, minute] = timeString.split(':').map(Number);
-    return format(new Date().setHours(hour, minute), 'h:mm a');
+    const period = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${minute.toString().padStart(2, '0')} ${period}`;
   };
 
   // Check if a time slot is in the past
@@ -103,14 +105,13 @@ export function TimeSlotList({
                       key={`${slot.day}-${slot.start}-${index}`}
                       variant={isSlotSelected(slot) ? "default" : "outline"}
                       className={`
-                        h-16 flex flex-col items-center justify-center
+                        h-12 flex items-center justify-center
                         ${isSlotSelected(slot) ? "bg-usc-cardinal hover:bg-usc-cardinal-dark" : "hover:bg-secondary"}
                       `}
                       onClick={() => onSelectSlot(slot)}
                       disabled={disabled}
                     >
                       <span className="text-sm font-medium">{formatTime(slot.start)}</span>
-                      <span className="text-xs text-muted-foreground">to {formatTime(slot.end)}</span>
                     </Button>
                   ))}
                 </div>

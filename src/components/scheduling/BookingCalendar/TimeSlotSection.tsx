@@ -33,6 +33,13 @@ export const TimeSlotSection = ({
   const groupedSlots = groupSlotsByHour();
   const hasAvailableSlots = visibleSlots.some(slot => slot.available);
 
+  const formatTime = (timeString: string) => {
+    const [hour, minute] = timeString.split(':').map(Number);
+    const period = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${minute.toString().padStart(2, '0')} ${period}`;
+  };
+
   return (
     <div>
       <p className="text-sm font-medium mb-2">Available Time Slots:</p>
@@ -50,13 +57,10 @@ export const TimeSlotSection = ({
                 <h4 className="text-sm font-medium text-muted-foreground border-b pb-1">
                   {parseInt(hour) < 12 ? parseInt(hour) : parseInt(hour) - 12}:00 {parseInt(hour) >= 12 ? 'PM' : 'AM'}
                 </h4>
-                <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
                   {hourSlots
                     .sort((a, b) => (a.start > b.start ? 1 : -1))
                     .map((slot, index) => {
-                      const startTime = parseISO(`2000-01-01T${slot.start}`);
-                      const endTime = parseISO(`2000-01-01T${slot.end}`);
-                      const durationMins = differenceInMinutes(endTime, startTime);
                       const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
                       
                       const isSelected = selectedSlot && 
@@ -76,11 +80,8 @@ export const TimeSlotSection = ({
                         >
                           <div className="flex justify-between items-center">
                             <div>
-                              <p className="font-medium">{format(startTime, 'h:mm a')} - {format(endTime, 'h:mm a')}</p>
-                              <div className="flex items-center mt-1 text-muted-foreground text-sm">
-                                <Clock className="h-3.5 w-3.5 mr-1" />
-                                <span>{durationMins} minutes</span>
-                              </div>
+                              <p className="font-medium">{formatTime(slot.start)}</p>
+                              <p className="text-xs text-muted-foreground">30 min</p>
                             </div>
                             <Badge variant="outline" className="bg-green-50 text-green-700">
                               Available

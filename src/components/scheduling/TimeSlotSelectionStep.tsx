@@ -6,7 +6,7 @@ import { format, isSameDay, parseISO } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { formatTimeDisplay } from "@/lib/scheduling/time-utils";
-import { convertTimeToMinutes, convertMinutesToTime } from "@/lib/scheduling";
+import { convertTimeToMinutes } from "@/lib/scheduling";
 
 interface TimeSlotSelectionStepProps {
   availableSlots: BookingSlot[];
@@ -16,7 +16,6 @@ interface TimeSlotSelectionStepProps {
 export function TimeSlotSelectionStep({ availableSlots, isLoading }: TimeSlotSelectionStepProps) {
   const { state, dispatch } = useScheduling();
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<BookingSlot | null>(state.selectedTimeSlot);
-  const [selectedDuration, setSelectedDuration] = useState<number>(state.selectedDuration);
 
   // Filter slots for the selected date
   const availableTimeSlotsForDate = useMemo(() => {
@@ -26,6 +25,21 @@ export function TimeSlotSelectionStep({ availableSlots, isLoading }: TimeSlotSel
       isSameDay(new Date(slot.day), state.selectedDate) && slot.available
     );
   }, [availableSlots, state.selectedDate]);
+
+  // Group time slots by hour for better display
+  const groupedTimeSlots = useMemo(() => {
+    const grouped: { [hour: string]: BookingSlot[] } = {};
+    
+    availableTimeSlotsForDate.forEach(slot => {
+      const hour = slot.start.split(':')[0];
+      if (!grouped[hour]) {
+        grouped[hour] = [];
+      }
+      grouped[hour].push(slot);
+    });
+    
+    return grouped;
+  }, [availableTimeSlotsForDate]);
 
   // Handle time slot selection
   const handleTimeSlotSelect = (slot: BookingSlot) => {
@@ -41,7 +55,7 @@ export function TimeSlotSelectionStep({ availableSlots, isLoading }: TimeSlotSel
   // Handle continue button click
   const handleContinue = () => {
     if (selectedTimeSlot) {
-      dispatch({ type: 'SET_DURATION', payload: selectedDuration });
+      dispatch({ type: 'SELECT_DURATION', payload: state.selectedDuration });
       dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_DURATION });
     }
   };
@@ -67,27 +81,33 @@ export function TimeSlotSelectionStep({ availableSlots, isLoading }: TimeSlotSel
     <div className="space-y-6">
       <h2 className="text-lg font-semibold">Select a Time</h2>
       
-      <div className="grid grid-cols-2 gap-2">
-        {availableTimeSlotsForDate.map((slot, index) => (
-          <Button
-            key={index}
-            variant="outline"
-            className={`p-4 h-auto flex flex-col items-center justify-center ${
-              selectedTimeSlot && 
-              selectedTimeSlot.start === slot.start && 
-              selectedTimeSlot.end === slot.end
-                ? 'bg-usc-cardinal text-white border-usc-cardinal'
-                : ''
-            }`}
-            onClick={() => handleTimeSlotSelect(slot)}
-          >
-            <span className="font-medium">
-              {formatTimeDisplay(slot.start)} - {formatTimeDisplay(slot.end)}
-            </span>
-            <span className="text-xs mt-1">
-              {Math.round((convertTimeToMinutes(slot.end) - convertTimeToMinutes(slot.start)) / 60 * 10) / 10} hours
-            </span>
-          </Button>
+      <div className="space-y-4">
+        {Object.entries(groupedTimeSlots).map(([hour, slots]) => (
+          <div key={hour} className="space-y-2">
+            <h4 className="text-sm font-medium text-muted-foreground">
+              {parseInt(hour) < 12 ? hour : parseInt(hour) - 12}:00 {parseInt(hour) >= 12 ? 'PM' : 'AM'}
+            </h4>
+            <div className="grid grid-cols-2 gap-2">
+              {slots.map((slot, index) => (
+                <Button
+                  key={index}
+                  variant="outline"
+                  className={`p-4 h-auto ${
+                    selectedTimeSlot && 
+                    selectedTimeSlot.start === slot.start && 
+                    selectedTimeSlot.end === slot.end
+                      ? 'bg-usc-cardinal text-white border-usc-cardinal'
+                      : ''
+                  }`}
+                  onClick={() => handleTimeSlotSelect(slot)}
+                >
+                  <span className="font-medium">
+                    {formatTimeDisplay(slot.start)}
+                  </span>
+                </Button>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
       

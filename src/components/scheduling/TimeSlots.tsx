@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { format, parseISO, addMinutes } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Clock } from "lucide-react";
@@ -47,27 +47,12 @@ export function TimeSlots({
     setSlots(sorted);
   }, [date, availableSlots]);
 
-  const formatTimeRange = (start: string, end: string) => {
-    try {
-      const startDate = parseISO(`2000-01-01T${start}`);
-      const endDate = parseISO(`2000-01-01T${end}`);
-      return `${format(startDate, 'h:mm a')} - ${format(endDate, 'h:mm a')}`;
-    } catch (error) {
-      console.error("Error formatting time range:", error);
-      return `${start} - ${end}`;
-    }
-  };
-
-  const calculateDuration = (start: string, end: string) => {
-    try {
-      const startDate = parseISO(`2000-01-01T${start}`);
-      const endDate = parseISO(`2000-01-01T${end}`);
-      const minutes = Math.round((endDate.getTime() - startDate.getTime()) / 60000);
-      return `${minutes} min`;
-    } catch (error) {
-      console.error("Error calculating duration:", error);
-      return "Unknown duration";
-    }
+  // Format time in 12-hour format
+  const formatTime = (timeString: string) => {
+    const [hour, minute] = timeString.split(':').map(Number);
+    const period = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${minute.toString().padStart(2, '0')} ${period}`;
   };
 
   // Group time slots by hour
@@ -120,7 +105,7 @@ export function TimeSlots({
           <h4 className="text-sm font-medium text-muted-foreground border-b pb-1">
             {parseInt(hour) < 12 ? parseInt(hour) : parseInt(hour) - 12}:00 {parseInt(hour) >= 12 ? 'PM' : 'AM'}
           </h4>
-          <div className="space-y-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {hourSlots.map((slot, i) => {
               const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
               const isSelected = selectedSlot && 
@@ -135,24 +120,12 @@ export function TimeSlots({
                   type="button"
                   variant={isSelected ? "default" : "outline"}
                   className={cn(
-                    "w-full justify-between h-auto py-3 px-4",
+                    "h-12 flex items-center justify-center",
                     isSelected && "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark"
                   )}
                   onClick={() => onSelectSlot(slot)}
                 >
-                  <div className="flex items-center">
-                    <Clock className={cn(
-                      "mr-2 h-4 w-4",
-                      isSelected ? "text-white" : "text-muted-foreground"
-                    )} />
-                    <span>{formatTimeRange(slot.start, slot.end)}</span>
-                  </div>
-                  <span className={cn(
-                    "text-sm",
-                    isSelected ? "text-white" : "text-muted-foreground"
-                  )}>
-                    {calculateDuration(slot.start, slot.end)}
-                  </span>
+                  <span className="text-sm font-medium">{formatTime(slot.start)}</span>
                 </Button>
               );
             })}
