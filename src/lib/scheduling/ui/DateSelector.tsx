@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import { Calendar } from "@/components/ui/calendar";
 import { format, isSameDay, addDays, subDays, startOfWeek, endOfWeek } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -30,8 +29,6 @@ export function DateSelector({ selectedDate, onDateChange, availableDates }: Dat
   
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold">Select a Date</h2>
-      
       <div className="flex justify-between items-center mb-2">
         <Button variant="outline" size="sm" onClick={handlePrevWeek}>
           <ChevronLeft className="h-4 w-4 mr-1" />
@@ -73,27 +70,6 @@ export function DateSelector({ selectedDate, onDateChange, availableDates }: Dat
             </div>
           );
         })}
-      </div>
-      
-      <div className="mt-4">
-        <Calendar
-          mode="single"
-          selected={selectedDate}
-          onSelect={(date) => date && onDateChange(date)}
-          disabled={(date) => {
-            const isBeforeToday = date < new Date(today.setHours(0, 0, 0, 0));
-            const hasAvailability = availableDates.some(availableDate => 
-              isSameDay(date, availableDate)
-            );
-            return isBeforeToday || !hasAvailability;
-          }}
-          classNames={{
-            day_today: "bg-muted",
-            day_selected: "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark focus:bg-usc-cardinal-dark",
-            day_disabled: "text-muted-foreground opacity-50",
-            cell: "text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-          }}
-        />
       </div>
     </div>
   );
