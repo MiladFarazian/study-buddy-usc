@@ -31,29 +31,55 @@ export function DurationSelector({
 }: DurationSelectorProps) {
   // Calculate available duration in minutes for the selected slot
   const calculateAvailableDuration = () => {
-    const [startHour, startMinute] = selectedSlot.start.split(':').map(Number);
-    const [endHour, endMinute] = selectedSlot.end.split(':').map(Number);
+    // If end time is provided in the slot, use it
+    if (selectedSlot.end) {
+      const [startHour, startMinute] = selectedSlot.start.split(':').map(Number);
+      const [endHour, endMinute] = selectedSlot.end.split(':').map(Number);
+      
+      // Handle cases where end time might be on the next day (e.g., 11:30 PM to 12:30 AM)
+      let endMinutes = endHour * 60 + endMinute;
+      const startMinutes = startHour * 60 + startMinute;
+      
+      if (endMinutes < startMinutes) {
+        // Add 24 hours in minutes if end time is on the next day
+        endMinutes += 24 * 60;
+      }
+      
+      return endMinutes - startMinutes;
+    }
     
-    // Convert to minutes since midnight for easy calculation
-    const startMinutes = startHour * 60 + startMinute;
-    const endMinutes = endHour * 60 + endMinute;
-    
-    return endMinutes - startMinutes;
+    // Default to 60 minutes if no end time is specified
+    return 60;
   };
+
+  // Calculate the available duration
+  const availableDuration = calculateAvailableDuration();
+  
+  console.log("Available duration for slot:", availableDuration, "minutes");
+  console.log("Selected slot:", selectedSlot);
 
   // Filter duration options based on available time
   const availableDurationOptions = durationOptions.filter(option => {
-    return option.minutes <= calculateAvailableDuration();
+    return option.minutes <= availableDuration;
   });
   
   // If current selected duration is not available, reset it
   React.useEffect(() => {
     if (selectedDuration && !availableDurationOptions.find(opt => opt.minutes === selectedDuration)) {
       // Select the longest available duration by default
-      const longestAvailableDuration = Math.max(...availableDurationOptions.map(opt => opt.minutes));
-      onSelectDuration(longestAvailableDuration);
+      if (availableDurationOptions.length > 0) {
+        const longestAvailableDuration = Math.max(...availableDurationOptions.map(opt => opt.minutes));
+        onSelectDuration(longestAvailableDuration);
+      } else {
+        // If no available options (shouldn't happen), default to the shortest option
+        const shortestDuration = Math.min(...durationOptions.map(opt => opt.minutes));
+        onSelectDuration(shortestDuration);
+      }
+    } else if (!selectedDuration && availableDurationOptions.length > 0) {
+      // If no duration is selected yet, select the default one
+      onSelectDuration(availableDurationOptions[0].minutes);
     }
-  }, [selectedDuration, availableDurationOptions]);
+  }, [selectedDuration, availableDurationOptions, durationOptions, onSelectDuration]);
 
   // Format the date for display
   const slotDay = selectedSlot.day instanceof Date ? selectedSlot.day : new Date(selectedSlot.day);
@@ -82,35 +108,43 @@ export function DurationSelector({
     
       <h2 className="text-2xl font-bold">Select Session Duration</h2>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-4">
-        {availableDurationOptions.map((option) => (
-          <Button
-            key={option.minutes}
-            type="button"
-            variant="outline"
-            className={`
-              h-32 flex flex-col items-center justify-center p-6 border rounded-md relative
-              ${selectedDuration === option.minutes 
-                ? "bg-red-50 border-usc-cardinal text-usc-cardinal" 
-                : "bg-white hover:bg-gray-50"}
-            `}
-            onClick={() => onSelectDuration(option.minutes)}
-          >
-            <span className="text-xl font-bold mb-2">
-              {option.minutes} minutes
-            </span>
-            <span className="text-xl">
-              ${option.cost.toFixed(2)}
-            </span>
-            
-            {selectedDuration === option.minutes && (
-              <div className="absolute -top-2 -right-2 w-5 h-5 bg-usc-cardinal rounded-full flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-white"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              </div>
-            )}
-          </Button>
-        ))}
-      </div>
+      {availableDurationOptions.length === 0 ? (
+        <div className="p-6 text-center border rounded-md">
+          <p className="text-muted-foreground">
+            No duration options available for this time slot. Please select another time.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-4">
+          {availableDurationOptions.map((option) => (
+            <Button
+              key={option.minutes}
+              type="button"
+              variant="outline"
+              className={`
+                h-32 flex flex-col items-center justify-center p-6 border rounded-md relative
+                ${selectedDuration === option.minutes 
+                  ? "bg-red-50 border-usc-cardinal text-usc-cardinal" 
+                  : "bg-white hover:bg-gray-50"}
+              `}
+              onClick={() => onSelectDuration(option.minutes)}
+            >
+              <span className="text-xl font-bold mb-2">
+                {option.minutes} minutes
+              </span>
+              <span className="text-xl">
+                ${option.cost.toFixed(2)}
+              </span>
+              
+              {selectedDuration === option.minutes && (
+                <div className="absolute -top-2 -right-2 w-5 h-5 bg-usc-cardinal rounded-full flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-white"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+              )}
+            </Button>
+          ))}
+        </div>
+      )}
       
       <p className="text-sm text-muted-foreground">
         Rate: ${hourlyRate.toFixed(2)}/hour
@@ -128,7 +162,7 @@ export function DurationSelector({
         <Button 
           className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white px-8"
           onClick={onContinue}
-          disabled={!selectedDuration}
+          disabled={!selectedDuration || availableDurationOptions.length === 0}
         >
           Continue
         </Button>
