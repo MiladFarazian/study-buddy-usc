@@ -4,9 +4,9 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Tutor } from "@/types/tutor";
 import { BookingSlot } from "@/lib/scheduling/types";
-import { CalendarSection } from "@/components/scheduling/BookingCalendar/CalendarSection";
 import { useAvailabilityData } from "@/hooks/useAvailabilityData";
 import { DurationSelector } from "./duration/DurationSelector";
+import { DateSelector } from "./date-selector/DateSelector";
 
 interface BookingStepSelectorProps {
   tutor: Tutor;
@@ -24,10 +24,9 @@ export function BookingStepSelector({
   disabled = false 
 }: BookingStepSelectorProps) {
   const [step, setStep] = useState<BookingStep>('date');
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<BookingSlot | null>(null);
   const [selectedDuration, setSelectedDuration] = useState<number>(60); // Default: 1 hour
-  const [timeSlots, setTimeSlots] = useState<BookingSlot[]>([]);
   const { toast } = useToast();
   
   const hourlyRate = tutor.hourlyRate || 25; // Default to $25/hour if not set
@@ -39,40 +38,14 @@ export function BookingStepSelector({
     hasAvailability, 
     errorMessage, 
     getConsecutiveSlots 
-  } = useAvailabilityData(tutor, selectedDate);
+  } = useAvailabilityData(tutor, selectedDate || new Date());
 
-  // When date changes, update the time slots
-  useEffect(() => {
-    if (availableSlots.length > 0) {
-      // Filter slots for the selected date
-      const slotsForSelectedDate = availableSlots.filter(slot => {
-        const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
-        return slotDay.toDateString() === selectedDate.toDateString();
-      });
-      
-      // Only show available slots
-      const availableSlotsForDate = slotsForSelectedDate.filter(slot => slot.available);
-      
-      // Sort by start time
-      availableSlotsForDate.sort((a, b) => a.start.localeCompare(b.start));
-      
-      setTimeSlots(availableSlotsForDate);
-      
-      // Reset selected time slot when date changes
-      setSelectedTimeSlot(null);
-    }
-  }, [selectedDate, availableSlots]);
-
-  const handleDateSelect = (date: Date | undefined) => {
-    if (date) {
-      setSelectedDate(date);
-      // Move to time selection after date is selected
-      setStep('time');
-    }
+  const handleDateChange = (date: Date) => {
+    setSelectedDate(date);
   };
   
-  const handleTimeSelect = (timeSlot: BookingSlot) => {
-    setSelectedTimeSlot(timeSlot);
+  const handleSelectTimeSlot = (slot: BookingSlot) => {
+    setSelectedTimeSlot(slot);
     // Reset duration when time changes
     setSelectedDuration(60);
     // Move to duration selection
@@ -84,21 +57,14 @@ export function BookingStepSelector({
   };
   
   const handleBack = () => {
-    switch (step) {
-      case 'time':
-        setStep('date');
-        break;
-      case 'duration':
-        setStep('time');
-        break;
-      default:
-        setStep('date');
+    if (step === 'duration') {
+      setStep('date');
     }
   };
   
   const handleContinue = () => {
     if (step === 'duration' && selectedTimeSlot) {
-      // Here we need to create the final booking slot with the selected duration
+      // Create the final booking slot with the selected duration
       const finalSlot: BookingSlot = {
         ...selectedTimeSlot,
         durationMinutes: selectedDuration
@@ -125,86 +91,6 @@ export function BookingStepSelector({
   const consecutiveSlots = selectedTimeSlot 
     ? getConsecutiveSlots(selectedTimeSlot, 180) // Check for up to 3 hours (180 minutes)
     : [];
-
-  // Render content based on current step
-  const renderStepContent = () => {
-    switch (step) {
-      case 'date':
-        return (
-          <CalendarSection 
-            selectedDate={selectedDate}
-            onDateSelect={handleDateSelect}
-            availableSlots={availableSlots}
-          />
-        );
-      
-      case 'time':
-        return (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold">Select Time</h2>
-            
-            {timeSlots.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground">
-                No available time slots for this date.
-              </p>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {timeSlots.map((slot, index) => (
-                  <button
-                    key={`${slot.start}-${index}`}
-                    className={`
-                      p-3 rounded-md border text-center transition-colors
-                      ${selectedTimeSlot?.start === slot.start ? 
-                        'bg-red-50 border-usc-cardinal text-usc-cardinal' : 
-                        'hover:border-usc-cardinal hover:bg-red-50/50'}
-                    `}
-                    onClick={() => handleTimeSelect(slot)}
-                    disabled={disabled}
-                  >
-                    {slot.start}
-                  </button>
-                ))}
-              </div>
-            )}
-            
-            <div className="flex justify-between mt-6">
-              <button 
-                className="px-4 py-2 border rounded-md"
-                onClick={handleBack}
-                disabled={disabled}
-              >
-                Back
-              </button>
-              
-              <button
-                className="px-4 py-2 bg-usc-cardinal text-white rounded-md disabled:opacity-50"
-                onClick={() => selectedTimeSlot && setStep('duration')}
-                disabled={!selectedTimeSlot || disabled}
-              >
-                Continue
-              </button>
-            </div>
-          </div>
-        );
-      
-      case 'duration':
-        return (
-          <DurationSelector
-            selectedSlot={selectedTimeSlot!}
-            durationOptions={durationOptions}
-            selectedDuration={selectedDuration}
-            onSelectDuration={handleDurationSelect}
-            onBack={handleBack}
-            onContinue={handleContinue}
-            hourlyRate={hourlyRate}
-            consecutiveSlots={consecutiveSlots} // Pass consecutive slots to the component
-          />
-        );
-      
-      default:
-        return null;
-    }
-  };
 
   if (loading) {
     return (
@@ -236,5 +122,56 @@ export function BookingStepSelector({
     );
   }
 
-  return <div className="min-h-[400px]">{renderStepContent()}</div>;
+  return (
+    <div className="min-h-[400px]">
+      {step === 'date' ? (
+        <div className="space-y-6">
+          <DateSelector
+            date={selectedDate}
+            onDateChange={handleDateChange}
+            availableSlots={availableSlots}
+            isLoading={loading}
+          />
+          
+          {selectedDate && (
+            <div className="mt-8">
+              <h3 className="text-xl font-semibold mb-4">Available Time Slots</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {availableSlots
+                  .filter(slot => {
+                    const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
+                    return slotDay.toDateString() === selectedDate.toDateString() && slot.available;
+                  })
+                  .sort((a, b) => a.start.localeCompare(b.start))
+                  .map((slot, index) => (
+                    <button
+                      key={`${slot.start}-${index}`}
+                      className={`
+                        p-3 rounded-md border text-center transition-colors
+                        hover:border-usc-cardinal hover:bg-red-50/50
+                      `}
+                      onClick={() => handleSelectTimeSlot(slot)}
+                      disabled={disabled}
+                    >
+                      {slot.start}
+                    </button>
+                  ))}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : step === 'duration' ? (
+        <DurationSelector
+          selectedSlot={selectedTimeSlot!}
+          durationOptions={durationOptions}
+          selectedDuration={selectedDuration}
+          onSelectDuration={handleDurationSelect}
+          onBack={handleBack}
+          onContinue={handleContinue}
+          hourlyRate={hourlyRate}
+          consecutiveSlots={consecutiveSlots}
+        />
+      ) : null}
+    </div>
+  );
 }
