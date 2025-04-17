@@ -1,86 +1,60 @@
 
 import React from 'react';
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { formatTimeDisplay } from "../time-utils";
 import { Clock } from "lucide-react";
 
-interface TimeSlot {
-  start: string;
+export interface TimeSlot {
+  time: string;
   available: boolean;
 }
 
-interface TimeSelectorProps {
+export interface TimeSelectorProps {
   timeSlots: TimeSlot[];
   selectedTime: string | null;
   onTimeChange: (time: string) => void;
 }
 
-export function TimeSelector({ timeSlots, selectedTime, onTimeChange }: TimeSelectorProps) {
-  // Group time slots by hour
-  const groupSlotsByHour = () => {
-    const grouped: { [hour: string]: TimeSlot[] } = {};
-    
-    timeSlots.filter(slot => slot.available).forEach(slot => {
-      const hourStr = slot.start.split(':')[0];
-      if (!grouped[hourStr]) {
-        grouped[hourStr] = [];
-      }
-      grouped[hourStr].push(slot);
+export function TimeSelector({
+  timeSlots,
+  selectedTime,
+  onTimeChange,
+}: TimeSelectorProps) {
+  const validTimeSlots = timeSlots.filter(slot => slot.available)
+    .sort((a, b) => {
+      const timeA = parseInt(a.time.split(':').join(''));
+      const timeB = parseInt(b.time.split(':').join(''));
+      return timeA - timeB;
     });
-    
-    return grouped;
-  };
-  
-  const groupedSlots = groupSlotsByHour();
-  const hasAvailableSlots = timeSlots.some(slot => slot.available);
 
-  // Helper function to format time for display (e.g. "13:30" -> "1:30 PM")
-  const formatTimeForDisplay = (timeString: string): string => {
-    const [hours, minutes] = timeString.split(':').map(Number);
-    const period = hours >= 12 ? 'PM' : 'AM';
-    const displayHours = hours % 12 || 12;
-    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
-  };
-  
+  const hasAvailableSlots = validTimeSlots.length > 0;
+
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold">Select a Time</h2>
+      <h3 className="text-xl font-semibold">Select a Time</h3>
       
-      <div className="h-72 overflow-y-auto pr-2">
-        {!hasAvailableSlots ? (
-          <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-            <Clock className="h-8 w-8 mb-2" />
-            <p>No available slots for this date.</p>
-            <p className="text-sm mt-1">Please select another date.</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {Object.entries(groupedSlots).map(([hour, hourSlots]) => (
-              <div key={hour} className="space-y-2">
-                <h4 className="text-sm font-medium text-muted-foreground border-b pb-1">
-                  {parseInt(hour) < 12 ? parseInt(hour) : parseInt(hour) - 12}:00 {parseInt(hour) >= 12 ? 'PM' : 'AM'}
-                </h4>
-                <div className="grid grid-cols-3 gap-2">
-                  {hourSlots.map((slot, index) => (
-                    <button
-                      key={`${slot.start}-${index}`}
-                      className={cn(
-                        "flex justify-center items-center p-2 rounded-md border transition-colors",
-                        selectedTime === slot.start 
-                          ? "border-usc-cardinal bg-red-50 text-usc-cardinal" 
-                          : "hover:border-usc-cardinal hover:bg-red-50/50"
-                      )}
-                      onClick={() => onTimeChange(slot.start)}
-                    >
-                      <span>{formatTimeForDisplay(slot.start)}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+      {!hasAvailableSlots ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/30 rounded-md">
+          <Clock className="h-12 w-12 text-muted-foreground mb-3" />
+          <p className="text-muted-foreground">No available time slots for this date.</p>
+        </div>
+      ) : (
+        <ScrollArea className="h-64">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 p-1">
+            {validTimeSlots.map((slot, index) => (
+              <Button
+                key={index}
+                variant={selectedTime === slot.time ? "default" : "outline"}
+                className={`h-12 ${selectedTime === slot.time ? "bg-usc-cardinal hover:bg-usc-cardinal-dark" : ""}`}
+                onClick={() => onTimeChange(slot.time)}
+              >
+                {formatTimeDisplay(slot.time)}
+              </Button>
             ))}
           </div>
-        )}
-      </div>
+        </ScrollArea>
+      )}
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { Calendar, Clock, ArrowRightLeft } from "lucide-react";
 import { Tutor } from "@/types/tutor";
 import MessageButton from "@/components/messaging/MessageButton";
 import { useState } from "react";
+import { SchedulerModal } from "../scheduling/SchedulerModal";
 import { BookSessionModal } from "../scheduling/BookSessionModal";
 import { useAuthState } from "@/hooks/useAuthState";
 
@@ -70,6 +71,7 @@ export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
         </CardContent>
       </Card>
 
+      {/* Use BookSessionModal for better user experience and error handling */}
       <BookSessionModal 
         isOpen={showBookingModal} 
         onClose={() => setShowBookingModal(false)}
@@ -77,4 +79,4 @@ export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
       />
     </>
   );
-}
+};
