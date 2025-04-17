@@ -10,6 +10,20 @@ interface SchedulerModalProps {
   initialTime?: string;
 }
 
-export function SchedulerModal(props: SchedulerModalProps) {
-  return <BookSessionModal {...props} />;
+export function SchedulerModal({ 
+  isOpen, 
+  onClose, 
+  tutor, 
+  initialDate, 
+  initialTime 
+}: SchedulerModalProps) {
+  return (
+    <BookSessionModal 
+      isOpen={isOpen} 
+      onClose={onClose} 
+      tutor={tutor}
+      initialDate={initialDate}
+      initialTime={initialTime}
+    />
+  );
 }

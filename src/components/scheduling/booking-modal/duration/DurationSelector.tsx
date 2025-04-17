@@ -31,7 +31,7 @@ export function DurationSelector({
 }: DurationSelectorProps) {
   // Calculate available duration in minutes for the selected slot
   const calculateAvailableDuration = () => {
-    // If end time is provided in the slot, use it
+    // If end time is provided in the slot, calculate the difference
     if (selectedSlot.end) {
       const [startHour, startMinute] = selectedSlot.start.split(':').map(Number);
       const [endHour, endMinute] = selectedSlot.end.split(':').map(Number);
@@ -48,8 +48,9 @@ export function DurationSelector({
       return endMinutes - startMinutes;
     }
     
-    // Default to 60 minutes if no end time is specified
-    return 60;
+    // Default to 120 minutes (2 hours) if no end time is specified
+    // This is a reasonable default for tutoring sessions
+    return 120;
   };
 
   // Calculate the available duration
