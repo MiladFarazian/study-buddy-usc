@@ -3,13 +3,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tutor } from "@/types/tutor";
 import { LoadingState } from "./booking-wizard/LoadingState";
 import { StepNavigation } from "./booking-wizard/StepNavigation";
-import { useBookingWizard } from "./booking-wizard/hooks/useBookingWizard";
+import { WeeklyAvailabilityCalendar } from "./calendar/weekly/WeeklyAvailabilityCalendar";
+import { useEffect, useState } from "react";
+import { useScheduling } from "@/contexts/SchedulingContext";
+import { BookingSlot, WeeklyAvailability } from "@/lib/scheduling/types";
+import { DurationStep } from "./booking-wizard/steps/DurationStep";
 import { DateStep } from "./booking-wizard/steps/DateStep";
 import { TimeStep } from "./booking-wizard/steps/TimeStep";
-import { DurationStep } from "./booking-wizard/steps/DurationStep";
 import { ConfirmationStep } from "./booking-wizard/steps/ConfirmationStep";
-import { useEffect } from "react";
-import { useScheduling } from "@/contexts/SchedulingContext";
+import { format } from "date-fns";
+import { toast } from "sonner";
 
 interface NewBookingWizardProps {
   tutor: Tutor;
@@ -19,42 +22,45 @@ interface NewBookingWizardProps {
 }
 
 export function NewBookingWizard({ tutor, onClose, initialDate, initialTime }: NewBookingWizardProps) {
-  const { setTutor } = useScheduling();
+  const { setTutor, state, dispatch, calculatePrice } = useScheduling();
+  const [loading, setLoading] = useState(true);
+  const [step, setStep] = useState('date');
+  const [availableDates, setAvailableDates] = useState<Date[]>([]);
+  const [timeSlots, setTimeSlots] = useState<Array<{ time: string; available: boolean }>>([]);
+  const [creating, setCreating] = useState(false);
+  const [notes, setNotes] = useState("");
   
   // Set the tutor in the context when the component mounts
   useEffect(() => {
     if (tutor) {
       setTutor(tutor);
+      // Load availability data here
+      setTimeout(() => {
+        setLoading(false);
+        // Mock data for now
+        setAvailableDates([new Date(), new Date(Date.now() + 86400000), new Date(Date.now() + 86400000 * 2)]);
+        setTimeSlots([
+          { time: "09:00", available: true },
+          { time: "10:00", available: true },
+          { time: "11:00", available: true },
+          { time: "13:00", available: true },
+          { time: "14:00", available: true },
+          { time: "15:00", available: false },
+          { time: "16:00", available: true },
+        ]);
+      }, 1000);
     }
   }, [tutor, setTutor]);
-  
-  const {
-    step,
-    setStep,
-    selectedDate,
-    setSelectedDate,
-    selectedTime,
-    setSelectedTime,
-    selectedDuration,
-    setSelectedDuration,
-    notes,
-    setNotes,
-    availableTimeSlots,
-    availableDates,
-    loading,
-    creating,
-    handleConfirmBooking
-  } = useBookingWizard(tutor);
 
   // Set initial date and time if provided
   useEffect(() => {
     if (initialDate) {
-      setSelectedDate(initialDate);
+      dispatch({ type: 'SELECT_DATE', payload: initialDate });
     }
     if (initialTime) {
-      setSelectedTime(initialTime);
+      dispatch({ type: 'SELECT_TIME_SLOT', payload: { time: initialTime, available: true } });
     }
-  }, [initialDate, initialTime, setSelectedDate, setSelectedTime]);
+  }, [initialDate, initialTime, dispatch]);
 
   const handleBack = () => {
     switch (step) {
@@ -79,13 +85,37 @@ export function NewBookingWizard({ tutor, onClose, initialDate, initialTime }: N
     { minutes: 90, cost: Math.round(hourlyRate * 1.5) }
   ];
 
+  const handleConfirmBooking = async () => {
+    setCreating(true);
+    try {
+      // Simulate booking creation
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      toast.success("Booking successful!");
+      onClose();
+    } catch (error) {
+      toast.error("Failed to create booking. Please try again.");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleContinue = () => {
+    if (step === "date" && state.selectedDate) {
+      setStep("time");
+    } else if (step === "time" && state.selectedTimeSlot) {
+      setStep("duration");
+    } else if (step === "duration" && state.selectedDuration) {
+      setStep("confirm");
+    }
+  };
+
   if (loading) {
     return <LoadingState />;
   }
 
   return (
     <Card className="border-0 shadow-none">
-      <CardContent className="p-0">
+      <CardContent className="p-4">
         <StepNavigation 
           onBack={handleBack} 
           backLabel={step === "date" ? "Back to Tutor Profile" : "Back"} 
@@ -93,20 +123,20 @@ export function NewBookingWizard({ tutor, onClose, initialDate, initialTime }: N
 
         {step === "date" && (
           <DateStep 
-            selectedDate={selectedDate} 
+            selectedDate={state.selectedDate || undefined} 
             onDateChange={(date) => {
-              setSelectedDate(date);
+              dispatch({ type: 'SELECT_DATE', payload: date });
               setStep("time");
             }}
             availableDates={availableDates}
           />
         )}
 
-        {step === "time" && selectedDate && (
+        {step === "time" && state.selectedDate && (
           <TimeStep 
-            timeSlots={availableTimeSlots}
-            selectedTime={selectedTime}
-            onTimeChange={setSelectedTime}
+            timeSlots={timeSlots}
+            selectedTime={state.selectedTimeSlot?.time || null}
+            onTimeChange={(time) => dispatch({ type: 'SELECT_TIME_SLOT', payload: { time, available: true } })}
             onContinue={() => setStep("duration")}
           />
         )}
@@ -114,21 +144,21 @@ export function NewBookingWizard({ tutor, onClose, initialDate, initialTime }: N
         {step === "duration" && (
           <DurationStep 
             options={durationOptions}
-            selectedDuration={selectedDuration}
+            selectedDuration={state.selectedDuration}
             onDurationChange={(duration) => {
-              setSelectedDuration(duration);
+              dispatch({ type: 'SET_DURATION', payload: duration });
               setStep("confirm");
             }}
             hourlyRate={hourlyRate}
           />
         )}
 
-        {step === "confirm" && selectedDate && selectedTime && selectedDuration && (
+        {step === "confirm" && state.selectedDate && state.selectedTimeSlot && state.selectedDuration && (
           <ConfirmationStep 
-            selectedDate={selectedDate}
-            selectedTime={selectedTime}
-            selectedDuration={selectedDuration}
-            cost={durationOptions.find(opt => opt.minutes === selectedDuration)?.cost || 0}
+            selectedDate={state.selectedDate}
+            selectedTime={state.selectedTimeSlot.time}
+            selectedDuration={state.selectedDuration}
+            cost={calculatePrice(state.selectedDuration)}
             notes={notes}
             onNotesChange={setNotes}
             onBack={handleBack}

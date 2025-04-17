@@ -1,12 +1,12 @@
+
 import { useState } from "react";
-import { TutorAvailabilityCard } from "../scheduling/TutorAvailabilityCard";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "lucide-react";
 import { Tutor } from "@/types/tutor";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { SchedulerModal } from "../scheduling/SchedulerModal";
-import { Badge } from "@/components/ui/badge";
+import { WeeklyAvailabilityCalendar } from "../scheduling/calendar/weekly/WeeklyAvailabilityCalendar";
+import { BookSessionModal } from "../scheduling/BookSessionModal";
 
 interface TutorAvailabilitySectionProps {
   tutor: Tutor;
@@ -17,6 +17,11 @@ export const TutorAvailabilitySection = ({ tutor }: TutorAvailabilitySectionProp
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<{ start: string; end: string } | null>(null);
+  const [availability, setAvailability] = useState({
+    monday: [{ day: 'monday', start: '09:00', end: '12:00' }, { day: 'monday', start: '13:00', end: '17:00' }],
+    wednesday: [{ day: 'wednesday', start: '10:00', end: '14:00' }],
+    friday: [{ day: 'friday', start: '09:00', end: '15:00' }],
+  });
 
   const handleSelectTimeSlot = (date: Date, startTime: string, endTime: string) => {
     setSelectedDate(date);
@@ -46,10 +51,10 @@ export const TutorAvailabilitySection = ({ tutor }: TutorAvailabilitySectionProp
         </Button>
       </div>
 
-      <TutorAvailabilityCard 
-        tutorId={tutor.id} 
-        readOnly={false} 
-        onSelectTimeSlot={handleSelectTimeSlot} 
+      <WeeklyAvailabilityCalendar 
+        availability={availability}
+        onChange={() => {}} 
+        readOnly={true}
       />
 
       {selectedDate && selectedTime && (
@@ -94,7 +99,7 @@ export const TutorAvailabilitySection = ({ tutor }: TutorAvailabilitySectionProp
         </div>
       )}
 
-      <SchedulerModal 
+      <BookSessionModal 
         isOpen={showBookingModal} 
         onClose={() => setShowBookingModal(false)}
         tutor={tutor}
