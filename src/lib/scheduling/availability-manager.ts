@@ -1,8 +1,8 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { WeeklyAvailability, WeeklyAvailabilityJson } from "./types/availability";
 import { BookingSlot, BookedSession } from "./types/booking";
-import { format, addDays, parse, isWithinInterval, parseISO } from 'date-fns';
+import { format, addDays, parse, isWithinInterval, parseISO, addMinutes } from 'date-fns';
+import { convertTimeToMinutes, convertMinutesToTime } from "./time-utils";
 
 /**
  * Fetch the tutor's availability settings
@@ -126,38 +126,42 @@ export function generateAvailableSlots(
     
     // For each available time slot in the day
     dayAvailability.forEach(timeSlot => {
-      // Create a slot
-      const slot: BookingSlot = {
-        day: currentDate,
-        start: timeSlot.start,
-        end: timeSlot.end,
-        available: true,
-        tutorId: ''
-      };
+      const startMinutes = convertTimeToMinutes(timeSlot.start);
+      const endMinutes = convertTimeToMinutes(timeSlot.end);
       
-      // Check if this slot overlaps with any booked session
-      bookedSessions.forEach(session => {
-        const sessionDate = new Date(session.date);
+      // Generate 30-minute slots within the time window
+      for (let minutes = startMinutes; minutes < endMinutes; minutes += 30) {
+        const slotStart = convertMinutesToTime(minutes);
+        const slotEnd = convertMinutesToTime(minutes + 30);
         
-        // Only check sessions on the same day
-        if (sessionDate.toDateString() === currentDate.toDateString()) {
-          const sessionStartTime = session.start;
-          const sessionEndTime = session.end;
+        // Create a slot
+        const slot: BookingSlot = {
+          day: currentDate,
+          start: slotStart,
+          end: slotEnd,
+          available: true,
+          tutorId: ''
+        };
+        
+        // Check if this slot overlaps with any booked session
+        bookedSessions.forEach(session => {
+          const sessionDate = new Date(session.date);
           
-          // Check for overlap
-          if (
-            (slot.start >= sessionStartTime && slot.start < sessionEndTime) ||
-            (slot.end > sessionStartTime && slot.end <= sessionEndTime) ||
-            (slot.start <= sessionStartTime && slot.end >= sessionEndTime)
-          ) {
-            // This slot is not available
-            slot.available = false;
+          // Only check sessions on the same day
+          if (sessionDate.toDateString() === currentDate.toDateString()) {
+            const sessionStartMinutes = convertTimeToMinutes(session.start);
+            const sessionEndMinutes = convertTimeToMinutes(session.end);
+            
+            // Check for overlap
+            if (minutes >= sessionStartMinutes && minutes < sessionEndMinutes) {
+              slot.available = false;
+            }
           }
-        }
-      });
-      
-      // Add to available slots
-      availableSlots.push(slot);
+        });
+        
+        // Add to available slots
+        availableSlots.push(slot);
+      }
     });
   }
   
