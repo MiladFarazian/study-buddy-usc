@@ -37,7 +37,10 @@ export function BookingStepSelector({
   // Extract all available dates
   const availableDates = availableSlots
     .filter(slot => slot.available)
-    .map(slot => slot.day)
+    .map(slot => {
+      // Ensure slot.day is always a Date object
+      return typeof slot.day === 'string' ? new Date(slot.day) : slot.day;
+    })
     .filter((date, index, self) => 
       index === self.findIndex(d => 
         isSameDay(d, date)
