@@ -42,8 +42,6 @@ export function DateStep({ selectedDate, onDateChange, availableDates }: DateSte
                 day_today: "bg-muted",
                 day_selected: "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark focus:bg-usc-cardinal-dark",
                 day_disabled: "text-muted-foreground opacity-50",
-                button_prev: cn("absolute left-1"),
-                button_next: cn("absolute right-1"),
                 nav: cn("flex items-center justify-between"),
                 nav_button: cn(
                   "h-7 w-7 bg-transparent p-0 opacity-70 hover:opacity-100"
