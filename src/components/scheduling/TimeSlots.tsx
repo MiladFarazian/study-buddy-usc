@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { format, parseISO, addMinutes } from 'date-fns';
 import { Button } from "@/components/ui/button";
@@ -69,6 +70,23 @@ export function TimeSlots({
     }
   };
 
+  // Group time slots by hour
+  const groupSlotsByHour = () => {
+    const grouped: { [hour: string]: BookingSlot[] } = {};
+    
+    slots.forEach(slot => {
+      const hourStr = slot.start.split(':')[0];
+      if (!grouped[hourStr]) {
+        grouped[hourStr] = [];
+      }
+      grouped[hourStr].push(slot);
+    });
+    
+    return grouped;
+  };
+  
+  const groupedSlots = groupSlotsByHour();
+
   if (isLoading) {
     return (
       <div className="space-y-2">
@@ -96,42 +114,51 @@ export function TimeSlots({
   }
 
   return (
-    <div className="space-y-2">
-      {slots.map((slot, i) => {
-        const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
-        const isSelected = selectedSlot && 
-          (selectedSlot.day instanceof Date ? 
-            format(selectedSlot.day, 'yyyy-MM-dd') === format(slotDay, 'yyyy-MM-dd') :
-            format(new Date(selectedSlot.day), 'yyyy-MM-dd') === format(slotDay, 'yyyy-MM-dd')) && 
-          selectedSlot.start === slot.start;
+    <div className="space-y-6">
+      {Object.entries(groupedSlots).map(([hour, hourSlots]) => (
+        <div key={hour} className="space-y-2">
+          <h4 className="text-sm font-medium text-muted-foreground border-b pb-1">
+            {parseInt(hour) < 12 ? parseInt(hour) : parseInt(hour) - 12}:00 {parseInt(hour) >= 12 ? 'PM' : 'AM'}
+          </h4>
+          <div className="space-y-2">
+            {hourSlots.map((slot, i) => {
+              const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
+              const isSelected = selectedSlot && 
+                (selectedSlot.day instanceof Date ? 
+                  format(selectedSlot.day, 'yyyy-MM-dd') === format(slotDay, 'yyyy-MM-dd') :
+                  format(new Date(selectedSlot.day), 'yyyy-MM-dd') === format(slotDay, 'yyyy-MM-dd')) && 
+                selectedSlot.start === slot.start;
 
-        return (
-          <Button
-            key={`${format(slotDay, 'yyyy-MM-dd')}-${slot.start}-${i}`}
-            type="button"
-            variant={isSelected ? "default" : "outline"}
-            className={cn(
-              "w-full justify-between h-auto py-3 px-4",
-              isSelected && "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark"
-            )}
-            onClick={() => onSelectSlot(slot)}
-          >
-            <div className="flex items-center">
-              <Clock className={cn(
-                "mr-2 h-4 w-4",
-                isSelected ? "text-white" : "text-muted-foreground"
-              )} />
-              <span>{formatTimeRange(slot.start, slot.end)}</span>
-            </div>
-            <span className={cn(
-              "text-sm",
-              isSelected ? "text-white" : "text-muted-foreground"
-            )}>
-              {calculateDuration(slot.start, slot.end)}
-            </span>
-          </Button>
-        );
-      })}
+              return (
+                <Button
+                  key={`${format(slotDay, 'yyyy-MM-dd')}-${slot.start}-${i}`}
+                  type="button"
+                  variant={isSelected ? "default" : "outline"}
+                  className={cn(
+                    "w-full justify-between h-auto py-3 px-4",
+                    isSelected && "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark"
+                  )}
+                  onClick={() => onSelectSlot(slot)}
+                >
+                  <div className="flex items-center">
+                    <Clock className={cn(
+                      "mr-2 h-4 w-4",
+                      isSelected ? "text-white" : "text-muted-foreground"
+                    )} />
+                    <span>{formatTimeRange(slot.start, slot.end)}</span>
+                  </div>
+                  <span className={cn(
+                    "text-sm",
+                    isSelected ? "text-white" : "text-muted-foreground"
+                  )}>
+                    {calculateDuration(slot.start, slot.end)}
+                  </span>
+                </Button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

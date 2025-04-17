@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { BookingSlot } from "@/lib/scheduling/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { format, isBefore, isToday } from "date-fns";
+import { format, isBefore, isToday, parseISO } from "date-fns";
 import { Clock } from "lucide-react";
 
 export interface TimeSlotListProps {
@@ -46,6 +46,23 @@ export function TimeSlotList({
   // Filter out slots that are in the past
   const validSlots = slots.filter(slot => slot.available && !isTimeSlotInPast(slot));
 
+  // Group time slots by hour to improve UI organization
+  const groupSlotsByHour = () => {
+    const grouped: { [hour: string]: BookingSlot[] } = {};
+    
+    validSlots.forEach(slot => {
+      const hourStr = slot.start.split(':')[0];
+      if (!grouped[hourStr]) {
+        grouped[hourStr] = [];
+      }
+      grouped[hourStr].push(slot);
+    });
+    
+    return grouped;
+  };
+  
+  const groupedSlots = groupSlotsByHour();
+
   // Check if slot is selected
   const isSlotSelected = (slot: BookingSlot): boolean => {
     if (!selectedSlot) return false;
@@ -74,21 +91,30 @@ export function TimeSlotList({
         </div>
       ) : (
         <ScrollArea className="h-[300px] rounded-md border">
-          <div className="p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {validSlots.map((slot, index) => (
-              <Button
-                key={`${slot.day}-${slot.start}-${index}`}
-                variant={isSlotSelected(slot) ? "default" : "outline"}
-                className={`
-                  h-16 flex flex-col items-center justify-center
-                  ${isSlotSelected(slot) ? "bg-usc-cardinal hover:bg-usc-cardinal-dark" : "hover:bg-secondary"}
-                `}
-                onClick={() => onSelectSlot(slot)}
-                disabled={disabled}
-              >
-                <span className="text-sm font-medium">{formatTime(slot.start)}</span>
-                <span className="text-xs text-muted-foreground">to {formatTime(slot.end)}</span>
-              </Button>
+          <div className="p-4 space-y-6">
+            {Object.entries(groupedSlots).map(([hour, hourSlots]) => (
+              <div key={hour} className="space-y-3">
+                <h4 className="text-sm font-medium text-muted-foreground border-b pb-1">
+                  {parseInt(hour) < 12 ? parseInt(hour) : parseInt(hour) - 12}:00 {parseInt(hour) >= 12 ? 'PM' : 'AM'}
+                </h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {hourSlots.map((slot, index) => (
+                    <Button
+                      key={`${slot.day}-${slot.start}-${index}`}
+                      variant={isSlotSelected(slot) ? "default" : "outline"}
+                      className={`
+                        h-16 flex flex-col items-center justify-center
+                        ${isSlotSelected(slot) ? "bg-usc-cardinal hover:bg-usc-cardinal-dark" : "hover:bg-secondary"}
+                      `}
+                      onClick={() => onSelectSlot(slot)}
+                      disabled={disabled}
+                    >
+                      <span className="text-sm font-medium">{formatTime(slot.start)}</span>
+                      <span className="text-xs text-muted-foreground">to {formatTime(slot.end)}</span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         </ScrollArea>

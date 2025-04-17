@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -37,6 +38,16 @@ export const TimeSlotForm: React.FC<TimeSlotFormProps> = ({
   addTimeSlot,
   readOnly
 }) => {
+  // Format time for display (12-hour format with AM/PM)
+  const formatTimeForDisplay = (time: string) => {
+    const [hourStr, minuteStr] = time.split(':');
+    const hour = parseInt(hourStr);
+    const minute = minuteStr;
+    const period = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:${minute} ${period}`;
+  };
+
   return (
     <div className="mt-4">
       <h3 className="text-lg font-semibold capitalize">{selectedDay}</h3>
@@ -53,7 +64,7 @@ export const TimeSlotForm: React.FC<TimeSlotFormProps> = ({
             <SelectContent>
               {TIME_SLOTS.map((time) => (
                 <SelectItem key={`start-${time}`} value={time}>
-                  {time}
+                  {formatTimeForDisplay(time)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -66,7 +77,7 @@ export const TimeSlotForm: React.FC<TimeSlotFormProps> = ({
             <SelectContent>
               {TIME_SLOTS.map((time) => (
                 <SelectItem key={`end-${time}`} value={time}>
-                  {time}
+                  {formatTimeForDisplay(time)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -80,4 +91,4 @@ export const TimeSlotForm: React.FC<TimeSlotFormProps> = ({
       </div>
     </div>
   );
-};
+}
