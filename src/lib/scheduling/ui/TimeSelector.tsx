@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { Clock } from "lucide-react";
 
 interface TimeSlot {
-  time: string;
+  start: string;
   available: boolean;
 }
 
@@ -21,7 +21,7 @@ export function TimeSelector({ timeSlots, selectedTime, onTimeChange }: TimeSele
     const grouped: { [hour: string]: TimeSlot[] } = {};
     
     timeSlots.filter(slot => slot.available).forEach(slot => {
-      const hourStr = slot.time.split(':')[0];
+      const hourStr = slot.start.split(':')[0];
       if (!grouped[hourStr]) {
         grouped[hourStr] = [];
       }
@@ -63,16 +63,16 @@ export function TimeSelector({ timeSlots, selectedTime, onTimeChange }: TimeSele
                 <div className="grid grid-cols-3 gap-2">
                   {hourSlots.map((slot, index) => (
                     <button
-                      key={`${slot.time}-${index}`}
+                      key={`${slot.start}-${index}`}
                       className={cn(
                         "flex justify-center items-center p-2 rounded-md border transition-colors",
-                        selectedTime === slot.time 
+                        selectedTime === slot.start 
                           ? "border-usc-cardinal bg-red-50 text-usc-cardinal" 
                           : "hover:border-usc-cardinal hover:bg-red-50/50"
                       )}
-                      onClick={() => onTimeChange(slot.time)}
+                      onClick={() => onTimeChange(slot.start)}
                     >
-                      <span>{formatTimeForDisplay(slot.time)}</span>
+                      <span>{formatTimeForDisplay(slot.start)}</span>
                     </button>
                   ))}
                 </div>

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { TimeSelector } from "@/lib/scheduling/ui/TimeSelector";
 
 interface TimeSlot {
-  time: string;
+  start: string;
   available: boolean;
 }
 
