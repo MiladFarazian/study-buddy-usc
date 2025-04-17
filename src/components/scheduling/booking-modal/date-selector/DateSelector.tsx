@@ -105,34 +105,40 @@ export const DateSelector = ({
           
           <div className="p-3">
             <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center">
-              {weekDays.map((day, index) => (
-                <div key={index} className="flex flex-col items-center">
-                  <span className="text-xs sm:text-sm text-muted-foreground mb-1">
-                    {getDayAbbreviation(day)}
-                  </span>
-                  <Button
-                    variant={date && isSameDay(day, date) ? "default" : "outline"}
-                    className={cn(
-                      "h-10 w-10 sm:h-12 sm:w-12 rounded-full p-0 font-normal text-lg",
-                      isToday(day) && !date && "bg-muted border border-usc-cardinal/30",
-                      date && isSameDay(day, date) && "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark",
-                      isBefore(day, today) && !hasAvailableSlots(day) && "opacity-50 cursor-not-allowed",
-                      hasAvailableSlots(day) && !isBefore(day, today) && !date && "hover:border-usc-cardinal"
-                    )}
-                    disabled={isBefore(day, today) || !hasAvailableSlots(day)}
-                    onClick={() => {
-                      if (!isBefore(day, today) && hasAvailableSlots(day)) {
-                        onDateChange(day);
-                      }
-                    }}
-                  >
-                    {format(day, 'd')}
-                    {hasAvailableSlots(day) && !isBefore(day, today) && (
-                      <span className="absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-usc-cardinal"></span>
-                    )}
-                  </Button>
-                </div>
-              ))}
+              {weekDays.map((day, index) => {
+                const hasSlots = hasAvailableSlots(day);
+                const isPastDay = isBefore(day, today);
+                const isDisabled = isPastDay || !hasSlots;
+                
+                return (
+                  <div key={index} className="flex flex-col items-center">
+                    <span className="text-xs sm:text-sm text-muted-foreground mb-1">
+                      {getDayAbbreviation(day)}
+                    </span>
+                    <Button
+                      variant={date && isSameDay(day, date) ? "default" : "outline"}
+                      className={cn(
+                        "h-10 w-10 sm:h-12 sm:w-12 rounded-full p-0 font-normal text-lg",
+                        isToday(day) && !isSameDay(day, date || new Date()) && "bg-muted border border-usc-cardinal/30",
+                        isSameDay(day, date || new Date()) && "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark",
+                        isDisabled && "opacity-50 cursor-not-allowed",
+                        hasSlots && !isPastDay && !date && "hover:border-usc-cardinal"
+                      )}
+                      disabled={isDisabled}
+                      onClick={() => {
+                        if (!isDisabled) {
+                          onDateChange(day);
+                        }
+                      }}
+                    >
+                      {format(day, 'd')}
+                      {hasSlots && !isPastDay && (
+                        <span className="absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-usc-cardinal"></span>
+                      )}
+                    </Button>
+                  </div>
+                );
+              })}
             </div>
             
             <div className="mt-4 flex justify-center">

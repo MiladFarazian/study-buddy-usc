@@ -7,6 +7,7 @@ import { BookingSlot } from "@/lib/scheduling/types";
 import { useAvailabilityData } from "@/hooks/useAvailabilityData";
 import { DurationSelector } from "./duration/DurationSelector";
 import { DateSelector } from "./date-selector/DateSelector";
+import { format, isSameDay } from 'date-fns';
 
 interface BookingStepSelectorProps {
   tutor: Tutor;
@@ -97,6 +98,14 @@ export function BookingStepSelector({
   const consecutiveSlots = selectedTimeSlot 
     ? getConsecutiveSlots(selectedTimeSlot, 180) // Check for up to 3 hours (180 minutes)
     : [];
+    
+  // Check if there are available time slots for the selected date
+  const hasSlotsForSelectedDate = selectedDate 
+    ? availableSlots.some(slot => {
+        const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
+        return isSameDay(slotDay, selectedDate) && slot.available;
+      })
+    : false;
 
   if (loading) {
     return (
@@ -142,29 +151,37 @@ export function BookingStepSelector({
           {selectedDate && (
             <div className="mt-8">
               <h3 className="text-xl font-semibold mb-4">Available Time Slots</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {availableSlots
-                  .filter(slot => {
-                    const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
-                    return slotDay.toDateString() === selectedDate.toDateString() && slot.available;
-                  })
-                  .sort((a, b) => a.start.localeCompare(b.start))
-                  .map((slot, index) => (
-                    <button
-                      key={`${slot.start}-${index}`}
-                      className={`
-                        p-3 rounded-md border text-center transition-colors
-                        hover:border-usc-cardinal hover:bg-red-50/50
-                        ${selectedTimeSlot && selectedTimeSlot.start === slot.start ? 
-                          'border-usc-cardinal bg-red-50' : ''}
-                      `}
-                      onClick={() => handleSelectTimeSlot(slot)}
-                      disabled={disabled}
-                    >
-                      {slot.start}
-                    </button>
-                  ))}
-              </div>
+              
+              {hasSlotsForSelectedDate ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {availableSlots
+                    .filter(slot => {
+                      const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
+                      return isSameDay(slotDay, selectedDate) && slot.available;
+                    })
+                    .sort((a, b) => a.start.localeCompare(b.start))
+                    .map((slot, index) => (
+                      <button
+                        key={`${slot.start}-${index}`}
+                        className={`
+                          p-3 rounded-md border text-center transition-colors
+                          hover:border-usc-cardinal hover:bg-red-50/50
+                          ${selectedTimeSlot && selectedTimeSlot.start === slot.start ? 
+                            'border-usc-cardinal bg-red-50' : ''}
+                        `}
+                        onClick={() => handleSelectTimeSlot(slot)}
+                        disabled={disabled}
+                      >
+                        {slot.start}
+                      </button>
+                    ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/30 rounded-md">
+                  <p className="text-muted-foreground">No available time slots on {format(selectedDate, 'EEEE, MMMM d')}</p>
+                  <p className="text-muted-foreground text-sm mt-2">Please select another date from the calendar.</p>
+                </div>
+              )}
             </div>
           )}
         </div>
