@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { BookingSlot } from "@/lib/scheduling/types";
-import { format } from "date-fns";
+import { format, parseISO, differenceInMinutes } from "date-fns";
 import { CalendarIcon, ClockIcon } from "lucide-react";
 
 interface DurationOption {
@@ -29,6 +29,32 @@ export function DurationSelector({
   onContinue,
   hourlyRate
 }: DurationSelectorProps) {
+  // Calculate available duration in minutes for the selected slot
+  const calculateAvailableDuration = () => {
+    const [startHour, startMinute] = selectedSlot.start.split(':').map(Number);
+    const [endHour, endMinute] = selectedSlot.end.split(':').map(Number);
+    
+    // Convert to minutes since midnight for easy calculation
+    const startMinutes = startHour * 60 + startMinute;
+    const endMinutes = endHour * 60 + endMinute;
+    
+    return endMinutes - startMinutes;
+  };
+
+  // Filter duration options based on available time
+  const availableDurationOptions = durationOptions.filter(option => {
+    return option.minutes <= calculateAvailableDuration();
+  });
+  
+  // If current selected duration is not available, reset it
+  React.useEffect(() => {
+    if (selectedDuration && !availableDurationOptions.find(opt => opt.minutes === selectedDuration)) {
+      // Select the longest available duration by default
+      const longestAvailableDuration = Math.max(...availableDurationOptions.map(opt => opt.minutes));
+      onSelectDuration(longestAvailableDuration);
+    }
+  }, [selectedDuration, availableDurationOptions]);
+
   // Format the date for display
   const slotDay = selectedSlot.day instanceof Date ? selectedSlot.day : new Date(selectedSlot.day);
   const formattedDate = format(slotDay, 'EEEE, MMMM d, yyyy');
@@ -57,7 +83,7 @@ export function DurationSelector({
       <h2 className="text-2xl font-bold">Select Session Duration</h2>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-4">
-        {durationOptions.map((option) => (
+        {availableDurationOptions.map((option) => (
           <Button
             key={option.minutes}
             type="button"
