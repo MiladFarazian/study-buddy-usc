@@ -31,7 +31,9 @@ export function BookingStepSelector({
   
   const hourlyRate = tutor.hourlyRate || 25; // Default to $25/hour if not set
   
-  // Use our hook to fetch availability data
+  // Use our hook to fetch availability data with a key that changes when the date changes
+  // to force a refresh when the date is changed
+  const dateKey = selectedDate ? selectedDate.toISOString() : 'initial';
   const { 
     loading, 
     availableSlots, 
@@ -41,7 +43,11 @@ export function BookingStepSelector({
   } = useAvailabilityData(tutor, selectedDate || new Date());
 
   const handleDateChange = (date: Date) => {
+    // Reset time slot when date changes
+    setSelectedTimeSlot(null);
     setSelectedDate(date);
+    // Return to date selection step
+    setStep('date');
   };
   
   const handleSelectTimeSlot = (slot: BookingSlot) => {
@@ -149,6 +155,8 @@ export function BookingStepSelector({
                       className={`
                         p-3 rounded-md border text-center transition-colors
                         hover:border-usc-cardinal hover:bg-red-50/50
+                        ${selectedTimeSlot && selectedTimeSlot.start === slot.start ? 
+                          'border-usc-cardinal bg-red-50' : ''}
                       `}
                       onClick={() => handleSelectTimeSlot(slot)}
                       disabled={disabled}

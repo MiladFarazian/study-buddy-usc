@@ -32,6 +32,7 @@ export const DateSelector = ({
     addDays(currentWeekStart, i)
   );
 
+  // This function correctly determines if a day has available slots
   const hasAvailableSlots = (day: Date) => {
     return availableSlots.some(slot => {
       const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
@@ -54,6 +55,9 @@ export const DateSelector = ({
   const getDayAbbreviation = (date: Date) => {
     return format(date, 'EEE');
   };
+  
+  // Generate a key that changes when date changes to force Calendar re-render
+  const calendarKey = `calendar-${viewMode}-${date ? format(date, 'yyyy-MM-dd') : 'none'}-${currentWeekStart ? format(currentWeekStart, 'yyyy-MM-dd') : 'none'}`;
   
   return (
     <div className="space-y-4 w-full">
@@ -146,11 +150,15 @@ export const DateSelector = ({
       ) : (
         <div className="min-h-[350px] w-full flex items-center justify-center border rounded-md p-2">
           <Calendar
+            key={calendarKey}  // Add key to force re-render when date changes
             mode="single"
             selected={date}
             onSelect={onDateChange}
             className="w-full"
-            disabled={(day) => isBefore(day, today) || !hasAvailableSlots(day)}
+            disabled={(day) => {
+              // Only disable past dates and days without available slots
+              return isBefore(day, today) || !hasAvailableSlots(day);
+            }}
             classNames={{
               day_today: "bg-muted",
               day_selected: "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark focus:bg-usc-cardinal-dark",
@@ -161,47 +169,6 @@ export const DateSelector = ({
               head_row: "flex w-full justify-between",
               row: "flex w-full justify-between mt-2",
               cell: "h-8 w-8 text-center p-0 relative [&:has([aria-selected])]:bg-accent focus-within:relative focus-within:z-20"
-            }}
-            modifiersClassNames={{
-              today: "text-usc-gold font-bold",
-              selected: "bg-usc-cardinal text-white",
-            }}
-            modifiers={{
-              available: (day) => hasAvailableSlots(day)
-            }}
-            components={{
-              Day: ({ date: dayDate }) => {
-                const isAvailable = hasAvailableSlots(dayDate);
-                const isSelected = date ? isSameDay(dayDate, date) : false;
-                const isPast = isBefore(dayDate, today);
-                
-                return (
-                  <div
-                    className={cn(
-                      "relative p-0",
-                      (!isAvailable || isPast) && "opacity-50"
-                    )}
-                  >
-                    <button
-                      type="button"
-                      className={cn(
-                        "h-8 w-8 p-0 font-normal aria-selected:opacity-100",
-                        isAvailable && !isPast && !isSelected && "hover:bg-usc-cardinal/10",
-                        (isAvailable && !isPast) ? "cursor-pointer" : "cursor-not-allowed"
-                      )}
-                      onClick={(isAvailable && !isPast) ? () => onDateChange(dayDate) : undefined}
-                      disabled={!isAvailable || isPast}
-                    >
-                      <time dateTime={format(dayDate, 'yyyy-MM-dd')}>
-                        {dayDate.getDate()}
-                      </time>
-                    </button>
-                    {isAvailable && !isPast && (
-                      <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-usc-cardinal" />
-                    )}
-                  </div>
-                );
-              }
             }}
           />
         </div>
