@@ -26,7 +26,7 @@ export function NewBookingWizard({ tutor, onClose, initialDate, initialTime }: N
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState('date');
   const [availableDates, setAvailableDates] = useState<Date[]>([]);
-  const [timeSlots, setTimeSlots] = useState<Array<{ time: string; available: boolean }>>([]);
+  const [timeSlots, setTimeSlots] = useState<Array<{ start: string; available: boolean }>>([]);
   const [creating, setCreating] = useState(false);
   const [notes, setNotes] = useState("");
   
@@ -40,13 +40,13 @@ export function NewBookingWizard({ tutor, onClose, initialDate, initialTime }: N
         // Mock data for now
         setAvailableDates([new Date(), new Date(Date.now() + 86400000), new Date(Date.now() + 86400000 * 2)]);
         setTimeSlots([
-          { time: "09:00", available: true },
-          { time: "10:00", available: true },
-          { time: "11:00", available: true },
-          { time: "13:00", available: true },
-          { time: "14:00", available: true },
-          { time: "15:00", available: false },
-          { time: "16:00", available: true },
+          { start: "09:00", available: true },
+          { start: "10:00", available: true },
+          { start: "11:00", available: true },
+          { start: "13:00", available: true },
+          { start: "14:00", available: true },
+          { start: "15:00", available: false },
+          { start: "16:00", available: true },
         ]);
       }, 1000);
     }
@@ -58,9 +58,19 @@ export function NewBookingWizard({ tutor, onClose, initialDate, initialTime }: N
       dispatch({ type: 'SELECT_DATE', payload: initialDate });
     }
     if (initialTime) {
-      dispatch({ type: 'SELECT_TIME_SLOT', payload: { time: initialTime, available: true } });
+      // Create a booking slot with the initial time
+      dispatch({ 
+        type: 'SELECT_TIME_SLOT', 
+        payload: { 
+          day: initialDate || new Date(), 
+          start: initialTime,
+          end: "", // This will be calculated later based on duration
+          available: true,
+          tutorId: tutor.id
+        } 
+      });
     }
-  }, [initialDate, initialTime, dispatch]);
+  }, [initialDate, initialTime, dispatch, tutor.id]);
 
   const handleBack = () => {
     switch (step) {
@@ -135,8 +145,17 @@ export function NewBookingWizard({ tutor, onClose, initialDate, initialTime }: N
         {step === "time" && state.selectedDate && (
           <TimeStep 
             timeSlots={timeSlots}
-            selectedTime={state.selectedTimeSlot?.time || null}
-            onTimeChange={(time) => dispatch({ type: 'SELECT_TIME_SLOT', payload: { time, available: true } })}
+            selectedTime={state.selectedTimeSlot?.start || null}
+            onTimeChange={(start) => dispatch({ 
+              type: 'SELECT_TIME_SLOT', 
+              payload: { 
+                day: state.selectedDate as Date, 
+                start, 
+                end: "", 
+                available: true,
+                tutorId: tutor.id
+              } 
+            })}
             onContinue={() => setStep("duration")}
           />
         )}
@@ -156,7 +175,7 @@ export function NewBookingWizard({ tutor, onClose, initialDate, initialTime }: N
         {step === "confirm" && state.selectedDate && state.selectedTimeSlot && state.selectedDuration && (
           <ConfirmationStep 
             selectedDate={state.selectedDate}
-            selectedTime={state.selectedTimeSlot.time}
+            selectedTime={state.selectedTimeSlot.start}
             selectedDuration={state.selectedDuration}
             cost={calculatePrice(state.selectedDuration)}
             notes={notes}
