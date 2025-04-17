@@ -55,7 +55,7 @@ export function TimeSlotSelectionStep({ availableSlots, isLoading }: TimeSlotSel
   // Handle continue button click
   const handleContinue = () => {
     if (selectedTimeSlot) {
-      dispatch({ type: 'SELECT_DURATION', payload: state.selectedDuration });
+      dispatch({ type: 'SET_DURATION', payload: state.selectedDuration });
       dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_DURATION });
     }
   };
