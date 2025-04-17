@@ -14,6 +14,7 @@ import {
 } from "@/lib/scheduling";
 import { Badge } from "@/components/ui/badge";
 import { CalendarDays, Loader2, Clock, AlertCircle } from "lucide-react";
+import { formatTimeDisplay } from "@/lib/scheduling/time-utils";
 
 interface BookingCalendarProps {
   tutor: Tutor;
@@ -207,46 +208,60 @@ export const BookingCalendar = ({ tutor, onSelectSlot }: BookingCalendarProps) =
                   <p className="text-sm mt-1">Please select another date.</p>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {visibleSlots
-                    .filter(slot => slot.available)
-                    .sort((a, b) => (a.start > b.start ? 1 : -1))
-                    .map((slot, index) => {
-                      const startTime = parseISO(`2000-01-01T${slot.start}`);
-                      const endTime = parseISO(`2000-01-01T${slot.end}`);
-                      const durationMins = differenceInMinutes(endTime, startTime);
-                      const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
-                      
-                      return (
-                        <div
-                          key={`${format(slotDay, 'yyyy-MM-dd')}-${slot.start}-${index}`}
-                          className={`
-                            rounded-md border p-3 cursor-pointer transition-colors
-                            ${selectedSlot && 
-                              selectedSlot.day instanceof Date && slotDay instanceof Date ?
-                              (selectedSlot.day.getTime() === slotDay.getTime() && 
-                              selectedSlot.start === slot.start
-                              ? 'border-usc-cardinal bg-red-50' : '')
-                              : 'hover:border-usc-cardinal hover:bg-red-50/50'
-                            }
-                          `}
-                          onClick={() => handleSelectSlot(slot)}
-                        >
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <p className="font-medium">{slot.start} - {slot.end}</p>
-                              <div className="flex items-center mt-1 text-muted-foreground text-sm">
-                                <Clock className="h-3.5 w-3.5 mr-1" />
-                                <span>{durationMins} minutes</span>
+                <div className="space-y-4">
+                  {Object.entries(
+                    visibleSlots
+                      .filter(slot => slot.available)
+                      .reduce((acc, slot) => {
+                        const hour = slot.start.split(':')[0];
+                        if (!acc[hour]) acc[hour] = [];
+                        acc[hour].push(slot);
+                        return acc;
+                      }, {} as {[key: string]: BookingSlot[]})
+                  ).map(([hour, slots]) => (
+                    <div key={hour} className="space-y-2">
+                      <h4 className="text-sm font-medium text-muted-foreground border-b pb-1">
+                        {parseInt(hour) < 12 ? parseInt(hour) : parseInt(hour) - 12}:00 {parseInt(hour) >= 12 ? 'PM' : 'AM'}
+                      </h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        {slots
+                          .sort((a, b) => a.start.localeCompare(b.start))
+                          .map((slot, index) => {
+                            const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
+                            
+                            return (
+                              <div
+                                key={`${format(slotDay, 'yyyy-MM-dd')}-${slot.start}-${index}`}
+                                className={`
+                                  rounded-md border p-3 cursor-pointer transition-colors
+                                  ${selectedSlot && 
+                                    selectedSlot.day instanceof Date && slotDay instanceof Date ?
+                                    (selectedSlot.day.getTime() === slotDay.getTime() && 
+                                    selectedSlot.start === slot.start
+                                    ? 'border-usc-cardinal bg-red-50' : '')
+                                    : 'hover:border-usc-cardinal hover:bg-red-50/50'
+                                  }
+                                `}
+                                onClick={() => handleSelectSlot(slot)}
+                              >
+                                <div className="flex justify-between items-center">
+                                  <div>
+                                    <p className="font-medium">{formatTimeDisplay(slot.start)}</p>
+                                    <div className="flex items-center mt-1 text-muted-foreground text-sm">
+                                      <Clock className="h-3.5 w-3.5 mr-1" />
+                                      <span>30 minutes</span>
+                                    </div>
+                                  </div>
+                                  <Badge variant="outline" className="bg-green-50 text-green-700">
+                                    Available
+                                  </Badge>
+                                </div>
                               </div>
-                            </div>
-                            <Badge variant="outline" className="bg-green-50 text-green-700">
-                              Available
-                            </Badge>
-                          </div>
-                        </div>
-                      );
-                    })}
+                            );
+                          })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

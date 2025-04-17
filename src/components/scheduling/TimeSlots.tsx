@@ -3,9 +3,9 @@ import { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Clock } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { BookingSlot } from "@/lib/scheduling/types";
+import { cn } from "@/lib/utils";
+import { formatTimeDisplay } from "@/lib/scheduling/time-utils";
 
 interface TimeSlotsProps {
   date: Date | null;
@@ -46,14 +46,6 @@ export function TimeSlots({
 
     setSlots(sorted);
   }, [date, availableSlots]);
-
-  // Format time in 12-hour format
-  const formatTime = (timeString: string) => {
-    const [hour, minute] = timeString.split(':').map(Number);
-    const period = hour >= 12 ? 'PM' : 'AM';
-    const hour12 = hour % 12 || 12;
-    return `${hour12}:${minute.toString().padStart(2, '0')} ${period}`;
-  };
 
   // Group time slots by hour
   const groupSlotsByHour = () => {
@@ -125,7 +117,7 @@ export function TimeSlots({
                   )}
                   onClick={() => onSelectSlot(slot)}
                 >
-                  <span className="text-sm font-medium">{formatTime(slot.start)}</span>
+                  <span className="text-sm font-medium">{formatTimeDisplay(slot.start)}</span>
                 </Button>
               );
             })}

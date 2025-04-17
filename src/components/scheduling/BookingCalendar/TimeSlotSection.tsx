@@ -3,6 +3,7 @@ import { parseISO, format, differenceInMinutes } from "date-fns";
 import { Clock, CalendarDays } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { BookingSlot } from "@/lib/scheduling";
+import { formatTimeDisplay } from "@/lib/scheduling/time-utils";
 
 interface TimeSlotSectionProps {
   visibleSlots: BookingSlot[];
@@ -33,11 +34,19 @@ export const TimeSlotSection = ({
   const groupedSlots = groupSlotsByHour();
   const hasAvailableSlots = visibleSlots.some(slot => slot.available);
 
-  const formatTime = (timeString: string) => {
-    const [hour, minute] = timeString.split(':').map(Number);
-    const period = hour >= 12 ? 'PM' : 'AM';
-    const hour12 = hour % 12 || 12;
-    return `${hour12}:${minute.toString().padStart(2, '0')} ${period}`;
+  // Check if slot is selected
+  const isSlotSelected = (slot: BookingSlot): boolean => {
+    if (!selectedSlot) return false;
+    
+    const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
+    const selectedDay = selectedSlot.day instanceof Date ? 
+      selectedSlot.day : new Date(selectedSlot.day);
+    
+    return (
+      format(slotDay, 'yyyy-MM-dd') === format(selectedDay, 'yyyy-MM-dd') &&
+      slot.start === selectedSlot.start &&
+      slot.end === selectedSlot.end
+    );
   };
 
   return (
@@ -62,12 +71,7 @@ export const TimeSlotSection = ({
                     .sort((a, b) => (a.start > b.start ? 1 : -1))
                     .map((slot, index) => {
                       const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
-                      
-                      const isSelected = selectedSlot && 
-                        selectedSlot.day instanceof Date && slotDay instanceof Date ?
-                        (selectedSlot.day.getTime() === slotDay.getTime() && 
-                        selectedSlot.start === slot.start)
-                        : false;
+                      const isSelected = isSlotSelected(slot);
 
                       return (
                         <div
@@ -80,7 +84,7 @@ export const TimeSlotSection = ({
                         >
                           <div className="flex justify-between items-center">
                             <div>
-                              <p className="font-medium">{formatTime(slot.start)}</p>
+                              <p className="font-medium">{formatTimeDisplay(slot.start)}</p>
                               <p className="text-xs text-muted-foreground">30 min</p>
                             </div>
                             <Badge variant="outline" className="bg-green-50 text-green-700">

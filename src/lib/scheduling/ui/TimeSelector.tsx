@@ -33,6 +33,11 @@ export function TimeSelector({
       grouped[hours].push(slot);
     });
     
+    // Sort the slots within each hour group
+    Object.keys(grouped).forEach(hour => {
+      grouped[hour].sort((a, b) => a.time.localeCompare(b.time));
+    });
+    
     return grouped;
   };
   
@@ -54,7 +59,7 @@ export function TimeSelector({
             {Object.entries(groupedSlots).map(([hour, slots]) => (
               <div key={hour} className="space-y-2">
                 <h4 className="text-sm font-medium text-muted-foreground">
-                  {formatTimeDisplay(`${hour}:00`).split(':')[0]} {parseInt(hour) >= 12 ? 'PM' : 'AM'}
+                  {parseInt(hour) < 12 ? parseInt(hour) : parseInt(hour) - 12}:00 {parseInt(hour) >= 12 ? 'PM' : 'AM'}
                 </h4>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                   {slots.map((slot, index) => (

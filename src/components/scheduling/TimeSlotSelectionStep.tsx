@@ -23,7 +23,10 @@ export function TimeSlotSelectionStep({ availableSlots, isLoading }: TimeSlotSel
     
     return availableSlots.filter(slot => 
       isSameDay(new Date(slot.day), state.selectedDate) && slot.available
-    );
+    ).sort((a, b) => {
+      // Sort by start time
+      return convertTimeToMinutes(a.start) - convertTimeToMinutes(b.start);
+    });
   }, [availableSlots, state.selectedDate]);
 
   // Group time slots by hour for better display
@@ -90,7 +93,7 @@ export function TimeSlotSelectionStep({ availableSlots, isLoading }: TimeSlotSel
             <div className="grid grid-cols-2 gap-2">
               {slots.map((slot, index) => (
                 <Button
-                  key={index}
+                  key={`${slot.start}-${index}`}
                   variant="outline"
                   className={`p-4 h-auto ${
                     selectedTimeSlot && 

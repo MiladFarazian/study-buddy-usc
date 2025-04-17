@@ -4,6 +4,7 @@ import { BookingSlot } from "@/lib/scheduling/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format, isBefore, isToday, parseISO } from "date-fns";
 import { Clock } from "lucide-react";
+import { formatTimeDisplay } from "@/lib/scheduling/time-utils";
 
 export interface TimeSlotListProps {
   slots: BookingSlot[];
@@ -18,14 +19,6 @@ export function TimeSlotList({
   selectedSlot = null,
   disabled = false 
 }: TimeSlotListProps) {
-  // Format time for display (e.g., "2:30 PM")
-  const formatTime = (timeString: string) => {
-    const [hour, minute] = timeString.split(':').map(Number);
-    const period = hour >= 12 ? 'PM' : 'AM';
-    const hour12 = hour % 12 || 12;
-    return `${hour12}:${minute.toString().padStart(2, '0')} ${period}`;
-  };
-
   // Check if a time slot is in the past
   const isTimeSlotInPast = (slot: BookingSlot): boolean => {
     const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
@@ -102,7 +95,7 @@ export function TimeSlotList({
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                   {hourSlots.map((slot, index) => (
                     <Button
-                      key={`${slot.day}-${slot.start}-${index}`}
+                      key={`${slot.day instanceof Date ? format(slot.day, 'yyyy-MM-dd') : slot.day}-${slot.start}-${index}`}
                       variant={isSlotSelected(slot) ? "default" : "outline"}
                       className={`
                         h-12 flex items-center justify-center
@@ -111,7 +104,7 @@ export function TimeSlotList({
                       onClick={() => onSelectSlot(slot)}
                       disabled={disabled}
                     >
-                      <span className="text-sm font-medium">{formatTime(slot.start)}</span>
+                      <span className="text-sm font-medium">{formatTimeDisplay(slot.start)}</span>
                     </Button>
                   ))}
                 </div>
