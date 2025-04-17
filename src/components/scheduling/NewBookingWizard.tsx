@@ -1,14 +1,13 @@
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Tutor } from "@/types/tutor";
-import { DateSelector } from "@/lib/scheduling/ui/DateSelector";
-import { TimeSelector } from "@/lib/scheduling/ui/TimeSelector";
-import { DurationSelector } from "@/lib/scheduling/ui/DurationSelector";
-import { BookingSummary } from "@/lib/scheduling/ui/BookingSummary";
 import { LoadingState } from "./booking-wizard/LoadingState";
 import { StepNavigation } from "./booking-wizard/StepNavigation";
 import { useBookingWizard } from "./booking-wizard/hooks/useBookingWizard";
+import { DateStep } from "./booking-wizard/steps/DateStep";
+import { TimeStep } from "./booking-wizard/steps/TimeStep";
+import { DurationStep } from "./booking-wizard/steps/DurationStep";
+import { ConfirmationStep } from "./booking-wizard/steps/ConfirmationStep";
 
 interface NewBookingWizardProps {
   tutor: Tutor;
@@ -70,7 +69,7 @@ export function NewBookingWizard({ tutor, onClose }: NewBookingWizardProps) {
         />
 
         {step === "date" && (
-          <DateSelector 
+          <DateStep 
             selectedDate={selectedDate} 
             onDateChange={(date) => {
               setSelectedDate(date);
@@ -81,70 +80,38 @@ export function NewBookingWizard({ tutor, onClose }: NewBookingWizardProps) {
         )}
 
         {step === "time" && selectedDate && (
-          <>
-            <TimeSelector 
-              timeSlots={availableTimeSlots}
-              selectedTime={selectedTime}
-              onTimeChange={setSelectedTime}
-            />
-            
-            <div className="mt-8 flex justify-end">
-              <Button 
-                className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
-                disabled={!selectedTime}
-                onClick={() => selectedTime && setStep("duration")}
-              >
-                Continue
-              </Button>
-            </div>
-          </>
+          <TimeStep 
+            timeSlots={availableTimeSlots}
+            selectedTime={selectedTime}
+            onTimeChange={setSelectedTime}
+            onContinue={() => setStep("duration")}
+          />
         )}
 
         {step === "duration" && (
-          <>
-            <DurationSelector 
-              options={durationOptions}
-              selectedDuration={selectedDuration}
-              onDurationChange={(duration) => {
-                setSelectedDuration(duration);
-                setStep("confirm");
-              }}
-              hourlyRate={hourlyRate}
-            />
-          </>
+          <DurationStep 
+            options={durationOptions}
+            selectedDuration={selectedDuration}
+            onDurationChange={(duration) => {
+              setSelectedDuration(duration);
+              setStep("confirm");
+            }}
+            hourlyRate={hourlyRate}
+          />
         )}
 
         {step === "confirm" && selectedDate && selectedTime && selectedDuration && (
-          <>
-            <BookingSummary 
-              selectedDate={selectedDate}
-              selectedTime={selectedTime}
-              durationMinutes={selectedDuration}
-              cost={durationOptions.find(opt => opt.minutes === selectedDuration)?.cost || 0}
-              notes={notes}
-              onNotesChange={setNotes}
-            />
-            
-            <div className="mt-8 flex justify-between">
-              <Button variant="outline" onClick={handleBack} disabled={creating}>
-                Back
-              </Button>
-              <Button 
-                className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
-                onClick={handleConfirmBooking}
-                disabled={creating}
-              >
-                {creating ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Processing...
-                  </>
-                ) : (
-                  "Confirm Booking"
-                )}
-              </Button>
-            </div>
-          </>
+          <ConfirmationStep 
+            selectedDate={selectedDate}
+            selectedTime={selectedTime}
+            selectedDuration={selectedDuration}
+            cost={durationOptions.find(opt => opt.minutes === selectedDuration)?.cost || 0}
+            notes={notes}
+            onNotesChange={setNotes}
+            onBack={handleBack}
+            onConfirm={handleConfirmBooking}
+            creating={creating}
+          />
         )}
       </CardContent>
     </Card>
