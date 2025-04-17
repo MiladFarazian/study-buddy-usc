@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { format, addDays, parseISO, addMinutes, differenceInMinutes } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -37,7 +36,6 @@ export const BookingCalendar = ({ tutor, onSelectSlot }: BookingCalendarProps) =
   }, [tutor.id]);
 
   useEffect(() => {
-    // Filter slots for the selected date
     if (selectedDate && availableSlots.length > 0) {
       const slotsForDate = availableSlots.filter(
         slot => {
@@ -53,7 +51,6 @@ export const BookingCalendar = ({ tutor, onSelectSlot }: BookingCalendarProps) =
     setLoading(true);
     try {
       console.log("Loading availability for tutor:", tutor.id);
-      // Get tutor's availability settings
       const availability = await getTutorAvailability(tutor.id);
       
       if (!availability) {
@@ -63,7 +60,6 @@ export const BookingCalendar = ({ tutor, onSelectSlot }: BookingCalendarProps) =
         return;
       }
       
-      // Check if there's any actual availability set
       const hasAnySlots = Object.values(availability).some(daySlots => Array.isArray(daySlots) && daySlots.length > 0);
       
       if (!hasAnySlots) {
@@ -73,14 +69,11 @@ export const BookingCalendar = ({ tutor, onSelectSlot }: BookingCalendarProps) =
         return;
       }
       
-      // Get tutor's booked sessions
       const today = new Date();
       const bookedSessions = await getTutorBookedSessions(tutor.id, today, addDays(today, 28));
       
-      // Generate available slots
       const slots = generateAvailableSlots(availability, bookedSessions, today, 28);
       
-      // Add tutor ID to each slot
       const slotsWithTutor = slots.map(slot => ({
         ...slot,
         tutorId: tutor.id
@@ -89,7 +82,6 @@ export const BookingCalendar = ({ tutor, onSelectSlot }: BookingCalendarProps) =
       console.log(`Generated ${slotsWithTutor.length} available slots for tutor: ${tutor.id}`);
       setAvailableSlots(slotsWithTutor);
       
-      // Set initial visible slots for today
       const todaySlots = slotsWithTutor.filter(
         slot => {
           const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
@@ -123,7 +115,6 @@ export const BookingCalendar = ({ tutor, onSelectSlot }: BookingCalendarProps) =
     }
   };
 
-  // Get the dates with available slots for the calendar
   const getDatesWithSlots = () => {
     const dates = new Set<string>();
     availableSlots.forEach(slot => {
@@ -181,16 +172,13 @@ export const BookingCalendar = ({ tutor, onSelectSlot }: BookingCalendarProps) =
               selected={selectedDate}
               onSelect={handleDateSelect}
               disabled={(date) => {
-                // Disable dates before today
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 if (date < today) return true;
                 
-                // Disable dates more than 4 weeks in the future
                 const fourWeeksFromNow = addDays(today, 28);
                 if (date > fourWeeksFromNow) return true;
                 
-                // Disable dates with no available slots
                 const dateStr = format(date, 'yyyy-MM-dd');
                 return !getDatesWithSlots().some(d => format(d, 'yyyy-MM-dd') === dateStr);
               }}
@@ -208,60 +196,40 @@ export const BookingCalendar = ({ tutor, onSelectSlot }: BookingCalendarProps) =
                   <p className="text-sm mt-1">Please select another date.</p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {Object.entries(
-                    visibleSlots
-                      .filter(slot => slot.available)
-                      .reduce((acc, slot) => {
-                        const hour = slot.start.split(':')[0];
-                        if (!acc[hour]) acc[hour] = [];
-                        acc[hour].push(slot);
-                        return acc;
-                      }, {} as {[key: string]: BookingSlot[]})
-                  ).map(([hour, slots]) => (
-                    <div key={hour} className="space-y-2">
-                      <h4 className="text-sm font-medium text-muted-foreground border-b pb-1">
-                        {parseInt(hour) < 12 ? parseInt(hour) : parseInt(hour) - 12}:00 {parseInt(hour) >= 12 ? 'PM' : 'AM'}
-                      </h4>
-                      <div className="grid grid-cols-2 gap-2">
-                        {slots
-                          .sort((a, b) => a.start.localeCompare(b.start))
-                          .map((slot, index) => {
-                            const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
-                            
-                            return (
-                              <div
-                                key={`${format(slotDay, 'yyyy-MM-dd')}-${slot.start}-${index}`}
-                                className={`
-                                  rounded-md border p-3 cursor-pointer transition-colors
-                                  ${selectedSlot && 
-                                    selectedSlot.day instanceof Date && slotDay instanceof Date ?
-                                    (selectedSlot.day.getTime() === slotDay.getTime() && 
-                                    selectedSlot.start === slot.start
-                                    ? 'border-usc-cardinal bg-red-50' : '')
-                                    : 'hover:border-usc-cardinal hover:bg-red-50/50'
-                                  }
-                                `}
-                                onClick={() => handleSelectSlot(slot)}
-                              >
-                                <div className="flex justify-between items-center">
-                                  <div>
-                                    <p className="font-medium">{formatTimeDisplay(slot.start)}</p>
-                                    <div className="flex items-center mt-1 text-muted-foreground text-sm">
-                                      <Clock className="h-3.5 w-3.5 mr-1" />
-                                      <span>30 minutes</span>
-                                    </div>
-                                  </div>
-                                  <Badge variant="outline" className="bg-green-50 text-green-700">
-                                    Available
-                                  </Badge>
-                                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {visibleSlots
+                    .filter(slot => slot.available)
+                    .sort((a, b) => a.start.localeCompare(b.start))
+                    .map((slot, index) => {
+                      const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
+                      
+                      return (
+                        <div
+                          key={`${format(slotDay, 'yyyy-MM-dd')}-${slot.start}-${index}`}
+                          className={`
+                            rounded-md border p-3 cursor-pointer transition-colors
+                            ${selectedSlot && 
+                              selectedSlot.day instanceof Date && slotDay instanceof Date ?
+                              (selectedSlot.day.getTime() === slotDay.getTime() && 
+                              selectedSlot.start === slot.start
+                              ? 'border-usc-cardinal bg-red-50' : '')
+                              : 'hover:border-usc-cardinal hover:bg-red-50/50'
+                            }
+                          `}
+                          onClick={() => handleSelectSlot(slot)}
+                        >
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <p className="font-medium">{formatTimeDisplay(slot.start)}</p>
+                              <div className="flex items-center mt-1 text-muted-foreground text-sm">
+                                <Clock className="h-3.5 w-3.5 mr-1" />
+                                <span>30 minutes</span>
                               </div>
-                            );
-                          })}
-                      </div>
-                    </div>
-                  ))}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                 </div>
               )}
             </div>

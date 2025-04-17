@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { BookingSlot } from "@/lib/scheduling/types";
-import { isSameDay, format, parse } from 'date-fns';
+import { isSameDay, format } from 'date-fns';
 import { useScheduling } from '@/contexts/SchedulingContext';
 import { cn } from "@/lib/utils";
 import { formatTimeDisplay } from "@/lib/scheduling/time-utils";
@@ -22,31 +22,9 @@ export function CalendlyTimeSlots({ availableSlots }: CalendlyTimeSlotsProps) {
     );
   }
   
-  // Filter slots for the selected date
   const slotsForSelectedDate = availableSlots.filter(slot => 
     isSameDay(slot.day, selectedDate) && slot.available
   ).sort((a, b) => a.start.localeCompare(b.start));
-  
-  // Group time slots by hour for better UI organization
-  const groupSlotsByHour = () => {
-    const grouped: { [hour: string]: BookingSlot[] } = {};
-    
-    slotsForSelectedDate.forEach(slot => {
-      const hourStr = slot.start.split(':')[0];
-      if (!grouped[hourStr]) {
-        grouped[hourStr] = [];
-      }
-      grouped[hourStr].push(slot);
-    });
-    
-    return grouped;
-  };
-  
-  const groupedSlots = groupSlotsByHour();
-  
-  const handleSelectTimeSlot = (slot: BookingSlot) => {
-    dispatch({ type: 'SELECT_TIME_SLOT', payload: slot });
-  };
   
   if (slotsForSelectedDate.length === 0) {
     return (
@@ -64,31 +42,21 @@ export function CalendlyTimeSlots({ availableSlots }: CalendlyTimeSlotsProps) {
   return (
     <div className="py-6">
       <h2 className="text-2xl font-bold mb-6">Select a Time</h2>
-      
-      <div className="space-y-6">
-        {Object.entries(groupedSlots).map(([hour, slots]) => (
-          <div key={hour} className="space-y-3">
-            <h4 className="text-lg font-medium text-muted-foreground">
-              {parseInt(hour) < 12 ? hour : parseInt(hour) - 12}:00 {parseInt(hour) >= 12 ? 'PM' : 'AM'}
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {slots.map((slot, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleSelectTimeSlot(slot)}
-                  className={cn(
-                    "p-4 rounded-lg border text-center transition-colors",
-                    selectedTimeSlot && isSameDay(selectedTimeSlot.day, slot.day) && 
-                    selectedTimeSlot.start === slot.start ? 
-                      "bg-usc-cardinal text-white border-usc-cardinal" : 
-                      "bg-white hover:bg-gray-50"
-                  )}
-                >
-                  {formatTimeDisplay(slot.start)}
-                </button>
-              ))}
-            </div>
-          </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        {slotsForSelectedDate.map((slot, index) => (
+          <button
+            key={index}
+            onClick={() => dispatch({ type: 'SELECT_TIME_SLOT', payload: slot })}
+            className={cn(
+              "p-4 rounded-lg border text-center transition-colors",
+              selectedTimeSlot && isSameDay(selectedTimeSlot.day, slot.day) && 
+              selectedTimeSlot.start === slot.start ? 
+                "bg-usc-cardinal text-white border-usc-cardinal" : 
+                "bg-white hover:bg-gray-50"
+            )}
+          >
+            {formatTimeDisplay(slot.start)}
+          </button>
         ))}
       </div>
     </div>
