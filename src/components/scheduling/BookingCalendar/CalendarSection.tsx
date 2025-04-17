@@ -26,11 +26,15 @@ export const CalendarSection = ({
     return Array.from(dates).map(dateStr => parseISO(dateStr));
   };
 
+  // Generate a string key for the selected date to force re-render when selection changes
+  const selectedDateKey = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : 'none';
+
   return (
     <div>
       <p className="text-sm font-medium mb-2">Select a Date:</p>
       <div className="min-h-[350px] w-full border rounded-md p-2 flex items-center justify-center">
         <Calendar
+          key={`calendar-${selectedDateKey}`} // This key forces a re-render when the date changes
           mode="single"
           selected={selectedDate}
           onSelect={onDateSelect}

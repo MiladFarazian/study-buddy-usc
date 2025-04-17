@@ -59,7 +59,7 @@ export function DurationSelector({
   console.log("Available duration for slot:", availableDuration, "minutes");
   console.log("Selected slot:", selectedSlot);
 
-  // Filter duration options based on available time
+  // Filter duration options based on available time (for auto-selection purposes)
   const availableDurationOptions = durationOptions.filter(option => {
     return option.minutes <= availableDuration;
   });
@@ -94,6 +94,11 @@ export function DurationSelector({
     return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
   };
 
+  // Check if a duration option exceeds available time
+  const isDurationExceedingAvailability = (minutes: number) => {
+    return minutes > availableDuration;
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-muted/30 p-4 rounded-md mb-6">
@@ -109,15 +114,11 @@ export function DurationSelector({
     
       <h2 className="text-2xl font-bold">Select Session Duration</h2>
       
-      {availableDurationOptions.length === 0 ? (
-        <div className="p-6 text-center border rounded-md">
-          <p className="text-muted-foreground">
-            No duration options available for this time slot. Please select another time.
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-4">
-          {availableDurationOptions.map((option) => (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-4">
+        {durationOptions.map((option) => {
+          const isExceedingAvailability = isDurationExceedingAvailability(option.minutes);
+          
+          return (
             <Button
               key={option.minutes}
               type="button"
@@ -126,9 +127,12 @@ export function DurationSelector({
                 h-32 flex flex-col items-center justify-center p-6 border rounded-md relative
                 ${selectedDuration === option.minutes 
                   ? "bg-red-50 border-usc-cardinal text-usc-cardinal" 
-                  : "bg-white hover:bg-gray-50"}
+                  : isExceedingAvailability
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-white hover:bg-gray-50"}
               `}
-              onClick={() => onSelectDuration(option.minutes)}
+              onClick={() => !isExceedingAvailability && onSelectDuration(option.minutes)}
+              disabled={isExceedingAvailability}
             >
               <span className="text-xl font-bold mb-2">
                 {option.minutes} minutes
@@ -137,15 +141,21 @@ export function DurationSelector({
                 ${option.cost.toFixed(2)}
               </span>
               
-              {selectedDuration === option.minutes && (
+              {selectedDuration === option.minutes && !isExceedingAvailability && (
                 <div className="absolute -top-2 -right-2 w-5 h-5 bg-usc-cardinal rounded-full flex items-center justify-center">
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-white"><polyline points="20 6 9 17 4 12"></polyline></svg>
                 </div>
               )}
+              
+              {isExceedingAvailability && (
+                <div className="text-xs text-gray-500 mt-1 font-medium">
+                  Exceeds availability
+                </div>
+              )}
             </Button>
-          ))}
-        </div>
-      )}
+          );
+        })}
+      </div>
       
       <p className="text-sm text-muted-foreground">
         Rate: ${hourlyRate.toFixed(2)}/hour
