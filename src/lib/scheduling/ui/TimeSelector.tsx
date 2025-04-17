@@ -35,7 +35,11 @@ export function TimeSelector({
     
     // Sort the slots within each hour group
     Object.keys(grouped).forEach(hour => {
-      grouped[hour].sort((a, b) => a.time.localeCompare(b.time));
+      grouped[hour].sort((a, b) => {
+        const minutesA = parseInt(a.time.split(':')[1]);
+        const minutesB = parseInt(b.time.split(':')[1]);
+        return minutesA - minutesB;
+      });
     });
     
     return grouped;
