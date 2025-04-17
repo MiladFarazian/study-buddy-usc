@@ -21,32 +21,14 @@ export function TimeSelector({
   selectedTime,
   onTimeChange,
 }: TimeSelectorProps) {
-  // Group time slots by hour to improve UI organization
-  const groupTimeSlotsByHour = () => {
-    const grouped: { [hour: string]: TimeSlot[] } = {};
-    
-    timeSlots.filter(slot => slot.available).forEach(slot => {
-      const [hours] = slot.time.split(':');
-      if (!grouped[hours]) {
-        grouped[hours] = [];
-      }
-      grouped[hours].push(slot);
+  const validTimeSlots = timeSlots.filter(slot => slot.available)
+    .sort((a, b) => {
+      const timeA = parseInt(a.time.split(':').join(''));
+      const timeB = parseInt(b.time.split(':').join(''));
+      return timeA - timeB;
     });
-    
-    // Sort the slots within each hour group
-    Object.keys(grouped).forEach(hour => {
-      grouped[hour].sort((a, b) => {
-        const minutesA = parseInt(a.time.split(':')[1]);
-        const minutesB = parseInt(b.time.split(':')[1]);
-        return minutesA - minutesB;
-      });
-    });
-    
-    return grouped;
-  };
-  
-  const groupedSlots = groupTimeSlotsByHour();
-  const hasAvailableSlots = timeSlots.some(slot => slot.available);
+
+  const hasAvailableSlots = validTimeSlots.length > 0;
 
   return (
     <div className="space-y-4">
@@ -59,25 +41,16 @@ export function TimeSelector({
         </div>
       ) : (
         <ScrollArea className="h-64">
-          <div className="space-y-4">
-            {Object.entries(groupedSlots).map(([hour, slots]) => (
-              <div key={hour} className="space-y-2">
-                <h4 className="text-sm font-medium text-muted-foreground">
-                  {parseInt(hour) < 12 ? parseInt(hour) : parseInt(hour) - 12}:00 {parseInt(hour) >= 12 ? 'PM' : 'AM'}
-                </h4>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {slots.map((slot, index) => (
-                    <Button
-                      key={index}
-                      variant={selectedTime === slot.time ? "default" : "outline"}
-                      className={`h-12 ${selectedTime === slot.time ? "bg-usc-cardinal hover:bg-usc-cardinal-dark" : ""}`}
-                      onClick={() => onTimeChange(slot.time)}
-                    >
-                      {formatTimeDisplay(slot.time)}
-                    </Button>
-                  ))}
-                </div>
-              </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 p-1">
+            {validTimeSlots.map((slot, index) => (
+              <Button
+                key={index}
+                variant={selectedTime === slot.time ? "default" : "outline"}
+                className={`h-12 ${selectedTime === slot.time ? "bg-usc-cardinal hover:bg-usc-cardinal-dark" : ""}`}
+                onClick={() => onTimeChange(slot.time)}
+              >
+                {formatTimeDisplay(slot.time)}
+              </Button>
             ))}
           </div>
         </ScrollArea>
