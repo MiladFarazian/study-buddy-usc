@@ -55,6 +55,14 @@ export const DateSelector = ({
   const getDayAbbreviation = (date: Date) => {
     return format(date, 'EEE');
   };
+
+  // Check if there are available time slots for the selected date
+  const hasSlotsForSelectedDate = date 
+    ? availableSlots.some(slot => {
+        const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
+        return isSameDay(slotDay, date) && slot.available;
+      })
+    : false;
   
   // Generate a key that changes when date changes to force Calendar re-render
   const calendarKey = `calendar-${viewMode}-${date ? format(date, 'yyyy-MM-dd') : 'none'}-${currentWeekStart ? format(currentWeekStart, 'yyyy-MM-dd') : 'none'}`;
@@ -107,8 +115,6 @@ export const DateSelector = ({
             <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center">
               {weekDays.map((day, index) => {
                 const hasSlots = hasAvailableSlots(day);
-                const isPastDay = isBefore(day, today);
-                const isDisabled = isPastDay || !hasSlots;
                 
                 return (
                   <div key={index} className="flex flex-col items-center">
@@ -121,18 +127,18 @@ export const DateSelector = ({
                         "h-10 w-10 sm:h-12 sm:w-12 rounded-full p-0 font-normal text-lg",
                         isToday(day) && !isSameDay(day, date || new Date()) && "bg-muted border border-usc-cardinal/30",
                         isSameDay(day, date || new Date()) && "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark",
-                        isDisabled && "opacity-50 cursor-not-allowed",
-                        hasSlots && !isPastDay && !date && "hover:border-usc-cardinal"
+                        !hasSlots && "opacity-50 cursor-not-allowed",
+                        hasSlots && !date && "hover:border-usc-cardinal"
                       )}
-                      disabled={isDisabled}
+                      disabled={!hasSlots}
                       onClick={() => {
-                        if (!isDisabled) {
+                        if (hasSlots) {
                           onDateChange(day);
                         }
                       }}
                     >
                       {format(day, 'd')}
-                      {hasSlots && !isPastDay && (
+                      {hasSlots && (
                         <span className="absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-usc-cardinal"></span>
                       )}
                     </Button>
@@ -156,14 +162,14 @@ export const DateSelector = ({
       ) : (
         <div className="min-h-[350px] w-full flex items-center justify-center border rounded-md p-2">
           <Calendar
-            key={calendarKey}  // Add key to force re-render when date changes
+            key={calendarKey}
             mode="single"
             selected={date}
             onSelect={onDateChange}
             className="w-full"
             disabled={(day) => {
-              // Only disable past dates and days without available slots
-              return isBefore(day, today) || !hasAvailableSlots(day);
+              // Only disable days without available slots
+              return !hasAvailableSlots(day);
             }}
             classNames={{
               day_today: "bg-muted",
