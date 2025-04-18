@@ -1,12 +1,11 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
-import { format, isToday, isSameDay, startOfWeek, addDays, isAfter, isBefore, startOfDay, getDay, subWeeks, addWeeks } from "date-fns";
+import { format, isToday, isSameDay, startOfWeek, addDays, startOfDay } from "date-fns";
 import { cn } from "@/lib/utils";
 import { BookingSlot } from "@/lib/scheduling";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar } from "@/components/ui/calendar"; // Added missing Calendar import
+import { Calendar } from "@/components/ui/calendar";
 
 interface DateSelectorProps {
   date: Date | undefined;
@@ -32,7 +31,6 @@ export const DateSelector = ({
     addDays(currentWeekStart, i)
   );
 
-  // This function correctly determines if a day has available slots
   const hasAvailableSlots = (day: Date) => {
     return availableSlots.some(slot => {
       const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
@@ -56,7 +54,6 @@ export const DateSelector = ({
     return format(date, 'EEE');
   };
 
-  // Check if there are available time slots for the selected date
   const hasSlotsForSelectedDate = date 
     ? availableSlots.some(slot => {
         const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
@@ -64,25 +61,24 @@ export const DateSelector = ({
       })
     : false;
   
-  // Generate a key that changes when date changes to force Calendar re-render
   const calendarKey = `calendar-${viewMode}-${date ? format(date, 'yyyy-MM-dd') : 'none'}-${currentWeekStart ? format(currentWeekStart, 'yyyy-MM-dd') : 'none'}`;
   
   return (
-    <div className="space-y-4 w-full">
-      <div className="flex justify-between items-center">
+    <div className="space-y-4 w-full max-w-full overflow-hidden">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h3 className="text-xl font-semibold">Select a Date</h3>
         <Tabs 
           defaultValue="week" 
           value={viewMode} 
           onValueChange={(value) => setViewMode(value as "week" | "month")}
-          className="hidden sm:block"
+          className="w-full sm:w-auto"
         >
-          <TabsList>
-            <TabsTrigger value="week">
+          <TabsList className="w-full sm:w-auto grid grid-cols-2 sm:inline-flex">
+            <TabsTrigger value="week" className="w-full sm:w-auto">
               <CalendarIcon className="h-4 w-4 mr-2" />
               Week
             </TabsTrigger>
-            <TabsTrigger value="month">
+            <TabsTrigger value="month" className="w-full sm:w-auto">
               <CalendarIcon className="h-4 w-4 mr-2" /> 
               Month
             </TabsTrigger>
@@ -102,7 +98,7 @@ export const DateSelector = ({
               <ChevronLeft className="h-4 w-4" />
             </Button>
             
-            <span className="font-medium">
+            <span className="font-medium text-sm sm:text-base">
               {format(currentWeekStart, 'MMM d')} - {format(addDays(currentWeekStart, 6), 'MMM d, yyyy')}
             </span>
             
@@ -118,13 +114,13 @@ export const DateSelector = ({
                 
                 return (
                   <div key={index} className="flex flex-col items-center">
-                    <span className="text-xs sm:text-sm text-muted-foreground mb-1">
+                    <span className="text-[10px] sm:text-xs text-muted-foreground mb-1">
                       {getDayAbbreviation(day)}
                     </span>
                     <Button
                       variant={date && isSameDay(day, date) ? "default" : "outline"}
                       className={cn(
-                        "h-10 w-10 sm:h-12 sm:w-12 rounded-full p-0 font-normal text-lg",
+                        "h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 rounded-full p-0 font-normal text-sm sm:text-base md:text-lg",
                         isToday(day) && !isSameDay(day, date || new Date()) && "bg-muted border border-usc-cardinal/30",
                         isSameDay(day, date || new Date()) && "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark",
                         !hasSlots && "opacity-50 cursor-not-allowed",
@@ -139,7 +135,7 @@ export const DateSelector = ({
                     >
                       {format(day, 'd')}
                       {hasSlots && (
-                        <span className="absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-usc-cardinal"></span>
+                        <span className="absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-usc-cardinal"></span>
                       )}
                     </Button>
                   </div>
@@ -151,7 +147,7 @@ export const DateSelector = ({
               <Button 
                 variant="outline"
                 size="sm"
-                className="rounded-full"
+                className="rounded-full text-sm"
                 onClick={handleToday}
               >
                 Today
@@ -160,17 +156,14 @@ export const DateSelector = ({
           </div>
         </div>
       ) : (
-        <div className="min-h-[350px] w-full flex items-center justify-center border rounded-md p-2">
+        <div className="min-h-[300px] sm:min-h-[350px] w-full flex items-center justify-center border rounded-md p-2 overflow-x-auto">
           <Calendar
             key={calendarKey}
             mode="single"
             selected={date}
             onSelect={onDateChange}
-            className="w-full"
-            disabled={(day) => {
-              // Only disable days without available slots
-              return !hasAvailableSlots(day);
-            }}
+            className="w-full max-w-full"
+            disabled={(day) => !hasAvailableSlots(day)}
             classNames={{
               day_today: "bg-muted",
               day_selected: "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark focus:bg-usc-cardinal-dark",
@@ -180,7 +173,8 @@ export const DateSelector = ({
               table: "w-full",
               head_row: "flex w-full justify-between",
               row: "flex w-full justify-between mt-2",
-              cell: "h-8 w-8 text-center p-0 relative [&:has([aria-selected])]:bg-accent focus-within:relative focus-within:z-20"
+              cell: "h-6 w-6 sm:h-8 sm:w-8 text-center p-0 relative [&:has([aria-selected])]:bg-accent focus-within:relative focus-within:z-20",
+              day: "h-6 w-6 sm:h-8 sm:w-8 p-0 font-normal aria-selected:opacity-100"
             }}
           />
         </div>
@@ -188,7 +182,7 @@ export const DateSelector = ({
       
       {date && !isLoading && (
         <div className="text-center mt-4">
-          <p className="text-muted-foreground text-sm">
+          <p className="text-sm text-muted-foreground">
             {isToday(date) 
               ? "Selected date: Today" 
               : `Selected date: ${format(date, 'EEEE, MMMM d, yyyy')}`}
