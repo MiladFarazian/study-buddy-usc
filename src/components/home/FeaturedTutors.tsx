@@ -5,20 +5,45 @@ import TutorCard from "@/components/ui/TutorCard";
 import { useTutors } from "@/hooks/useTutors";
 import { Loader2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+
+// Simple basic modal for demo
+function SecretFeaturesModal({ open, onClose }: { open: boolean, onClose: () => void }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-end md:items-center justify-center">
+      <div className="bg-white w-full max-w-md mx-auto rounded-t-lg md:rounded-lg shadow-xl p-6 m-0 md:mb-20">
+        <h2 className="text-xl font-bold mb-4 text-usc-cardinal">🔓 Demo: All Features</h2>
+        <div className="flex flex-col space-y-3">
+          <Link to="/schedule" className="font-medium text-usc-cardinal hover:underline">Schedule Page</Link>
+          <Link to="/tutors" className="font-medium text-usc-cardinal hover:underline">All Tutors</Link>
+          <Link to="/resources" className="font-medium text-usc-cardinal hover:underline">Resources</Link>
+          <Link to="/courses" className="font-medium text-usc-cardinal hover:underline">Courses</Link>
+          <Link to="/settings" className="font-medium text-usc-cardinal hover:underline">Settings</Link>
+          <Link to="/students" className="font-medium text-usc-cardinal hover:underline">Students</Link>
+          <Link to="/messages" className="font-medium text-usc-cardinal hover:underline">Messages</Link>
+        </div>
+        <Button className="w-full mt-6" variant="outline" onClick={onClose}>Close</Button>
+        <div className="mt-3 text-xs text-gray-500 text-center">
+          This secret menu is for demo/testing only.
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const FeaturedTutors = () => {
   const { tutors, loading } = useTutors();
   const isMobile = useIsMobile();
-  
-  console.log("FeaturedTutors - Number of tutors:", tutors.length);
+  const { user } = useAuth();
+  const [showSecret, setShowSecret] = useState(false);
   
   // Show only the top 3 tutors based on rating
   // For mobile, only show top 2
   const featuredTutors = [...tutors]
     .sort((a, b) => b.rating - a.rating)
     .slice(0, isMobile ? 2 : 3);
-
-  console.log("FeaturedTutors - Featured tutors:", featuredTutors.length);
 
   return (
     <div className="mt-8 md:mt-12 container px-0">
@@ -56,8 +81,22 @@ const FeaturedTutors = () => {
           ))}
         </div>
       )}
+
+      {/* Secret button for demo/testing, visible only if signed out */}
+      {!user && (
+        <>
+          <Button 
+            className="w-full mt-8 bg-gray-200 hover:bg-gray-300 text-usc-cardinal font-semibold"
+            onClick={() => setShowSecret(true)}
+          >
+            🔓 Show All Features (Demo)
+          </Button>
+          <SecretFeaturesModal open={showSecret} onClose={() => setShowSecret(false)} />
+        </>
+      )}
     </div>
   );
 };
 
 export default FeaturedTutors;
+
