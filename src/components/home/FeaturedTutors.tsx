@@ -7,15 +7,16 @@ import { Loader2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { enableDemoMode, isDemoMode, disableDemoMode } from "@/contexts/AuthContext";
 
 // Simple basic modal for demo
-function SecretFeaturesModal({ open, onClose }: { open: boolean, onClose: () => void }) {
+function SecretFeaturesModal({ open, onClose, onActivateDemoMode }: { open: boolean, onClose: () => void, onActivateDemoMode: () => void }) {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-end md:items-center justify-center">
       <div className="bg-white w-full max-w-md mx-auto rounded-t-lg md:rounded-lg shadow-xl p-6 m-0 md:mb-20">
         <h2 className="text-xl font-bold mb-4 text-usc-cardinal">🔓 Demo: All Features</h2>
-        <div className="flex flex-col space-y-3">
+        <div className="flex flex-col space-y-3 pb-3 border-b">
           <Link to="/schedule" className="font-medium text-usc-cardinal hover:underline">Schedule Page</Link>
           <Link to="/tutors" className="font-medium text-usc-cardinal hover:underline">All Tutors</Link>
           <Link to="/resources" className="font-medium text-usc-cardinal hover:underline">Resources</Link>
@@ -24,9 +25,19 @@ function SecretFeaturesModal({ open, onClose }: { open: boolean, onClose: () => 
           <Link to="/students" className="font-medium text-usc-cardinal hover:underline">Students</Link>
           <Link to="/messages" className="font-medium text-usc-cardinal hover:underline">Messages</Link>
         </div>
-        <Button className="w-full mt-6" variant="outline" onClick={onClose}>Close</Button>
+        <Button 
+          className="w-full mt-4 bg-usc-cardinal text-white hover:bg-usc-gold font-bold" 
+          onClick={() => {
+            onActivateDemoMode();
+            onClose();
+            setTimeout(() => window.location.reload(), 120); // ensure full refresh/redirect
+          }}
+        >
+          👨‍🏫 Enter Demo Tutor Mode
+        </Button>
+        <Button className="w-full mt-2" variant="outline" onClick={onClose}>Close</Button>
         <div className="mt-3 text-xs text-gray-500 text-center">
-          This secret menu is for demo/testing only.
+          This menu is for demo/testing only.
         </div>
       </div>
     </div>
@@ -34,11 +45,10 @@ function SecretFeaturesModal({ open, onClose }: { open: boolean, onClose: () => 
 }
 
 const FeaturedTutors = () => {
-  const { tutors, loading } = useTutors();
+  const { tutors, loading, user } = { ...useTutors(), ...useAuth() };
   const isMobile = useIsMobile();
-  const { user } = useAuth();
   const [showSecret, setShowSecret] = useState(false);
-  
+
   // Show only the top 3 tutors based on rating
   // For mobile, only show top 2
   const featuredTutors = [...tutors]
@@ -46,7 +56,7 @@ const FeaturedTutors = () => {
     .slice(0, isMobile ? 2 : 3);
 
   return (
-    <div className="mt-8 md:mt-12 container px-0">
+    <div className="mt-8 md:mt-12 container px-0 relative">
       <div className="flex items-center justify-between mb-4 md:mb-6">
         <h2 className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>Featured Tutors</h2>
         <Button asChild variant="ghost" className="text-usc-cardinal">
@@ -64,7 +74,6 @@ const FeaturedTutors = () => {
           </Link>
         </Button>
       </div>
-
       {loading ? (
         <div className="flex justify-center items-center py-8 md:py-12">
           <Loader2 className="h-5 w-5 md:h-6 md:w-6 animate-spin text-usc-cardinal" />
@@ -82,8 +91,8 @@ const FeaturedTutors = () => {
         </div>
       )}
 
-      {/* Secret button for demo/testing, visible only if signed out */}
-      {!user && (
+      {/* Secret button for demo/testing, visible only if not already in demo mode */}
+      {!user && !isDemoMode() && (
         <>
           <Button 
             className="w-full mt-8 bg-gray-200 hover:bg-gray-300 text-usc-cardinal font-semibold"
@@ -91,12 +100,33 @@ const FeaturedTutors = () => {
           >
             🔓 Show All Features (Demo)
           </Button>
-          <SecretFeaturesModal open={showSecret} onClose={() => setShowSecret(false)} />
+          <SecretFeaturesModal 
+            open={showSecret} 
+            onClose={() => setShowSecret(false)} 
+            onActivateDemoMode={() => {
+              enableDemoMode();
+              window.dispatchEvent(new Event("demoModeChanged"));
+            }} 
+          />
         </>
+      )}
+      {/* If in demo mode show an exit hint */}
+      {isDemoMode() && (
+        <div className="fixed z-40 bottom-5 right-5">
+          <Button
+            onClick={() => {
+              disableDemoMode();
+              window.dispatchEvent(new Event("demoModeChanged"));
+              setTimeout(() => window.location.reload(), 120);
+            }}
+            className="bg-usc-cardinal text-white hover:bg-usc-gold font-bold shadow-lg"
+          >
+            👋 Exit Demo Mode
+          </Button>
+        </div>
       )}
     </div>
   );
 };
 
 export default FeaturedTutors;
-
