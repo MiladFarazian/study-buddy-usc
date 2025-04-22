@@ -1,7 +1,17 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
-import { format, isToday, isSameDay, startOfWeek, addDays, startOfDay } from "date-fns";
+import { 
+  format, 
+  isToday, 
+  isSameDay, 
+  startOfWeek, 
+  addDays, 
+  startOfDay,
+  addWeeks,
+  subWeeks
+} from "date-fns";
 import { cn } from "@/lib/utils";
 import { BookingSlot } from "@/lib/scheduling";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
