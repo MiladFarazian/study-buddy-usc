@@ -43,12 +43,27 @@ export const ScheduleCalendar = ({ sessions }: ScheduleCalendarProps) => {
         <CardDescription>View your schedule</CardDescription>
       </CardHeader>
       <CardContent>
-        <Calendar
-          mode="single"
-          selected={date}
-          onSelect={setDate}
-          className="rounded-md border"
-        />
+        <div className="overflow-x-auto">
+          <div className="min-w-[280px] w-full">
+            <Calendar
+              mode="single"
+              selected={date}
+              onSelect={setDate}
+              className="max-w-full w-full"
+              classNames={{
+                months: "w-full flex flex-col space-y-4",
+                month: "w-full space-y-4",
+                table: "w-full border-collapse space-y-1",
+                head_row: "flex w-full",
+                head_cell: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
+                row: "flex w-full mt-2",
+                cell: "text-center text-sm relative p-0 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-muted rounded-md transition-colors"
+              }}
+            />
+          </div>
+        </div>
+        
         {calendarDates.length > 0 && (
           <div className="mt-4">
             <p className="text-sm text-gray-500 mb-2">Upcoming Sessions:</p>
