@@ -71,9 +71,9 @@ const Sidebar = () => {
       showWhen: !!user // Only for authenticated users
     },
     {
-      title: "Payments",
-      icon: CreditCard,
-      path: "/settings?tab=payments",
+      title: "Resources",
+      icon: FileText,
+      path: "/resources",
       showWhen: !!user // Only for authenticated users
     },
     {
