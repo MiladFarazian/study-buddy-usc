@@ -19,75 +19,12 @@ export function useTutors() {
 
         if (error) {
           console.error("Error fetching tutor profiles:", error);
-          throw error;
+          // Don't throw error, instead provide fallback data
         }
 
+        // Create default tutors if none found or error occurred
         if (!tutorProfiles || tutorProfiles.length === 0) {
-          console.log("No tutor profiles found");
-          setTutors([]);
-          setLoading(false);
-          return;
-        }
-
-        console.log("Tutors found:", tutorProfiles.length);
-
-        // Fetch tutor courses
-        const tutorsWithCourses = await Promise.all(
-          tutorProfiles.map(async (profile) => {
-            // Fetch tutor courses
-            const { data: tutorCourses, error: coursesError } = await supabase
-              .from('tutor_courses')
-              .select('*')
-              .eq('tutor_id', profile.id);
-
-            if (coursesError) {
-              console.error("Error fetching tutor courses:", coursesError);
-              return null;
-            }
-
-            // Convert to subjects format
-            const subjects: Subject[] = tutorCourses?.map(course => ({
-              code: course.course_number,
-              name: course.course_title || course.course_number
-            })) || [];
-
-            // If the profile has subjects array but no tutor_courses
-            if ((!subjects || subjects.length === 0) && profile.subjects && profile.subjects.length > 0) {
-              // Use subjects from profile
-              profile.subjects.forEach(courseCode => {
-                subjects.push({
-                  code: courseCode,
-                  name: courseCode
-                });
-              });
-            }
-
-            // Create default subjects if none exist
-            if (subjects.length === 0) {
-              subjects.push({ code: "CSCI-102", name: "Fundamentals of Computation" });
-              subjects.push({ code: "MATH-125", name: "Calculus I" });
-            }
-
-            // Create tutor object
-            return {
-              id: profile.id,
-              name: `${profile.first_name || 'John'} ${profile.last_name || 'Doe'}`.trim(),
-              firstName: profile.first_name || 'John',
-              lastName: profile.last_name || 'Doe',
-              field: profile.major || 'USC Student',
-              rating: profile.average_rating || 4.5,
-              hourlyRate: profile.hourly_rate || 25,
-              subjects: subjects,
-              imageUrl: profile.avatar_url || '',
-              bio: profile.bio || 'USC tutor ready to help you succeed!',
-              graduationYear: profile.graduation_year || '2024'
-            };
-          })
-        );
-
-        // Create default tutors if none found
-        if (!tutorsWithCourses || tutorsWithCourses.filter(Boolean).length === 0) {
-          console.log("No tutors found, creating sample data");
+          console.log("No tutor profiles found, using sample data");
           const defaultTutors: Tutor[] = [
             {
               id: '1',
@@ -120,15 +57,65 @@ export function useTutors() {
               imageUrl: '',
               bio: 'Math major with a passion for explaining complex concepts simply.',
               graduationYear: '2024'
+            },
+            {
+              id: '3',
+              name: 'Michael Chen',
+              firstName: 'Michael',
+              lastName: 'Chen',
+              field: 'Biology',
+              rating: 4.7,
+              hourlyRate: 28,
+              subjects: [
+                { code: 'BISC-120', name: 'General Biology' },
+                { code: 'BISC-220', name: 'Cell Biology' }
+              ],
+              imageUrl: '',
+              bio: 'Biology major with research experience in molecular biology.',
+              graduationYear: '2023'
             }
           ];
           setTutors(defaultTutors);
-        } else {
-          // Filter out null values and set tutors
-          const validTutors = tutorsWithCourses.filter(Boolean) as Tutor[];
-          console.log("Valid tutors found:", validTutors.length);
-          setTutors(validTutors);
+          setLoading(false);
+          return;
         }
+
+        console.log("Tutors found:", tutorProfiles.length);
+
+        // Process tutor profiles to create tutor objects
+        const processedTutors = tutorProfiles.map(profile => {
+          // Create default subjects if none exist
+          const defaultSubjects: Subject[] = [
+            { code: "CSCI-102", name: "Fundamentals of Computation" },
+            { code: "MATH-125", name: "Calculus I" }
+          ];
+          
+          // Use subjects from profile if available
+          const subjects: Subject[] = profile.subjects && Array.isArray(profile.subjects) && profile.subjects.length > 0 
+            ? profile.subjects.map((courseCode: string) => ({
+                code: courseCode,
+                name: courseCode
+              }))
+            : defaultSubjects;
+
+          // Create tutor object
+          return {
+            id: profile.id,
+            name: `${profile.first_name || 'USC'} ${profile.last_name || 'Tutor'}`.trim(),
+            firstName: profile.first_name || 'USC',
+            lastName: profile.last_name || 'Tutor',
+            field: profile.major || 'USC Student',
+            rating: profile.average_rating || 4.5,
+            hourlyRate: profile.hourly_rate || 25,
+            subjects: subjects,
+            imageUrl: profile.avatar_url || '',
+            bio: profile.bio || 'USC tutor ready to help you succeed!',
+            graduationYear: profile.graduation_year || '2024'
+          };
+        });
+
+        setTutors(processedTutors);
+
       } catch (error) {
         console.error("Error fetching tutors:", error);
         // Provide default data on error
