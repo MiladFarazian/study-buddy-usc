@@ -5,6 +5,9 @@ import { useAuthState } from "@/hooks/useAuthState";
 import { useAuthMethods } from "@/hooks/useAuthMethods";
 import { AuthContextType } from "./types/auth-types";
 
+// Create the AuthContext - this was missing 
+const AuthContext = createContext<AuthContextType>({} as AuthContextType);
+
 // Demo mode helpers
 const DEMO_KEY = "studybuddy_demo_tutor";
 export const enableDemoMode = () => {
@@ -37,7 +40,7 @@ const DEMO_PROFILE = {
   last_name: "Tutor",
   bio: "I am a demo tutor. All actions are read-only.",
   major: "Computer Science",
-  role: "tutor",
+  role: "tutor" as "tutor", // Type assertion to fix the role type error
   avatar_url: "",
   is_active: true,
   // Add any more fields as needed in your Profile type...
@@ -136,4 +139,3 @@ export function useAuth() {
   }
   return context;
 }
-

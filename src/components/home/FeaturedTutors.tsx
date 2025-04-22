@@ -45,7 +45,12 @@ function SecretFeaturesModal({ open, onClose, onActivateDemoMode }: { open: bool
 }
 
 const FeaturedTutors = () => {
-  const { tutors, loading, user } = { ...useTutors(), ...useAuth() };
+  const tutorsData = useTutors();
+  const authData = useAuth();
+  // Fixed spread operator issue by separating the objects
+  const { tutors, loading } = tutorsData;
+  const { user } = authData;
+  
   const isMobile = useIsMobile();
   const [showSecret, setShowSecret] = useState(false);
 
