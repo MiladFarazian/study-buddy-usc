@@ -1,4 +1,3 @@
-
 import { Link, useLocation } from "react-router-dom";
 import { 
   BarChart, 
@@ -23,10 +22,8 @@ const Sidebar = () => {
   const isMobile = useIsMobile();
   const [isInitializing, setIsInitializing] = useState(true);
   
-  // Use effect to track when initial auth check is complete
   useEffect(() => {
     if (!loading) {
-      // Add a small delay to ensure UI updates smoothly
       const timer = setTimeout(() => {
         setIsInitializing(false);
       }, 100);
@@ -80,12 +77,6 @@ const Sidebar = () => {
       showWhen: !!user // Only for authenticated users
     },
     {
-      title: "Resources",
-      icon: FileText,
-      path: "/resources",
-      showWhen: !!user // Only for authenticated users
-    },
-    {
       title: "Analytics",
       icon: BarChart,
       path: "/analytics",
@@ -105,7 +96,6 @@ const Sidebar = () => {
     <div className="min-h-screen w-64 bg-white text-usc-cardinal border-r border-gray-200 hidden md:block">
       <nav className="p-4 space-y-2">
         {isInitializing ? (
-          // Show skeleton loaders while initializing
           <>
             {Array(5).fill(0).map((_, i) => (
               <div 
@@ -118,7 +108,6 @@ const Sidebar = () => {
             ))}
           </>
         ) : (
-          // Show actual sidebar items when ready
           filteredItems.map((item) => {
             const isActive = location.pathname === item.path || 
                           (item.path.startsWith('/settings') && location.pathname.startsWith('/settings'));
