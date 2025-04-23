@@ -27,14 +27,14 @@ const TutorCardDesktop = ({ tutor, getInitials }: TutorCardDesktopProps) => {
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-              <h3 className="text-xl font-bold truncate">{tutor.name}</h3>
+              <h3 className="text-xl font-bold text-ellipsis overflow-hidden">{tutor.name}</h3>
               <div className="flex items-center mt-1">
                 <GraduationCap className="h-4 w-4 text-gray-500 mr-1 flex-shrink-0" />
-                <p className="text-gray-600 text-sm truncate">{tutor.field}</p>
+                <p className="text-gray-600 text-sm overflow-hidden text-ellipsis">{tutor.field}</p>
               </div>
               <div className="flex items-center mt-1">
                 <MapPin className="h-4 w-4 text-gray-500 mr-1 flex-shrink-0" />
-                <p className="text-gray-600 text-sm truncate">USC Campus</p>
+                <p className="text-gray-600 text-sm overflow-hidden text-ellipsis">USC Campus</p>
               </div>
               <div className="flex items-center mt-2">
                 <StarRating rating={tutor.rating} />
@@ -71,12 +71,12 @@ const TutorCardDesktop = ({ tutor, getInitials }: TutorCardDesktopProps) => {
             
             <div className="flex items-center text-sm text-gray-500">
               <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
-              <span className="truncate">Available for in-person or online sessions</span>
+              <span className="overflow-hidden text-ellipsis">Available for in-person or online sessions</span>
             </div>
           </div>
           
           <Button 
-            className="w-full mt-1 bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
+            className="w-full bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
             asChild
           >
             <Link to={`/tutors/${tutor.id}`}>View Profile</Link>

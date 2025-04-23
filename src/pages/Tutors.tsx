@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -173,8 +172,8 @@ const Tutors = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredTutors.map((tutor) => (
-            <div key={tutor.id} className="w-full">
-              <TutorCard key={tutor.id} tutor={tutor} />
+            <div key={tutor.id}>
+              <TutorCard tutor={tutor} />
             </div>
           ))}
         </div>
