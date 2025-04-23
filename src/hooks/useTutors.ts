@@ -6,12 +6,16 @@ import { Tutor, Subject } from "@/types/tutor";
 export function useTutors() {
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchTutors = async () => {
       setLoading(true);
+      setError(null);
+      
       try {
-        // Fetch tutors - no authentication required, these are public profiles
+        console.log("Fetching tutor profiles...");
+        // Fetch tutors - public access enabled via RLS policy
         const { data: tutorProfiles, error } = await supabase
           .from('profiles')
           .select('*')
@@ -20,6 +24,7 @@ export function useTutors() {
 
         if (error) {
           console.error("Error fetching tutor profiles:", error);
+          setError(error.message);
           setTutors([]);
           setLoading(false);
           return;
@@ -63,8 +68,9 @@ export function useTutors() {
 
         setTutors(processedTutors);
 
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching tutors:", error);
+        setError(error.message || "Failed to fetch tutors");
         setTutors([]);
       } finally {
         setLoading(false);
@@ -74,5 +80,5 @@ export function useTutors() {
     fetchTutors();
   }, []);
 
-  return { tutors, loading };
+  return { tutors, loading, error };
 }

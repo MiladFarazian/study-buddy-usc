@@ -5,10 +5,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Loader2, UserSearch } from "lucide-react";
+import { Loader2, UserSearch, AlertTriangle } from "lucide-react";
 
 export function RecommendedTutors() {
-  const { tutors, loading } = useTutors();
+  const { tutors, loading, error } = useTutors();
 
   if (loading) {
     return (
@@ -16,6 +16,18 @@ export function RecommendedTutors() {
         <CardContent className="flex justify-center items-center py-8">
           <Loader2 className="h-6 w-6 animate-spin text-usc-cardinal mr-2" />
           <span>Loading tutors...</span>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="py-10 text-center">
+          <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
+          <p className="text-muted-foreground font-medium">Error loading tutors</p>
+          <p className="text-sm text-muted-foreground mt-1">{error}</p>
         </CardContent>
       </Card>
     );
