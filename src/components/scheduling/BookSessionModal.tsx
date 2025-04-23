@@ -9,6 +9,7 @@ import { LoadingScreen } from "./booking-modal/LoadingScreen";
 import { useToast } from "@/hooks/use-toast";
 import { createSessionBooking } from "@/lib/scheduling/booking-utils";
 import { useAuthState } from "@/hooks/useAuthState";
+import { LoginPrompt } from "./booking-modal/LoginPrompt";
 
 interface BookSessionModalProps {
   isOpen: boolean;
@@ -115,11 +116,15 @@ export function BookSessionModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[800px] p-0 max-h-[90vh] overflow-y-auto">
         <DialogTitle className="sr-only">Book a Session</DialogTitle>
         <div className="p-6">
-          {renderContent()}
+          {!user ? (
+            <LoginPrompt onClose={onClose} />
+          ) : (
+            renderContent()
+          )}
         </div>
       </DialogContent>
     </Dialog>

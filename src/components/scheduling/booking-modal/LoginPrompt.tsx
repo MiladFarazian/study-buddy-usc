@@ -35,7 +35,7 @@ export const LoginPrompt = ({ onClose, onLogin }: LoginPromptProps) => {
       
       <div className="flex gap-4">
         <Button onClick={handleLogin} className="bg-usc-cardinal hover:bg-usc-cardinal-dark">
-          Login
+          Sign In
         </Button>
         <Button variant="outline" onClick={onClose}>
           Cancel
