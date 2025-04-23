@@ -27,14 +27,14 @@ const TutorCardMobile = ({ tutor, getInitials }: TutorCardMobileProps) => {
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <h3 className="text-base font-bold overflow-hidden text-ellipsis whitespace-nowrap">{tutor.name}</h3>
+              <h3 className="text-base font-bold truncate">{tutor.name}</h3>
               <div className="flex items-center mt-0.5">
                 <GraduationCap className="h-3 w-3 text-gray-500 mr-1 flex-shrink-0" />
-                <p className="text-gray-600 text-xs overflow-hidden text-ellipsis whitespace-nowrap">{tutor.field}</p>
+                <p className="text-gray-600 text-xs truncate">{tutor.field}</p>
               </div>
               <div className="flex items-center mt-0.5">
                 <MapPin className="h-3 w-3 text-gray-500 mr-1 flex-shrink-0" />
-                <p className="text-gray-600 text-xs overflow-hidden text-ellipsis whitespace-nowrap">USC Campus</p>
+                <p className="text-gray-600 text-xs truncate">USC Campus</p>
               </div>
               <StarRating rating={tutor.rating} className="mt-1" />
             </div>
