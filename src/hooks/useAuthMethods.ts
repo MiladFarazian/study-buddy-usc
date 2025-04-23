@@ -59,7 +59,7 @@ export const useAuthMethods = () => {
           description: error.message,
           variant: "destructive",
         });
-        return { error };
+        return { success: false, error };
       } 
       
       toast({
@@ -67,7 +67,7 @@ export const useAuthMethods = () => {
         description: "You have been successfully signed out",
       });
       
-      return { success: true };
+      return { success: true, error: null };
     } catch (error: any) {
       console.error('Sign out error:', error);
       toast({
@@ -75,7 +75,7 @@ export const useAuthMethods = () => {
         description: "An unexpected error occurred",
         variant: "destructive",
       });
-      return { error };
+      return { success: false, error };
     }
   };
 

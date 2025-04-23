@@ -8,7 +8,7 @@ export interface AuthRedirectResult {
   profile: any;
   loading: boolean;
   isProfileComplete: boolean;
-  signOut: () => Promise<{ success?: boolean; error?: any }>; // Update the return type
+  signOut: () => Promise<{ success: boolean; error?: any | null }>;
 }
 
 export const useAuthRedirect = (redirectPath: string, requireAuth: boolean = false): AuthRedirectResult => {

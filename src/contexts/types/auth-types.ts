@@ -7,7 +7,7 @@ export type AuthContextType = {
   user: User | null;
   profile: Profile | null;
   signIn: (provider: string, options?: any) => Promise<any>;
-  signOut: () => Promise<{ success?: boolean; error?: any }>;
+  signOut: () => Promise<{ success: boolean; error?: any | null }>;
   loading: boolean;
   isStudent: boolean;
   isTutor: boolean;
