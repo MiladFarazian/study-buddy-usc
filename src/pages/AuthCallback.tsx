@@ -51,26 +51,13 @@ const AuthCallback = () => {
           // Get the redirectAfterAuth path and make sure it exists
           let redirectTo = sessionStorage.getItem('redirectAfterAuth') || '/';
           sessionStorage.removeItem('redirectAfterAuth');
+          sessionStorage.removeItem('authOriginUrl'); // Clean up
           
           // Make sure we have a valid URL to redirect to
           redirectTo = redirectTo.startsWith('/') ? redirectTo : '/';
           
-          // If we have an origin URL, make sure we stay in the same environment
-          // by extracting just the path and appending to current origin
-          if (originUrl) {
-            try {
-              const currentOrigin = window.location.origin;
-              console.log(`Redirecting to: ${redirectTo} in ${currentOrigin}`);
-              navigate(redirectTo, { replace: true });
-            } catch (err) {
-              console.error("Error parsing origin URL:", err);
-              navigate(redirectTo, { replace: true });
-            }
-          } else {
-            // Fallback to just redirecting to the path
-            console.log(`Redirecting to: ${redirectTo}`);
-            navigate(redirectTo, { replace: true });
-          }
+          console.log(`Redirecting to: ${redirectTo}`);
+          navigate(redirectTo, { replace: true });
         }
       } catch (err) {
         console.error("Unexpected error during auth callback:", err);
