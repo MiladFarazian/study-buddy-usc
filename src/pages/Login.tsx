@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,6 +20,17 @@ const Login = () => {
   if (from && from !== '/login' && from !== '/auth/callback') {
     sessionStorage.setItem('redirectAfterAuth', from);
   }
+
+  // Store the current origin to ensure we stay in the same environment
+  useEffect(() => {
+    // Detect if we're in preview and store that info
+    const isPreview = window.location.hostname.includes('preview--');
+    if (isPreview) {
+      sessionStorage.setItem('isPreviewEnv', 'true');
+    } else {
+      sessionStorage.removeItem('isPreviewEnv');
+    }
+  }, []);
 
   if (user) {
     // Redirect to the page they were trying to access, or home

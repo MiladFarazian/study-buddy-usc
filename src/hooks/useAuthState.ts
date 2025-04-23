@@ -13,9 +13,12 @@ export const useAuthState = () => {
 
   useEffect(() => {
     const initializeAuth = async () => {
+      console.log("Initializing auth state...");
+      
       // First set up the listener to avoid race conditions
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        (_event, newSession) => {
+        (event, newSession) => {
+          console.log("Auth state changed:", event);
           setSession(newSession);
           setUser(newSession?.user ?? null);
           
@@ -26,6 +29,7 @@ export const useAuthState = () => {
       // Then check for existing session
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
+        console.log("Current session:", currentSession ? "Found" : "None");
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         

@@ -51,7 +51,9 @@ const AuthCallback = () => {
           // Make sure we have a valid URL to redirect to
           const validRedirectPath = redirectTo.startsWith('/') ? redirectTo : '/';
           
-          // Navigate to the original page or home
+          // Preserve the current origin (whether preview or production)
+          // This ensures we stay in the same environment we authenticated from
+          console.log(`Redirecting to: ${validRedirectPath}`);
           navigate(validRedirectPath, { replace: true });
         }
       } catch (err) {
