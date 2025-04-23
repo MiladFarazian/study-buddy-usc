@@ -7,12 +7,17 @@ import { useNavigate } from "react-router-dom";
 interface AuthRequiredDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  returnPath?: string;
 }
 
-export function AuthRequiredDialog({ isOpen, onClose }: AuthRequiredDialogProps) {
+export function AuthRequiredDialog({ isOpen, onClose, returnPath }: AuthRequiredDialogProps) {
   const navigate = useNavigate();
   
   const handleLogin = () => {
+    // Store the return path in sessionStorage
+    if (returnPath) {
+      sessionStorage.setItem('redirectAfterAuth', returnPath);
+    }
     onClose();
     navigate('/login');
   };

@@ -1,13 +1,13 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Clock, ArrowRightLeft } from "lucide-react";
 import { Tutor } from "@/types/tutor";
 import MessageButton from "@/components/messaging/MessageButton";
 import { useState } from "react";
-import { SchedulerModal } from "../scheduling/SchedulerModal";
 import { BookSessionModal } from "../scheduling/BookSessionModal";
+import { AuthRequiredDialog } from "../scheduling/booking-modal/AuthRequiredDialog";
 import { useAuthState } from "@/hooks/useAuthState";
+import { useLocation } from "react-router-dom";
 
 interface TutorBookingSidebarProps {
   tutor: Tutor;
@@ -15,10 +15,20 @@ interface TutorBookingSidebarProps {
 
 export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
   const { user } = useAuthState();
+  const location = useLocation();
 
   // Format hourly rate with two decimal places from tutor profile
   const formattedHourlyRate = tutor.hourlyRate ? `$${tutor.hourlyRate.toFixed(2)}` : "$25.00";
+
+  const handleBookSession = () => {
+    if (!user) {
+      setShowAuthDialog(true);
+      return;
+    }
+    setShowBookingModal(true);
+  };
 
   return (
     <>
@@ -59,7 +69,7 @@ export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
 
           <Button 
             className="w-full bg-usc-cardinal hover:bg-usc-cardinal-dark text-white mb-3"
-            onClick={() => setShowBookingModal(true)}
+            onClick={handleBookSession}
           >
             Book a Session
           </Button>
@@ -71,12 +81,21 @@ export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
         </CardContent>
       </Card>
 
-      {/* Use BookSessionModal for better user experience and error handling */}
-      <BookSessionModal 
-        isOpen={showBookingModal} 
-        onClose={() => setShowBookingModal(false)}
-        tutor={tutor}
+      {/* Show auth dialog if user is not authenticated */}
+      <AuthRequiredDialog 
+        isOpen={showAuthDialog} 
+        onClose={() => setShowAuthDialog(false)}
+        returnPath={location.pathname}
       />
+
+      {/* Only render booking modal if user is authenticated */}
+      {user && (
+        <BookSessionModal 
+          isOpen={showBookingModal} 
+          onClose={() => setShowBookingModal(false)}
+          tutor={tutor}
+        />
+      )}
     </>
   );
 };
