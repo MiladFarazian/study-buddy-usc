@@ -82,10 +82,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       user: DEMO_USER as any,
       profile: DEMO_PROFILE,
-      signIn: async () => {}, // No-op
+      signIn: async () => ({ success: true }),
       signOut: async () => {
         disableDemoMode();
         window.dispatchEvent(new Event("demoModeChanged"));
+        return { success: true };
       },
       loading: false,
       isStudent: false,

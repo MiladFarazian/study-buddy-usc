@@ -20,7 +20,7 @@ const UserMenu = () => {
   // any context issues during rendering
   let user = null;
   let profile = null;
-  let signOut = () => {};
+  let signOut = async () => ({ success: true });
   
   try {
     const auth = useAuth();
@@ -108,8 +108,8 @@ const UserMenu = () => {
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem 
-          onClick={() => {
-            signOut();
+          onClick={async () => {
+            await signOut();
             setIsOpen(false);
           }}
           className="text-red-600 focus:text-red-600"
