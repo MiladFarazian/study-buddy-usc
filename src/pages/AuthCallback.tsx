@@ -44,17 +44,33 @@ const AuthCallback = () => {
             description: "You are now signed in",
           });
           
-          // Try to get the original URL they attempted to access
-          const redirectTo = sessionStorage.getItem('redirectAfterAuth') || '/';
+          // Get the original URL where authentication was initiated
+          const originUrl = sessionStorage.getItem('authOriginUrl');
+          console.log("Original authentication URL:", originUrl);
+          
+          // Get the redirectAfterAuth path and make sure it exists
+          let redirectTo = sessionStorage.getItem('redirectAfterAuth') || '/';
           sessionStorage.removeItem('redirectAfterAuth');
           
           // Make sure we have a valid URL to redirect to
-          const validRedirectPath = redirectTo.startsWith('/') ? redirectTo : '/';
+          redirectTo = redirectTo.startsWith('/') ? redirectTo : '/';
           
-          // Preserve the current origin (whether preview or production)
-          // This ensures we stay in the same environment we authenticated from
-          console.log(`Redirecting to: ${validRedirectPath}`);
-          navigate(validRedirectPath, { replace: true });
+          // If we have an origin URL, make sure we stay in the same environment
+          // by extracting just the path and appending to current origin
+          if (originUrl) {
+            try {
+              const currentOrigin = window.location.origin;
+              console.log(`Redirecting to: ${redirectTo} in ${currentOrigin}`);
+              navigate(redirectTo, { replace: true });
+            } catch (err) {
+              console.error("Error parsing origin URL:", err);
+              navigate(redirectTo, { replace: true });
+            }
+          } else {
+            // Fallback to just redirecting to the path
+            console.log(`Redirecting to: ${redirectTo}`);
+            navigate(redirectTo, { replace: true });
+          }
         }
       } catch (err) {
         console.error("Unexpected error during auth callback:", err);

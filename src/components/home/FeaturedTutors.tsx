@@ -85,9 +85,11 @@ const FeaturedTutors = () => {
           <p className="text-gray-500">No featured tutors available at the moment.</p>
         </div>
       ) : (
-        <div className="grid gap-4 md:gap-6" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {featuredTutors.map((tutor) => (
-            <TutorCard key={tutor.id} tutor={tutor} />
+            <div key={tutor.id} className="w-full">
+              <TutorCard tutor={tutor} />
+            </div>
           ))}
         </div>
       )}
