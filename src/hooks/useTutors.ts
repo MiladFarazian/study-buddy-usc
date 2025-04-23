@@ -15,7 +15,8 @@ export function useTutors() {
         const { data: tutorProfiles, error } = await supabase
           .from('profiles')
           .select('*')
-          .eq('role', 'tutor');
+          .eq('role', 'tutor')
+          .order('average_rating', { ascending: false }); // Order by rating so best tutors show first
 
         if (error) {
           console.error("Error fetching tutor profiles:", error);
