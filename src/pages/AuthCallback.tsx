@@ -18,7 +18,7 @@ const AuthCallback = () => {
         const hashParams = window.location.hash;
         
         if (!hashParams) {
-          console.warn("No authentication data found in URL");
+          console.log("No authentication data found in URL");
           setError("No authentication data found in URL");
           setIsLoading(false);
           return;

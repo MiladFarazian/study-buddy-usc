@@ -14,15 +14,8 @@ export const useAuthMethods = () => {
       // Store the current URL in session storage to maintain the same environment after auth
       sessionStorage.setItem('authOriginUrl', currentUrl);
       
-      // Detect if we're in the preview environment
-      const isPreview = window.location.hostname.includes('preview--');
-      
-      // Use the preview URL if we're in preview, otherwise use the current origin
-      const baseUrl = isPreview 
-        ? `https://${window.location.hostname}`
-        : window.location.origin;
-        
-      const redirectUrl = `${baseUrl}/auth/callback`;
+      // Use the current origin as the base URL for the redirect
+      const redirectUrl = `${window.location.origin}/auth/callback`;
       
       console.log(`Authentication initiated with redirect URL: ${redirectUrl}`);
       

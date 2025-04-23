@@ -19,7 +19,7 @@ const TutorCardDesktop = ({ tutor, getInitials }: TutorCardDesktopProps) => {
       <div className="bg-gradient-to-r from-yellow-500 to-red-600 h-4"></div>
       <CardContent className="p-6">
         <div className="flex flex-col gap-6">
-          <div className="flex items-center gap-4">
+          <div className="flex items-start gap-4">
             <Avatar className="h-20 w-20 border-2 border-white shadow-md flex-shrink-0">
               <AvatarImage src={tutor.imageUrl} alt={tutor.name} />
               <AvatarFallback className="bg-usc-cardinal text-white text-xl">
@@ -27,18 +27,18 @@ const TutorCardDesktop = ({ tutor, getInitials }: TutorCardDesktopProps) => {
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-              <h3 className="text-xl font-bold truncate">{tutor.name}</h3>
+              <h3 className="text-xl font-bold">{tutor.name}</h3>
               <div className="flex items-center mt-1">
                 <GraduationCap className="h-4 w-4 text-gray-500 mr-1 flex-shrink-0" />
-                <p className="text-gray-600 text-sm truncate">{tutor.field}</p>
+                <p className="text-gray-600 text-sm">{tutor.field}</p>
               </div>
               <div className="flex items-center mt-1">
                 <MapPin className="h-4 w-4 text-gray-500 mr-1 flex-shrink-0" />
-                <p className="text-gray-600 text-sm truncate">USC Campus</p>
+                <p className="text-gray-600 text-sm">USC Campus</p>
               </div>
               <div className="flex items-center mt-2">
                 <StarRating rating={tutor.rating} />
-                <span className="text-sm text-gray-500 ml-1 hidden sm:inline">({tutor.subjects.length} courses)</span>
+                <span className="text-sm text-gray-500 ml-1">({tutor.subjects.length} courses)</span>
               </div>
             </div>
           </div>
@@ -71,7 +71,7 @@ const TutorCardDesktop = ({ tutor, getInitials }: TutorCardDesktopProps) => {
             
             <div className="flex items-center text-sm text-gray-500">
               <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
-              <span className="truncate">Available for in-person or online sessions</span>
+              <span>Available for in-person or online sessions</span>
             </div>
           </div>
           
