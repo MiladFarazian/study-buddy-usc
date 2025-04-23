@@ -17,10 +17,10 @@ const TutorCardMobile = ({ tutor, getInitials }: TutorCardMobileProps) => {
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow w-full">
       <div className="bg-gradient-to-r from-yellow-500 to-red-600 h-2"></div>
-      <CardContent className="p-3">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-start gap-2">
-            <Avatar className="h-12 w-12 border-2 border-white shadow-md flex-shrink-0">
+      <CardContent className="p-4">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-start gap-3">
+            <Avatar className="h-14 w-14 border-2 border-white shadow-md flex-shrink-0">
               <AvatarImage src={tutor.imageUrl} alt={tutor.name} />
               <AvatarFallback className="bg-usc-cardinal text-white text-sm">
                 {getInitials(tutor.name)}
@@ -40,7 +40,7 @@ const TutorCardMobile = ({ tutor, getInitials }: TutorCardMobileProps) => {
             </div>
           </div>
           
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="flex items-center justify-between py-1 border-b">
               <span className="font-medium text-xs">Hourly Rate</span>
               <span className="font-bold text-usc-cardinal text-sm">${tutor.hourlyRate}/hr</span>
@@ -71,7 +71,7 @@ const TutorCardMobile = ({ tutor, getInitials }: TutorCardMobileProps) => {
           </div>
           
           <Button 
-            className="w-full mt-1 bg-usc-cardinal hover:bg-usc-cardinal-dark text-white text-xs py-1 h-8"
+            className="w-full mt-2 bg-usc-cardinal hover:bg-usc-cardinal-dark text-white text-xs py-1 h-8"
             asChild
           >
             <Link to={`/tutors/${tutor.id}`}>View Profile</Link>

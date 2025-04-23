@@ -7,7 +7,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Search, Filter, Loader2, X } from "lucide-react";
 import TutorCard from "@/components/ui/TutorCard";
 import { useTutors } from "@/hooks/useTutors";
-import { Tutor } from "@/types/tutor";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const Tutors = () => {
@@ -172,9 +171,11 @@ const Tutors = () => {
           </Button>
         </div>
       ) : (
-        <div className="grid gap-4 md:gap-6" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredTutors.map((tutor) => (
-            <TutorCard key={tutor.id} tutor={tutor} />
+            <div key={tutor.id} className="w-full">
+              <TutorCard key={tutor.id} tutor={tutor} />
+            </div>
           ))}
         </div>
       )}
