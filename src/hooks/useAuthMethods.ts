@@ -8,8 +8,15 @@ export const useAuthMethods = () => {
 
   const signIn = async (provider: 'google') => {
     try {
-      const origin = window.location.origin;
-      const redirectUrl = `${origin}/auth/callback`;
+      // Detect if we're in the preview environment
+      const isPreview = window.location.hostname.includes('preview--');
+      
+      // Use the preview URL if we're in preview, otherwise use the current origin
+      const baseUrl = isPreview 
+        ? 'https://preview--study-buddy-usc.lovable.app'
+        : window.location.origin;
+        
+      const redirectUrl = `${baseUrl}/auth/callback`;
       
       console.log(`Using redirect URL: ${redirectUrl}`);
       
