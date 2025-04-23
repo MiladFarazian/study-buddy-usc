@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, UserSearch } from "lucide-react";
 
 export function RecommendedTutors() {
   const { tutors, loading } = useTutors();
@@ -15,7 +15,7 @@ export function RecommendedTutors() {
       <Card>
         <CardContent className="flex justify-center items-center py-8">
           <Loader2 className="h-6 w-6 animate-spin text-usc-cardinal mr-2" />
-          <span>Loading recommended tutors...</span>
+          <span>Loading tutors...</span>
         </CardContent>
       </Card>
     );
@@ -24,8 +24,10 @@ export function RecommendedTutors() {
   if (!tutors || tutors.length === 0) {
     return (
       <Card>
-        <CardContent className="py-6 text-center">
-          <p className="text-muted-foreground">No tutors available at the moment.</p>
+        <CardContent className="py-10 text-center">
+          <UserSearch className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <p className="text-muted-foreground font-medium">No tutors available yet</p>
+          <p className="text-sm text-muted-foreground mt-1">Check back later or sign up as a tutor!</p>
         </CardContent>
       </Card>
     );
