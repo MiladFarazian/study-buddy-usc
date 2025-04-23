@@ -31,24 +31,22 @@ function Calendar({
         nav_button_previous: "absolute left-1",
         nav_button_next: "absolute right-1",
         table: "w-full border-collapse space-y-1",
-        head_row: "flex w-full justify-center", // Changed from justify-between to justify-center
+        head_row: "flex w-full justify-center",
         head_cell:
-          "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem] text-center flex-1 justify-center", // Added flex-1 and justify-center
-        row: "flex w-full justify-center", // Changed from justify-between to justify-center
-        cell: "h-9 w-9 text-center p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20 flex-1", // Added flex-1
+          "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem] text-center flex-1 justify-center",
+        row: "flex w-full justify-center",
+        cell: "h-9 w-9 text-center p-0 relative flex-1",
         day: cn(
           buttonVariants({ variant: "ghost" }),
-          "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-muted" // Consistent sizing
+          "h-9 w-9 p-0 font-normal hover:bg-muted" // Removed selected state styling
         ),
         day_range_end: "day-range-end",
-        day_selected:
-          "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-        day_today: "bg-accent text-accent-foreground",
+        day_today: "text-accent-foreground", // Removed background highlighting
         day_outside:
-          "day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
+          "day-outside text-muted-foreground opacity-50",
         day_disabled: "text-muted-foreground opacity-50",
         day_range_middle:
-          "aria-selected:bg-accent aria-selected:text-accent-foreground",
+          "aria-selected:text-accent-foreground",
         day_hidden: "invisible",
         ...classNames,
       }}
