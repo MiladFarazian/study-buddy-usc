@@ -28,19 +28,24 @@ export const useAuthMethods = () => {
       });
 
       if (error) {
+        console.error("Auth error:", error.message);
         toast({
           title: "Sign In Failed",
           description: error.message,
           variant: "destructive",
         });
+        return { error };
       }
-    } catch (error) {
+      
+      return { success: true };
+    } catch (error: any) {
       console.error('Sign in error:', error);
       toast({
         title: "Sign In Failed",
         description: "An unexpected error occurred",
         variant: "destructive",
       });
+      return { error };
     }
   };
 
@@ -48,24 +53,29 @@ export const useAuthMethods = () => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) {
+        console.error("Sign out error:", error.message);
         toast({
           title: "Sign Out Failed",
           description: error.message,
           variant: "destructive",
         });
-      } else {
-        toast({
-          title: "Signed Out",
-          description: "You have been successfully signed out",
-        });
-      }
-    } catch (error) {
+        return { error };
+      } 
+      
+      toast({
+        title: "Signed Out",
+        description: "You have been successfully signed out",
+      });
+      
+      return { success: true };
+    } catch (error: any) {
       console.error('Sign out error:', error);
       toast({
         title: "Sign Out Failed",
         description: "An unexpected error occurred",
         variant: "destructive",
       });
+      return { error };
     }
   };
 

@@ -13,32 +13,34 @@ export const useAuthState = () => {
 
   useEffect(() => {
     const initializeAuth = async () => {
-      // Get the current session
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setUser(session?.user ?? null);
+      // First set up the listener to avoid race conditions
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        (_event, newSession) => {
+          setSession(newSession);
+          setUser(newSession?.user ?? null);
+          
+          // Don't finalize loading state here, as we need to wait for profile data
+        }
+      );
       
-      // Only finish loading once we've checked for session
-      // Profile loading is handled separately to prevent race conditions
-      if (!session?.user) {
+      // Then check for existing session
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        
+        if (!currentSession?.user) {
+          setLoading(false); // No user, so no profile to wait for
+        }
+      } catch (error) {
+        console.error("Error fetching session:", error);
         setLoading(false);
       }
+
+      return () => subscription.unsubscribe();
     };
 
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (!session?.user) {
-          setLoading(false);
-        }
-      }
-    );
-
     initializeAuth();
-
-    return () => subscription.unsubscribe();
   }, []);
 
   // Set loading to false when profile is loaded (after user is set)

@@ -3,10 +3,11 @@ import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 const AuthCallback = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,13 +18,13 @@ const AuthCallback = () => {
         const hashParams = window.location.hash;
         
         if (!hashParams) {
+          console.warn("No authentication data found in URL");
           setError("No authentication data found in URL");
           setIsLoading(false);
           return;
         }
 
         console.log("Processing authentication callback...");
-        console.log("Current URL:", window.location.href);
         
         // The Supabase client will automatically handle the hash processing
         const { data, error } = await supabase.auth.getSession();
@@ -47,8 +48,11 @@ const AuthCallback = () => {
           const redirectTo = sessionStorage.getItem('redirectAfterAuth') || '/';
           sessionStorage.removeItem('redirectAfterAuth');
           
+          // Make sure we have a valid URL to redirect to
+          const validRedirectPath = redirectTo.startsWith('/') ? redirectTo : '/';
+          
           // Navigate to the original page or home
-          navigate(redirectTo, { replace: true });
+          navigate(validRedirectPath, { replace: true });
         }
       } catch (err) {
         console.error("Unexpected error during auth callback:", err);
@@ -79,7 +83,7 @@ const AuthCallback = () => {
     return () => {
       authListener?.subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, toast]);
 
   if (!isLoading && error) {
     return <Navigate to="/login" replace />;

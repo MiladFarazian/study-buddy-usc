@@ -5,7 +5,7 @@ import { useAuthState } from "@/hooks/useAuthState";
 import { useAuthMethods } from "@/hooks/useAuthMethods";
 import { AuthContextType } from "./types/auth-types";
 
-// Create the AuthContext - this was missing 
+// Create the AuthContext
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 // Demo mode helpers
