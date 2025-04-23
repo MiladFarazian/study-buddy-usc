@@ -16,7 +16,7 @@ interface TutorCardDesktopProps {
 const TutorCardDesktop = ({ tutor, getInitials }: TutorCardDesktopProps) => {
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow w-full">
-      <div className="bg-gradient-to-r from-red-600 to-red-700 h-4"></div>
+      <div className="bg-gradient-to-r from-yellow-500 to-red-600 h-4"></div>
       <CardContent className="p-4 md:p-6">
         <div className="flex flex-col gap-4 md:gap-6">
           <div className="flex items-start md:items-center gap-3 md:gap-4">
