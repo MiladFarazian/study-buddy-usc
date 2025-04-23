@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import TutorCard from "@/components/ui/TutorCard";
@@ -9,7 +8,6 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { enableDemoMode, isDemoMode, disableDemoMode } from "@/contexts/AuthContext";
 
-// Simple basic modal for demo
 function SecretFeaturesModal({ open, onClose, onActivateDemoMode }: { open: boolean, onClose: () => void, onActivateDemoMode: () => void }) {
   if (!open) return null;
   return (
@@ -47,15 +45,12 @@ function SecretFeaturesModal({ open, onClose, onActivateDemoMode }: { open: bool
 const FeaturedTutors = () => {
   const tutorsData = useTutors();
   const authData = useAuth();
-  // Fixed spread operator issue by separating the objects
   const { tutors, loading } = tutorsData;
   const { user } = authData;
   
   const isMobile = useIsMobile();
   const [showSecret, setShowSecret] = useState(false);
 
-  // Show only the top 3 tutors based on rating
-  // For mobile, only show top 2
   const featuredTutors = [...tutors]
     .sort((a, b) => b.rating - a.rating)
     .slice(0, isMobile ? 2 : 3);
@@ -89,19 +84,13 @@ const FeaturedTutors = () => {
           <p className="text-gray-500">No featured tutors available at the moment.</p>
         </div>
       ) : (
-        <div
-          className="grid gap-4 md:gap-6"
-          style={{
-            gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))"
-          }}
-        >
+        <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           {featuredTutors.map((tutor) => (
             <TutorCard key={tutor.id} tutor={tutor} />
           ))}
         </div>
       )}
 
-      {/* Secret button for demo/testing, visible only if not already in demo mode */}
       {!user && !isDemoMode() && (
         <>
           <Button 
@@ -120,7 +109,6 @@ const FeaturedTutors = () => {
           />
         </>
       )}
-      {/* If in demo mode show an exit hint */}
       {isDemoMode() && (
         <div className="fixed z-40 bottom-5 right-5">
           <Button
