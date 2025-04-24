@@ -18,6 +18,7 @@ export const useAuthMethods = () => {
       const redirectUrl = `${window.location.origin}/auth/callback`;
       
       console.log(`Authentication initiated with redirect URL: ${redirectUrl}`);
+      console.log(`Storing origin URL: ${currentUrl}`);
       
       // Store the current URL to redirect back to after auth
       sessionStorage.setItem('redirectAfterAuth', window.location.pathname);
@@ -57,6 +58,10 @@ export const useAuthMethods = () => {
 
   const signOut = async () => {
     try {
+      // Store current URL before signing out, to ensure we stay in the same environment
+      const currentUrl = window.location.href;
+      sessionStorage.setItem('authOriginUrl', currentUrl);
+      
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error("Sign out error:", error.message);

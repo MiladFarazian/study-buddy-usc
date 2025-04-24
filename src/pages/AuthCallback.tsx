@@ -1,12 +1,13 @@
 
 import { useEffect, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const AuthCallback = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,8 +49,27 @@ const AuthCallback = () => {
           const originUrl = sessionStorage.getItem('authOriginUrl');
           console.log("Original authentication URL:", originUrl);
           
-          // Get the redirectAfterAuth path and make sure it exists
+          // Make sure we stay in the same environment (preview or production)
           let redirectTo = sessionStorage.getItem('redirectAfterAuth') || '/';
+          
+          // If we have an origin URL, use it to construct the full redirect URL
+          // This ensures we stay in the same environment (preview vs production)
+          if (originUrl) {
+            try {
+              const originUrlObj = new URL(originUrl);
+              // We want to stay on the same hostname/origin but go to the redirect path
+              const redirectURL = new URL(redirectTo, originUrlObj.origin);
+              console.log(`Constructed redirect URL from origin: ${redirectURL.toString()}`);
+              
+              // Navigate using the full URL
+              window.location.href = redirectURL.toString();
+              return; // Exit early as we're doing a full page navigation
+            } catch (e) {
+              console.error("Error constructing redirect URL:", e);
+              // Fall back to normal navigation if URL construction fails
+            }
+          }
+          
           sessionStorage.removeItem('redirectAfterAuth');
           sessionStorage.removeItem('authOriginUrl'); // Clean up
           
@@ -79,8 +99,23 @@ const AuthCallback = () => {
       console.log("Auth state change:", event);
       
       if (event === 'SIGNED_IN' && session) {
+        // Get the authOriginUrl to ensure we stay in the same environment
+        const originUrl = sessionStorage.getItem('authOriginUrl');
         const redirectTo = sessionStorage.getItem('redirectAfterAuth') || '/';
+        
+        if (originUrl) {
+          try {
+            const originUrlObj = new URL(originUrl);
+            const redirectURL = new URL(redirectTo, originUrlObj.origin);
+            window.location.href = redirectURL.toString();
+            return;
+          } catch (e) {
+            console.error("Error constructing redirect URL from auth listener:", e);
+          }
+        }
+        
         sessionStorage.removeItem('redirectAfterAuth');
+        sessionStorage.removeItem('authOriginUrl');
         navigate(redirectTo, { replace: true });
       }
     });
@@ -88,7 +123,7 @@ const AuthCallback = () => {
     return () => {
       authListener?.subscription.unsubscribe();
     };
-  }, [navigate, toast]);
+  }, [navigate, toast, location]);
 
   if (!isLoading && error) {
     return <Navigate to="/login" replace />;
