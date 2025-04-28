@@ -1,10 +1,11 @@
+
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import TutorCard from "@/components/ui/TutorCard";
 import { useTutors } from "@/hooks/useTutors";
 import { Loader2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { enableDemoMode, isDemoMode, disableDemoMode } from "@/contexts/AuthContext";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
@@ -51,6 +52,27 @@ const FeaturedTutors = () => {
   
   const isMobile = useIsMobile();
   const [showSecret, setShowSecret] = useState(false);
+  const [cardsPerView, setCardsPerView] = useState(3);
+
+  // Adjust cards per view based on window width
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      if (width < 768) {
+        setCardsPerView(1); // Mobile
+      } else if (width < 1024) {
+        setCardsPerView(2); // Tablet/small desktop
+      } else if (width < 1280) {
+        setCardsPerView(2); // Medium desktop
+      } else {
+        setCardsPerView(3); // Large desktop
+      }
+    };
+
+    handleResize(); // Set initial value
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const featuredTutors = [...tutors]
     .sort((a, b) => b.rating - a.rating)
@@ -89,7 +111,7 @@ const FeaturedTutors = () => {
           <Carousel
             opts={{
               align: "start",
-              slidesToScroll: isMobile ? 1 : Math.min(featuredTutors.length >= 3 ? 3 : featuredTutors.length, 3),
+              slidesToScroll: isMobile ? 1 : Math.min(cardsPerView, featuredTutors.length),
             }}
             className="w-full"
           >
@@ -100,9 +122,9 @@ const FeaturedTutors = () => {
                   className={`pl-4 ${
                     isMobile 
                       ? 'basis-full' 
-                      : featuredTutors.length === 1 
+                      : cardsPerView === 1 
                         ? 'basis-full' 
-                        : featuredTutors.length === 2 
+                        : cardsPerView === 2 
                           ? 'basis-1/2' 
                           : 'basis-1/3'
                   }`}
@@ -113,7 +135,7 @@ const FeaturedTutors = () => {
                 </CarouselItem>
               ))}
             </CarouselContent>
-            {featuredTutors.length > (isMobile ? 1 : Math.min(3, featuredTutors.length)) && (
+            {featuredTutors.length > (isMobile ? 1 : Math.min(cardsPerView, featuredTutors.length)) && (
               <>
                 <CarouselPrevious className="hidden md:flex" />
                 <CarouselNext className="hidden md:flex" />
