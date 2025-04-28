@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, CheckCircle } from "lucide-react";
 import { Tutor } from "@/types/tutor";
-import { gapi } from 'gapi-script';
+import { downloadICSFile, ICalEventData } from '@/lib/calendar/icsGenerator';
 
 interface CalendarIntegrationProps {
   tutor: Tutor;
@@ -24,7 +24,7 @@ export function CalendarIntegration({
   const [isAdding, setIsAdding] = useState(false);
   const [addedToCalendar, setAddedToCalendar] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Format date and time for display
   const formatDateForDisplay = () => {
     const options: Intl.DateTimeFormatOptions = { 
@@ -35,58 +35,39 @@ export function CalendarIntegration({
     };
     return sessionDate.toLocaleDateString('en-US', options);
   };
-  
-  // Format time for display
-  const formatTimeForDisplay = () => {
-    // Parse the start time (assuming format like "14:30")
-    const [hours, minutes] = sessionStartTime.split(':').map(Number);
-    
-    // Create a date object with these hours/minutes
-    const startDate = new Date(sessionDate);
-    startDate.setHours(hours, minutes);
-    
-    // Calculate end time based on duration
-    const endDate = new Date(startDate);
-    endDate.setMinutes(endDate.getMinutes() + sessionDuration);
-    
-    // Format for display
-    const timeOptions: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit', hour12: true };
-    const startTimeStr = startDate.toLocaleTimeString('en-US', timeOptions);
-    const endTimeStr = endDate.toLocaleTimeString('en-US', timeOptions);
-    
-    return `${startTimeStr} - ${endTimeStr}`;
-  };
 
-  // Generate Google Calendar link
-  const generateGoogleCalendarLink = () => {
+  // Calculate start and end times for the session
+  const calculateSessionTimes = () => {
     const [hours, minutes] = sessionStartTime.split(':').map(Number);
-    
     const startDate = new Date(sessionDate);
     startDate.setHours(hours, minutes);
     
     const endDate = new Date(startDate);
     endDate.setMinutes(endDate.getMinutes() + sessionDuration);
     
-    const startIso = startDate.toISOString().replace(/-|:|\.\d+/g, '');
-    const endIso = endDate.toISOString().replace(/-|:|\.\d+/g, '');
-    
-    const title = encodeURIComponent(`Tutoring with ${tutor.name}`);
-    const description = encodeURIComponent(`Tutoring session with ${tutor.name} for ${sessionDuration} minutes.`);
-    const location = encodeURIComponent('USC Campus');
-    
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startIso}/${endIso}&details=${description}&location=${location}`;
-  };
-
-  const addToGoogleCalendar = () => {
-    const url = generateGoogleCalendarLink();
-    window.open(url, '_blank');
-    setAddedToCalendar(true);
+    return { startDate, endDate };
   };
 
   const addToAppleCalendar = () => {
-    // This would use a different approach, typically generating an .ics file
-    // For now, we'll just show a message
-    setError("Apple Calendar integration will be available soon!");
+    const { startDate, endDate } = calculateSessionTimes();
+
+    const eventData: ICalEventData = {
+      title: `Tutoring with ${tutor.name}`,
+      description: `Tutoring session with ${tutor.name} for ${sessionDuration} minutes.`,
+      location: 'USC Campus',
+      startDate: startDate,
+      endDate: endDate
+    };
+
+    downloadICSFile(eventData);
+    setAddedToCalendar(true);
+  };
+
+  // Format time for display
+  const formatTimeForDisplay = () => {
+    const { startDate, endDate } = calculateSessionTimes();
+    const timeOptions: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit', hour12: true };
+    return `${startDate.toLocaleTimeString('en-US', timeOptions)} - ${endDate.toLocaleTimeString('en-US', timeOptions)}`;
   };
 
   if (addedToCalendar) {
@@ -111,7 +92,7 @@ export function CalendarIntegration({
       </Card>
     );
   }
-  
+
   return (
     <Card className="border-0 shadow-none">
       <CardHeader className="text-center">
@@ -146,16 +127,29 @@ export function CalendarIntegration({
             </div>
           </div>
         </div>
-        
+
         {error && (
           <div className="text-red-500 text-sm mb-4 text-center">
             {error}
           </div>
         )}
-        
+
         <div className="space-y-3">
           <Button 
-            onClick={addToGoogleCalendar}
+            onClick={addToAppleCalendar}
+            className="w-full flex items-center justify-center bg-white hover:bg-gray-50 text-gray-800 border border-gray-300"
+          >
+            <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+              <path 
+                d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 8.42 7.31c1.33.07 2.25.79 3.04.84 1.15-.17 2.23-.88 3.47-.84 1.53.17 2.68.87 3.4 2.23-3.03 1.86-2.32 6.15.72 7.66-.65 1.44-1.47 2.87-3 4.08zM13 3.76c.81-1.02 1.42-2.46 1.18-4-1.24.06-2.66.88-3.5 1.82-.74.83-1.35 2.31-1.12 3.64 1.35.05 2.62-.75 3.44-1.46z" 
+                fill="currentColor" 
+              />
+            </svg>
+            Add to Apple Calendar
+          </Button>
+
+          <Button 
+            onClick={() => window.open(generateGoogleCalendarLink(), '_blank')}
             className="w-full flex items-center justify-center bg-white hover:bg-gray-50 text-gray-800 border border-gray-300"
           >
             <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
@@ -165,21 +159,6 @@ export function CalendarIntegration({
               />
             </svg>
             Add to Google Calendar
-          </Button>
-          
-          <Button 
-            onClick={addToAppleCalendar}
-            className="w-full flex items-center justify-center bg-white hover:bg-gray-50 text-gray-800 border border-gray-300"
-            disabled={true}
-          >
-            <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-              <path 
-                d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 8.42 7.31c1.33.07 2.25.79 3.04.84 1.15-.17 2.23-.88 3.47-.84 1.53.17 2.68.87 3.4 2.23-3.03 1.86-2.32 6.15.72 7.66-.65 1.44-1.47 2.87-3 4.08zM13 3.76c.81-1.02 1.42-2.46 1.18-4-1.24.06-2.66.88-3.5 1.82-.74.83-1.35 2.31-1.12 3.64 1.35.05 2.62-.75 3.44-1.46z" 
-                fill="currentColor" 
-              />
-            </svg>
-            Add to Apple Calendar
-            <span className="ml-1 text-xs">(Coming Soon)</span>
           </Button>
         </div>
       </CardContent>
@@ -195,3 +174,4 @@ export function CalendarIntegration({
     </Card>
   );
 }
+
