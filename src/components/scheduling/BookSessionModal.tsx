@@ -32,16 +32,18 @@ export function BookSessionModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookedSlot, setBookedSlot] = useState<BookingSlot | null>(null);
   const [selectedDuration, setSelectedDuration] = useState<number>(60);
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [showCalendarPrompt, setShowCalendarPrompt] = useState(false);
   const { toast } = useToast();
   const { user } = useAuthState();
 
-  const handleSelectSlot = async (slot: BookingSlot, duration: number = 60) => {
+  const handleSelectSlot = async (slot: BookingSlot, duration: number = 60, courseId: string | null = null) => {
     if (isSubmitting) return;
     
     setIsSubmitting(true);
     setLoading(true);
     setSelectedDuration(duration);
+    setSelectedCourseId(courseId);
     
     try {
       if (!user) {
@@ -62,7 +64,7 @@ export function BookSessionModal({
       const session = await createSessionBooking(
         user.id,
         tutor.id,
-        null, // No course ID
+        courseId, // Use the selected course ID
         startTime.toISOString(),
         endTime.toISOString(),
         null, // No location
@@ -99,6 +101,7 @@ export function BookSessionModal({
       // Reset all state when closing
       setShowCalendarPrompt(false);
       setBookedSlot(null);
+      setSelectedCourseId(null);
       onClose();
     }
   };
@@ -125,6 +128,7 @@ export function BookSessionModal({
           tutor={tutor}
           selectedSlot={bookedSlot}
           selectedDuration={selectedDuration}
+          selectedCourseId={selectedCourseId}
           onClose={handleClose}
           onDone={handleCalendarDone}
         />

@@ -1,9 +1,12 @@
 
 import React from 'react';
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 import { BookingSlot } from "@/lib/scheduling/types";
+import { SessionDurationSelector } from "./SessionDurationSelector";
 import { format, parseISO, differenceInMinutes } from "date-fns";
-import { CalendarIcon, ClockIcon } from "lucide-react";
+import { Course } from "@/types/CourseTypes";
 
 interface DurationOption {
   minutes: number;
@@ -18,7 +21,9 @@ interface DurationSelectorProps {
   onBack: () => void;
   onContinue: () => void;
   hourlyRate: number;
-  consecutiveSlots?: BookingSlot[]; // Add this prop to receive consecutive slots
+  consecutiveSlots: BookingSlot[];
+  selectedCourseId?: string | null;
+  courses?: Course[];
 }
 
 export function DurationSelector({
@@ -29,164 +34,122 @@ export function DurationSelector({
   onBack,
   onContinue,
   hourlyRate,
-  consecutiveSlots = [] // Default to empty array if not provided
+  consecutiveSlots,
+  selectedCourseId,
+  courses = []
 }: DurationSelectorProps) {
-  // Calculate available duration in minutes for the selected slot chain
-  const calculateAvailableDuration = () => {
-    // If we have consecutive slots, calculate total available time
-    if (consecutiveSlots && consecutiveSlots.length > 0) {
-      // Calculate total minutes available from all consecutive slots
-      // Each slot is typically 30 minutes
-      return consecutiveSlots.length * 30;
-    }
+  const [selectedStartTime, setSelectedStartTime] = React.useState(selectedSlot.start);
+  
+  // Calculate session time range
+  const getSessionTimeRange = () => {
+    const start = selectedStartTime;
+    const startDate = parseISO(`2000-01-01T${start}`);
+    const endDate = new Date(startDate);
+    endDate.setMinutes(startDate.getMinutes() + selectedDuration);
+    return {
+      start,
+      end: format(endDate, "HH:mm")
+    };
+  };
+  
+  // Calculate cost
+  const calculatedCost = (hourlyRate / 60) * selectedDuration;
+  
+  // Get the maximum available consecutive duration
+  const getMaxDuration = () => {
+    // If no consecutive slots, limit to default duration
+    if (consecutiveSlots.length === 0) return 60;
     
-    // Fallback to single slot calculation if no consecutive slots provided
-    if (selectedSlot.end) {
-      const [startHour, startMinute] = selectedSlot.start.split(':').map(Number);
-      const [endHour, endMinute] = selectedSlot.end.split(':').map(Number);
-      
-      // Handle cases where end time might be on the next day (e.g., 11:30 PM to 12:30 AM)
-      let endMinutes = endHour * 60 + endMinute;
-      const startMinutes = startHour * 60 + startMinute;
-      
-      if (endMinutes < startMinutes) {
-        // Add 24 hours in minutes if end time is on the next day
-        endMinutes += 24 * 60;
-      }
-      
-      return endMinutes - startMinutes;
-    }
+    // Calculate the maximum duration based on consecutive slots
+    const maxDurationMinutes = consecutiveSlots.reduce((total, slot) => {
+      const slotStartTime = parseISO(`2000-01-01T${slot.start}`);
+      const slotEndTime = parseISO(`2000-01-01T${slot.end}`);
+      return total + differenceInMinutes(slotEndTime, slotStartTime);
+    }, 0);
     
-    // Default to 120 minutes (2 hours) if no end time is specified
-    return 120;
+    // Cap at 180 minutes (3 hours) if longer
+    return Math.min(maxDurationMinutes, 180);
   };
-
-  // Calculate the available duration
-  const availableDuration = calculateAvailableDuration();
   
-  console.log("Available duration for slot:", availableDuration, "minutes");
-  console.log("Selected slot:", selectedSlot);
-  if (consecutiveSlots.length > 0) {
-    console.log("Consecutive slots found:", consecutiveSlots.length, "slots");
-  }
-
-  // Filter duration options based on available time (for auto-selection purposes)
-  const availableDurationOptions = durationOptions.filter(option => {
-    return option.minutes <= availableDuration;
-  });
-  
-  // If current selected duration is not available, reset it
-  React.useEffect(() => {
-    if (selectedDuration && !availableDurationOptions.find(opt => opt.minutes === selectedDuration)) {
-      // Select the longest available duration by default
-      if (availableDurationOptions.length > 0) {
-        const longestAvailableDuration = Math.max(...availableDurationOptions.map(opt => opt.minutes));
-        onSelectDuration(longestAvailableDuration);
-      } else {
-        // If no available options (shouldn't happen), default to the shortest option
-        const shortestDuration = Math.min(...durationOptions.map(opt => opt.minutes));
-        onSelectDuration(shortestDuration);
-      }
-    } else if (!selectedDuration && availableDurationOptions.length > 0) {
-      // If no duration is selected yet, select the default one
-      onSelectDuration(availableDurationOptions[0].minutes);
+  // Format time for display (e.g., "09:00" to "9:00 AM")
+  const formatTimeForDisplay = (time: string) => {
+    try {
+      const date = parseISO(`2000-01-01T${time}`);
+      return format(date, "h:mm a");
+    } catch (error) {
+      console.error("Error formatting time:", error);
+      return time;
     }
-  }, [selectedDuration, availableDurationOptions, durationOptions, onSelectDuration]);
-
-  // Format the date for display
-  const slotDay = selectedSlot.day instanceof Date ? selectedSlot.day : new Date(selectedSlot.day);
-  const formattedDate = format(slotDay, 'EEEE, MMMM d, yyyy');
+  };
   
-  // Format time for display (e.g., convert "14:30" to "2:30 PM")
-  const formatTimeDisplay = (timeString: string) => {
-    const [hours, minutes] = timeString.split(':').map(Number);
-    const period = hours >= 12 ? 'PM' : 'AM';
-    const displayHours = hours % 12 || 12;
-    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+  // Get available start times within the selected and consecutive slots
+  const getAvailableStartTimes = () => {
+    if (consecutiveSlots.length === 0) return [selectedSlot.start];
+    
+    return consecutiveSlots.map(slot => slot.start);
   };
-
-  // Check if a duration option exceeds available time
-  const isDurationExceedingAvailability = (minutes: number) => {
-    return minutes > availableDuration;
-  };
-
+  
+  // Find selected course by ID
+  const selectedCourse = selectedCourseId 
+    ? courses.find(c => c.course_number === selectedCourseId) 
+    : null;
+  
   return (
-    <div className="space-y-6">
-      <div className="bg-muted/30 p-4 rounded-md mb-6">
-        <div className="flex items-center mb-2">
-          <CalendarIcon className="h-5 w-5 mr-2 text-muted-foreground" />
-          <span className="font-medium">{formattedDate}</span>
-        </div>
-        <div className="flex items-center">
-          <ClockIcon className="h-5 w-5 mr-2 text-muted-foreground" />
-          <span className="font-medium">{formatTimeDisplay(selectedSlot.start)}</span>
-        </div>
-      </div>
-    
-      <h2 className="text-2xl font-bold">Select Session Duration</h2>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-4">
-        {durationOptions.map((option) => {
-          const isExceedingAvailability = isDurationExceedingAvailability(option.minutes);
-          
-          return (
-            <Button
-              key={option.minutes}
-              type="button"
-              variant="outline"
-              className={`
-                h-32 flex flex-col items-center justify-center p-6 border rounded-md relative
-                ${selectedDuration === option.minutes 
-                  ? "bg-red-50 border-usc-cardinal text-usc-cardinal" 
-                  : isExceedingAvailability
-                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    : "bg-white hover:bg-gray-50"}
-              `}
-              onClick={() => !isExceedingAvailability && onSelectDuration(option.minutes)}
-              disabled={isExceedingAvailability}
-            >
-              <span className="text-xl font-bold mb-2">
-                {option.minutes} minutes
-              </span>
-              <span className="text-xl">
-                ${option.cost.toFixed(2)}
-              </span>
-              
-              {selectedDuration === option.minutes && !isExceedingAvailability && (
-                <div className="absolute -top-2 -right-2 w-5 h-5 bg-usc-cardinal rounded-full flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-white"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                </div>
-              )}
-              
-              {isExceedingAvailability && (
-                <div className="text-xs text-gray-500 mt-1 font-medium">
-                  Exceeds availability
-                </div>
-              )}
-            </Button>
-          );
-        })}
-      </div>
-      
-      <p className="text-sm text-muted-foreground">
-        Rate: ${hourlyRate.toFixed(2)}/hour
-      </p>
-      
-      <div className="flex justify-between mt-8">
-        <Button 
-          variant="outline" 
-          className="px-8"
-          onClick={onBack}
-        >
+    <div className="space-y-4">
+      <div className="flex items-center mb-4">
+        <Button variant="ghost" onClick={onBack} className="pl-0">
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
-        
+        <h3 className="text-xl font-semibold ml-2">Set Duration</h3>
+      </div>
+      
+      {/* Show selected course info */}
+      {selectedCourseId ? (
+        <div className="bg-muted/30 p-4 rounded-md mb-4">
+          <p className="font-medium">Selected Class:</p>
+          <p className="text-sm">
+            {selectedCourse ? (
+              <>
+                <span className="font-medium">{selectedCourse.course_number}</span>
+                {selectedCourse.course_title && (
+                  <span className="text-muted-foreground"> - {selectedCourse.course_title}</span>
+                )}
+              </>
+            ) : (
+              <span>{selectedCourseId}</span>
+            )}
+          </p>
+        </div>
+      ) : (
+        <div className="bg-muted/30 p-4 rounded-md mb-4">
+          <p className="font-medium">General Tutoring Session</p>
+          <p className="text-sm text-muted-foreground">Not specific to any particular class</p>
+        </div>
+      )}
+      
+      <SessionDurationSelector 
+        sessionTimeRange={getSessionTimeRange()}
+        calculatedCost={calculatedCost}
+        sessionDuration={selectedDuration}
+        onDurationChange={onSelectDuration}
+        onStartTimeChange={setSelectedStartTime}
+        maxDuration={getMaxDuration()}
+        hourlyRate={hourlyRate}
+        availableStartTimes={getAvailableStartTimes()}
+        selectedStartTime={selectedStartTime}
+        formatTimeForDisplay={formatTimeForDisplay}
+      />
+      
+      <div className="mt-8 flex justify-between">
+        <Button variant="outline" onClick={onBack}>
+          Back
+        </Button>
         <Button 
-          className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white px-8"
+          className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
           onClick={onContinue}
-          disabled={!selectedDuration || availableDurationOptions.length === 0}
         >
-          Continue
+          Book Session
         </Button>
       </div>
     </div>

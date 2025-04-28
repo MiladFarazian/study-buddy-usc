@@ -12,7 +12,9 @@ export const generateGoogleCalendarUrl = (
   tutor: Tutor,
   sessionDate: Date,
   sessionStartTime: string,
-  sessionDurationMinutes: number
+  sessionDurationMinutes: number,
+  customTitle?: string,
+  courseId?: string | null
 ): string => {
   // Parse start time
   const [hours, minutes] = sessionStartTime.split(':').map(Number);
@@ -30,12 +32,22 @@ export const generateGoogleCalendarUrl = (
   const endIso = formatDateForGoogleCalendar(endDate);
   
   // Format title and details
-  const title = encodeURIComponent(`Tutoring with ${tutor.name}`);
-  const description = encodeURIComponent(
-    `Tutoring session with ${tutor.name}\n` +
-    `Duration: ${sessionDurationMinutes} minutes\n` +
-    `Subject: ${tutor.subjects?.[0]?.name || 'Not specified'}\n`
-  );
+  const title = encodeURIComponent(customTitle || `Tutoring with ${tutor.name}`);
+  
+  // Build description including course information if available
+  let descriptionText = `Tutoring session with ${tutor.name}\n` +
+                        `Duration: ${sessionDurationMinutes} minutes\n`;
+  
+  // Add course information if available                      
+  if (courseId) {
+    descriptionText += `Course: ${courseId}\n`;
+  }
+  
+  if (tutor.subjects && tutor.subjects.length > 0) {
+    descriptionText += `Subject: ${tutor.subjects[0]?.name || 'Not specified'}\n`;
+  }
+  
+  const description = encodeURIComponent(descriptionText);
   const location = encodeURIComponent('USC Campus');
   
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startIso}/${endIso}&details=${description}&location=${location}`;
@@ -44,10 +56,17 @@ export const generateGoogleCalendarUrl = (
 export const addToGoogleCalendar = (
   tutor: Tutor,
   slot: BookingSlot,
-  durationMinutes: number
+  durationMinutes: number,
+  courseId?: string | null,
+  courseName?: string | null
 ): void => {
   const sessionDate = slot.day instanceof Date ? slot.day : new Date(slot.day);
-  const url = generateGoogleCalendarUrl(tutor, sessionDate, slot.start, durationMinutes);
+  
+  // Generate custom title with course if available
+  const courseSuffix = courseId ? ` for ${courseName || courseId}` : '';
+  const title = `Tutoring Session with ${tutor.name}${courseSuffix}`;
+  
+  const url = generateGoogleCalendarUrl(tutor, sessionDate, slot.start, durationMinutes, title, courseId);
   
   // Open in a new window
   window.open(url, '_blank');

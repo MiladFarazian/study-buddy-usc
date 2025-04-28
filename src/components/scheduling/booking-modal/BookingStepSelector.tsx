@@ -8,15 +8,17 @@ import { useAvailabilityData } from "@/hooks/useAvailabilityData";
 import { DurationSelector } from "./duration/DurationSelector";
 import { DateSelector } from "./date-selector/DateSelector";
 import { format, isSameDay } from 'date-fns';
+import { CourseSelector } from "./course/CourseSelector";
+import { useCourses } from "@/hooks/useCourses";
 
 interface BookingStepSelectorProps {
   tutor: Tutor;
-  onSelectSlot: (slot: BookingSlot) => void;
+  onSelectSlot: (slot: BookingSlot, duration?: number, courseId?: string | null) => void;
   onClose: () => void;
   disabled?: boolean;
 }
 
-type BookingStep = 'date' | 'time' | 'duration' | 'payment';
+type BookingStep = 'date' | 'time' | 'course' | 'duration' | 'payment';
 
 export function BookingStepSelector({ 
   tutor, 
@@ -28,9 +30,19 @@ export function BookingStepSelector({
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<BookingSlot | null>(null);
   const [selectedDuration, setSelectedDuration] = useState<number>(60); // Default: 1 hour
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const { toast } = useToast();
   
   const hourlyRate = tutor.hourlyRate || 25; // Default to $25/hour if not set
+  
+  // For course filtering - using USC courses
+  const filterOptions = {
+    term: "20251", // Spring 2025
+    search: "",
+    department: "all"
+  };
+  
+  const { courses, loading: coursesLoading } = useCourses(filterOptions);
   
   // Use our hook to fetch availability data with a key that changes when the date changes
   // to force a refresh when the date is changed
@@ -53,9 +65,13 @@ export function BookingStepSelector({
   
   const handleSelectTimeSlot = (slot: BookingSlot) => {
     setSelectedTimeSlot(slot);
-    // Reset duration when time changes
-    setSelectedDuration(60);
-    // Move to duration selection
+    // Move to course selection step
+    setStep('course');
+  };
+
+  const handleSelectCourse = (courseId: string | null) => {
+    setSelectedCourseId(courseId);
+    // Move to duration selection step
     setStep('duration');
   };
   
@@ -64,8 +80,10 @@ export function BookingStepSelector({
   };
   
   const handleBack = () => {
-    if (step === 'duration') {
+    if (step === 'course') {
       setStep('date');
+    } else if (step === 'duration') {
+      setStep('course');
     }
   };
   
@@ -77,8 +95,8 @@ export function BookingStepSelector({
         durationMinutes: selectedDuration
       };
       
-      // Call the parent handler
-      onSelectSlot(finalSlot);
+      // Call the parent handler with the course ID
+      onSelectSlot(finalSlot, selectedDuration, selectedCourseId);
     }
   };
 
@@ -185,6 +203,14 @@ export function BookingStepSelector({
             </div>
           )}
         </div>
+      ) : step === 'course' ? (
+        <CourseSelector
+          courses={courses}
+          selectedCourseId={selectedCourseId}
+          onSelectCourse={handleSelectCourse}
+          onBack={handleBack}
+          loading={coursesLoading}
+        />
       ) : step === 'duration' ? (
         <DurationSelector
           selectedSlot={selectedTimeSlot!}
@@ -195,6 +221,8 @@ export function BookingStepSelector({
           onContinue={handleContinue}
           hourlyRate={hourlyRate}
           consecutiveSlots={consecutiveSlots}
+          selectedCourseId={selectedCourseId}
+          courses={courses}
         />
       ) : null}
     </div>
