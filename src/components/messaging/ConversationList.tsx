@@ -115,7 +115,7 @@ export default function ConversationList({
                 onClick={() => onSelectConversation(conversation)}
               >
                 <div className="flex items-start space-x-4 w-full">
-                  <Avatar className="h-10 w-10">
+                  <Avatar className="h-10 w-10 relative">
                     {otherUser.avatar_url ? (
                       <AvatarImage 
                         src={otherUser.avatar_url} 
@@ -127,7 +127,7 @@ export default function ConversationList({
                       </AvatarFallback>
                     )}
                     {conversation.unread_count > 0 && (
-                      <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-usc-cardinal text-[11px] font-medium text-white flex items-center justify-center">
+                      <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-usc-cardinal text-[11px] font-medium text-white flex items-center justify-center z-20">
                         {conversation.unread_count}
                       </span>
                     )}
