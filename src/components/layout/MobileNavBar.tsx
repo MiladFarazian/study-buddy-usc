@@ -1,28 +1,16 @@
+
 import { Home, BookOpen, Calendar, User, Users, GraduationCap } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const MobileNavBar = () => {
   const location = useLocation();
   const isMobile = useIsMobile();
   const { isStudent, isTutor, user, profile } = useAuth();
-  const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      setIsVisible(currentScrollY < lastScrollY || currentScrollY < 10);
-      setLastScrollY(currentScrollY);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollY]);
   
   if (!isMobile) return null;
 
@@ -77,12 +65,7 @@ const MobileNavBar = () => {
   const isProfileActive = location.pathname.startsWith("/profile");
 
   return (
-    <div 
-      className={cn(
-        "fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 md:hidden transition-transform duration-300",
-        !isVisible && "translate-y-full"
-      )}
-    >
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 md:hidden">
       <div className="flex justify-around">
         {navItems.map((item) => {
           const isActive = 
