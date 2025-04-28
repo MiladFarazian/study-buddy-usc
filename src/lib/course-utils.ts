@@ -121,6 +121,7 @@ export async function removeCourseFromProfile(userId: string, courseNumber: stri
  * Get all courses for a specific tutor
  */
 export async function getTutorCourses(tutorId: string): Promise<Course[]> {
+  // Use the same implementation as in useTutorCourses to maintain consistency
   if (!tutorId) {
     return [];
   }

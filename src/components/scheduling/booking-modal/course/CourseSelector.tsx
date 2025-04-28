@@ -79,7 +79,7 @@ export function CourseSelector({
           {courses.length > 0 ? (
             courses.map((course) => (
               <div 
-                key={course.course_number}
+                key={`course-${course.course_number}`}
                 className={`
                   flex items-center justify-between rounded-lg border p-4
                   ${selectedCourseId === course.course_number ? "border-usc-cardinal" : ""}
@@ -100,7 +100,7 @@ export function CourseSelector({
             ))
           ) : (
             <Card className="p-4 text-center text-muted-foreground">
-              No specific courses available
+              No specific courses available for this tutor
             </Card>
           )}
         </div>

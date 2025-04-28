@@ -21,6 +21,7 @@ export function useTutorCourses(tutorId: string | undefined) {
       setError(null);
 
       try {
+        console.log(`Fetching courses for tutor: ${tutorId}`);
         // Get courses the tutor has selected
         const { data: tutorCourses, error: tutorCoursesError } = await supabase
           .from("tutor_courses")
@@ -31,6 +32,8 @@ export function useTutorCourses(tutorId: string | undefined) {
           throw tutorCoursesError;
         }
 
+        console.log(`Found ${tutorCourses?.length || 0} courses for tutor`);
+        
         // If no courses are found, return empty array
         if (!tutorCourses || tutorCourses.length === 0) {
           setCourses([]);
@@ -57,6 +60,7 @@ export function useTutorCourses(tutorId: string | undefined) {
           })
         );
 
+        console.log("Processed courses with details:", coursesWithDetails);
         setCourses(coursesWithDetails);
       } catch (err: any) {
         console.error("Error fetching tutor courses:", err);
