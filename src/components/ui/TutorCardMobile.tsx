@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { GraduationCap, MapPin } from "lucide-react";
+import { GraduationCap, MapPin, DollarSign } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Tutor } from "@/types/tutor";
 import StarRating from "./StarRating";
@@ -42,7 +42,9 @@ const TutorCardMobile = ({ tutor, getInitials }: TutorCardMobileProps) => {
           <div className="space-y-3">
             <div className="flex items-center justify-between py-1 border-b">
               <span className="font-medium text-xs">Hourly Rate</span>
-              <span className="font-bold text-usc-cardinal text-sm">${tutor.hourlyRate}/hr</span>
+              <span className="font-bold text-usc-cardinal text-sm flex items-center">
+                <DollarSign className="h-4 w-4 mr-1" />{tutor.hourlyRate}/hr
+              </span>
             </div>
             
             <div>

@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -138,7 +137,7 @@ export const ProfileForm = ({
           <div className="space-y-2">
             <Label htmlFor="hourly_rate">Hourly Rate ($)</Label>
             <div className="relative">
-              <DollarSign className="absolute left-3 top-2.5 h-5 w-5 text-gray-500" />
+              <DollarSign className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
               <Input 
                 id="hourly_rate" 
                 name="hourly_rate"

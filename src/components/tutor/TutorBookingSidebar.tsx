@@ -38,7 +38,8 @@ export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
         </CardHeader>
         <CardContent>
           <div className="mb-4">
-            <p className="font-bold text-2xl text-usc-cardinal">
+            <p className="font-bold text-2xl text-usc-cardinal flex items-center">
+              <DollarSign className="h-6 w-6 mr-1" />
               {formattedHourlyRate}/hour
             </p>
           </div>

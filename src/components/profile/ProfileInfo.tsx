@@ -1,4 +1,3 @@
-
 import { DollarSign } from "lucide-react";
 
 interface ProfileInfoProps {
@@ -44,7 +43,7 @@ export const ProfileInfo = ({
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground">Hourly Rate</p>
                 <p className="font-medium flex items-center">
-                  <DollarSign className="h-4 w-4 mr-1 text-gray-500" />
+                  <DollarSign className="h-5 w-5 mr-1 text-muted-foreground" />
                   {formattedHourlyRate}/hour
                 </p>
               </div>

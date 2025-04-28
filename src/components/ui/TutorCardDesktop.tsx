@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { GraduationCap, MapPin, Calendar } from "lucide-react";
+import { GraduationCap, MapPin, Calendar, DollarSign } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Tutor } from "@/types/tutor";
 import StarRating from "./StarRating";
@@ -48,7 +48,9 @@ const TutorCardDesktop = ({
           <div className="space-y-3 md:space-y-4">
             <div className="flex items-center justify-between py-1 md:py-2 border-b">
               <span className="font-medium text-sm whitespace-nowrap">Hourly Rate</span>
-              <span className="font-bold text-usc-cardinal whitespace-nowrap">${tutor.hourlyRate}/hr</span>
+              <span className="font-bold text-usc-cardinal whitespace-nowrap flex items-center">
+                <DollarSign className="h-5 w-5 mr-1" />{tutor.hourlyRate}/hr
+              </span>
             </div>
             
             <div>
