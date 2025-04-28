@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMessaging } from "@/hooks/useMessaging";
@@ -14,7 +15,7 @@ export default function Messages() {
   const targetUserId = searchParams.get("user");
   const isTargetTutor = searchParams.get("isTutor") === "true";
   const isMobile = useIsMobile();
-  const [showChat, setShowChat] = useState(!isMobile);
+  const [showChat, setShowChat] = useState(false);
   
   const {
     conversations,
@@ -27,12 +28,21 @@ export default function Messages() {
     startConversation
   } = useMessaging();
 
+  // Handle mobile view transitions
   useEffect(() => {
     if (currentConversation && isMobile) {
       setShowChat(true);
     }
   }, [currentConversation, isMobile]);
 
+  // Auto-select most recent conversation for desktop
+  useEffect(() => {
+    if (!loading && conversations.length > 0 && !currentConversation && !isMobile) {
+      setCurrentConversation(conversations[0]); // conversations are already sorted by most recent
+    }
+  }, [loading, conversations, currentConversation, isMobile, setCurrentConversation]);
+
+  // Handle conversation initialization from other pages
   useEffect(() => {
     const initConversation = async () => {
       if (targetUserId && user) {
