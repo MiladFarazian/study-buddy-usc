@@ -11,26 +11,22 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 const FeaturedTutors = () => {
   const tutorsData = useTutors();
   const { tutors, loading } = tutorsData;
-  
   const isMobile = useIsMobile();
   const [cardsPerView, setCardsPerView] = useState(3);
 
-  // Adjust cards per view based on window width
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
-      if (width < 640) {
-        setCardsPerView(1); // Small mobile
-      } else if (width < 768) {
-        setCardsPerView(1); // Mobile
+      if (width < 768) {
+        setCardsPerView(1);
       } else if (width < 1024) {
-        setCardsPerView(2); // Tablet/small desktop
+        setCardsPerView(2);
       } else {
-        setCardsPerView(3); // Large desktop
+        setCardsPerView(3);
       }
     };
 
-    handleResize(); // Set initial value
+    handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -75,30 +71,26 @@ const FeaturedTutors = () => {
           }}
           className="w-full"
         >
-          <CarouselContent className="-ml-4">
+          <CarouselContent>
             {featuredTutors.map((tutor) => (
               <CarouselItem 
                 key={tutor.id} 
-                className={`pl-4 ${
+                className={`${
                   isMobile 
-                    ? 'basis-full' 
+                    ? 'basis-[95%]' 
                     : cardsPerView === 2 
-                      ? 'basis-1/2' 
-                      : 'basis-1/3'
-                }`}
+                      ? 'basis-[48%]' 
+                      : 'basis-[32%]'
+                } pl-4`}
               >
-                <div className="flex items-stretch justify-center h-full">
-                  <div className="w-full max-w-[380px]">
-                    <TutorCard tutor={tutor} />
-                  </div>
-                </div>
+                <TutorCard tutor={tutor} />
               </CarouselItem>
             ))}
           </CarouselContent>
           {featuredTutors.length > (isMobile ? 1 : cardsPerView) && (
             <>
-              <CarouselPrevious className="hidden md:flex left-0 md:-left-12 bg-white" />
-              <CarouselNext className="hidden md:flex right-0 md:-right-12 bg-white" />
+              <CarouselPrevious className="hidden md:flex -left-12 bg-white" />
+              <CarouselNext className="hidden md:flex -right-12 bg-white" />
             </>
           )}
         </Carousel>
