@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, CheckCircle } from "lucide-react";
 import { Tutor } from "@/types/tutor";
 import { downloadICSFile, ICalEventData } from '@/lib/calendar/icsGenerator';
+import { generateGoogleCalendarUrl } from '@/lib/calendar/googleCalendarUtils';
 
 interface CalendarIntegrationProps {
   tutor: Tutor;
@@ -68,6 +68,17 @@ export function CalendarIntegration({
     const { startDate, endDate } = calculateSessionTimes();
     const timeOptions: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit', hour12: true };
     return `${startDate.toLocaleTimeString('en-US', timeOptions)} - ${endDate.toLocaleTimeString('en-US', timeOptions)}`;
+  };
+
+  // Function to generate Google Calendar link
+  const generateGoogleCalendarLink = () => {
+    const { startDate, endDate } = calculateSessionTimes();
+    return generateGoogleCalendarUrl(
+      tutor,
+      sessionDate,
+      sessionStartTime,
+      sessionDuration
+    );
   };
 
   if (addedToCalendar) {
@@ -174,4 +185,3 @@ export function CalendarIntegration({
     </Card>
   );
 }
-
