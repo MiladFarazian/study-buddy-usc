@@ -13,7 +13,7 @@ const FeaturedTutors = () => {
 
   const featuredTutors = [...tutors]
     .sort((a, b) => b.rating - a.rating)
-    .slice(0, 6);
+    .slice(0, isMobile ? 2 : 3);
 
   return (
     <div className="mt-8 md:mt-12 container px-4 md:px-6 relative">
@@ -44,7 +44,7 @@ const FeaturedTutors = () => {
           <p className="text-gray-500">No featured tutors available at the moment.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 transition-all duration-300">
           {featuredTutors.map((tutor) => (
             <div key={tutor.id} className="w-full">
               <TutorCard tutor={tutor} />
@@ -57,4 +57,3 @@ const FeaturedTutors = () => {
 };
 
 export default FeaturedTutors;
-
