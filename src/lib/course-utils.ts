@@ -1,107 +1,152 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { Course } from "@/types/CourseTypes";
+import { fetchCourseDetails } from "@/lib/scheduling/course-utils";
 
-export async function addCourseToProfile(userId: string, course: Course) {
-  // First check if the user is a tutor
-  const { data: profileData } = await supabase
-    .from('profiles')
-    .select('role, subjects')
-    .eq('id', userId)
-    .single();
-    
-  if (!profileData) {
-    throw new Error("User profile not found");
+/**
+ * Add a course to a user's profile
+ */
+export async function addCourseToProfile(userId: string, courseNumber: string) {
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .update({
+      subjects: supabase.sql`array_append(subjects, ${courseNumber})`,
+    })
+    .eq("id", userId);
+
+  if (profileError) {
+    throw profileError;
   }
-  
-  // Add course to subjects array in profile
-  const subjects = profileData.subjects || [];
-  if (!subjects.includes(course.course_number)) {
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({ 
-        subjects: [...subjects, course.course_number] 
-      })
-      .eq('id', userId);
-      
-    if (updateError) {
-      throw updateError;
-    }
-  }
-  
+
   // If user is a tutor, also add to tutor_courses table
-  if (profileData.role === 'tutor') {
-    // Check if course already exists in tutor_courses
-    const { data: existingCourse } = await supabase
-      .from('tutor_courses')
-      .select('id')
-      .eq('tutor_id', userId)
-      .eq('course_number', course.course_number)
-      .maybeSingle();
-      
-    if (!existingCourse) {
-      const { error: insertError } = await supabase
-        .from('tutor_courses')
-        .insert({
-          tutor_id: userId,
-          course_number: course.course_number,
-          course_title: course.course_title,
-          department: course.department
-        });
-        
-      if (insertError) {
-        throw insertError;
-      }
+  const { data: profileData } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", userId)
+    .single();
+
+  if (profileData?.role === "tutor") {
+    // Get course details
+    const courseDetails = await fetchCourseDetails(courseNumber);
+
+    // Add to tutor_courses table
+    const { error: tutorCourseError } = await supabase
+      .from("tutor_courses")
+      .upsert({
+        tutor_id: userId,
+        course_number: courseNumber,
+        course_title: courseDetails?.course_title || "",
+        department: courseNumber.split('-')[0] || null,
+      });
+
+    if (tutorCourseError) {
+      console.error("Failed to add to tutor_courses:", tutorCourseError);
+      // Continue anyway as the main profile update worked
     }
   }
-  
-  return true;
+
+  return { success: true };
 }
 
+/**
+ * Remove a course from a user's profile
+ */
 export async function removeCourseFromProfile(userId: string, courseNumber: string) {
+  // First get current subjects array
+  const { data: profile, error: fetchError } = await supabase
+    .from("profiles")
+    .select("subjects")
+    .eq("id", userId)
+    .single();
+
+  if (fetchError) {
+    throw fetchError;
+  }
+
+  // Filter out the course to remove
+  const updatedSubjects = (profile?.subjects || []).filter(
+    (subject) => subject !== courseNumber
+  );
+
+  // Update the profile
+  const { error: updateError } = await supabase
+    .from("profiles")
+    .update({ subjects: updatedSubjects })
+    .eq("id", userId);
+
+  if (updateError) {
+    throw updateError;
+  }
+
+  // If user is a tutor, also remove from tutor_courses table
+  const { data: profileData } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", userId)
+    .single();
+
+  if (profileData?.role === "tutor") {
+    const { error: tutorCourseError } = await supabase
+      .from("tutor_courses")
+      .delete()
+      .eq("tutor_id", userId)
+      .eq("course_number", courseNumber);
+
+    if (tutorCourseError) {
+      console.error("Failed to remove from tutor_courses:", tutorCourseError);
+      // Continue anyway as the main profile update worked
+    }
+  }
+
+  return { success: true };
+}
+
+/**
+ * Get all courses for a specific tutor
+ */
+export async function getTutorCourses(tutorId: string): Promise<Course[]> {
+  if (!tutorId) {
+    return [];
+  }
+
   try {
-    // First check if the user is a tutor
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('role, subjects')
-      .eq('id', userId)
-      .single();
-      
-    if (!profileData) {
-      throw new Error("User profile not found");
+    // Get courses the tutor has selected
+    const { data: tutorCourses, error: tutorCoursesError } = await supabase
+      .from("tutor_courses")
+      .select("course_number, course_title, department")
+      .eq("tutor_id", tutorId);
+
+    if (tutorCoursesError) {
+      throw tutorCoursesError;
     }
-    
-    // Remove course from subjects array in profile
-    const subjects = profileData.subjects || [];
-    if (subjects.includes(courseNumber)) {
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ 
-          subjects: subjects.filter(subject => subject !== courseNumber) 
-        })
-        .eq('id', userId);
-        
-      if (updateError) {
-        throw updateError;
-      }
+
+    // If no courses are found, return empty array
+    if (!tutorCourses || tutorCourses.length === 0) {
+      return [];
     }
-    
-    // If user is a tutor, also remove from tutor_courses table
-    if (profileData.role === 'tutor') {
-      const { error: deleteError } = await supabase
-        .from('tutor_courses')
-        .delete()
-        .eq('tutor_id', userId)
-        .eq('course_number', courseNumber);
-        
-      if (deleteError) {
-        throw deleteError;
-      }
-    }
-    
-    return true;
+
+    // Transform tutor courses to our standard Course type
+    const coursesWithDetails: Course[] = await Promise.all(
+      tutorCourses.map(async (tutorCourse) => {
+        // Try to get additional details if available
+        let courseDetails = null;
+        if (tutorCourse.course_number) {
+          courseDetails = await fetchCourseDetails(tutorCourse.course_number);
+        }
+
+        return {
+          id: tutorCourse.course_number || crypto.randomUUID(),
+          course_number: tutorCourse.course_number || "",
+          course_title: tutorCourse.course_title || courseDetails?.course_title || "",
+          instructor: null,
+          department: tutorCourse.department || tutorCourse.course_number?.split('-')[0] || "",
+        };
+      })
+    );
+
+    return coursesWithDetails;
   } catch (error) {
-    console.error("Error removing course:", error);
-    throw error;
+    console.error("Error fetching tutor courses:", error);
+    return [];
   }
 }

@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -9,7 +8,7 @@ import { DurationSelector } from "./duration/DurationSelector";
 import { DateSelector } from "./date-selector/DateSelector";
 import { format, isSameDay } from 'date-fns';
 import { CourseSelector } from "./course/CourseSelector";
-import { useCourses } from "@/hooks/useCourses";
+import { useTutorCourses } from "@/hooks/useTutorCourses";
 
 interface BookingStepSelectorProps {
   tutor: Tutor;
@@ -35,17 +34,8 @@ export function BookingStepSelector({
   
   const hourlyRate = tutor.hourlyRate || 25; // Default to $25/hour if not set
   
-  // For course filtering - using USC courses
-  const filterOptions = {
-    term: "20251", // Spring 2025
-    search: "",
-    department: "all"
-  };
+  const { courses, loading: coursesLoading } = useTutorCourses(tutor.id);
   
-  const { courses, loading: coursesLoading } = useCourses(filterOptions);
-  
-  // Use our hook to fetch availability data with a key that changes when the date changes
-  // to force a refresh when the date is changed
   const dateKey = selectedDate ? selectedDate.toISOString() : 'initial';
   const { 
     loading, 
@@ -56,22 +46,18 @@ export function BookingStepSelector({
   } = useAvailabilityData(tutor, selectedDate || new Date());
 
   const handleDateChange = (date: Date) => {
-    // Reset time slot when date changes
     setSelectedTimeSlot(null);
     setSelectedDate(date);
-    // Return to date selection step
     setStep('date');
   };
   
   const handleSelectTimeSlot = (slot: BookingSlot) => {
     setSelectedTimeSlot(slot);
-    // Move to course selection step
     setStep('course');
   };
 
   const handleSelectCourse = (courseId: string | null) => {
     setSelectedCourseId(courseId);
-    // Move to duration selection step
     setStep('duration');
   };
   
@@ -89,35 +75,29 @@ export function BookingStepSelector({
   
   const handleContinue = () => {
     if (step === 'duration' && selectedTimeSlot) {
-      // Create the final booking slot with the selected duration
       const finalSlot: BookingSlot = {
         ...selectedTimeSlot,
         durationMinutes: selectedDuration
       };
       
-      // Call the parent handler with the course ID
       onSelectSlot(finalSlot, selectedDuration, selectedCourseId);
     }
   };
 
-  // Calculate cost based on duration and hourly rate
   const calculateCost = (durationMinutes: number): number => {
     return (hourlyRate / 60) * durationMinutes;
   };
 
-  // Generate duration options
   const durationOptions = [
     { minutes: 30, cost: calculateCost(30) },
     { minutes: 60, cost: calculateCost(60) },
     { minutes: 90, cost: calculateCost(90) }
   ];
   
-  // Get consecutive slots for the selected time slot
   const consecutiveSlots = selectedTimeSlot 
-    ? getConsecutiveSlots(selectedTimeSlot, 180) // Check for up to 3 hours (180 minutes)
+    ? getConsecutiveSlots(selectedTimeSlot, 180)
     : [];
     
-  // Check if there are available time slots for the selected date
   const hasSlotsForSelectedDate = selectedDate 
     ? availableSlots.some(slot => {
         const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);

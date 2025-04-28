@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, X } from "lucide-react";
@@ -67,13 +67,19 @@ export const CoursesSettings = () => {
     <Card>
       <CardHeader>
         <CardTitle>My Courses</CardTitle>
+        {profile?.role === 'tutor' && (
+          <CardDescription>
+            The courses you add here will appear to students when they book a tutoring session with you.
+            Add courses that you're qualified to tutor.
+          </CardDescription>
+        )}
       </CardHeader>
       <CardContent>
         {profile?.subjects && profile.subjects.length > 0 ? (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground mb-4">
               These are the courses you've added to your profile. 
-              {profile.role === 'tutor' && " As a tutor, these courses will be displayed on your tutor profile."}
+              {profile.role === 'tutor' && " As a tutor, these courses will be displayed to students during the booking process."}
             </p>
             
             <div className="flex flex-wrap gap-2">
@@ -101,9 +107,19 @@ export const CoursesSettings = () => {
             </div>
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
-            You haven't added any courses yet. Browse the courses page to add courses to your profile.
-          </p>
+          <div className="text-center py-6">
+            <p className="text-sm text-muted-foreground mb-3">
+              You haven't added any courses yet. 
+              {profile?.role === 'tutor' ? (
+                " Add the courses you can tutor to make them available during booking."
+              ) : (
+                " Browse the courses page to add courses to your profile."
+              )}
+            </p>
+            <Button variant="outline" onClick={() => window.location.href = '/courses'}>
+              Browse Courses
+            </Button>
+          </div>
         )}
         
         {/* Confirmation dialog */}
@@ -113,7 +129,7 @@ export const CoursesSettings = () => {
               <DialogTitle>Remove Course</DialogTitle>
               <DialogDescription>
                 Are you sure you want to remove {selectedCourse} from your profile? 
-                {profile?.role === 'tutor' && " This will also remove it from your tutor profile."}
+                {profile?.role === 'tutor' && " This will also remove it from your tutor profile and it won't be available to select during booking."}
               </DialogDescription>
             </DialogHeader>
             <div className="flex justify-end space-x-2">
