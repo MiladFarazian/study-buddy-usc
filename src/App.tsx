@@ -1,4 +1,4 @@
-
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -38,79 +38,81 @@ const queryClient = new QueryClient({
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <TooltipProvider>
-            <Routes>
-              <Route path="/" element={<Layout><Index /></Layout>} />
-              <Route path="/courses" element={<Layout><Courses /></Layout>} />
-              <Route path="/tutors" element={<Layout><Tutors /></Layout>} />
-              <Route path="/tutors/:id" element={<Layout><TutorProfile /></Layout>} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/verify-email" element={<EmailVerification />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/auth/callback" element={<AuthCallback />} />
-              <Route path="/schedule" element={
-                <PrivateRoute>
-                  <RequireProfileCompletion>
-                    <Layout><Schedule /></Layout>
-                  </RequireProfileCompletion>
-                </PrivateRoute>
-              } />
-              <Route path="/resources" element={
-                <PrivateRoute>
-                  <RequireProfileCompletion>
-                    <Layout><Resources /></Layout>
-                  </RequireProfileCompletion>
-                </PrivateRoute>
-              } />
-              <Route path="/analytics" element={
-                <PrivateRoute>
-                  <RequireProfileCompletion>
-                    <Layout><Analytics /></Layout>
-                  </RequireProfileCompletion>
-                </PrivateRoute>
-              } />
-              <Route path="/settings" element={
-                <PrivateRoute>
-                  <RequireProfileCompletion>
-                    <Layout><Settings /></Layout>
-                  </RequireProfileCompletion>
-                </PrivateRoute>
-              } />
-              <Route path="/students" element={
-                <PrivateRoute>
-                  <RequireProfileCompletion>
-                    <Layout><Students /></Layout>
-                  </RequireProfileCompletion>
-                </PrivateRoute>
-              } />
-              <Route path="/messages" element={
-                <PrivateRoute>
-                  <RequireProfileCompletion>
-                    <Layout><Messages /></Layout>
-                  </RequireProfileCompletion>
-                </PrivateRoute>
-              } />
-              <Route 
-                path="/profile" 
-                element={
+    <React.StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <AuthProvider>
+            <TooltipProvider>
+              <Routes>
+                <Route path="/" element={<Layout><Index /></Layout>} />
+                <Route path="/courses" element={<Layout><Courses /></Layout>} />
+                <Route path="/tutors" element={<Layout><Tutors /></Layout>} />
+                <Route path="/tutors/:id" element={<Layout><TutorProfile /></Layout>} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/verify-email" element={<EmailVerification />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
+                <Route path="/schedule" element={
                   <PrivateRoute>
-                    <Profile />
+                    <RequireProfileCompletion>
+                      <Layout><Schedule /></Layout>
+                    </RequireProfileCompletion>
                   </PrivateRoute>
-                } 
-              />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <Toaster />
-            <Sonner />
-          </TooltipProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+                } />
+                <Route path="/resources" element={
+                  <PrivateRoute>
+                    <RequireProfileCompletion>
+                      <Layout><Resources /></Layout>
+                    </RequireProfileCompletion>
+                  </PrivateRoute>
+                } />
+                <Route path="/analytics" element={
+                  <PrivateRoute>
+                    <RequireProfileCompletion>
+                      <Layout><Analytics /></Layout>
+                    </RequireProfileCompletion>
+                  </PrivateRoute>
+                } />
+                <Route path="/settings" element={
+                  <PrivateRoute>
+                    <RequireProfileCompletion>
+                      <Layout><Settings /></Layout>
+                    </RequireProfileCompletion>
+                  </PrivateRoute>
+                } />
+                <Route path="/students" element={
+                  <PrivateRoute>
+                    <RequireProfileCompletion>
+                      <Layout><Students /></Layout>
+                    </RequireProfileCompletion>
+                  </PrivateRoute>
+                } />
+                <Route path="/messages" element={
+                  <PrivateRoute>
+                    <RequireProfileCompletion>
+                      <Layout><Messages /></Layout>
+                    </RequireProfileCompletion>
+                  </PrivateRoute>
+                } />
+                <Route 
+                  path="/profile" 
+                  element={
+                    <PrivateRoute>
+                      <Profile />
+                    </PrivateRoute>
+                  } 
+                />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <Toaster />
+              <Sonner />
+            </TooltipProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </React.StrictMode>
   );
 }
 
