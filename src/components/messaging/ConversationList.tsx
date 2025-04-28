@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { format } from "date-fns";
 import { Search, Users, Trash2 } from "lucide-react";
@@ -66,12 +67,16 @@ export default function ConversationList({
     if (swipeOffset > 50) { // If swiped more than 50px, show delete dialog
       setConversationToDelete(conversation);
       setDeleteDialogOpen(true);
+    } else {
+      // Add a bounce-back effect
+      setSwipeOffset(0);
     }
     
     // Reset states
     setTouchStart(null);
-    setSwipeOffset(0);
-    setConversationBeingSwiped(null);
+    setTimeout(() => {
+      setConversationBeingSwiped(null);
+    }, 300); // Match the transition duration
   };
 
   const handleDeleteConversation = async () => {
@@ -194,10 +199,11 @@ export default function ConversationList({
                 onTouchMove={isMobile && isBeingSwiped ? handleTouchMove : undefined}
                 onTouchEnd={isMobile && isBeingSwiped ? () => handleTouchEnd(conversation) : undefined}
               >
+                {/* Delete action area - initially hidden and revealed on swipe */}
                 <div 
                   className={cn(
-                    "absolute inset-y-0 right-0 flex items-center bg-destructive w-[100px] transition-transform",
-                    isBeingSwiped ? `transform translate-x-[-${swipeOffset}px]` : ""
+                    "absolute inset-y-0 right-0 flex items-center bg-destructive w-[100px] transition-transform duration-300",
+                    isBeingSwiped ? `transform translate-x-[-${swipeOffset}px]` : "transform translate-x-[100px]"
                   )}
                 >
                   <div className="flex items-center justify-center w-full">
@@ -208,7 +214,7 @@ export default function ConversationList({
                 <Button
                   variant="ghost"
                   className={cn(
-                    "w-full justify-start text-left p-4 h-auto rounded-none relative transition-transform",
+                    "w-full justify-start text-left p-4 h-auto rounded-none relative transition-transform duration-300",
                     isActive && "bg-accent",
                     isBeingSwiped && `transform translate-x-[-${swipeOffset}px]`
                   )}
