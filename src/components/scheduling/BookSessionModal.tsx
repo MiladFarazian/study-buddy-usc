@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { createSessionBooking } from "@/lib/scheduling/booking-utils";
 import { useAuthState } from "@/hooks/useAuthState";
 import { LoginPrompt } from "./booking-modal/LoginPrompt";
+import { CalendarPromptStep } from "./booking-modal/CalendarPromptStep";
 
 interface BookSessionModalProps {
   isOpen: boolean;
@@ -29,14 +30,18 @@ export function BookSessionModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [bookedSlot, setBookedSlot] = useState<BookingSlot | null>(null);
+  const [selectedDuration, setSelectedDuration] = useState<number>(60);
+  const [showCalendarPrompt, setShowCalendarPrompt] = useState(false);
   const { toast } = useToast();
   const { user } = useAuthState();
 
-  const handleSelectSlot = async (slot: BookingSlot) => {
+  const handleSelectSlot = async (slot: BookingSlot, duration: number = 60) => {
     if (isSubmitting) return;
     
     setIsSubmitting(true);
     setLoading(true);
+    setSelectedDuration(duration);
     
     try {
       if (!user) {
@@ -48,8 +53,8 @@ export function BookSessionModal({
       const [startHour, startMinute] = slot.start.split(':').map(Number);
       startTime.setHours(startHour, startMinute, 0, 0);
       
-      // Use the slot's duration to calculate end time, fallback to 30 minutes
-      const durationMinutes = slot.durationMinutes || 30;
+      // Use the slot's duration to calculate end time, fallback to provided duration
+      const durationMinutes = duration || slot.durationMinutes || 30;
       const endTime = new Date(startTime);
       endTime.setMinutes(startTime.getMinutes() + durationMinutes);
       
@@ -73,14 +78,13 @@ export function BookSessionModal({
         description: `You've successfully booked a ${durationMinutes}-minute session with ${tutor.firstName || tutor.name.split(' ')[0]}.`
       });
       
+      // Store the booked slot for later use
+      setBookedSlot(slot);
       setLoading(false);
       setIsSubmitting(false);
-      onClose();
       
-      // Force refresh the schedule page if we're on it
-      if (window.location.pathname === '/schedule') {
-        window.location.reload();
-      }
+      // Show calendar prompt instead of closing
+      setShowCalendarPrompt(true);
       
     } catch (err) {
       console.error("Error booking session:", err);
@@ -92,7 +96,17 @@ export function BookSessionModal({
 
   const handleClose = () => {
     if (!isSubmitting) {
+      // Reset all state when closing
+      setShowCalendarPrompt(false);
+      setBookedSlot(null);
       onClose();
+    }
+  };
+  
+  const handleCalendarDone = () => {
+    // Force refresh the schedule page if we're on it
+    if (window.location.pathname === '/schedule') {
+      window.location.reload();
     }
   };
 
@@ -103,6 +117,18 @@ export function BookSessionModal({
 
     if (error) {
       return <ErrorDisplay message={error} onClose={handleClose} />;
+    }
+    
+    if (showCalendarPrompt && bookedSlot) {
+      return (
+        <CalendarPromptStep
+          tutor={tutor}
+          selectedSlot={bookedSlot}
+          selectedDuration={selectedDuration}
+          onClose={handleClose}
+          onDone={handleCalendarDone}
+        />
+      );
     }
 
     return (
@@ -116,12 +142,12 @@ export function BookSessionModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[800px] p-0 max-h-[90vh] overflow-y-auto">
         <DialogTitle className="sr-only">Book a Session</DialogTitle>
         <div className="p-6">
           {!user ? (
-            <LoginPrompt onClose={onClose} />
+            <LoginPrompt onClose={handleClose} />
           ) : (
             renderContent()
           )}
