@@ -71,17 +71,17 @@ const FeaturedTutors = () => {
           }}
           className="w-full"
         >
-          <CarouselContent>
+          <CarouselContent className="-ml-6">
             {featuredTutors.map((tutor) => (
               <CarouselItem 
                 key={tutor.id} 
                 className={`${
                   isMobile 
-                    ? 'basis-[95%]' 
+                    ? 'basis-[90%]' 
                     : cardsPerView === 2 
-                      ? 'basis-[48%]' 
-                      : 'basis-[32%]'
-                } pl-4`}
+                      ? 'basis-[45%]' 
+                      : 'basis-[30%]'
+                } pl-6`}
               >
                 <TutorCard tutor={tutor} />
               </CarouselItem>
