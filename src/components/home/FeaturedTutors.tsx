@@ -5,31 +5,11 @@ import TutorCard from "@/components/ui/TutorCard";
 import { useTutors } from "@/hooks/useTutors";
 import { Loader2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useState, useEffect } from "react";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 
 const FeaturedTutors = () => {
   const tutorsData = useTutors();
   const { tutors, loading } = tutorsData;
   const isMobile = useIsMobile();
-  const [cardsPerView, setCardsPerView] = useState(3);
-
-  useEffect(() => {
-    const handleResize = () => {
-      const width = window.innerWidth;
-      if (width < 768) {
-        setCardsPerView(1);
-      } else if (width < 1024) {
-        setCardsPerView(2);
-      } else {
-        setCardsPerView(3);
-      }
-    };
-
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   const featuredTutors = [...tutors]
     .sort((a, b) => b.rating - a.rating)
@@ -64,39 +44,17 @@ const FeaturedTutors = () => {
           <p className="text-gray-500">No featured tutors available at the moment.</p>
         </div>
       ) : (
-        <Carousel
-          opts={{
-            align: "start",
-            slidesToScroll: 1,
-          }}
-          className="w-full"
-        >
-          <CarouselContent className="-ml-6">
-            {featuredTutors.map((tutor) => (
-              <CarouselItem 
-                key={tutor.id} 
-                className={`${
-                  isMobile 
-                    ? 'basis-[90%]' 
-                    : cardsPerView === 2 
-                      ? 'basis-[45%]' 
-                      : 'basis-[30%]'
-                } pl-6`}
-              >
-                <TutorCard tutor={tutor} />
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          {featuredTutors.length > (isMobile ? 1 : cardsPerView) && (
-            <>
-              <CarouselPrevious className="hidden md:flex -left-12 bg-white" />
-              <CarouselNext className="hidden md:flex -right-12 bg-white" />
-            </>
-          )}
-        </Carousel>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {featuredTutors.map((tutor) => (
+            <div key={tutor.id} className="w-full">
+              <TutorCard tutor={tutor} />
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
 };
 
 export default FeaturedTutors;
+
