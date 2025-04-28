@@ -57,7 +57,7 @@ const FeaturedTutors = () => {
     .slice(0, 6); // Show more tutors for carousel
 
   return (
-    <div className="mt-8 md:mt-12 container px-0 relative">
+    <div className="mt-8 md:mt-12 container px-4 md:px-6 relative">
       <div className="flex items-center justify-between mb-4 md:mb-6">
         <h2 className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>Featured Tutors</h2>
         <Button asChild variant="ghost" className="text-usc-cardinal">
@@ -89,21 +89,36 @@ const FeaturedTutors = () => {
           <Carousel
             opts={{
               align: "start",
-              slidesToScroll: isMobile ? 1 : 3,
+              slidesToScroll: isMobile ? 1 : Math.min(3, featuredTutors.length),
             }}
             className="w-full"
           >
             <CarouselContent className="-ml-4">
               {featuredTutors.map((tutor) => (
-                <CarouselItem key={tutor.id} className="pl-4 basis-full md:basis-1/3">
-                  <div className="w-full">
+                <CarouselItem 
+                  key={tutor.id} 
+                  className={`pl-4 ${
+                    isMobile 
+                      ? 'basis-full' 
+                      : featuredTutors.length === 1 
+                        ? 'basis-full' 
+                        : featuredTutors.length === 2 
+                          ? 'basis-1/2' 
+                          : 'basis-1/3'
+                  }`}
+                >
+                  <div className="w-full flex justify-center">
                     <TutorCard tutor={tutor} />
                   </div>
                 </CarouselItem>
               ))}
             </CarouselContent>
-            <CarouselPrevious className="hidden md:flex" />
-            <CarouselNext className="hidden md:flex" />
+            {featuredTutors.length > (isMobile ? 1 : 3) && (
+              <>
+                <CarouselPrevious className="hidden md:flex" />
+                <CarouselNext className="hidden md:flex" />
+              </>
+            )}
           </Carousel>
         </div>
       )}
