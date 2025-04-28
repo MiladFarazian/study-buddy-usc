@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMessaging } from "@/hooks/useMessaging";
@@ -6,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import ConversationList from "@/components/messaging/ConversationList";
 import ChatInterface from "@/components/messaging/ChatInterface";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 export default function Messages() {
   const { isStudent, isTutor, user } = useAuth();
@@ -27,14 +27,12 @@ export default function Messages() {
     startConversation
   } = useMessaging();
 
-  // Reset view state when conversation changes
   useEffect(() => {
     if (currentConversation && isMobile) {
       setShowChat(true);
     }
   }, [currentConversation, isMobile]);
 
-  // Handle starting a new conversation if directed from another page
   useEffect(() => {
     const initConversation = async () => {
       if (targetUserId && user) {
@@ -65,7 +63,6 @@ export default function Messages() {
   return (
     <div className="h-[calc(100vh-4rem)]">
       <div className="h-full flex">
-        {/* Conversations list - show on mobile only when not in chat view */}
         {(!isMobile || (isMobile && !showChat)) && (
           <div className={cn(
             "h-full border-r bg-background",
@@ -80,7 +77,6 @@ export default function Messages() {
           </div>
         )}
         
-        {/* Chat interface - show on mobile only when in chat view */}
         {(!isMobile || (isMobile && showChat)) && (
           <div className={cn(
             "h-full bg-background",
