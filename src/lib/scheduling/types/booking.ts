@@ -14,6 +14,7 @@ export interface BookingSlot {
   endTime?: Date;
   durationMinutes?: number;
   id?: string;
+  courseId?: string | null; // Add courseId property
 }
 
 // BookedSession represents an already booked session

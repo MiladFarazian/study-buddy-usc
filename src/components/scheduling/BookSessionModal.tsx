@@ -78,7 +78,7 @@ export function BookSessionModal({
       const session = await createSessionBooking(
         user.id,
         tutor.id,
-        courseId, // Use the selected course ID 
+        courseId, // Pass the selected course ID (which may be null for general sessions)
         startTime.toISOString(),
         endTime.toISOString(),
         null, // No location

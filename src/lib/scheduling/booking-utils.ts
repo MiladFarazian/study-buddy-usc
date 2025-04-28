@@ -18,7 +18,7 @@ export async function createSessionBooking(
     console.log("[createSessionBooking] Creating session with params:", {
       student_id: studentId,
       tutor_id: tutorId,
-      course_id: courseId, // This should be a string (course number) or null
+      course_id: courseId, // This may be a course number string or null for general sessions
       start_time: startTime,
       end_time: endTime
     });
@@ -29,7 +29,7 @@ export async function createSessionBooking(
       .insert({
         student_id: studentId,
         tutor_id: tutorId,
-        course_id: courseId, // Store course_id as the course number string
+        course_id: courseId, // Store course_id as the course number string or null for general
         start_time: startTime,
         end_time: endTime,
         location: location,

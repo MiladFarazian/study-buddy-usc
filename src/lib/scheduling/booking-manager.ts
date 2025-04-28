@@ -14,7 +14,7 @@ export async function createSessionBooking(
   const params: SessionCreationParams = {
     studentId,
     tutorId,
-    courseId,
+    courseId, // This may be null for general sessions
     startTime,
     endTime,
     location,
@@ -23,13 +23,14 @@ export async function createSessionBooking(
 
   try {
     console.log("Creating session booking with params:", params);
+    console.log("Course ID type:", courseId === null ? "null" : typeof courseId);
 
     const { data, error } = await supabase
       .from('sessions')
       .insert({
         student_id: studentId,
         tutor_id: tutorId,
-        course_id: courseId,
+        course_id: courseId, // Store as string or null
         start_time: startTime,
         end_time: endTime,
         location: location,
@@ -57,7 +58,8 @@ export async function bookSession(
   tutorId: string,
   studentId: string,
   slot: BookingSlot,
-  duration: number
+  duration: number,
+  courseId: string | null = null // Add courseId parameter with null default
 ) {
   try {
     const startDateTime = new Date(slot.day);
@@ -67,11 +69,14 @@ export async function bookSession(
     const endDateTime = new Date(startDateTime);
     endDateTime.setMinutes(endDateTime.getMinutes() + duration);
     
+    console.log("Booking session with course ID:", courseId);
+    
     const { data, error } = await supabase
       .from('sessions')
       .insert({
         tutor_id: tutorId,
         student_id: studentId,
+        course_id: courseId, // Store course ID (may be null)
         start_time: startDateTime.toISOString(),
         end_time: endDateTime.toISOString(),
         status: 'pending',

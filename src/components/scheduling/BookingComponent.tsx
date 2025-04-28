@@ -14,6 +14,7 @@ interface BookingComponentProps {
   onCancel: () => void;
   loading?: boolean;
   disabled?: boolean;
+  selectedCourseId?: string | null; // Add selected course ID prop
 }
 
 export function BookingComponent({
@@ -22,7 +23,8 @@ export function BookingComponent({
   onSelectSlot,
   onCancel,
   loading = false,
-  disabled = false
+  disabled = false,
+  selectedCourseId = null // Default to null (general session)
 }: BookingComponentProps) {
   const [step, setStep] = useState(1);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -63,7 +65,15 @@ export function BookingComponent({
   // Handle final booking submission
   const handleBookSession = () => {
     if (selectedTimeSlot) {
-      onSelectSlot(selectedTimeSlot);
+      // Create a copy of the slot with additional properties
+      const enhancedSlot: BookingSlot = {
+        ...selectedTimeSlot,
+        durationMinutes: duration,
+        courseId: selectedCourseId // Add the selected course ID to the slot
+      };
+      
+      console.log("[BookingComponent] Submitting booking with course ID:", selectedCourseId);
+      onSelectSlot(enhancedSlot);
     }
   };
 
@@ -156,6 +166,12 @@ export function BookingComponent({
                 <p><span className="font-medium">Time:</span> {formatTime(selectedTimeSlot.start)} - {formatTime(selectedTimeSlot.end)}</p>
                 <p><span className="font-medium">Tutor:</span> {tutor.name}</p>
                 <p><span className="font-medium">Rate:</span> ${tutor.hourlyRate || 25}/hour</p>
+                {selectedCourseId && (
+                  <p><span className="font-medium">Course:</span> {selectedCourseId}</p>
+                )}
+                {!selectedCourseId && (
+                  <p><span className="font-medium">Course:</span> General Session</p>
+                )}
               </div>
 
               <div className="flex justify-between mt-6">

@@ -21,6 +21,7 @@ interface SchedulingState {
   notes: string;
   studentName: string;
   studentEmail: string;
+  selectedCourseId: string | null; // Add selected course ID to state
 }
 
 // Define the scheduling actions
@@ -31,6 +32,7 @@ type SchedulingAction =
   | { type: 'SET_STEP'; payload: BookingStep }
   | { type: 'SET_NOTES'; payload: string }
   | { type: 'SET_STUDENT_INFO'; payload: { name: string; email: string } }
+  | { type: 'SET_COURSE'; payload: string | null } // Add new action for course selection
   | { type: 'RESET' };
 
 // Initial state
@@ -42,6 +44,7 @@ const initialState: SchedulingState = {
   notes: '',
   studentName: '',
   studentEmail: '',
+  selectedCourseId: null, // Default to null (general session)
 };
 
 // Reducer function
@@ -63,6 +66,8 @@ function schedulingReducer(state: SchedulingState, action: SchedulingAction): Sc
         studentName: action.payload.name, 
         studentEmail: action.payload.email 
       };
+    case 'SET_COURSE':
+      return { ...state, selectedCourseId: action.payload }; // Handle course selection
     case 'RESET':
       return { 
         ...initialState,
@@ -82,6 +87,7 @@ interface SchedulingContextType {
   calculatePrice: (durationMinutes: number) => number;
   continueToNextStep: () => void;
   goToPreviousStep: () => void;
+  setCourse: (courseId: string | null) => void; // Add helper function for setting course
 }
 
 const SchedulingContext = createContext<SchedulingContextType | undefined>(undefined);
@@ -102,6 +108,11 @@ export const SchedulingProvider: React.FC<{ children: ReactNode }> = ({ children
     const hourlyRate = tutor.hourlyRate || 25; // Use tutor's rate or default to $25
     return (hourlyRate / 60) * durationMinutes;
   }, [tutor]);
+
+  // Helper function to set the selected course
+  const setCourse = useCallback((courseId: string | null) => {
+    dispatch({ type: 'SET_COURSE', payload: courseId });
+  }, [dispatch]);
 
   const continueToNextStep = useCallback(() => {
     // Validation before moving to the next step
@@ -152,7 +163,8 @@ export const SchedulingProvider: React.FC<{ children: ReactNode }> = ({ children
       setTutor, 
       calculatePrice,
       continueToNextStep,
-      goToPreviousStep
+      goToPreviousStep,
+      setCourse // Add the setCourse function to the context
     }}>
       {children}
     </SchedulingContext.Provider>

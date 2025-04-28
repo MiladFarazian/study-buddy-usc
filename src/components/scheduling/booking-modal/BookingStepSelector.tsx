@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -82,9 +83,11 @@ export function BookingStepSelector({
   
   const handleContinue = () => {
     if (step === 'duration' && selectedTimeSlot) {
+      // Create enhanced slot with course ID and duration
       const finalSlot: BookingSlot = {
         ...selectedTimeSlot,
-        durationMinutes: selectedDuration
+        durationMinutes: selectedDuration,
+        courseId: selectedCourseId // Add course ID to the slot
       };
       
       console.log("[BookingStepSelector] Finalizing booking with:", {
