@@ -78,7 +78,7 @@ export function BookSessionModal({
       const session = await createSessionBooking(
         user.id,
         tutor.id,
-        courseId, // Pass the selected course ID
+        courseId, // Pass the selected course ID (may be null)
         startTime.toISOString(),
         endTime.toISOString(),
         null, // No location
@@ -89,9 +89,13 @@ export function BookSessionModal({
         throw new Error("Failed to create session");
       }
       
+      const courseName = courseId ? 
+        `for ${courseId}` : 
+        '';
+      
       toast({
         title: "Session booked!",
-        description: `You've successfully booked a ${durationMinutes}-minute session with ${tutor.firstName || tutor.name.split(' ')[0]}.`
+        description: `You've successfully booked a ${durationMinutes}-minute session ${courseName} with ${tutor.firstName || tutor.name.split(' ')[0]}.`
       });
       
       // Store the booked slot for later use

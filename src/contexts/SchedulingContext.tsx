@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useReducer, ReactNode, useCallback } from 'react';
 import { Tutor } from "@/types/tutor";
 import { BookingSlot } from "@/lib/scheduling/types";
@@ -110,6 +111,7 @@ export const SchedulingProvider: React.FC<{ children: ReactNode }> = ({ children
 
   // Helper function to set the selected course
   const setCourse = useCallback((courseId: string | null) => {
+    console.log("[SchedulingContext] Setting course ID:", courseId);
     dispatch({ type: 'SET_COURSE', payload: courseId });
   }, [dispatch]);
 

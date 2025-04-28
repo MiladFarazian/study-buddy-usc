@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -40,11 +39,7 @@ export function BookingStepSelector({
   
   useEffect(() => {
     console.log("[BookingStepSelector] Courses loaded:", courses);
-    // If courses are loaded and there's only one, preselect it
-    if (courses?.length === 1 && !selectedCourseId) {
-      setSelectedCourseId(courses[0].course_number);
-    }
-  }, [courses, selectedCourseId]);
+  }, [courses]);
   
   const dateKey = selectedDate ? selectedDate.toISOString() : 'initial';
   const { 

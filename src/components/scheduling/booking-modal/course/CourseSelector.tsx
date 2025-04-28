@@ -99,7 +99,6 @@ export function CourseSelector({
         <Button 
           className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white" 
           onClick={handleContinue}
-          disabled={courses.length === 0 || selectedCourseId === null}
         >
           Continue
         </Button>

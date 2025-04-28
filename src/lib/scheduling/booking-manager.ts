@@ -23,8 +23,7 @@ export async function createSessionBooking(
 
   try {
     console.log("Creating session booking with params:", params);
-    console.log("Course ID type:", courseId === null ? "null" : typeof courseId);
-
+    
     const { data, error } = await supabase
       .from('sessions')
       .insert({
@@ -59,7 +58,7 @@ export async function bookSession(
   studentId: string,
   slot: BookingSlot,
   duration: number,
-  courseId: string | null = null // Add courseId parameter with null default
+  courseId: string | null = null
 ) {
   try {
     const startDateTime = new Date(slot.day);
