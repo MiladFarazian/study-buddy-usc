@@ -27,6 +27,7 @@ interface ProfileFormProps {
   handleRoleChange: (role: UserRole) => Promise<void>;
   handleProfileUpdate: () => Promise<void>;
   userEmail?: string;
+  approvedTutor?: boolean;
 }
 
 export const ProfileForm = ({
@@ -38,7 +39,8 @@ export const ProfileForm = ({
   uploadingAvatar,
   handleRoleChange,
   handleProfileUpdate,
-  userEmail
+  userEmail,
+  approvedTutor
 }: ProfileFormProps) => {
   return (
     <Card className="lg:col-span-2">
@@ -100,15 +102,26 @@ export const ProfileForm = ({
             <Button 
               variant={isTutor ? "default" : "outline"}
               onClick={() => handleRoleChange("tutor")}
-              disabled={loading || isTutor}
+              disabled={loading || isTutor || !approvedTutor}
               className={isTutor ? "bg-usc-cardinal hover:bg-usc-cardinal-dark" : ""}
             >
               Tutor
             </Button>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Choose whether you want to find tutors or be a tutor
-          </p>
+          {approvedTutor ? (
+            <p className="text-sm text-usc-gold font-medium mt-2">
+              You are StudyBuddy approved! Let's get to tutoring!
+            </p>
+          ) : (
+            <a 
+              href="https://usc.qualtrics.com/jfe/form/SV_7QU9OKorLMDmxNk" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-sm text-usc-cardinal hover:text-usc-cardinal-dark font-medium mt-2 inline-block"
+            >
+              Apply to be a StudyBuddy Tutor today!
+            </a>
+          )}
         </div>
         
         <div className="space-y-2">

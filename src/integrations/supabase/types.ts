@@ -365,6 +365,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          approved_tutor: boolean | null
           availability: Json | null
           avatar_url: string | null
           average_rating: number | null
@@ -383,6 +384,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approved_tutor?: boolean | null
           availability?: Json | null
           avatar_url?: string | null
           average_rating?: number | null
@@ -401,6 +403,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          approved_tutor?: boolean | null
           availability?: Json | null
           avatar_url?: string | null
           average_rating?: number | null
@@ -652,6 +655,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_tutor: {
+        Args: { tutor_id: string }
+        Returns: undefined
+      }
       check_column_exists: {
         Args: { table_name: string; column_name: string }
         Returns: boolean

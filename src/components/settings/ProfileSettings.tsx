@@ -29,6 +29,16 @@ export const ProfileSettings = () => {
   const handleRoleChange = async (role: UserRole) => {
     if (!user) return;
     
+    // Prevent role change to tutor if not approved
+    if (role === 'tutor' && !profile?.approved_tutor) {
+      toast({
+        title: "Not Approved",
+        description: "You must be approved as a tutor before selecting this role.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const { error } = await updateUserRole(user, role, setLoading);
 
     if (error) {
@@ -106,6 +116,7 @@ export const ProfileSettings = () => {
         handleRoleChange={handleRoleChange}
         handleProfileUpdate={handleProfileUpdate}
         userEmail={user?.email}
+        approvedTutor={profile?.approved_tutor}
       />
       
       <div className="lg:col-span-1">
