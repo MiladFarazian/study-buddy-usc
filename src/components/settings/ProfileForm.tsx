@@ -6,9 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, DollarSign } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
 import { Profile } from "@/integrations/supabase/types-extension";
-
 type UserRole = Database['public']['Enums']['user_role'];
-
 interface ProfileFormProps {
   formData: {
     first_name: string;
@@ -29,7 +27,6 @@ interface ProfileFormProps {
   userEmail?: string;
   approvedTutor?: boolean;
 }
-
 export const ProfileForm = ({
   formData,
   handleInputChange,
@@ -42,8 +39,7 @@ export const ProfileForm = ({
   userEmail,
   approvedTutor
 }: ProfileFormProps) => {
-  return (
-    <Card className="lg:col-span-2">
+  return <Card className="lg:col-span-2">
       <CardHeader>
         <CardTitle>Profile Information</CardTitle>
         <CardDescription>
@@ -54,35 +50,17 @@ export const ProfileForm = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label htmlFor="first_name">First Name</Label>
-            <Input 
-              id="first_name" 
-              name="first_name"
-              value={formData.first_name}
-              onChange={handleInputChange}
-              placeholder="Your first name" 
-            />
+            <Input id="first_name" name="first_name" value={formData.first_name} onChange={handleInputChange} placeholder="Your first name" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="last_name">Last Name</Label>
-            <Input 
-              id="last_name" 
-              name="last_name"
-              value={formData.last_name}
-              onChange={handleInputChange}
-              placeholder="Your last name" 
-            />
+            <Input id="last_name" name="last_name" value={formData.last_name} onChange={handleInputChange} placeholder="Your last name" />
           </div>
         </div>
         
         <div className="space-y-2">
           <Label htmlFor="email">Email Address</Label>
-          <Input 
-            id="email" 
-            type="email" 
-            value={userEmail || ""} 
-            placeholder="your.email@usc.edu" 
-            readOnly 
-          />
+          <Input id="email" type="email" value={userEmail || ""} placeholder="your.email@usc.edu" readOnly />
           <p className="text-sm text-muted-foreground">
             Your email cannot be changed
           </p>
@@ -91,105 +69,52 @@ export const ProfileForm = ({
         <div className="space-y-2">
           <Label htmlFor="role">User Role</Label>
           <div className="flex items-center space-x-4">
-            <Button 
-              variant={isStudent ? "default" : "outline"}
-              onClick={() => handleRoleChange("student")}
-              disabled={loading || isStudent}
-              className={isStudent ? "bg-usc-cardinal hover:bg-usc-cardinal-dark" : ""}
-            >
+            <Button variant={isStudent ? "default" : "outline"} onClick={() => handleRoleChange("student")} disabled={loading || isStudent} className={isStudent ? "bg-usc-cardinal hover:bg-usc-cardinal-dark" : ""}>
               Student
             </Button>
-            <Button 
-              variant={isTutor ? "default" : "outline"}
-              onClick={() => handleRoleChange("tutor")}
-              disabled={loading || isTutor || !approvedTutor}
-              className={isTutor ? "bg-usc-cardinal hover:bg-usc-cardinal-dark" : ""}
-            >
+            <Button variant={isTutor ? "default" : "outline"} onClick={() => handleRoleChange("tutor")} disabled={loading || isTutor || !approvedTutor} className={isTutor ? "bg-usc-cardinal hover:bg-usc-cardinal-dark" : ""}>
               Tutor
             </Button>
           </div>
-          {approvedTutor ? (
-            <p className="text-sm text-usc-gold font-medium mt-2">
+          {approvedTutor ? <p className="text-sm font-medium mt-2 text-usc-cardinal">
               You are StudyBuddy approved! Let's get to tutoring!
-            </p>
-          ) : (
-            <a 
-              href="https://usc.qualtrics.com/jfe/form/SV_7QU9OKorLMDmxNk" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-sm text-usc-cardinal hover:text-usc-cardinal-dark font-medium mt-2 inline-block"
-            >
+            </p> : <a href="https://usc.qualtrics.com/jfe/form/SV_7QU9OKorLMDmxNk" target="_blank" rel="noopener noreferrer" className="text-sm text-usc-cardinal hover:text-usc-cardinal-dark font-medium mt-2 inline-block">
               Apply to be a StudyBuddy Tutor today!
-            </a>
-          )}
+            </a>}
         </div>
         
         <div className="space-y-2">
           <Label htmlFor="major">Major</Label>
-          <Input 
-            id="major" 
-            name="major"
-            value={formData.major}
-            onChange={handleInputChange}
-            placeholder="Computer Science" 
-          />
+          <Input id="major" name="major" value={formData.major} onChange={handleInputChange} placeholder="Computer Science" />
         </div>
         
         <div className="space-y-2">
           <Label htmlFor="graduation_year">Graduation Year</Label>
-          <Input 
-            id="graduation_year" 
-            name="graduation_year"
-            value={formData.graduation_year}
-            onChange={handleInputChange}
-            placeholder="2026" 
-          />
+          <Input id="graduation_year" name="graduation_year" value={formData.graduation_year} onChange={handleInputChange} placeholder="2026" />
         </div>
 
-        {isTutor && (
-          <div className="space-y-2">
+        {isTutor && <div className="space-y-2">
             <Label htmlFor="hourly_rate">Hourly Rate ($)</Label>
             <div className="relative">
               <DollarSign className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-              <Input 
-                id="hourly_rate" 
-                name="hourly_rate"
-                value={formData.hourly_rate}
-                onChange={handleInputChange}
-                placeholder="25" 
-                className="pl-10"
-              />
+              <Input id="hourly_rate" name="hourly_rate" value={formData.hourly_rate} onChange={handleInputChange} placeholder="25" className="pl-10" />
             </div>
             <p className="text-sm text-muted-foreground">
               Set your hourly tutoring rate - this will be displayed on your profile
             </p>
-          </div>
-        )}
+          </div>}
         
         <div className="space-y-2">
           <Label htmlFor="bio">Bio</Label>
-          <Textarea 
-            id="bio" 
-            name="bio"
-            value={formData.bio}
-            onChange={handleInputChange}
-            placeholder="Tell us about yourself..." 
-          />
+          <Textarea id="bio" name="bio" value={formData.bio} onChange={handleInputChange} placeholder="Tell us about yourself..." />
         </div>
         
-        <Button 
-          className="bg-usc-cardinal hover:bg-usc-cardinal-dark"
-          onClick={handleProfileUpdate}
-          disabled={loading || uploadingAvatar}
-        >
-          {(loading || uploadingAvatar) ? (
-            <>
+        <Button className="bg-usc-cardinal hover:bg-usc-cardinal-dark" onClick={handleProfileUpdate} disabled={loading || uploadingAvatar}>
+          {loading || uploadingAvatar ? <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Saving...
-            </>
-          ) : "Save Changes"}
+            </> : "Save Changes"}
         </Button>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
