@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { format } from "date-fns";
 import { Search, Users, Trash2 } from "lucide-react";
@@ -64,13 +63,15 @@ export default function ConversationList({
   };
 
   const handleTouchEnd = (conversation: ConversationWithProfiles) => {
+    if (!touchStart) return;
+
     if (swipeOffset > 50) { // If swiped more than 50px, show delete dialog
       setConversationToDelete(conversation);
       setDeleteDialogOpen(true);
-    } else {
-      // Add a bounce-back effect
-      setSwipeOffset(0);
     }
+    
+    // Add a bounce-back effect
+    setSwipeOffset(0);
     
     // Reset states
     setTouchStart(null);
@@ -211,58 +212,55 @@ export default function ConversationList({
                   </div>
                 </div>
                 
-                <Button
-                  variant="ghost"
+                <div
                   className={cn(
-                    "w-full justify-start text-left p-4 h-auto rounded-none relative transition-transform duration-300",
+                    "w-full flex items-start space-x-4 p-4 bg-background relative transition-transform duration-300",
                     isActive && "bg-accent",
                     isBeingSwiped && `transform translate-x-[-${swipeOffset}px]`
                   )}
                   onClick={() => onSelectConversation(conversation)}
                 >
-                  <div className="flex items-start space-x-4 w-full">
-                    <div className="relative">
-                      <Avatar className="h-10 w-10">
-                        {otherUser.avatar_url ? (
-                          <AvatarImage 
-                            src={otherUser.avatar_url} 
-                            alt={`${otherUser.first_name || 'User'}'s avatar`}
-                          />
-                        ) : (
-                          <AvatarFallback>
-                            <Users className="h-5 w-5" />
-                          </AvatarFallback>
-                        )}
-                      </Avatar>
-                      {conversation.unread_count > 0 && (
-                        <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-usc-cardinal text-[11px] font-medium text-white flex items-center justify-center z-50">
-                          {conversation.unread_count}
+                  <div className="relative">
+                    <Avatar className="h-10 w-10">
+                      {otherUser.avatar_url ? (
+                        <AvatarImage 
+                          src={otherUser.avatar_url} 
+                          alt={`${otherUser.first_name || 'User'}'s avatar`}
+                        />
+                      ) : (
+                        <AvatarFallback>
+                          <Users className="h-5 w-5" />
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
+                    {conversation.unread_count > 0 && (
+                      <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-usc-cardinal text-[11px] font-medium text-white flex items-center justify-center z-50">
+                        {conversation.unread_count}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-baseline mb-1">
+                      <h4 className={cn(
+                        "font-medium truncate",
+                        conversation.unread_count > 0 && "font-semibold"
+                      )}>
+                        {otherUser.first_name || ''} {otherUser.last_name || ''}
+                      </h4>
+                      {conversation.last_message_time && (
+                        <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
+                          {format(new Date(conversation.last_message_time), "MMM d")}
                         </span>
                       )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-baseline mb-1">
-                        <h4 className={cn(
-                          "font-medium truncate",
-                          conversation.unread_count > 0 && "font-semibold"
-                        )}>
-                          {otherUser.first_name || ''} {otherUser.last_name || ''}
-                        </h4>
-                        {conversation.last_message_time && (
-                          <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
-                            {format(new Date(conversation.last_message_time), "MMM d")}
-                          </span>
-                        )}
-                      </div>
-                      <p className={cn(
-                        "text-sm text-muted-foreground truncate",
-                        conversation.unread_count > 0 && "text-foreground font-medium"
-                      )}>
-                        {conversation.last_message_text || "No messages yet"}
-                      </p>
-                    </div>
+                    <p className={cn(
+                      "text-sm text-muted-foreground truncate",
+                      conversation.unread_count > 0 && "text-foreground font-medium"
+                    )}>
+                      {conversation.last_message_text || "No messages yet"}
+                    </p>
                   </div>
-                </Button>
+                </div>
               </div>
             );
           })
