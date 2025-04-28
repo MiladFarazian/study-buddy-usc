@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useReducer, ReactNode, useCallback } from 'react';
 import { Tutor } from "@/types/tutor";
 import { BookingSlot } from "@/lib/scheduling/types";
@@ -21,7 +20,7 @@ interface SchedulingState {
   notes: string;
   studentName: string;
   studentEmail: string;
-  selectedCourseId: string | null; // Add selected course ID to state
+  selectedCourseId: string | null; // Course number as string or null
 }
 
 // Define the scheduling actions
@@ -32,7 +31,7 @@ type SchedulingAction =
   | { type: 'SET_STEP'; payload: BookingStep }
   | { type: 'SET_NOTES'; payload: string }
   | { type: 'SET_STUDENT_INFO'; payload: { name: string; email: string } }
-  | { type: 'SET_COURSE'; payload: string | null } // Add new action for course selection
+  | { type: 'SET_COURSE'; payload: string | null } // Course number as string or null
   | { type: 'RESET' };
 
 // Initial state
@@ -44,7 +43,7 @@ const initialState: SchedulingState = {
   notes: '',
   studentName: '',
   studentEmail: '',
-  selectedCourseId: null, // Default to null (general session)
+  selectedCourseId: null, // Default to null
 };
 
 // Reducer function
@@ -87,7 +86,7 @@ interface SchedulingContextType {
   calculatePrice: (durationMinutes: number) => number;
   continueToNextStep: () => void;
   goToPreviousStep: () => void;
-  setCourse: (courseId: string | null) => void; // Add helper function for setting course
+  setCourse: (courseId: string | null) => void; // Course number as string or null
 }
 
 const SchedulingContext = createContext<SchedulingContextType | undefined>(undefined);

@@ -14,7 +14,7 @@ export async function createSessionBooking(
   const params: SessionCreationParams = {
     studentId,
     tutorId,
-    courseId, // This may be null for general sessions
+    courseId, // This may be null if no course is selected
     startTime,
     endTime,
     location,
@@ -76,7 +76,7 @@ export async function bookSession(
       .insert({
         tutor_id: tutorId,
         student_id: studentId,
-        course_id: courseId, // Store course ID (may be null)
+        course_id: courseId, // Store course ID as string
         start_time: startDateTime.toISOString(),
         end_time: endDateTime.toISOString(),
         status: 'pending',

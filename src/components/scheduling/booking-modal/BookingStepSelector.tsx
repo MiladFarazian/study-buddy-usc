@@ -40,7 +40,11 @@ export function BookingStepSelector({
   
   useEffect(() => {
     console.log("[BookingStepSelector] Courses loaded:", courses);
-  }, [courses]);
+    // If courses are loaded and there's only one, preselect it
+    if (courses?.length === 1 && !selectedCourseId) {
+      setSelectedCourseId(courses[0].course_number);
+    }
+  }, [courses, selectedCourseId]);
   
   const dateKey = selectedDate ? selectedDate.toISOString() : 'initial';
   const { 
@@ -60,7 +64,13 @@ export function BookingStepSelector({
   const handleSelectTimeSlot = (slot: BookingSlot) => {
     console.log("[BookingStepSelector] Selected time slot:", slot);
     setSelectedTimeSlot(slot);
-    setStep('course');
+    
+    // If there are no courses for this tutor, skip to duration selection
+    if (!courses || courses.length === 0) {
+      setStep('duration');
+    } else {
+      setStep('course');
+    }
   };
 
   const handleSelectCourse = (courseId: string | null) => {
@@ -77,7 +87,11 @@ export function BookingStepSelector({
     if (step === 'course') {
       setStep('date');
     } else if (step === 'duration') {
-      setStep('course');
+      if (courses && courses.length > 0) {
+        setStep('course');
+      } else {
+        setStep('date');
+      }
     }
   };
   

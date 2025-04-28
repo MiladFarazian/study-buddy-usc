@@ -29,7 +29,7 @@ export function CourseSelector({
   }, [courses, selectedCourseId]);
 
   const handleContinue = () => {
-    // Pass the selected course ID (which might be null for "General Session")
+    // Pass the selected course ID (which might be null if nothing selected)
     console.log("[CourseSelector] Continuing with course ID:", selectedCourseId);
     onSelectCourse(selectedCourseId);
   };
@@ -64,24 +64,6 @@ export function CourseSelector({
       
       <RadioGroup value={selectedCourseId || ''} onValueChange={(value) => onSelectCourse(value || null)}>
         <div className="space-y-3">
-          {/* Option for general session without a specific course */}
-          <div className={`
-            flex items-center justify-between rounded-lg border p-4
-            ${selectedCourseId === null ? "border-usc-cardinal" : ""}
-          `}>
-            <div className="flex items-center space-x-3">
-              <RadioGroupItem value="" id="general-session" />
-              <Label htmlFor="general-session" className="cursor-pointer">
-                <div>
-                  <span className="font-medium">General Session</span>
-                  <p className="text-sm text-muted-foreground">
-                    Not specific to any particular class
-                  </p>
-                </div>
-              </Label>
-            </div>
-          </div>
-          
           {/* Tutor's courses */}
           {courses.length > 0 ? (
             courses.map((course) => (
@@ -107,7 +89,7 @@ export function CourseSelector({
             ))
           ) : (
             <Card className="p-4 text-center text-muted-foreground">
-              No specific courses available for this tutor
+              This tutor hasn't added any specific courses yet.
             </Card>
           )}
         </div>
@@ -117,6 +99,7 @@ export function CourseSelector({
         <Button 
           className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white" 
           onClick={handleContinue}
+          disabled={courses.length === 0 || selectedCourseId === null}
         >
           Continue
         </Button>

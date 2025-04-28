@@ -14,7 +14,7 @@ export interface BookingSlot {
   endTime?: Date;
   durationMinutes?: number;
   id?: string;
-  courseId?: string | null; // Add courseId property
+  courseId?: string | null; // Course number as string or null
 }
 
 // BookedSession represents an already booked session
@@ -31,7 +31,7 @@ export interface BookedSession {
 export interface SessionCreationParams {
   studentId: string;
   tutorId: string;
-  courseId: string | null;
+  courseId: string | null; // Course number as string or null
   startTime: string;
   endTime: string;
   location: string | null;
@@ -43,7 +43,7 @@ export interface SessionDetails {
   id: string;
   studentId: string;
   tutorId: string;
-  courseId?: string;
+  courseId?: string; // Course number as string
   startTime: string;
   endTime: string;
   location?: string;
