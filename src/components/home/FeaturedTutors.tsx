@@ -54,7 +54,7 @@ const FeaturedTutors = () => {
 
   const featuredTutors = [...tutors]
     .sort((a, b) => b.rating - a.rating)
-    .slice(0, 6); // Show more tutors for carousel
+    .slice(0, 6);
 
   return (
     <div className="mt-8 md:mt-12 container px-4 md:px-6 relative">
@@ -89,7 +89,7 @@ const FeaturedTutors = () => {
           <Carousel
             opts={{
               align: "start",
-              slidesToScroll: isMobile ? 1 : Math.min(3, featuredTutors.length),
+              slidesToScroll: isMobile ? 1 : Math.min(featuredTutors.length >= 3 ? 3 : featuredTutors.length, 3),
             }}
             className="w-full"
           >
@@ -107,13 +107,13 @@ const FeaturedTutors = () => {
                           : 'basis-1/3'
                   }`}
                 >
-                  <div className="w-full flex justify-center">
+                  <div className="flex justify-center">
                     <TutorCard tutor={tutor} />
                   </div>
                 </CarouselItem>
               ))}
             </CarouselContent>
-            {featuredTutors.length > (isMobile ? 1 : 3) && (
+            {featuredTutors.length > (isMobile ? 1 : Math.min(3, featuredTutors.length)) && (
               <>
                 <CarouselPrevious className="hidden md:flex" />
                 <CarouselNext className="hidden md:flex" />

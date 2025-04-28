@@ -16,7 +16,7 @@ const TutorCardDesktop = ({
   tutor,
   getInitials
 }: TutorCardDesktopProps) => {
-  return <Card className="overflow-hidden hover:shadow-md transition-shadow w-full min-w-[320px] max-w-[400px]">
+  return <Card className="overflow-hidden hover:shadow-md transition-shadow w-full min-w-[300px] max-w-[380px]">
     <div className="bg-gradient-to-r from-yellow-500 to-red-600 h-4"></div>
     <CardContent className="p-6">
       <div className="flex flex-col gap-6">
@@ -28,10 +28,10 @@ const TutorCardDesktop = ({
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <h3 className="text-xl font-bold">{tutor.name}</h3>
+            <h3 className="text-xl font-bold truncate">{tutor.name}</h3>
             <div className="flex items-center mt-1">
               <GraduationCap className="h-4 w-4 text-gray-500 mr-1 flex-shrink-0" />
-              <p className="text-gray-600 text-sm">{tutor.field}</p>
+              <p className="text-gray-600 text-sm truncate">{tutor.field}</p>
             </div>
             <div className="flex items-center mt-1">
               <MapPin className="h-4 w-4 text-gray-500 mr-1 flex-shrink-0" />
@@ -46,7 +46,7 @@ const TutorCardDesktop = ({
         
         <div className="space-y-4">
           <div className="flex items-center justify-between py-2 border-b">
-            <span className="font-medium text-sm whitespace-nowrap">Hourly Rate</span>
+            <span className="font-medium text-sm">Hourly Rate</span>
             <span className="font-bold text-usc-cardinal">${tutor.hourlyRate}/hr</span>
           </div>
           
@@ -57,7 +57,7 @@ const TutorCardDesktop = ({
                 <Badge 
                   key={subject.code} 
                   variant="outline" 
-                  className="bg-red-50 hover:bg-red-100 text-usc-cardinal border-red-100 text-sm whitespace-nowrap"
+                  className="bg-red-50 hover:bg-red-100 text-usc-cardinal border-red-100 text-sm"
                 >
                   {subject.code}
                 </Badge>
@@ -65,7 +65,7 @@ const TutorCardDesktop = ({
               {tutor.subjects.length > 3 && (
                 <Badge 
                   variant="outline" 
-                  className="bg-red-50 hover:bg-red-100 text-usc-cardinal border-red-100 text-sm whitespace-nowrap"
+                  className="bg-red-50 hover:bg-red-100 text-usc-cardinal border-red-100 text-sm"
                 >
                   +{tutor.subjects.length - 3} more
                 </Badge>
@@ -75,7 +75,7 @@ const TutorCardDesktop = ({
           
           <div className="flex items-center text-sm text-gray-500">
             <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
-            <span className="whitespace-normal">Available for in-person or online sessions</span>
+            <span>Available for in-person or online sessions</span>
           </div>
         </div>
         
