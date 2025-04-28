@@ -44,7 +44,7 @@ const FeaturedTutors = () => {
           <p className="text-gray-500">No featured tutors available at the moment.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 transition-all duration-300">
+        <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 transition-all duration-300">
           {featuredTutors.map((tutor) => (
             <div key={tutor.id} className="w-full">
               <TutorCard tutor={tutor} />
