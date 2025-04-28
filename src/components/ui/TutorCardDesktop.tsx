@@ -53,22 +53,22 @@ const TutorCardDesktop = ({
             
             <div>
               <h4 className="font-medium mb-2 text-sm">Available for:</h4>
-              <div className="flex flex-wrap gap-1 md:gap-2">
-                {tutor.subjects.slice(0, 3).map(subject => (
+              <div className="flex flex-nowrap overflow-hidden gap-2">
+                {tutor.subjects.slice(0, 2).map(subject => (
                   <Badge 
                     key={subject.code} 
                     variant="outline" 
-                    className="bg-red-50 hover:bg-red-100 text-usc-cardinal border-red-100 text-xs md:text-sm whitespace-nowrap py-0 h-5 md:h-6"
+                    className="bg-red-50 hover:bg-red-100 text-usc-cardinal border-red-100 text-xs md:text-sm whitespace-nowrap py-0 h-5 md:h-6 flex-shrink-0"
                   >
                     {subject.code}
                   </Badge>
                 ))}
-                {tutor.subjects.length > 3 && (
+                {tutor.subjects.length > 2 && (
                   <Badge 
                     variant="outline" 
-                    className="bg-red-50 hover:bg-red-100 text-usc-cardinal border-red-100 text-xs md:text-sm whitespace-nowrap py-0 h-5 md:h-6"
+                    className="bg-red-100/80 hover:bg-red-100 text-usc-cardinal border-red-100 text-xs md:text-sm whitespace-nowrap py-0 h-5 md:h-6 flex-shrink-0"
                   >
-                    +{tutor.subjects.length - 3} more
+                    +{tutor.subjects.length - 2} more
                   </Badge>
                 )}
               </div>

@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -48,12 +47,12 @@ const TutorCardMobile = ({ tutor, getInitials }: TutorCardMobileProps) => {
             
             <div>
               <h4 className="font-medium text-xs mb-1">Available for:</h4>
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-nowrap overflow-hidden gap-1">
                 {tutor.subjects.slice(0, 2).map((subject) => (
                   <Badge
                     key={subject.code}
                     variant="outline"
-                    className="bg-red-50 hover:bg-red-100 text-usc-cardinal border-red-100 text-xs py-0.5"
+                    className="bg-red-50 hover:bg-red-100 text-usc-cardinal border-red-100 text-xs py-0 h-5 flex-shrink-0"
                   >
                     {subject.code}
                   </Badge>
@@ -61,7 +60,7 @@ const TutorCardMobile = ({ tutor, getInitials }: TutorCardMobileProps) => {
                 {tutor.subjects.length > 2 && (
                   <Badge 
                     variant="outline" 
-                    className="bg-red-50 hover:bg-red-100 text-usc-cardinal border-red-100 text-xs py-0.5"
+                    className="bg-red-100/80 hover:bg-red-100 text-usc-cardinal border-red-100 text-xs py-0 h-5 flex-shrink-0"
                   >
                     +{tutor.subjects.length - 2} more
                   </Badge>
