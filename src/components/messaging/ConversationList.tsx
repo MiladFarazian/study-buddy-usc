@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { format } from "date-fns";
 import { Search, Users } from "lucide-react";
@@ -115,23 +114,25 @@ export default function ConversationList({
                 onClick={() => onSelectConversation(conversation)}
               >
                 <div className="flex items-start space-x-4 w-full">
-                  <Avatar className="h-10 w-10 relative">
-                    {otherUser.avatar_url ? (
-                      <AvatarImage 
-                        src={otherUser.avatar_url} 
-                        alt={`${otherUser.first_name || 'User'}'s avatar`}
-                      />
-                    ) : (
-                      <AvatarFallback>
-                        <Users className="h-5 w-5" />
-                      </AvatarFallback>
-                    )}
+                  <div className="relative">
+                    <Avatar className="h-10 w-10">
+                      {otherUser.avatar_url ? (
+                        <AvatarImage 
+                          src={otherUser.avatar_url} 
+                          alt={`${otherUser.first_name || 'User'}'s avatar`}
+                        />
+                      ) : (
+                        <AvatarFallback>
+                          <Users className="h-5 w-5" />
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
                     {conversation.unread_count > 0 && (
-                      <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-usc-cardinal text-[11px] font-medium text-white flex items-center justify-center z-20">
+                      <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-usc-cardinal text-[11px] font-medium text-white flex items-center justify-center z-50">
                         {conversation.unread_count}
                       </span>
                     )}
-                  </Avatar>
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-baseline mb-1">
                       <h4 className={cn(
