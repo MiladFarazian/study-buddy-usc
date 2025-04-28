@@ -6,6 +6,15 @@ import { useToast } from "@/hooks/use-toast";
 export const useAuthMethods = () => {
   const { toast } = useToast();
 
+  // Helper function to check if we're in an iframe
+  const isInIframe = () => {
+    try {
+      return window.self !== window.top;
+    } catch (e) {
+      return true;
+    }
+  };
+
   const signIn = async (provider: 'google') => {
     try {
       // Get the full current URL (including hostname) to determine environment
@@ -22,6 +31,47 @@ export const useAuthMethods = () => {
       
       // Store the current URL to redirect back to after auth
       sessionStorage.setItem('redirectAfterAuth', window.location.pathname);
+
+      // Check if we're in an iframe
+      const inIframe = isInIframe();
+      
+      if (inIframe) {
+        console.log("Authentication initiated from within an iframe, opening auth in new window");
+        
+        // For iframe environments, we need to open authentication in a new tab/window
+        // Store a flag so the new window knows it was opened from an iframe
+        sessionStorage.setItem('authFromIframe', 'true');
+        
+        // Open the OAuth flow in a new window/tab
+        const authWindow = window.open(
+          `${window.location.origin}/login?iframe_auth=true`, 
+          '_blank',
+          'width=600,height=600'
+        );
+        
+        // Set up message listener for when auth completes in the other window
+        window.addEventListener('message', (event) => {
+          // Only accept messages from our own origin
+          if (event.origin !== window.location.origin) return;
+          
+          if (event.data?.type === 'AUTH_SUCCESS') {
+            console.log("Received auth success message from auth window");
+            // The other window will handle the redirect back
+            // We just need to refresh the state in this window
+            if (authWindow) {
+              authWindow.close();
+            }
+            
+            // Force a refresh to get the latest auth state
+            window.location.reload();
+          }
+        }, false);
+        
+        return { success: true, isIframe: true };
+      }
+      
+      // For direct browser access, use the standard OAuth flow
+      const isIframeAuth = new URLSearchParams(window.location.search).get('iframe_auth') === 'true';
       
       const { error } = await supabase.auth.signInWithOAuth({
         provider,

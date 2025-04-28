@@ -45,12 +45,32 @@ const AuthCallback = () => {
             description: "You are now signed in",
           });
           
+          // Check if authentication was initiated from an iframe
+          const authFromIframe = sessionStorage.getItem('authFromIframe');
+          console.log("Auth from iframe:", authFromIframe);
+          
           // Get the original URL where authentication was initiated
           const originUrl = sessionStorage.getItem('authOriginUrl');
           console.log("Original authentication URL:", originUrl);
           
           // Make sure we stay in the same environment (preview or production)
           let redirectTo = sessionStorage.getItem('redirectAfterAuth') || '/';
+          
+          if (authFromIframe === 'true') {
+            // If auth was initiated from an iframe, we need to notify the parent window
+            // This is for when we opened a new window for authentication
+            console.log("Notifying parent window of successful authentication");
+            if (window.opener) {
+              window.opener.postMessage({ type: 'AUTH_SUCCESS' }, window.location.origin);
+              sessionStorage.removeItem('authFromIframe');
+              
+              // Wait a moment before closing to ensure the message is delivered
+              setTimeout(() => {
+                window.close();
+              }, 1000);
+              return;
+            }
+          }
           
           // If we have an origin URL, use it to construct the full redirect URL
           // This ensures we stay in the same environment (preview vs production)
@@ -99,9 +119,27 @@ const AuthCallback = () => {
       console.log("Auth state change:", event);
       
       if (event === 'SIGNED_IN' && session) {
+        // Check if authentication was initiated from an iframe
+        const authFromIframe = sessionStorage.getItem('authFromIframe');
+        
         // Get the authOriginUrl to ensure we stay in the same environment
         const originUrl = sessionStorage.getItem('authOriginUrl');
         const redirectTo = sessionStorage.getItem('redirectAfterAuth') || '/';
+        
+        if (authFromIframe === 'true') {
+          // If auth was initiated from an iframe, we need to notify the parent window
+          console.log("Notifying parent window of successful authentication");
+          if (window.opener) {
+            window.opener.postMessage({ type: 'AUTH_SUCCESS' }, window.location.origin);
+            sessionStorage.removeItem('authFromIframe');
+            
+            // Wait a moment before closing to ensure the message is delivered
+            setTimeout(() => {
+              window.close();
+            }, 1000);
+            return;
+          }
+        }
         
         if (originUrl) {
           try {
