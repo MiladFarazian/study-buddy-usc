@@ -42,8 +42,8 @@ const TutorCardMobile = ({ tutor, getInitials }: TutorCardMobileProps) => {
           <div className="space-y-3">
             <div className="flex items-center justify-between py-1 border-b">
               <span className="font-medium text-xs">Hourly Rate</span>
-              <span className="font-bold text-usc-cardinal text-sm flex items-center">
-                <DollarSign className="h-4 w-4 mr-1" />{tutor.hourlyRate}/hr
+              <span className="font-bold text-usc-cardinal text-sm">
+                ${tutor.hourlyRate}/hr
               </span>
             </div>
             

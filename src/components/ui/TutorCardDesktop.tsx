@@ -48,8 +48,8 @@ const TutorCardDesktop = ({
           <div className="space-y-3 md:space-y-4">
             <div className="flex items-center justify-between py-1 md:py-2 border-b">
               <span className="font-medium text-sm whitespace-nowrap">Hourly Rate</span>
-              <span className="font-bold text-usc-cardinal whitespace-nowrap flex items-center">
-                <DollarSign className="h-5 w-5 mr-1" />{tutor.hourlyRate}/hr
+              <span className="font-bold text-usc-cardinal whitespace-nowrap">
+                ${tutor.hourlyRate}/hr
               </span>
             </div>
             

@@ -15,7 +15,6 @@ export const ProfileInfo = ({
   userRole, 
   profile 
 }: ProfileInfoProps) => {
-  // Format hourly rate with two decimal places if it exists
   const formattedHourlyRate = profile?.hourly_rate 
     ? `$${profile.hourly_rate.toFixed(2)}` 
     : "$25.00";
@@ -42,8 +41,7 @@ export const ProfileInfo = ({
             <div className="p-3 border rounded-md flex items-center">
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground">Hourly Rate</p>
-                <p className="font-medium flex items-center">
-                  <DollarSign className="h-5 w-5 mr-1 text-muted-foreground" />
+                <p className="font-medium">
                   {formattedHourlyRate}/hour
                 </p>
               </div>

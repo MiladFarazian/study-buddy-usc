@@ -1,7 +1,6 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Clock, ArrowRightLeft, DollarSign } from "lucide-react";
+import { Calendar, Clock, ArrowRightLeft } from "lucide-react";
 import { Tutor } from "@/types/tutor";
 import MessageButton from "@/components/messaging/MessageButton";
 import { useState } from "react";
@@ -20,9 +19,6 @@ export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
   const { user } = useAuthState();
   const location = useLocation();
 
-  // Format hourly rate with two decimal places from tutor profile
-  const formattedHourlyRate = tutor.hourlyRate ? `$${tutor.hourlyRate.toFixed(2)}` : "$25.00";
-
   const handleBookSession = () => {
     if (!user) {
       setShowAuthDialog(true);
@@ -39,9 +35,8 @@ export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
         </CardHeader>
         <CardContent>
           <div className="mb-4">
-            <p className="font-bold text-2xl text-usc-cardinal flex items-center">
-              <DollarSign className="h-6 w-6 mr-1" />
-              {formattedHourlyRate}/hour
+            <p className="font-bold text-2xl text-usc-cardinal">
+              ${tutor.hourlyRate ? tutor.hourlyRate.toFixed(2) : "25.00"}/hour
             </p>
           </div>
 
@@ -83,14 +78,12 @@ export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
         </CardContent>
       </Card>
 
-      {/* Show auth dialog if user is not authenticated */}
       <AuthRequiredDialog 
         isOpen={showAuthDialog} 
         onClose={() => setShowAuthDialog(false)}
         returnPath={location.pathname}
       />
 
-      {/* Only render booking modal if user is authenticated */}
       {user && (
         <BookSessionModal 
           isOpen={showBookingModal} 
