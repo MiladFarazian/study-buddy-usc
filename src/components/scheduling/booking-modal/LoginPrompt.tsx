@@ -16,6 +16,9 @@ export const LoginPrompt = ({ onClose, onLogin }: LoginPromptProps) => {
     // Store current path to redirect back after login
     sessionStorage.setItem('redirectAfterAuth', window.location.pathname);
     
+    // Store current URL to preserve environment
+    sessionStorage.setItem('authOriginUrl', window.location.href);
+    
     if (onLogin) {
       onLogin();
     } else {
