@@ -19,12 +19,12 @@ const FeaturedTutors = () => {
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
-      if (width < 768) {
+      if (width < 640) {
+        setCardsPerView(1); // Small mobile
+      } else if (width < 768) {
         setCardsPerView(1); // Mobile
       } else if (width < 1024) {
         setCardsPerView(2); // Tablet/small desktop
-      } else if (width < 1280) {
-        setCardsPerView(2); // Medium desktop
       } else {
         setCardsPerView(3); // Large desktop
       }
@@ -68,42 +68,40 @@ const FeaturedTutors = () => {
           <p className="text-gray-500">No featured tutors available at the moment.</p>
         </div>
       ) : (
-        <div className="relative">
-          <Carousel
-            opts={{
-              align: "start",
-              slidesToScroll: isMobile ? 1 : Math.min(cardsPerView, featuredTutors.length),
-            }}
-            className="w-full"
-          >
-            <CarouselContent className="-ml-4">
-              {featuredTutors.map((tutor) => (
-                <CarouselItem 
-                  key={tutor.id} 
-                  className={`pl-4 ${
-                    isMobile 
-                      ? 'basis-full' 
-                      : cardsPerView === 1 
-                        ? 'basis-full' 
-                        : cardsPerView === 2 
-                          ? 'basis-1/2' 
-                          : 'basis-1/3'
-                  }`}
-                >
-                  <div className="flex justify-center">
+        <Carousel
+          opts={{
+            align: "start",
+            slidesToScroll: 1,
+          }}
+          className="w-full"
+        >
+          <CarouselContent className="-ml-4">
+            {featuredTutors.map((tutor) => (
+              <CarouselItem 
+                key={tutor.id} 
+                className={`pl-4 ${
+                  isMobile 
+                    ? 'basis-full' 
+                    : cardsPerView === 2 
+                      ? 'basis-1/2' 
+                      : 'basis-1/3'
+                }`}
+              >
+                <div className="flex items-stretch justify-center h-full">
+                  <div className="w-full max-w-[380px]">
                     <TutorCard tutor={tutor} />
                   </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            {featuredTutors.length > (isMobile ? 1 : Math.min(cardsPerView, featuredTutors.length)) && (
-              <>
-                <CarouselPrevious className="hidden md:flex" />
-                <CarouselNext className="hidden md:flex" />
-              </>
-            )}
-          </Carousel>
-        </div>
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          {featuredTutors.length > (isMobile ? 1 : cardsPerView) && (
+            <>
+              <CarouselPrevious className="hidden md:flex left-0 md:-left-12 bg-white" />
+              <CarouselNext className="hidden md:flex right-0 md:-right-12 bg-white" />
+            </>
+          )}
+        </Carousel>
       )}
     </div>
   );
