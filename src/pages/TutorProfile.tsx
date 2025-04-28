@@ -2,7 +2,7 @@ import { useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useTutor } from "@/hooks/useTutor";
-import { ArrowLeft, Book, Calendar, Clock, DollarSign, Loader2, Mail } from "lucide-react";
+import { ArrowLeft, Book, Calendar, Clock, Loader2, Mail } from "lucide-react";
 import { TutorProfileHeader } from "@/components/tutor/TutorProfileHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
@@ -83,9 +83,8 @@ const TutorProfile = () => {
                 
                 <div className="w-full mt-6 space-y-4">
                   <div className="flex items-start">
-                    <DollarSign className="h-5 w-5 mr-3 mt-0.5 text-muted-foreground" />
                     <div>
-                      <p className="font-medium">{formattedHourlyRate}/hour</p>
+                      <p className="font-medium">${formattedHourlyRate}/hour</p>
                     </div>
                   </div>
                   
