@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,15 +6,15 @@ import { GraduationCap, MapPin, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Tutor } from "@/types/tutor";
 import StarRating from "./StarRating";
-
 interface TutorCardDesktopProps {
   tutor: Tutor;
   getInitials: (name: string) => string;
 }
-
-const TutorCardDesktop = ({ tutor, getInitials }: TutorCardDesktopProps) => {
-  return (
-    <Card className="overflow-hidden hover:shadow-md transition-shadow w-full min-w-[300px]">
+const TutorCardDesktop = ({
+  tutor,
+  getInitials
+}: TutorCardDesktopProps) => {
+  return <Card className="overflow-hidden hover:shadow-md transition-shadow w-full min-w-[300px]">
       <div className="bg-gradient-to-r from-yellow-500 to-red-600 h-4"></div>
       <CardContent className="p-6">
         <div className="flex flex-col gap-6">
@@ -52,20 +51,12 @@ const TutorCardDesktop = ({ tutor, getInitials }: TutorCardDesktopProps) => {
             <div>
               <h4 className="font-medium mb-2 text-sm">Available for:</h4>
               <div className="flex flex-wrap gap-2">
-                {tutor.subjects.slice(0, 3).map((subject) => (
-                  <Badge
-                    key={subject.code}
-                    variant="outline"
-                    className="bg-red-50 hover:bg-red-100 text-usc-cardinal border-red-100 text-sm"
-                  >
+                {tutor.subjects.slice(0, 3).map(subject => <Badge key={subject.code} variant="outline" className="bg-red-50 hover:bg-red-100 text-usc-cardinal border-red-100 text-sm">
                     {subject.code}
-                  </Badge>
-                ))}
-                {tutor.subjects.length > 3 && (
-                  <Badge variant="outline" className="bg-red-50 hover:bg-red-100 text-usc-cardinal border-red-100 text-sm">
+                  </Badge>)}
+                {tutor.subjects.length > 3 && <Badge variant="outline" className="bg-red-50 hover:bg-red-100 text-usc-cardinal border-red-100 text-sm">
                     +{tutor.subjects.length - 3} more
-                  </Badge>
-                )}
+                  </Badge>}
               </div>
             </div>
             
@@ -75,16 +66,11 @@ const TutorCardDesktop = ({ tutor, getInitials }: TutorCardDesktopProps) => {
             </div>
           </div>
           
-          <Button 
-            className="w-full mt-1 bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
-            asChild
-          >
+          <Button className="w-full mt-1 bg-usc-cardinal hover:bg-usc-cardinal-dark text-white" asChild>
             <Link to={`/tutors/${tutor.id}`}>View Profile</Link>
           </Button>
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
-
 export default TutorCardDesktop;
