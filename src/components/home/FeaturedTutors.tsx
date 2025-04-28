@@ -7,6 +7,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { enableDemoMode, isDemoMode, disableDemoMode } from "@/contexts/AuthContext";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 
 function SecretFeaturesModal({ open, onClose, onActivateDemoMode }: { open: boolean, onClose: () => void, onActivateDemoMode: () => void }) {
   if (!open) return null;
@@ -53,7 +54,7 @@ const FeaturedTutors = () => {
 
   const featuredTutors = [...tutors]
     .sort((a, b) => b.rating - a.rating)
-    .slice(0, isMobile ? 2 : 3);
+    .slice(0, 6); // Show more tutors for carousel
 
   return (
     <div className="mt-8 md:mt-12 container px-0 relative">
@@ -84,12 +85,26 @@ const FeaturedTutors = () => {
           <p className="text-gray-500">No featured tutors available at the moment.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {featuredTutors.map((tutor) => (
-            <div key={tutor.id} className="w-full">
-              <TutorCard tutor={tutor} />
-            </div>
-          ))}
+        <div className="relative">
+          <Carousel
+            opts={{
+              align: "start",
+              slidesToScroll: isMobile ? 1 : 3,
+            }}
+            className="w-full"
+          >
+            <CarouselContent className="-ml-4">
+              {featuredTutors.map((tutor) => (
+                <CarouselItem key={tutor.id} className="pl-4 basis-full md:basis-1/3">
+                  <div className="w-full">
+                    <TutorCard tutor={tutor} />
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="hidden md:flex" />
+            <CarouselNext className="hidden md:flex" />
+          </Carousel>
         </div>
       )}
 
