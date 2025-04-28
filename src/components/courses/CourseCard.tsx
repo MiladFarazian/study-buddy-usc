@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Course } from "@/types/CourseTypes";
@@ -43,14 +42,6 @@ const CourseCard = ({ course }: CourseCardProps) => {
   // State for selected instructor
   const [selectedInstructor, setSelectedInstructor] = useState(instructors[0] || '');
   
-  // Function to get course with selected instructor
-  const getCourseWithSelectedInstructor = () => {
-    return {
-      ...course,
-      instructor: selectedInstructor
-    };
-  };
-  
   const handleAddCourse = async () => {
     if (!user) {
       toast({
@@ -63,8 +54,8 @@ const CourseCard = ({ course }: CourseCardProps) => {
     
     setIsAdding(true);
     try {
-      // Pass the course with the selected instructor
-      await addCourseToProfile(user.id, getCourseWithSelectedInstructor());
+      // Just pass the course number string, not the entire course object
+      await addCourseToProfile(user.id, course.course_number);
       setIsAdded(true);
       toast({
         title: "Course added",
@@ -83,6 +74,7 @@ const CourseCard = ({ course }: CourseCardProps) => {
   };
   
   return (
+    
     <Card className="h-full flex flex-col hover:shadow-md transition-shadow">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">

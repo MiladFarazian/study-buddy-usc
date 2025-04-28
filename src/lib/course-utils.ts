@@ -7,11 +7,27 @@ import { fetchCourseDetails } from "@/lib/scheduling/course-utils";
  * Add a course to a user's profile
  */
 export async function addCourseToProfile(userId: string, courseNumber: string) {
+  // First get current subjects array
+  const { data: profile, error: fetchError } = await supabase
+    .from("profiles")
+    .select("subjects")
+    .eq("id", userId)
+    .single();
+
+  if (fetchError) {
+    throw fetchError;
+  }
+
+  // Add the new course to the subjects array
+  const updatedSubjects = [...(profile?.subjects || [])];
+  if (!updatedSubjects.includes(courseNumber)) {
+    updatedSubjects.push(courseNumber);
+  }
+
+  // Update the profile with the new subjects array
   const { error: profileError } = await supabase
     .from("profiles")
-    .update({
-      subjects: supabase.sql`array_append(subjects, ${courseNumber})`,
-    })
+    .update({ subjects: updatedSubjects })
     .eq("id", userId);
 
   if (profileError) {
