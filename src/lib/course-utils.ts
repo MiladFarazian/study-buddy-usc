@@ -121,8 +121,10 @@ export async function removeCourseFromProfile(userId: string, courseNumber: stri
  * Get all courses for a specific tutor
  */
 export async function getTutorCourses(tutorId: string): Promise<Course[]> {
-  // Use the same implementation as in useTutorCourses to maintain consistency
+  console.log("[getTutorCourses] Fetching courses for tutor:", tutorId);
+  
   if (!tutorId) {
+    console.log("[getTutorCourses] No tutor ID provided, returning empty array");
     return [];
   }
 
@@ -134,8 +136,11 @@ export async function getTutorCourses(tutorId: string): Promise<Course[]> {
       .eq("tutor_id", tutorId);
 
     if (tutorCoursesError) {
+      console.error("[getTutorCourses] Error fetching tutor courses:", tutorCoursesError);
       throw tutorCoursesError;
     }
+
+    console.log(`[getTutorCourses] Found ${tutorCourses?.length || 0} courses for tutor:`, tutorCourses);
 
     // If no courses are found, return empty array
     if (!tutorCourses || tutorCourses.length === 0) {
@@ -145,6 +150,8 @@ export async function getTutorCourses(tutorId: string): Promise<Course[]> {
     // Transform tutor courses to our standard Course type
     const coursesWithDetails: Course[] = await Promise.all(
       tutorCourses.map(async (tutorCourse) => {
+        console.log(`[getTutorCourses] Processing course: ${tutorCourse.course_number}`);
+        
         // Try to get additional details if available
         let courseDetails = null;
         if (tutorCourse.course_number) {
@@ -161,9 +168,10 @@ export async function getTutorCourses(tutorId: string): Promise<Course[]> {
       })
     );
 
+    console.log("[getTutorCourses] Processed courses with details:", coursesWithDetails);
     return coursesWithDetails;
   } catch (error) {
-    console.error("Error fetching tutor courses:", error);
+    console.error("[getTutorCourses] Error fetching tutor courses:", error);
     return [];
   }
 }

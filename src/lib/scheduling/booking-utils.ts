@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { SessionCreationParams, SessionDetails } from "./types/booking";
 
@@ -14,6 +15,14 @@ export async function createSessionBooking(
   notes: string | null
 ): Promise<SessionDetails | null> {
   try {
+    console.log("[createSessionBooking] Creating session with params:", {
+      student_id: studentId,
+      tutor_id: tutorId,
+      course_id: courseId, // This should be a string (course number) or null
+      start_time: startTime,
+      end_time: endTime
+    });
+    
     // Create the session record - ensuring courseId is stored as a string value
     const { data, error } = await supabase
       .from('sessions')
@@ -36,6 +45,8 @@ export async function createSessionBooking(
       console.error("Error creating session booking:", error);
       return null;
     }
+    
+    console.log("[createSessionBooking] Session created:", data);
     
     return {
       id: data.id,

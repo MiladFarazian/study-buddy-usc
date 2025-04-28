@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Tutor } from "@/types/tutor";
 import { BookingStepSelector } from "./booking-modal/BookingStepSelector";
@@ -37,6 +37,16 @@ export function BookSessionModal({
   const { toast } = useToast();
   const { user } = useAuthState();
 
+  // Log tutor information for debugging
+  useEffect(() => {
+    if (isOpen && tutor) {
+      console.log("[BookSessionModal] Modal opened for tutor:", {
+        id: tutor.id,
+        name: tutor.name
+      });
+    }
+  }, [isOpen, tutor]);
+
   const handleSelectSlot = async (slot: BookingSlot, duration: number = 60, courseId: string | null = null) => {
     if (isSubmitting) return;
     
@@ -44,6 +54,8 @@ export function BookSessionModal({
     setLoading(true);
     setSelectedDuration(duration);
     setSelectedCourseId(courseId);
+    
+    console.log("[BookSessionModal] Selected course ID for session:", courseId);
     
     try {
       if (!user) {
@@ -60,11 +72,13 @@ export function BookSessionModal({
       const endTime = new Date(startTime);
       endTime.setMinutes(startTime.getMinutes() + durationMinutes);
       
+      console.log("[BookSessionModal] Creating session with course_id:", courseId);
+      
       // Create the session in the database
       const session = await createSessionBooking(
         user.id,
         tutor.id,
-        courseId, // Use the selected course ID
+        courseId, // Use the selected course ID 
         startTime.toISOString(),
         endTime.toISOString(),
         null, // No location

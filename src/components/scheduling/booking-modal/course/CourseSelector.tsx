@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
@@ -22,8 +22,15 @@ export function CourseSelector({
   onBack,
   loading
 }: CourseSelectorProps) {
+  // Debug logging to track courses being passed to the component
+  useEffect(() => {
+    console.log("[CourseSelector] Received courses:", courses);
+    console.log("[CourseSelector] Selected course ID:", selectedCourseId);
+  }, [courses, selectedCourseId]);
+
   const handleContinue = () => {
     // Pass the selected course ID (which might be null for "General Session")
+    console.log("[CourseSelector] Continuing with course ID:", selectedCourseId);
     onSelectCourse(selectedCourseId);
   };
   

@@ -33,8 +33,13 @@ export function BookingStepSelector({
   const { toast } = useToast();
   
   const hourlyRate = tutor.hourlyRate || 25; // Default to $25/hour if not set
-  
+
+  console.log("[BookingStepSelector] Using tutor ID:", tutor.id);
   const { courses, loading: coursesLoading } = useTutorCourses(tutor.id);
+  
+  useEffect(() => {
+    console.log("[BookingStepSelector] Courses loaded:", courses);
+  }, [courses]);
   
   const dateKey = selectedDate ? selectedDate.toISOString() : 'initial';
   const { 
@@ -52,11 +57,13 @@ export function BookingStepSelector({
   };
   
   const handleSelectTimeSlot = (slot: BookingSlot) => {
+    console.log("[BookingStepSelector] Selected time slot:", slot);
     setSelectedTimeSlot(slot);
     setStep('course');
   };
 
   const handleSelectCourse = (courseId: string | null) => {
+    console.log("[BookingStepSelector] Selected course ID:", courseId);
     setSelectedCourseId(courseId);
     setStep('duration');
   };
@@ -79,6 +86,12 @@ export function BookingStepSelector({
         ...selectedTimeSlot,
         durationMinutes: selectedDuration
       };
+      
+      console.log("[BookingStepSelector] Finalizing booking with:", {
+        slot: finalSlot,
+        duration: selectedDuration,
+        courseId: selectedCourseId
+      });
       
       onSelectSlot(finalSlot, selectedDuration, selectedCourseId);
     }

@@ -11,6 +11,7 @@ export function useTutorCourses(tutorId: string | undefined) {
 
   useEffect(() => {
     if (!tutorId) {
+      console.log("No tutor ID provided to useTutorCourses hook");
       setCourses([]);
       setLoading(false);
       return;
@@ -21,7 +22,8 @@ export function useTutorCourses(tutorId: string | undefined) {
       setError(null);
 
       try {
-        console.log(`Fetching courses for tutor: ${tutorId}`);
+        console.log(`[useTutorCourses] Fetching courses for tutor ID: ${tutorId}`);
+        
         // Get courses the tutor has selected
         const { data: tutorCourses, error: tutorCoursesError } = await supabase
           .from("tutor_courses")
@@ -29,13 +31,15 @@ export function useTutorCourses(tutorId: string | undefined) {
           .eq("tutor_id", tutorId);
 
         if (tutorCoursesError) {
+          console.error("[useTutorCourses] Error fetching tutor courses:", tutorCoursesError);
           throw tutorCoursesError;
         }
 
-        console.log(`Found ${tutorCourses?.length || 0} courses for tutor`);
+        console.log(`[useTutorCourses] Found ${tutorCourses?.length || 0} courses for tutor:`, tutorCourses);
         
         // If no courses are found, return empty array
         if (!tutorCourses || tutorCourses.length === 0) {
+          console.log("[useTutorCourses] No courses found for tutor, returning empty array");
           setCourses([]);
           setLoading(false);
           return;
@@ -44,6 +48,8 @@ export function useTutorCourses(tutorId: string | undefined) {
         // Transform tutor courses to our standard Course type
         const coursesWithDetails: Course[] = await Promise.all(
           tutorCourses.map(async (tutorCourse) => {
+            console.log(`[useTutorCourses] Processing course: ${tutorCourse.course_number}`);
+            
             // Try to get additional details if available
             let courseDetails = null;
             if (tutorCourse.course_number) {
@@ -60,10 +66,10 @@ export function useTutorCourses(tutorId: string | undefined) {
           })
         );
 
-        console.log("Processed courses with details:", coursesWithDetails);
+        console.log("[useTutorCourses] Processed courses with details:", coursesWithDetails);
         setCourses(coursesWithDetails);
       } catch (err: any) {
-        console.error("Error fetching tutor courses:", err);
+        console.error("[useTutorCourses] Error fetching tutor courses:", err);
         setError(err instanceof Error ? err.message : "An error occurred");
       } finally {
         setLoading(false);
