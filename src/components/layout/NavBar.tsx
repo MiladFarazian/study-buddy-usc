@@ -1,15 +1,14 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Bell, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import UserMenu from "@/components/auth/UserMenu";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 const NavBar = () => {
-  // Wrap access to useAuth in a try/catch to gracefully handle 
-  // any context issues during rendering
   let user = null;
   try {
     const auth = useAuth();
@@ -19,9 +18,25 @@ const NavBar = () => {
   }
 
   const isMobile = useIsMobile();
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      setIsVisible(currentScrollY < lastScrollY || currentScrollY < 10);
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [lastScrollY]);
 
   return (
-    <header className="border-b border-gray-200 bg-white w-full">
+    <header className={cn(
+      "fixed top-0 left-0 right-0 border-b border-gray-200 bg-white w-full z-50 transition-transform duration-300",
+      !isVisible && "translate-y-[-100%]"
+    )}>
       <div className="flex h-16 items-center justify-between px-4 md:px-6 lg:px-8">
         <div className="flex items-center">
           <Link to="/" className="flex items-center space-x-2">
@@ -55,3 +70,4 @@ const NavBar = () => {
 };
 
 export default NavBar;
+
