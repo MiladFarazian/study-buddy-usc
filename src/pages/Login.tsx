@@ -13,13 +13,36 @@ const Login = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
+  // Check if we're in an iframe
+  const isInIframe = window !== window.parent;
+  
   // Get the page user was trying to access
   const from = location.state?.from?.pathname || "/";
 
   // Store the current path for redirect after auth
-  if (from && from !== '/login' && from !== '/auth/callback') {
-    sessionStorage.setItem('redirectAfterAuth', from);
-  }
+  useEffect(() => {
+    if (from && from !== '/login' && from !== '/auth/callback') {
+      sessionStorage.setItem('redirectAfterAuth', from);
+    }
+  }, [from]);
+
+  // Listen for messages from auth window (for iframe preview mode)
+  useEffect(() => {
+    if (isInIframe) {
+      const handleAuthMessage = (event: MessageEvent) => {
+        if (event.data?.type === 'AUTH_COMPLETE' && event.data?.success) {
+          console.log("Received auth success message from popup");
+          // Force refresh the iframe to update auth state
+          window.location.reload();
+        }
+      };
+      
+      window.addEventListener('message', handleAuthMessage);
+      return () => {
+        window.removeEventListener('message', handleAuthMessage);
+      };
+    }
+  }, [isInIframe]);
 
   // Store the current origin to ensure we stay in the same environment
   useEffect(() => {
@@ -106,6 +129,13 @@ const Login = () => {
                   </>
                 )}
               </Button>
+              
+              {isInIframe && (
+                <div className="mt-4 text-sm text-center text-amber-600">
+                  <p className="mb-1">Using the preview window? Authentication will open in a new tab.</p>
+                  <p>After signing in, this window will update automatically.</p>
+                </div>
+              )}
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4 text-center">

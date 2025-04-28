@@ -12,6 +12,8 @@ export const useAuthState = () => {
   const { profile, updateProfile } = useAuthProfile(user?.id);
 
   useEffect(() => {
+    let isMounted = true;
+    
     const initializeAuth = async () => {
       console.log("Initializing auth state...");
       
@@ -19,10 +21,21 @@ export const useAuthState = () => {
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         (event, newSession) => {
           console.log("Auth state changed:", event);
-          setSession(newSession);
-          setUser(newSession?.user ?? null);
           
-          // Don't finalize loading state here, as we need to wait for profile data
+          if (isMounted) {
+            setSession(newSession);
+            setUser(newSession?.user ?? null);
+          }
+          
+          // Check if we need to refresh the page in iframe mode
+          // This helps solve the white screen issue after auth
+          if (event === 'SIGNED_IN' && window !== window.parent) {
+            console.log("Signed in while in iframe, refreshing...");
+            // Small delay to ensure state is updated
+            setTimeout(() => {
+              window.location.href = window.location.origin + (sessionStorage.getItem('redirectAfterAuth') || '/');
+            }, 500);
+          }
         }
       );
       
@@ -30,21 +43,30 @@ export const useAuthState = () => {
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         console.log("Current session:", currentSession ? "Found" : "None");
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
         
-        if (!currentSession?.user) {
-          setLoading(false); // No user, so no profile to wait for
+        if (isMounted) {
+          setSession(currentSession);
+          setUser(currentSession?.user ?? null);
+          
+          if (!currentSession?.user) {
+            setLoading(false); // No user, so no profile to wait for
+          }
         }
       } catch (error) {
         console.error("Error fetching session:", error);
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
 
       return () => subscription.unsubscribe();
     };
 
     initializeAuth();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Set loading to false when profile is loaded (after user is set)
