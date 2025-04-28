@@ -40,7 +40,6 @@ export default function Messages() {
       if (targetUserId && user) {
         await startConversation(targetUserId, !isTargetTutor);
         setShowChat(true);
-        // Clear the URL params after starting the conversation
         navigate("/messages", { replace: true });
       }
     };
@@ -64,22 +63,14 @@ export default function Messages() {
   };
 
   return (
-    <div className={`${isMobile ? 'py-3' : 'py-4 md:py-6'}`}>
-      <div className={`mb-3 ${isMobile ? '' : 'md:mb-6'}`}>
-        <h1 className={`${isMobile ? 'text-xl' : 'text-2xl md:text-3xl'} font-bold mb-1 md:mb-2`}>Messages</h1>
-        <p className={`${isMobile ? 'text-xs' : 'text-sm md:text-base'} text-muted-foreground`}>
-          {isStudent 
-            ? "Connect with your tutors" 
-            : isTutor 
-              ? "Chat with your students"
-              : "Communicate with tutors and students"}
-        </p>
-      </div>
-
-      <div className={`bg-white border rounded-lg shadow-sm overflow-hidden ${isMobile ? 'min-h-[400px] h-[calc(100vh-180px)]' : 'min-h-[500px] md:min-h-[600px] h-[calc(100vh-230px)]'} flex`}>
+    <div className="h-[calc(100vh-4rem)]">
+      <div className="h-full flex">
         {/* Conversations list - show on mobile only when not in chat view */}
         {(!isMobile || (isMobile && !showChat)) && (
-          <div className={`${isMobile ? 'w-full' : 'w-1/3'} border-r`}>
+          <div className={cn(
+            "h-full border-r bg-background",
+            isMobile ? "w-full" : "w-[320px]"
+          )}>
             <ConversationList 
               conversations={conversations}
               currentConversation={currentConversation}
@@ -91,7 +82,10 @@ export default function Messages() {
         
         {/* Chat interface - show on mobile only when in chat view */}
         {(!isMobile || (isMobile && showChat)) && (
-          <div className={`${isMobile ? 'w-full' : 'flex-1'}`}>
+          <div className={cn(
+            "h-full bg-background",
+            isMobile ? "w-full" : "flex-1"
+          )}>
             <ChatInterface 
               conversation={currentConversation}
               messages={messages}
@@ -105,4 +99,4 @@ export default function Messages() {
       </div>
     </div>
   );
-};
+}
