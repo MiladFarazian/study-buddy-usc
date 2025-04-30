@@ -7,7 +7,6 @@ import {
 } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { Profile } from "@/integrations/supabase/types-extension";
-import { useNavigate } from 'react-router-dom';
 import { ensureNotificationPreferences } from "@/lib/notification-utils";
 
 // Define default profile for type safety
@@ -69,7 +68,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loadingInitial, setLoadingInitial] = useState<boolean>(true);
   const [loadingProfile, setLoadingProfile] = useState<boolean>(false);
-  const navigate = useNavigate();
 
   const isTutor = profile?.role === 'tutor';
   const isStudent = profile?.role === 'student' || !profile?.role;
@@ -149,7 +147,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       await supabase.auth.signOut();
       setUserProfile(null);
-      navigate('/login');
       return { success: true };
     } catch (error) {
       console.error("Error signing out:", error);

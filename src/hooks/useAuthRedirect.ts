@@ -21,7 +21,7 @@ export const useAuthRedirect = (redirectPath: string, requireAuth: boolean = fal
     if (loading) return;
 
     if (requireAuth && !user) {
-      navigate("/login?redirect=" + redirectPath);
+      navigate("/login?redirect=" + encodeURIComponent(redirectPath));
     }
   }, [user, profile, loading, navigate, redirectPath, requireAuth]);
 

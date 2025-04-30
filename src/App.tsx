@@ -28,12 +28,17 @@ import AuthCallback from "./pages/AuthCallback";
 import BookingCalendly from "./pages/BookingCalendly";
 import Analytics from "./pages/Analytics";
 
+// Define the router outside of the App component
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Layout>
-      <Outlet />
-    </Layout>,
+    element: (
+      <AuthProvider>
+        <Layout>
+          <Outlet />
+        </Layout>
+      </AuthProvider>
+    ),
     children: [
       {
         path: "/",
@@ -130,10 +135,8 @@ function App() {
 
   return (
     <>
-      <AuthProvider>
-        <RouterProvider router={router} />
-        <Toaster />
-      </AuthProvider>
+      <RouterProvider router={router} />
+      <Toaster />
     </>
   );
 }
