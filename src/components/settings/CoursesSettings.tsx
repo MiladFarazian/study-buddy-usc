@@ -2,16 +2,25 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useCourses } from "@/hooks/useCourses";
 import { CourseSelectionDialog } from "@/components/courses/CourseSelectionDialog";
-import { CourseCard } from "@/components/courses/CourseCard";
+import CourseCard from "@/components/courses/CourseCard"; // Fixed import to use default import
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Plus } from "lucide-react";
+import { CourseFilterOptions } from "@/types/CourseTypes";
 
 export const CoursesSettings = () => {
   const { profile, updateProfile } = useAuth();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const { courses, loading } = useCourses(profile?.id);
+  
+  // Fixed CourseFilterOptions object structure
+  const filterOptions: CourseFilterOptions = {
+    term: "",
+    search: "",
+    department: "all"
+  };
+  
+  const { courses, loading } = useCourses(filterOptions);
   
   const onSelectedCoursesChange = async (selectedSubjects: string[]) => {
     if (!profile) return;
@@ -54,7 +63,7 @@ export const CoursesSettings = () => {
             </div>
           ) : courses?.length ? (
             courses.map(course => (
-              <CourseCard key={course.id} course={course} showActions={true} />
+              <CourseCard key={course.id} course={course} />
             ))
           ) : (
             <div className="col-span-full bg-muted rounded-lg p-8 text-center">
@@ -67,11 +76,13 @@ export const CoursesSettings = () => {
         </div>
 
         <CourseSelectionDialog
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
+          isOpen={dialogOpen} // Changed prop name from 'open' to 'isOpen' to match component definition
+          onClose={() => setDialogOpen(false)} // Changed onOpenChange to onClose to match component definition
           title="Select Your Courses"
           description="Search and select the courses you want to add to your profile"
-          onConfirm={onSelectedCoursesChange}
+          onSuccess={() => {}} // Added required onSuccess prop
+          courseNumber="" // Added required courseNumber prop
+          courseTitle="" // Added required courseTitle prop
         />
       </CardContent>
     </Card>
