@@ -1,152 +1,78 @@
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Loader2, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
-import { removeCourseFromProfile } from "@/lib/course-utils";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { useCourses } from "@/hooks/useCourses";
+import { CourseSelectionDialog } from "@/components/courses/CourseSelectionDialog";
+import { CourseCard } from "@/components/courses/CourseCard";
+import { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Loader2, Plus } from "lucide-react";
 
 export const CoursesSettings = () => {
-  const { user, profile, updateProfile } = useAuth();
-  const { toast } = useToast();
-  const [removingCourse, setRemovingCourse] = useState<string | null>(null);
+  const { profile, updateProfile } = useAuth();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
-
-  const handleRemoveCourse = async (courseNumber: string) => {
-    if (!user) return;
+  const { courses, loading } = useCourses(profile?.id);
+  
+  const onSelectedCoursesChange = async (selectedSubjects: string[]) => {
+    if (!profile) return;
     
     try {
-      setRemovingCourse(courseNumber);
-      await removeCourseFromProfile(user.id, courseNumber);
-      
-      // Update local state
-      if (profile && updateProfile) {
-        const updatedSubjects = profile.subjects?.filter(
-          (subject) => subject !== courseNumber
-        ) || [];
-        
-        updateProfile({ subjects: updatedSubjects });
-      }
-      
-      toast({
-        title: "Course removed",
-        description: `${courseNumber} has been removed from your profile`,
+      // Only update the subjects field
+      await updateProfile({
+        ...profile,
+        subjects: selectedSubjects
       });
-      
-      setDialogOpen(false);
     } catch (error) {
-      console.error("Failed to remove course:", error);
-      toast({
-        title: "Failed to remove course",
-        description: "An error occurred while removing the course",
-        variant: "destructive",
-      });
-    } finally {
-      setRemovingCourse(null);
-      setSelectedCourse(null);
+      console.error("Error updating courses:", error);
     }
-  };
-
-  const openRemoveDialog = (courseNumber: string) => {
-    setSelectedCourse(courseNumber);
-    setDialogOpen(true);
   };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>My Courses</CardTitle>
-        {profile?.role === 'tutor' && (
-          <CardDescription>
-            The courses you add here will appear to students when they book a tutoring session with you.
-            Add courses that you're qualified to tutor.
-          </CardDescription>
-        )}
+        <CardDescription>
+          Manage the courses you're taking or teaching
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        {profile?.subjects && profile.subjects.length > 0 ? (
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground mb-4">
-              These are the courses you've added to your profile. 
-              {profile.role === 'tutor' && " As a tutor, these courses will be displayed to students during the booking process."}
-            </p>
-            
-            <div className="flex flex-wrap gap-2">
-              {profile.subjects.map((course) => (
-                <div key={course} className="relative inline-flex">
-                  <Badge variant="secondary" className="pr-8 py-2">
-                    {course}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 w-6 p-0 absolute right-1 rounded-full"
-                      onClick={() => openRemoveDialog(course)}
-                      disabled={removingCourse === course}
-                    >
-                      {removingCourse === course ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <X className="h-3 w-3" />
-                      )}
-                      <span className="sr-only">Remove</span>
-                    </Button>
-                  </Badge>
-                </div>
-              ))}
+        <div className="mb-6">
+          <Button 
+            onClick={() => setDialogOpen(true)} 
+            variant="outline" 
+            className="flex gap-2"
+          >
+            <Plus className="h-4 w-4" /> 
+            Add Courses
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {loading ? (
+            <div className="col-span-full flex justify-center py-10">
+              <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal" />
             </div>
-          </div>
-        ) : (
-          <div className="text-center py-6">
-            <p className="text-sm text-muted-foreground mb-3">
-              You haven't added any courses yet. 
-              {profile?.role === 'tutor' ? (
-                " Add the courses you can tutor to make them available during booking."
-              ) : (
-                " Browse the courses page to add courses to your profile."
-              )}
-            </p>
-            <Button variant="outline" onClick={() => window.location.href = '/courses'}>
-              Browse Courses
-            </Button>
-          </div>
-        )}
-        
-        {/* Confirmation dialog */}
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Remove Course</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to remove {selectedCourse} from your profile? 
-                {profile?.role === 'tutor' && " This will also remove it from your tutor profile and it won't be available to select during booking."}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button 
-                variant="destructive" 
-                onClick={() => selectedCourse && handleRemoveCourse(selectedCourse)}
-                disabled={removingCourse !== null}
-              >
-                {removingCourse ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Remove
-              </Button>
+          ) : courses?.length ? (
+            courses.map(course => (
+              <CourseCard key={course.id} course={course} showActions={true} />
+            ))
+          ) : (
+            <div className="col-span-full bg-muted rounded-lg p-8 text-center">
+              <h3 className="text-lg font-medium mb-2">No Courses Yet</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Click "Add Courses" to add courses to your profile
+              </p>
             </div>
-          </DialogContent>
-        </Dialog>
+          )}
+        </div>
+
+        <CourseSelectionDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          title="Select Your Courses"
+          description="Search and select the courses you want to add to your profile"
+          onConfirm={onSelectedCoursesChange}
+        />
       </CardContent>
     </Card>
   );

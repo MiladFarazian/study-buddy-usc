@@ -20,7 +20,7 @@ const UserMenu = () => {
   // any context issues during rendering
   let user = null;
   let profile = null;
-  let signOut = async () => ({ success: true as boolean });
+  let signOut = async () => ({ success: true });
   
   try {
     const auth = useAuth();

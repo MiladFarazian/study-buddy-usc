@@ -1,3 +1,4 @@
+
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { ProfilePictureCard } from "./ProfilePictureCard";
@@ -62,7 +63,7 @@ export const ProfileSettings = () => {
 
     // Update local profile state
     if (updateProfile && profile) {
-      updateProfile({
+      await updateProfile({
         ...profile,
         role: role as "student" | "tutor",
       });
@@ -93,7 +94,10 @@ export const ProfileSettings = () => {
 
     // Update local profile state
     if (updateProfile && data) {
-      updateProfile(data);
+      await updateProfile({
+        ...profile,
+        ...data
+      });
     }
     
     setAvatarFile(null);

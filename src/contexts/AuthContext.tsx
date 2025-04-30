@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect } from "react";
 import {
   Session,
@@ -7,8 +8,26 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { Profile } from "@/integrations/supabase/types-extension";
 import { useNavigate } from 'react-router-dom';
-import { DEFAULT_PROFILE } from "@/lib/constants";
 import { ensureNotificationPreferences } from "@/lib/notification-utils";
+
+// Define default profile for type safety
+export const DEFAULT_PROFILE = {
+  id: "",
+  first_name: "",
+  last_name: "",
+  email: "",
+  avatar_url: "",
+  bio: "",
+  major: "",
+  graduation_year: "",
+  hourly_rate: 0,
+  role: "student",
+  availability: null,
+  average_rating: 0,
+  approved_tutor: false,
+  created_at: "",
+  updated_at: "",
+};
 
 interface AuthContextType {
   user: User | null;
@@ -18,8 +37,11 @@ interface AuthContextType {
   loadingProfile: boolean;
   isTutor: boolean;
   isStudent: boolean;
-  signOut: () => Promise<void>;
-  updateProfile: (updates: Profile) => Promise<void>;
+  isProfileComplete: boolean;
+  signOut: () => Promise<{ success: boolean; error?: any | null }>;
+  signIn: (provider: string, options?: any) => Promise<any>;
+  updateProfile: (updates: Partial<Profile>) => Promise<void>;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -28,17 +50,20 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   loadingInitial: true,
   loadingProfile: false,
+  loading: true,
   isTutor: false,
   isStudent: false,
-  signOut: async () => {},
-  updateProfile: async (updates: Profile) => {},
+  isProfileComplete: false,
+  signOut: async () => ({ success: true }),
+  signIn: async () => ({}),
+  updateProfile: async () => {},
 });
 
-interface AuthContextProviderProps {
+interface AuthProviderProps {
   children: React.ReactNode;
 }
 
-export const AuthContextProvider: React.FC<AuthContextProviderProps> = ({ children }) => {
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setUserProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -48,11 +73,16 @@ export const AuthContextProvider: React.FC<AuthContextProviderProps> = ({ childr
 
   const isTutor = profile?.role === 'tutor';
   const isStudent = profile?.role === 'student' || !profile?.role;
+  
+  // Calculate profile completeness
+  const isProfileComplete = !!profile && 
+    !!profile.first_name && 
+    !!profile.last_name && 
+    !!profile.major;
 
   useEffect(() => {
     const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-
+      const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
     }
 
@@ -102,13 +132,32 @@ export const AuthContextProvider: React.FC<AuthContextProviderProps> = ({ childr
     };
   }, []);
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    setUserProfile(null);
-    navigate('/login');
+  const signIn = async (provider: string, options?: any) => {
+    try {
+      const response = await supabase.auth.signInWithOAuth({
+        provider: provider as any,
+        options,
+      });
+      return response;
+    } catch (error) {
+      console.error("Error signing in:", error);
+      return { error };
+    }
   };
 
-  const updateProfile = async (updates: Profile) => {
+  const signOut = async (): Promise<{ success: boolean; error?: any }> => {
+    try {
+      await supabase.auth.signOut();
+      setUserProfile(null);
+      navigate('/login');
+      return { success: true };
+    } catch (error) {
+      console.error("Error signing out:", error);
+      return { success: false, error };
+    }
+  };
+
+  const updateProfile = async (updates: Partial<Profile>) => {
     setLoadingProfile(true);
     try {
       const { error } = await supabase
@@ -120,7 +169,7 @@ export const AuthContextProvider: React.FC<AuthContextProviderProps> = ({ childr
         throw error;
       }
 
-      setUserProfile(updates);
+      setUserProfile(prev => prev ? { ...prev, ...updates } : null);
     } catch (error: any) {
       console.error("Error updating profile:", error.message);
     } finally {
@@ -134,9 +183,12 @@ export const AuthContextProvider: React.FC<AuthContextProviderProps> = ({ childr
     session,
     loadingInitial,
     loadingProfile,
+    loading: loadingInitial, // Add loading alias for backward compatibility
     isTutor,
     isStudent,
+    isProfileComplete,
     signOut,
+    signIn,
     updateProfile,
   };
 
