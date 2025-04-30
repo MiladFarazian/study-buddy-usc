@@ -151,3 +151,5 @@ export const CoursesSettings = () => {
     </Card>
   );
 };
+
+export default CoursesSettings;

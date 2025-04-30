@@ -107,3 +107,6 @@ export function CourseCardActions({
     </>
   );
 }
+
+// Add default export for flexibility
+export default CourseCardActions;

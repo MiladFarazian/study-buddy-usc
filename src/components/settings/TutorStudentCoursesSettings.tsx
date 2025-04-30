@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -137,4 +136,5 @@ export const TutorStudentCoursesSettings = () => {
   );
 };
 
+// Adding default export alongside named export
 export default TutorStudentCoursesSettings;

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import {
   Dialog,
@@ -17,7 +16,7 @@ import { addCourseToProfile } from "@/lib/course-utils";
 import { addTutorStudentCourse } from "@/lib/tutor-student-utils";
 import { Book, BookOpen } from "lucide-react";
 
-interface CourseSelectionDialogProps {
+export interface CourseSelectionDialogProps {
   isOpen: boolean;
   onClose: () => void;
   courseNumber: string;
@@ -143,4 +142,5 @@ export const CourseSelectionDialog = ({
   );
 };
 
+// Add default export to ensure both named and default exports are available
 export default CourseSelectionDialog;
