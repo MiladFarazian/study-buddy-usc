@@ -35,6 +35,9 @@ verify_jwt = true
 [functions.send-session-emails]
 verify_jwt = true
 
+[functions.send-notification-email]
+verify_jwt = true
+
 [functions.stripe-webhook]
 verify_jwt = false
 
