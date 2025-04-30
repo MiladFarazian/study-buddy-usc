@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { TutorStudentCourse } from "@/integrations/supabase/types-extension";
 
 /**
  * Add a course to a tutor's "Courses I Need Help With" list
@@ -8,8 +9,8 @@ export async function addTutorStudentCourse(userId: string, courseNumber: string
   try {
     // First check if this course already exists in the tutor_student_courses table
     const { data: existingCourse, error: checkError } = await supabase
-      .from("tutor_student_courses")
-      .select("*")
+      .from('tutor_student_courses')
+      .select()
       .eq("user_id", userId)
       .eq("course_number", courseNumber)
       .single();
@@ -29,14 +30,14 @@ export async function addTutorStudentCourse(userId: string, courseNumber: string
 
     // Add to tutor_student_courses table
     const { data: newCourse, error: insertError } = await supabase
-      .from("tutor_student_courses")
+      .from('tutor_student_courses')
       .insert({
         user_id: userId,
         course_number: courseNumber,
         course_title: courseDetails?.course_title || "",
         department: courseNumber.split('-')[0] || null,
       })
-      .select("*")
+      .select()
       .single();
 
     if (insertError) {
@@ -57,7 +58,7 @@ export async function addTutorStudentCourse(userId: string, courseNumber: string
 export async function removeTutorStudentCourse(userId: string, courseNumber: string) {
   try {
     const { error } = await supabase
-      .from("tutor_student_courses")
+      .from('tutor_student_courses')
       .delete()
       .eq("user_id", userId)
       .eq("course_number", courseNumber);
@@ -80,9 +81,8 @@ export async function removeTutorStudentCourse(userId: string, courseNumber: str
 export async function getTutorStudentCourses(userId: string) {
   try {
     const { data, error } = await supabase
-      .from("tutor_student_courses")
-      .select("*")
-      .eq("user_id", userId);
+      .from('tutor_student_courses')
+      .select();
 
     if (error) {
       console.error("Failed to get tutor student courses:", error);

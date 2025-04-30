@@ -611,6 +611,33 @@ export type Database = {
           },
         ]
       }
+      tutor_student_courses: {
+        Row: {
+          course_number: string
+          course_title: string | null
+          created_at: string
+          department: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          course_number: string
+          course_title?: string | null
+          created_at?: string
+          department?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          course_number?: string
+          course_title?: string | null
+          created_at?: string
+          department?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       tutor_students: {
         Row: {
           active: boolean

@@ -26,6 +26,16 @@ export type TutorCourse = Database["public"]["Tables"]["tutor_courses"]["Row"];
 export type TutorCourseInsert = Database["public"]["Tables"]["tutor_courses"]["Insert"];
 export type TutorCourseUpdate = Database["public"]["Tables"]["tutor_courses"]["Update"];
 
+// Define the TutorStudentCourse type for courses tutors need help with
+export type TutorStudentCourse = {
+  id: string;
+  user_id: string;
+  course_number: string;
+  course_title: string | null;
+  department: string | null;
+  created_at?: string;
+};
+
 // Define the Session type
 export type Session = Database["public"]["Tables"]["sessions"]["Row"];
 export type SessionInsert = Database["public"]["Tables"]["sessions"]["Insert"];

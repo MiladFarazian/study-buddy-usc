@@ -8,11 +8,13 @@ export interface AuthRedirectResult {
   profile: any;
   loading: boolean;
   isProfileComplete: boolean;
+  isTutor: boolean;
+  isStudent: boolean;
   signOut: () => Promise<{ success: boolean; error?: any | null }>;
 }
 
 export const useAuthRedirect = (redirectPath: string, requireAuth: boolean = false): AuthRedirectResult => {
-  const { user, profile, loading, signOut } = useAuth();
+  const { user, profile, loading, signOut, isTutor = false, isStudent = false } = useAuth();
   const navigate = useNavigate();
   const [isProfileComplete, setIsProfileComplete] = useState(false);
 
@@ -37,5 +39,13 @@ export const useAuthRedirect = (redirectPath: string, requireAuth: boolean = fal
     }
   }, [user, profile, loading, navigate, redirectPath, requireAuth]);
 
-  return { user, profile, loading, isProfileComplete, signOut };
+  return { 
+    user, 
+    profile, 
+    loading, 
+    isProfileComplete, 
+    isTutor: profile?.role === 'tutor', 
+    isStudent: profile?.role === 'student', 
+    signOut 
+  };
 };

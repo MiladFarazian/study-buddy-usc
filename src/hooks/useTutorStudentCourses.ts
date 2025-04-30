@@ -8,11 +8,11 @@ export function useTutorStudentCourses() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user, profile, isTutor } = useAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchCourses = async () => {
-      if (!user || !isTutor) {
+      if (!user) {
         setCourses([]);
         setLoading(false);
         return;
@@ -40,7 +40,7 @@ export function useTutorStudentCourses() {
     };
 
     fetchCourses();
-  }, [user, isTutor]);
+  }, [user]);
 
   return { courses, loading, error };
 }
