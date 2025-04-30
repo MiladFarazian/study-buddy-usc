@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,9 +21,15 @@ const Tutors = () => {
   const isMobile = useIsMobile();
   const { profile } = useAuth();
 
-  // Check if user is logged in and is a student
+  // Check if user is logged in and is a student or tutor
+  const isLoggedIn = profile !== null;
   const isStudent = profile && profile.role === 'student';
-  const hasStudentCourses = isStudent && profile.subjects && Array.isArray(profile.subjects) && profile.subjects.length > 0;
+  const isTutor = profile && profile.role === 'tutor';
+  
+  // Determine if user has courses (either as student or tutor needing help)
+  const hasStudentCourses = isLoggedIn && profile.subjects && Array.isArray(profile.subjects) && profile.subjects.length > 0;
+  
+  // Check if there are matching tutors
   const hasMatchingTutors = studentCourseTutors && studentCourseTutors.length > 0;
 
   const filteredTutors = (showOnlyForMyCourses && hasMatchingTutors ? studentCourseTutors : tutors).filter((tutor) => {
@@ -126,18 +131,32 @@ const Tutors = () => {
   );
 
   const renderStudentCourseTutorsSection = () => {
-    if (!isStudent || loadingStudentTutors) {
+    if (!isLoggedIn || (loadingStudentTutors && !hasMatchingTutors)) {
       return null;
     }
+
+    // Get the appropriate title based on user role
+    const sectionTitle = isTutor 
+      ? "Tutors for Your Learning Needs" 
+      : "Tutors for Your Courses";
+
+    // Get appropriate empty state message based on user role
+    const noCoursesMessage = isTutor
+      ? "No courses added to 'Courses I Need Help With'. Add courses to see matched tutors."
+      : "No courses found in your profile. Add courses to see matched tutors.";
+    
+    const noTutorsMessage = isTutor
+      ? "No tutors found for courses you need help with. Explore all available tutors below."
+      : "No tutors found for your courses. Explore all available tutors below.";
 
     if (!hasStudentCourses) {
       return (
         <div className="mt-6 mb-8">
-          <h2 className="text-lg md:text-xl font-semibold mb-3">Tutors for Your Courses</h2>
+          <h2 className="text-lg md:text-xl font-semibold mb-3">{sectionTitle}</h2>
           <Card className="bg-slate-50">
             <CardContent className="p-4 md:p-6 text-center">
               <p className="text-sm md:text-base text-muted-foreground">
-                No courses found in your profile. Add courses to see matched tutors.
+                {noCoursesMessage}
               </p>
             </CardContent>
           </Card>
@@ -148,11 +167,11 @@ const Tutors = () => {
     if (!hasMatchingTutors) {
       return (
         <div className="mt-6 mb-8">
-          <h2 className="text-lg md:text-xl font-semibold mb-3">Tutors for Your Courses</h2>
+          <h2 className="text-lg md:text-xl font-semibold mb-3">{sectionTitle}</h2>
           <Card className="bg-slate-50">
             <CardContent className="p-4 md:p-6 text-center">
               <p className="text-sm md:text-base text-muted-foreground">
-                No tutors found for your courses. Explore all available tutors below.
+                {noTutorsMessage}
               </p>
             </CardContent>
           </Card>
@@ -165,7 +184,7 @@ const Tutors = () => {
     return (
       <div className="mt-6 mb-8 animate-fade-in">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg md:text-xl font-semibold">Tutors for Your Courses</h2>
+          <h2 className="text-lg md:text-xl font-semibold">{sectionTitle}</h2>
           <Button 
             variant="ghost" 
             className="text-usc-cardinal"
@@ -269,10 +288,10 @@ const Tutors = () => {
         </Card>
       )}
 
-      {/* Personalized tutors section for student's courses */}
+      {/* Personalized tutors section for student/tutor courses */}
       {renderStudentCourseTutorsSection()}
 
-      {/* Show filter toggle if student has matching tutors */}
+      {/* Show filter toggle if matching tutors exist */}
       {hasMatchingTutors && (
         <div className="flex items-center justify-end space-x-2 mb-4">
           <span className="text-sm text-gray-600">Show all tutors</span>
@@ -280,7 +299,9 @@ const Tutors = () => {
             checked={showOnlyForMyCourses}
             onCheckedChange={setShowOnlyForMyCourses}
           />
-          <span className="text-sm text-gray-600">Show for my courses</span>
+          <span className="text-sm text-gray-600">
+            {isTutor ? "Show for my learning needs" : "Show for my courses"}
+          </span>
         </div>
       )}
 
@@ -291,7 +312,9 @@ const Tutors = () => {
 
       {/* Main tutors section heading */}
       <h2 className="text-xl font-semibold mb-4">
-        {showOnlyForMyCourses && hasMatchingTutors ? "Tutors for Your Courses" : "All Tutors"}
+        {showOnlyForMyCourses && hasMatchingTutors ? 
+          (isTutor ? "Tutors for Your Learning Needs" : "Tutors for Your Courses") 
+          : "All Tutors"}
       </h2>
 
       {loading ? (

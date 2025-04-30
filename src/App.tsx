@@ -1,118 +1,137 @@
-import React from "react";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Layout from "./components/layout/Layout";
+
+import { useEffect } from "react";
+import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
-import Index from "./pages/Index";
-import Courses from "./pages/Courses";
-import Tutors from "./pages/Tutors";
-import Schedule from "./pages/Schedule";
-import Resources from "./pages/Resources";
-import Analytics from "./pages/Analytics";
-import Settings from "./pages/Settings";
+import { Toaster } from "./components/ui/toaster";
+import Layout from "./components/layout/Layout";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Index from "./pages/Index";
+import Profile from "./pages/Profile";
+import EmailVerification from "./pages/EmailVerification";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import Courses from "./pages/Courses";
+import Tutors from "./pages/Tutors";
+import TutorProfile from "./pages/TutorProfile";
+import TutorProfilePage from "./pages/TutorProfile/TutorProfilePage";
 import NotFound from "./pages/NotFound";
 import PrivateRoute from "./components/auth/PrivateRoute";
 import RequireProfileCompletion from "./components/auth/RequireProfileCompletion";
-import AuthCallback from "./pages/AuthCallback";
-import TutorProfile from "./pages/TutorProfile";
-import Profile from "./pages/Profile";
-import Students from "./pages/Students";
-import EmailVerification from "./pages/EmailVerification";
+import Schedule from "./pages/Schedule";
 import Messages from "./pages/Messages";
+import FeaturedTutors from "./pages/FeaturedTutors";
+import Settings from "./pages/Settings";
+import Resources from "./pages/Resources";
+import Students from "./pages/Students";
+import AuthCallback from "./pages/AuthCallback";
+import BookingCalendly from "./pages/BookingCalendly";
+import Analytics from "./pages/Analytics";
 
-// Create a new query client instance
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 60 * 1000, // 1 minute
-    },
-  },
-});
+const router = createBrowserRouter([
+  {
+    element: <Layout />,
+    children: [
+      {
+        path: "/",
+        element: <Index />
+      },
+      {
+        path: "/login",
+        element: <Login />
+      },
+      {
+        path: "/register",
+        element: <Register />
+      },
+      {
+        path: "/auth-callback",
+        element: <AuthCallback />
+      },
+      {
+        path: "/email-verification",
+        element: <EmailVerification />
+      },
+      {
+        path: "/forgot-password",
+        element: <ForgotPassword />
+      },
+      {
+        path: "/reset-password",
+        element: <ResetPassword />
+      },
+      {
+        path: "/profile",
+        element: <PrivateRoute><RequireProfileCompletion><Profile /></RequireProfileCompletion></PrivateRoute>
+      },
+      {
+        path: "/courses",
+        element: <Courses />
+      },
+      {
+        path: "/tutors",
+        element: <Tutors />
+      },
+      {
+        path: "/tutor/:id",
+        element: <TutorProfile />
+      },
+      {
+        path: "/tutors/:id",
+        element: <TutorProfilePage />
+      },
+      {
+        path: "/schedule",
+        element: <PrivateRoute><RequireProfileCompletion><Schedule /></RequireProfileCompletion></PrivateRoute>
+      },
+      {
+        path: "/messages",
+        element: <PrivateRoute><RequireProfileCompletion><Messages /></RequireProfileCompletion></PrivateRoute>
+      },
+      {
+        path: "/featured-tutors",
+        element: <FeaturedTutors />
+      },
+      {
+        path: "/settings",
+        element: <PrivateRoute><RequireProfileCompletion><Settings /></RequireProfileCompletion></PrivateRoute>
+      },
+      {
+        path: "/resources",
+        element: <Resources />
+      },
+      {
+        path: "/students",
+        element: <PrivateRoute><RequireProfileCompletion><Students /></RequireProfileCompletion></PrivateRoute>
+      },
+      {
+        path: "/booking",
+        element: <PrivateRoute><RequireProfileCompletion><BookingCalendly /></RequireProfileCompletion></PrivateRoute>
+      },
+      {
+        path: "/analytics",
+        element: <PrivateRoute><RequireProfileCompletion><Analytics /></RequireProfileCompletion></PrivateRoute>
+      },
+      {
+        path: "*",
+        element: <NotFound />
+      }
+    ]
+  }
+]);
 
 function App() {
+  useEffect(() => {
+    console.log("App initialized");
+  }, []);
+
   return (
-    <React.StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <AuthProvider>
-            <TooltipProvider>
-              <Routes>
-                <Route path="/" element={<Layout><Index /></Layout>} />
-                <Route path="/courses" element={<Layout><Courses /></Layout>} />
-                <Route path="/tutors" element={<Layout><Tutors /></Layout>} />
-                <Route path="/tutors/:id" element={<Layout><TutorProfile /></Layout>} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/verify-email" element={<EmailVerification />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/auth/callback" element={<AuthCallback />} />
-                <Route path="/schedule" element={
-                  <PrivateRoute>
-                    <RequireProfileCompletion>
-                      <Layout><Schedule /></Layout>
-                    </RequireProfileCompletion>
-                  </PrivateRoute>
-                } />
-                <Route path="/resources" element={
-                  <PrivateRoute>
-                    <RequireProfileCompletion>
-                      <Layout><Resources /></Layout>
-                    </RequireProfileCompletion>
-                  </PrivateRoute>
-                } />
-                <Route path="/analytics" element={
-                  <PrivateRoute>
-                    <RequireProfileCompletion>
-                      <Layout><Analytics /></Layout>
-                    </RequireProfileCompletion>
-                  </PrivateRoute>
-                } />
-                <Route path="/settings" element={
-                  <PrivateRoute>
-                    <RequireProfileCompletion>
-                      <Layout><Settings /></Layout>
-                    </RequireProfileCompletion>
-                  </PrivateRoute>
-                } />
-                <Route path="/students" element={
-                  <PrivateRoute>
-                    <RequireProfileCompletion>
-                      <Layout><Students /></Layout>
-                    </RequireProfileCompletion>
-                  </PrivateRoute>
-                } />
-                <Route path="/messages" element={
-                  <PrivateRoute>
-                    <RequireProfileCompletion>
-                      <Layout><Messages /></Layout>
-                    </RequireProfileCompletion>
-                  </PrivateRoute>
-                } />
-                <Route 
-                  path="/profile" 
-                  element={
-                    <PrivateRoute>
-                      <Profile />
-                    </PrivateRoute>
-                  } 
-                />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-              <Toaster />
-              <Sonner />
-            </TooltipProvider>
-          </AuthProvider>
-        </BrowserRouter>
-      </QueryClientProvider>
-    </React.StrictMode>
+    <>
+      <AuthProvider>
+        <RouterProvider router={router} />
+        <Toaster />
+      </AuthProvider>
+    </>
   );
 }
 

@@ -3,22 +3,36 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Tutor, Subject } from "@/types/tutor";
 import { useAuth } from "@/contexts/AuthContext";
+import { getTutorStudentCourses } from "@/lib/tutor-student-utils";
 
 export function useTutors() {
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
 
   const [studentCourseTutors, setStudentCourseTutors] = useState<Tutor[]>([]);
   const [loadingStudentTutors, setLoadingStudentTutors] = useState(false);
 
-  // Function to extract course numbers from student profile
-  const getStudentCourses = (): string[] => {
-    if (!profile || !profile.subjects || !Array.isArray(profile.subjects)) {
-      return [];
+  // Function to extract course numbers from student profile or tutor's "need help with" courses
+  const getStudentCourses = async (): Promise<string[]> => {
+    if (!profile) return [];
+    
+    if (profile.role === 'student' && profile.subjects && Array.isArray(profile.subjects)) {
+      return profile.subjects;
     }
-    return profile.subjects;
+    
+    // If user is a tutor, fetch courses they need help with
+    if (profile.role === 'tutor' && user) {
+      try {
+        const tutorStudentCourses = await getTutorStudentCourses(user.id);
+        return tutorStudentCourses.map((course: any) => course.course_number);
+      } catch (err) {
+        console.error("Error fetching tutor student courses:", err);
+      }
+    }
+    
+    return [];
   };
 
   // Function to find tutors who match student courses
@@ -109,10 +123,10 @@ export function useTutors() {
 
         setTutors(processedTutors);
         
-        // If student profile exists, find matching tutors
-        if (profile && profile.role === 'student') {
+        // If profile exists, find matching tutors
+        if (profile) {
           setLoadingStudentTutors(true);
-          const studentCourses = getStudentCourses();
+          const studentCourses = await getStudentCourses();
           const matchingTutors = findMatchingTutors(processedTutors, studentCourses);
           setStudentCourseTutors(matchingTutors);
           setLoadingStudentTutors(false);
@@ -128,7 +142,7 @@ export function useTutors() {
     };
 
     fetchTutors();
-  }, [profile]);
+  }, [profile, user?.id]);
 
   return { 
     tutors, 
