@@ -152,6 +152,7 @@ export type Database = {
       }
       notification_preferences: {
         Row: {
+          booking_notifications: boolean
           created_at: string
           id: string
           new_messages: boolean
@@ -162,6 +163,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          booking_notifications?: boolean
           created_at?: string
           id?: string
           new_messages?: boolean
@@ -172,6 +174,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          booking_notifications?: boolean
           created_at?: string
           id?: string
           new_messages?: boolean

@@ -49,6 +49,7 @@ export type NotificationPreference = {
   new_messages: boolean;
   resource_updates: boolean;
   platform_updates: boolean;
+  booking_notifications: boolean;
   created_at: string;
   updated_at: string;
 };
