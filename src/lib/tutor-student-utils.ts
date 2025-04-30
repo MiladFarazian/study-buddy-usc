@@ -82,7 +82,8 @@ export async function getTutorStudentCourses(userId: string) {
   try {
     const { data, error } = await supabase
       .from('tutor_student_courses')
-      .select();
+      .select()
+      .eq('user_id', userId);
 
     if (error) {
       console.error("Failed to get tutor student courses:", error);

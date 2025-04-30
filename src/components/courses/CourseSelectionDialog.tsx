@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { addCourseToProfile } from "@/lib/course-utils";
 import { addTutorStudentCourse } from "@/lib/tutor-student-utils";
+import { Book, BookOpen } from "lucide-react";
 
 interface CourseSelectionDialogProps {
   isOpen: boolean;
@@ -31,7 +32,7 @@ export const CourseSelectionDialog = ({
   courseTitle,
   onSuccess,
 }: CourseSelectionDialogProps) => {
-  const { user, profile, isTutor } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
   const [selection, setSelection] = useState<"tutor" | "student">("tutor");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,17 +45,18 @@ export const CourseSelectionDialog = ({
       if (selection === "tutor") {
         // Add as a course the user can tutor
         await addCourseToProfile(user.id, courseNumber);
+        toast({
+          title: "Course added as tutor subject",
+          description: `${courseNumber} has been added to your courses to tutor.`,
+        });
       } else {
         // Add as a course the tutor needs help with
         await addTutorStudentCourse(user.id, courseNumber);
+        toast({
+          title: "Course added for help",
+          description: `${courseNumber} has been added to courses you need help with.`,
+        });
       }
-
-      toast({
-        title: "Course added successfully",
-        description: `${courseNumber} has been added to your ${
-          selection === "tutor" ? "courses to tutor" : "courses you need help with"
-        }.`,
-      });
 
       onSuccess();
       onClose();
@@ -70,17 +72,13 @@ export const CourseSelectionDialog = ({
     }
   };
 
-  // Only tutors need to see this dialog
-  if (!isTutor) return null;
-
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add Course</DialogTitle>
+          <DialogTitle>Add {courseNumber} to your profile</DialogTitle>
           <DialogDescription>
-            How would you like to add <strong>{courseNumber}</strong>{" "}
-            {courseTitle ? `(${courseTitle})` : ""}?
+            {courseTitle ? `${courseTitle} - ` : ""}How would you like to add this course?
           </DialogDescription>
         </DialogHeader>
 
@@ -92,24 +90,30 @@ export const CourseSelectionDialog = ({
           >
             <div className="flex items-start space-x-3 space-y-0">
               <RadioGroupItem value="tutor" id="tutor" />
-              <div className="grid gap-1.5">
-                <Label htmlFor="tutor" className="font-medium">
-                  Add as course I can tutor
-                </Label>
+              <div className="grid gap-1.5 grow">
+                <div className="flex items-center gap-2">
+                  <Book className="h-4 w-4 text-usc-cardinal" />
+                  <Label htmlFor="tutor" className="font-medium">
+                    I can tutor this course
+                  </Label>
+                </div>
                 <p className="text-sm text-muted-foreground">
-                  This course will appear on your tutor profile for students to book sessions with you.
+                  This course will appear in "My Courses" and on your tutor profile for students to book sessions with you.
                 </p>
               </div>
             </div>
             
             <div className="flex items-start space-x-3 space-y-0">
               <RadioGroupItem value="student" id="student" />
-              <div className="grid gap-1.5">
-                <Label htmlFor="student" className="font-medium">
-                  Add as course I need help with
-                </Label>
+              <div className="grid gap-1.5 grow">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="h-4 w-4 text-blue-500" />
+                  <Label htmlFor="student" className="font-medium">
+                    I need help with this course
+                  </Label>
+                </div>
                 <p className="text-sm text-muted-foreground">
-                  You'll see tutors who can help you with this course in the "Tutors for Your Courses" section.
+                  This course will appear in "Courses I Need Help With" and you'll see tutors who can help you with this course.
                 </p>
               </div>
             </div>

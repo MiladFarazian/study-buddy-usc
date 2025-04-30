@@ -90,7 +90,7 @@ export function CourseCardActions({
         ) : (
           <Plus className="h-4 w-4 mr-1" />
         )}
-        Add Course
+        {isTutor ? "Add Course" : "Add to My Courses"}
       </Button>
       
       {isTutor && (

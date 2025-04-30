@@ -1,103 +1,95 @@
 
 import { useState } from "react";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
-import { ProfileSettings } from "@/components/settings/ProfileSettings";
+import ProfileSettings from "@/components/settings/ProfileSettings";
+import AccountSettings from "@/components/settings/AccountSettings";
+import NotificationSettings from "@/components/settings/NotificationSettings";
+import PaymentSettingsTab from "@/components/settings/PaymentSettingsTab";
+import PrivacySettings from "@/components/settings/PrivacySettings";
+import TutorSettingsTab from "@/components/settings/TutorSettingsTab";
 import { CoursesSettings } from "@/components/settings/CoursesSettings";
-import { AccountSettings } from "@/components/settings/AccountSettings";
-import { TutorSettingsTab } from "@/components/settings/TutorSettingsTab";
-import { NotificationSettings } from "@/components/settings/NotificationSettings";
-import { PrivacySettings } from "@/components/settings/PrivacySettings";
-import { PaymentSettingsTab } from "@/components/settings/PaymentSettingsTab";
 import { TutorStudentCoursesSettings } from "@/components/settings/TutorStudentCoursesSettings";
 
-export default function Settings() {
-  // Redirect to login if not authenticated
-  const { user, profile, loading, isTutor } = useAuthRedirect("/settings");
-  
+const Settings = () => {
+  const { loading, profile, isTutor } = useAuthRedirect('/settings', true);
   const [activeTab, setActiveTab] = useState("profile");
-  
+
   if (loading) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
   }
-  
-  if (!user) return null; // Handled by useAuthRedirect
 
   return (
-    <div className="px-4 md:px-6 py-4 md:py-8 mb-20">
-      <div className="mx-auto max-w-6xl">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">Settings</h1>
-          <p className="text-muted-foreground mb-8">
-            Manage your account settings and preferences.
-          </p>
-        </div>
-        
-        <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="w-full h-auto flex flex-wrap md:flex-nowrap overflow-auto">
-            <TabsTrigger value="profile" className="flex-1 data-[state=active]:bg-usc-cardinal data-[state=active]:text-white">
-              Profile
-            </TabsTrigger>
-            <TabsTrigger value="courses" className="flex-1 data-[state=active]:bg-usc-cardinal data-[state=active]:text-white">
-              Courses
-            </TabsTrigger>
-            {isTutor && (
-              <TabsTrigger value="tutor-settings" className="flex-1 data-[state=active]:bg-usc-cardinal data-[state=active]:text-white">
-                Tutor Settings
-              </TabsTrigger>
-            )}
-            <TabsTrigger value="account" className="flex-1 data-[state=active]:bg-usc-cardinal data-[state=active]:text-white">
-              Account
-            </TabsTrigger>
-            <TabsTrigger value="notifications" className="flex-1 data-[state=active]:bg-usc-cardinal data-[state=active]:text-white">
-              Notifications
-            </TabsTrigger>
-            <TabsTrigger value="privacy" className="flex-1 data-[state=active]:bg-usc-cardinal data-[state=active]:text-white">
-              Privacy
-            </TabsTrigger>
-            <TabsTrigger value="payment" className="flex-1 data-[state=active]:bg-usc-cardinal data-[state=active]:text-white">
-              Payment
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="profile" className="space-y-4">
-            <ProfileSettings />
-          </TabsContent>
-          
-          <TabsContent value="courses" className="space-y-6">
-            <CoursesSettings />
-            {isTutor && (
-              <>
-                <Separator className="my-6" />
-                <TutorStudentCoursesSettings />
-              </>
-            )}
-          </TabsContent>
-          
-          {isTutor && (
-            <TabsContent value="tutor-settings" className="space-y-4">
-              <TutorSettingsTab />
-            </TabsContent>
-          )}
-          
-          <TabsContent value="account" className="space-y-4">
-            <AccountSettings />
-          </TabsContent>
-          
-          <TabsContent value="notifications" className="space-y-4">
-            <NotificationSettings />
-          </TabsContent>
-          
-          <TabsContent value="privacy" className="space-y-4">
-            <PrivacySettings />
-          </TabsContent>
-          
-          <TabsContent value="payment" className="space-y-4">
-            <PaymentSettingsTab />
-          </TabsContent>
-        </Tabs>
+    <div className="container max-w-6xl py-6 md:py-10">
+      <div className="space-y-0.5 mb-6">
+        <h1 className="text-2xl md:text-3xl font-bold">Settings</h1>
+        <p className="text-muted-foreground">
+          Manage your account settings and preferences
+        </p>
       </div>
+
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-6"
+      >
+        <TabsList className="flex flex-wrap h-auto py-2 gap-2">
+          <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="account">Account</TabsTrigger>
+          <TabsTrigger value="courses">My Courses</TabsTrigger>
+          {isTutor && (
+            <TabsTrigger value="student-courses">Courses I Need Help With</TabsTrigger>
+          )}
+          {isTutor && (
+            <TabsTrigger value="tutor-settings">Tutor Settings</TabsTrigger>
+          )}
+          <TabsTrigger value="notifications">Notifications</TabsTrigger>
+          <TabsTrigger value="payment">Payment</TabsTrigger>
+          <TabsTrigger value="privacy">Privacy</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="profile" className="space-y-6">
+          <ProfileSettings />
+        </TabsContent>
+        
+        <TabsContent value="account" className="space-y-6">
+          <AccountSettings />
+        </TabsContent>
+        
+        <TabsContent value="courses" className="space-y-6">
+          <CoursesSettings />
+        </TabsContent>
+
+        {isTutor && (
+          <TabsContent value="student-courses" className="space-y-6">
+            <TutorStudentCoursesSettings />
+          </TabsContent>
+        )}
+        
+        {isTutor && (
+          <TabsContent value="tutor-settings" className="space-y-6">
+            <TutorSettingsTab />
+          </TabsContent>
+        )}
+        
+        <TabsContent value="notifications" className="space-y-6">
+          <NotificationSettings />
+        </TabsContent>
+        
+        <TabsContent value="payment" className="space-y-6">
+          <PaymentSettingsTab />
+        </TabsContent>
+        
+        <TabsContent value="privacy" className="space-y-6">
+          <PrivacySettings />
+        </TabsContent>
+      </Tabs>
     </div>
   );
-}
+};
+
+export default Settings;
