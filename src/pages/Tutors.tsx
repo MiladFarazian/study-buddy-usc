@@ -197,7 +197,7 @@ const Tutors = () => {
             </>
           )}
           
-          <ScrollArea className="w-full" orientation="horizontal">
+          <ScrollArea className="w-full">
             <div 
               id="student-tutors-scroll-container"
               className="flex space-x-4 py-2 px-1 overflow-x-auto hide-scrollbar"
@@ -211,12 +211,6 @@ const Tutors = () => {
             </div>
           </ScrollArea>
         </div>
-
-        <style jsx>{`
-          .hide-scrollbar::-webkit-scrollbar {
-            display: none;
-          }
-        `}</style>
       </div>
     );
   };
