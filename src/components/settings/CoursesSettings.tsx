@@ -76,13 +76,11 @@ export const CoursesSettings = () => {
         </div>
 
         <CourseSelectionDialog
-          isOpen={dialogOpen} // Changed prop name from 'open' to 'isOpen' to match component definition
-          onClose={() => setDialogOpen(false)} // Changed onOpenChange to onClose to match component definition
-          title="Select Your Courses"
-          description="Search and select the courses you want to add to your profile"
-          onSuccess={() => {}} // Added required onSuccess prop
-          courseNumber="" // Added required courseNumber prop
-          courseTitle="" // Added required courseTitle prop
+          isOpen={dialogOpen}
+          onClose={() => setDialogOpen(false)}
+          courseNumber=""
+          courseTitle=""
+          onSuccess={() => {}}
         />
       </CardContent>
     </Card>
