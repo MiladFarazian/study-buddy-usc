@@ -13,7 +13,11 @@ export async function sendSessionCancellationEmails(sessionId: string): Promise<
     // Fetch the session details from the database
     const { data: session, error } = await supabase
       .from('sessions')
-      .select('*, tutor:tutor_id(id, first_name, last_name, email:id), student:student_id(id, first_name, last_name, email:id), course_id')
+      .select(`
+        *,
+        tutor:profiles!sessions_tutor_id_fkey(id, first_name, last_name),
+        student:profiles!sessions_student_id_fkey(id, first_name, last_name)
+      `)
       .eq('id', sessionId)
       .single();
     
@@ -24,18 +28,29 @@ export async function sendSessionCancellationEmails(sessionId: string): Promise<
     if (!session) {
       throw new Error(`Session with ID ${sessionId} not found`);
     }
+
+    // Get user emails
+    const { data: tutorData, error: tutorError } = await supabase.auth.admin.getUserById(session.tutor.id);
+    if (tutorError) throw new Error(`Error fetching tutor data: ${tutorError.message}`);
+    
+    const { data: studentData, error: studentError } = await supabase.auth.admin.getUserById(session.student.id);
+    if (studentError) throw new Error(`Error fetching student data: ${studentError.message}`);
+    
+    if (!tutorData?.user?.email || !studentData?.user?.email) {
+      throw new Error('Could not retrieve user emails');
+    }
     
     // Check if tutor has notifications enabled
     const tutorPrefs = await getUserNotificationPreferences(session.tutor.id);
     if (tutorPrefs.sessionReminders) {
       await sendNotificationEmail({
-        recipientEmail: session.tutor.email,
-        recipientName: `${session.tutor.first_name} ${session.tutor.last_name}`,
+        recipientEmail: tutorData.user.email,
+        recipientName: `${session.tutor.first_name || ''} ${session.tutor.last_name || ''}`.trim(),
         subject: "Session Cancelled",
         notificationType: 'session_reminder',
         data: {
           sessionDate: session.start_time,
-          studentName: `${session.student.first_name} ${session.student.last_name}`,
+          studentName: `${session.student.first_name || ''} ${session.student.last_name || ''}`.trim(),
           courseName: session.course_id || 'Not specified',
           location: session.location || 'Not specified'
         }
@@ -46,13 +61,13 @@ export async function sendSessionCancellationEmails(sessionId: string): Promise<
     const studentPrefs = await getUserNotificationPreferences(session.student.id);
     if (studentPrefs.sessionReminders) {
       await sendNotificationEmail({
-        recipientEmail: session.student.email,
-        recipientName: `${session.student.first_name} ${session.student.last_name}`,
+        recipientEmail: studentData.user.email,
+        recipientName: `${session.student.first_name || ''} ${session.student.last_name || ''}`.trim(),
         subject: "Session Cancelled",
         notificationType: 'session_reminder',
         data: {
           sessionDate: session.start_time,
-          tutorName: `${session.tutor.first_name} ${session.tutor.last_name}`,
+          tutorName: `${session.tutor.first_name || ''} ${session.tutor.last_name || ''}`.trim(),
           courseName: session.course_id || 'Not specified',
           location: session.location || 'Not specified'
         }
@@ -74,10 +89,14 @@ export async function sendSessionCancellationEmails(sessionId: string): Promise<
  */
 export async function sendSessionBookingEmails(sessionId: string): Promise<{success: boolean, error?: string}> {
   try {
-    // Fetch session data including tutor and student details
+    // Fetch session data including tutor and student details with proper column hints
     const { data: session, error } = await supabase
       .from('sessions')
-      .select('*, tutor:tutor_id(id, first_name, last_name, email:id), student:student_id(id, first_name, last_name, email:id), course_id')
+      .select(`
+        *,
+        tutor:profiles!sessions_tutor_id_fkey(id, first_name, last_name),
+        student:profiles!sessions_student_id_fkey(id, first_name, last_name)
+      `)
       .eq('id', sessionId)
       .single();
     
@@ -88,18 +107,29 @@ export async function sendSessionBookingEmails(sessionId: string): Promise<{succ
     if (!session) {
       throw new Error(`Session with ID ${sessionId} not found`);
     }
+
+    // Get user emails
+    const { data: tutorData, error: tutorError } = await supabase.auth.admin.getUserById(session.tutor.id);
+    if (tutorError) throw new Error(`Error fetching tutor data: ${tutorError.message}`);
+    
+    const { data: studentData, error: studentError } = await supabase.auth.admin.getUserById(session.student.id);
+    if (studentError) throw new Error(`Error fetching student data: ${studentError.message}`);
+    
+    if (!tutorData?.user?.email || !studentData?.user?.email) {
+      throw new Error('Could not retrieve user emails');
+    }
     
     // Check if tutor has notifications enabled
     const tutorPrefs = await getUserNotificationPreferences(session.tutor.id);
     if (tutorPrefs.sessionReminders) {
       await sendNotificationEmail({
-        recipientEmail: session.tutor.email,
-        recipientName: `${session.tutor.first_name} ${session.tutor.last_name}`,
+        recipientEmail: tutorData.user.email,
+        recipientName: `${session.tutor.first_name || ''} ${session.tutor.last_name || ''}`.trim(),
         subject: "New Tutoring Session Booked",
         notificationType: 'session_reminder',
         data: {
           sessionDate: session.start_time,
-          studentName: `${session.student.first_name} ${session.student.last_name}`,
+          studentName: `${session.student.first_name || ''} ${session.student.last_name || ''}`.trim(),
           courseName: session.course_id || 'Not specified',
           location: session.location || 'Not specified'
         }
@@ -110,13 +140,13 @@ export async function sendSessionBookingEmails(sessionId: string): Promise<{succ
     const studentPrefs = await getUserNotificationPreferences(session.student.id);
     if (studentPrefs.sessionReminders) {
       await sendNotificationEmail({
-        recipientEmail: session.student.email,
-        recipientName: `${session.student.first_name} ${session.student.last_name}`,
+        recipientEmail: studentData.user.email,
+        recipientName: `${session.student.first_name || ''} ${session.student.last_name || ''}`.trim(),
         subject: "Your Tutoring Session is Confirmed",
         notificationType: 'session_reminder',
         data: {
           sessionDate: session.start_time,
-          tutorName: `${session.tutor.first_name} ${session.tutor.last_name}`,
+          tutorName: `${session.tutor.first_name || ''} ${session.tutor.last_name || ''}`.trim(),
           courseName: session.course_id || 'Not specified',
           location: session.location || 'Not specified'
         }
@@ -138,10 +168,14 @@ export async function sendSessionBookingEmails(sessionId: string): Promise<{succ
  */
 export async function sendSessionReminderEmails(sessionId: string): Promise<{success: boolean, error?: string}> {
   try {
-    // Fetch session data
+    // Fetch session data with proper column hints
     const { data: session, error } = await supabase
       .from('sessions')
-      .select('*, tutor:tutor_id(id, first_name, last_name, email:id), student:student_id(id, first_name, last_name, email:id), course_id')
+      .select(`
+        *,
+        tutor:profiles!sessions_tutor_id_fkey(id, first_name, last_name),
+        student:profiles!sessions_student_id_fkey(id, first_name, last_name)
+      `)
       .eq('id', sessionId)
       .single();
       
@@ -152,18 +186,29 @@ export async function sendSessionReminderEmails(sessionId: string): Promise<{suc
     if (!session) {
       throw new Error(`Session with ID ${sessionId} not found`);
     }
+
+    // Get user emails
+    const { data: tutorData, error: tutorError } = await supabase.auth.admin.getUserById(session.tutor.id);
+    if (tutorError) throw new Error(`Error fetching tutor data: ${tutorError.message}`);
+    
+    const { data: studentData, error: studentError } = await supabase.auth.admin.getUserById(session.student.id);
+    if (studentError) throw new Error(`Error fetching student data: ${studentError.message}`);
+    
+    if (!tutorData?.user?.email || !studentData?.user?.email) {
+      throw new Error('Could not retrieve user emails');
+    }
     
     // Check if student has notifications enabled
     const studentPrefs = await getUserNotificationPreferences(session.student.id);
     if (studentPrefs.sessionReminders) {
       await sendNotificationEmail({
-        recipientEmail: session.student.email,
-        recipientName: `${session.student.first_name} ${session.student.last_name}`,
+        recipientEmail: studentData.user.email,
+        recipientName: `${session.student.first_name || ''} ${session.student.last_name || ''}`.trim(),
         subject: "Reminder: Upcoming Tutoring Session",
         notificationType: 'session_reminder',
         data: {
           sessionDate: session.start_time,
-          tutorName: `${session.tutor.first_name} ${session.tutor.last_name}`,
+          tutorName: `${session.tutor.first_name || ''} ${session.tutor.last_name || ''}`.trim(),
           courseName: session.course_id || 'Not specified',
           location: session.location || 'Not specified'
         }
@@ -174,13 +219,13 @@ export async function sendSessionReminderEmails(sessionId: string): Promise<{suc
     const tutorPrefs = await getUserNotificationPreferences(session.tutor.id);
     if (tutorPrefs.sessionReminders) {
       await sendNotificationEmail({
-        recipientEmail: session.tutor.email,
-        recipientName: `${session.tutor.first_name} ${session.tutor.last_name}`,
+        recipientEmail: tutorData.user.email,
+        recipientName: `${session.tutor.first_name || ''} ${session.tutor.last_name || ''}`.trim(),
         subject: "Reminder: Upcoming Tutoring Session",
         notificationType: 'session_reminder',
         data: {
           sessionDate: session.start_time,
-          studentName: `${session.student.first_name} ${session.student.last_name}`,
+          studentName: `${session.student.first_name || ''} ${session.student.last_name || ''}`.trim(),
           courseName: session.course_id || 'Not specified',
           location: session.location || 'Not specified'
         }
