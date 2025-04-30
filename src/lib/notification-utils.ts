@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { NotificationPreference } from "@/integrations/supabase/types-extension";
 
 export type NotificationType = 'session_reminder' | 'new_message' | 'resource_update' | 'platform_update';
 
@@ -94,9 +95,7 @@ export async function saveUserNotificationPreferences(
           session_reminders: preferences.sessionReminders,
           new_messages: preferences.newMessages,
           resource_updates: preferences.resourceUpdates,
-          platform_updates: preferences.platformUpdates,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          platform_updates: preferences.platformUpdates
         });
     }
     

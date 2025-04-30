@@ -150,6 +150,39 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          id: string
+          new_messages: boolean
+          platform_updates: boolean
+          resource_updates: boolean
+          session_reminders: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          new_messages?: boolean
+          platform_updates?: boolean
+          resource_updates?: boolean
+          session_reminders?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          new_messages?: boolean
+          platform_updates?: boolean
+          resource_updates?: boolean
+          session_reminders?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string

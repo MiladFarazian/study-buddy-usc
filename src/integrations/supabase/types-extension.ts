@@ -41,6 +41,18 @@ export type Session = Database["public"]["Tables"]["sessions"]["Row"];
 export type SessionInsert = Database["public"]["Tables"]["sessions"]["Insert"];
 export type SessionUpdate = Database["public"]["Tables"]["sessions"]["Update"];
 
+// Define the NotificationPreference type
+export type NotificationPreference = {
+  id: string;
+  user_id: string;
+  session_reminders: boolean;
+  new_messages: boolean;
+  resource_updates: boolean;
+  platform_updates: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
 // Define the Term type
 export type Term = {
   id: string;
