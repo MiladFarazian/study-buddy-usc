@@ -14,14 +14,28 @@ export interface AuthRedirectResult {
 }
 
 export const useAuthRedirect = (redirectPath: string, requireAuth: boolean = false): AuthRedirectResult => {
-  const { user, profile, loading, signOut, isTutor = false, isStudent = false, isProfileComplete = false } = useAuth();
+  const { user, profile, loading, signOut, isTutor = false, isStudent = false } = useAuth();
   const navigate = useNavigate();
+  const [isProfileComplete, setIsProfileComplete] = useState(false);
 
   useEffect(() => {
     if (loading) return;
 
+    // Calculate profile completion status
+    const calculateProfileCompletion = () => {
+      setIsProfileComplete(!!(
+        profile &&
+        profile.first_name &&
+        profile.last_name &&
+        profile.major &&
+        profile.bio
+      ));
+    };
+
+    calculateProfileCompletion();
+
     if (requireAuth && !user) {
-      navigate("/login?redirect=" + encodeURIComponent(redirectPath));
+      navigate("/login?redirect=" + redirectPath);
     }
   }, [user, profile, loading, navigate, redirectPath, requireAuth]);
 
@@ -30,8 +44,8 @@ export const useAuthRedirect = (redirectPath: string, requireAuth: boolean = fal
     profile, 
     loading, 
     isProfileComplete, 
-    isTutor, 
-    isStudent, 
+    isTutor: profile?.role === 'tutor', 
+    isStudent: profile?.role === 'student', 
     signOut 
   };
 };

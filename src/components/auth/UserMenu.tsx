@@ -12,16 +12,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { LogOut, Settings, User } from "lucide-react";
 
 const UserMenu = () => {
-  const navigate = useNavigate();
   // Wrap access to useAuth in a try/catch to gracefully handle 
   // any context issues during rendering
   let user = null;
   let profile = null;
-  let signOut = async () => ({ success: true });
+  let signOut = async () => ({ success: true as boolean });
   
   try {
     const auth = useAuth();
@@ -61,14 +60,6 @@ const UserMenu = () => {
       return `${profile.first_name} ${profile.last_name}`;
     }
     return user.email;
-  };
-
-  const handleSignOut = async () => {
-    const result = await signOut();
-    if (result.success) {
-      navigate('/login');
-    }
-    setIsOpen(false);
   };
 
   return (
@@ -117,7 +108,10 @@ const UserMenu = () => {
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem 
-          onClick={handleSignOut}
+          onClick={async () => {
+            await signOut();
+            setIsOpen(false);
+          }}
           className="text-red-600 focus:text-red-600"
         >
           <LogOut className="mr-2 h-4 w-4" />

@@ -76,8 +76,6 @@ export const SessionManager = () => {
       const emailResult = await sendSessionCancellationEmails(sessionId);
       if (!emailResult.success) {
         console.warn("Email notification failed:", emailResult.error);
-      } else {
-        console.log("Cancellation notification sent successfully");
       }
       
       toast({
