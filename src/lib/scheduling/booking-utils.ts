@@ -1,6 +1,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { SessionCreationParams, SessionDetails } from "./types/booking";
+import { sendSessionBookingNotification } from "@/lib/notification-utils";
+import { format } from "date-fns";
 
 /**
  * Create a new session booking
@@ -47,6 +49,51 @@ export async function createSessionBooking(
     }
     
     console.log("[createSessionBooking] Session created:", data);
+    
+    // After successfully creating the session, send notification to tutor
+    // First, get the student and tutor details
+    const [studentData, tutorData, courseData] = await Promise.all([
+      supabase.from('profiles').select('first_name, last_name').eq('id', studentId).single(),
+      supabase.from('profiles').select('first_name, last_name').eq('id', tutorId).single(),
+      courseId ? supabase.from('tutor_courses').select('course_title').eq('course_number', courseId).single() : null
+    ]);
+    
+    // Get the tutor's email
+    const { data: userData } = await supabase.auth.admin.getUserById(tutorId);
+    
+    if (tutorData?.data && userData?.user) {
+      const tutorEmail = userData.user.email;
+      const tutorName = `${tutorData.data.first_name} ${tutorData.data.last_name}`;
+      const studentName = studentData?.data ? 
+        `${studentData.data.first_name} ${studentData.data.last_name}` : 
+        "A student";
+      
+      const startDate = new Date(startTime);
+      const formattedDate = format(startDate, 'EEEE, MMMM d, yyyy');
+      const formattedStartTime = format(startDate, 'h:mm a');
+      const formattedEndTime = format(new Date(endTime), 'h:mm a');
+      const courseName = courseData?.data?.course_title || courseId || "General tutoring";
+      
+      // Send booking notification
+      try {
+        await sendSessionBookingNotification({
+          tutorId,
+          tutorEmail,
+          tutorName,
+          studentName,
+          sessionId: data.id,
+          sessionDate: formattedDate,
+          startTime: formattedStartTime,
+          endTime: formattedEndTime,
+          courseName,
+          location
+        });
+        console.log("[createSessionBooking] Booking notification sent to tutor");
+      } catch (notifError) {
+        console.error("Error sending booking notification:", notifError);
+        // Don't block the booking process if notification fails
+      }
+    }
     
     return {
       id: data.id,

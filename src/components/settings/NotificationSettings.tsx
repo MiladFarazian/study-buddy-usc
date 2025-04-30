@@ -19,7 +19,8 @@ export const NotificationSettings = () => {
     sessionReminders: true,
     newMessages: true,
     resourceUpdates: true,
-    platformUpdates: false
+    platformUpdates: false,
+    bookingNotifications: true
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -120,6 +121,19 @@ export const NotificationSettings = () => {
             <Switch 
               checked={notificationSettings.sessionReminders} 
               onCheckedChange={() => handleToggleChange('sessionReminders')} 
+            />
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-medium">Booking Notifications</h3>
+              <p className="text-sm text-muted-foreground">
+                Get notified when someone books a session with you
+              </p>
+            </div>
+            <Switch 
+              checked={notificationSettings.bookingNotifications} 
+              onCheckedChange={() => handleToggleChange('bookingNotifications')} 
             />
           </div>
           

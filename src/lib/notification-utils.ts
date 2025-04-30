@@ -2,13 +2,14 @@
 import { supabase } from "@/integrations/supabase/client";
 import { NotificationPreference } from "@/integrations/supabase/types-extension";
 
-export type NotificationType = 'session_reminder' | 'new_message' | 'resource_update' | 'platform_update';
+export type NotificationType = 'session_reminder' | 'new_message' | 'resource_update' | 'platform_update' | 'session_booked';
 
 export interface NotificationPreferences {
   sessionReminders: boolean;
   newMessages: boolean;
   resourceUpdates: boolean;
   platformUpdates: boolean;
+  bookingNotifications: boolean; // New preference for booking notifications
 }
 
 // Get user notification preferences from database
@@ -27,7 +28,8 @@ export async function getUserNotificationPreferences(userId: string): Promise<No
         sessionReminders: true,
         newMessages: true,
         resourceUpdates: true,
-        platformUpdates: false
+        platformUpdates: false,
+        bookingNotifications: true // Default to true for booking notifications
       };
     }
     
@@ -37,7 +39,8 @@ export async function getUserNotificationPreferences(userId: string): Promise<No
         sessionReminders: true,
         newMessages: true,
         resourceUpdates: true,
-        platformUpdates: false
+        platformUpdates: false,
+        bookingNotifications: true // Default to true for booking notifications
       };
     }
     
@@ -45,7 +48,8 @@ export async function getUserNotificationPreferences(userId: string): Promise<No
       sessionReminders: data.session_reminders,
       newMessages: data.new_messages,
       resourceUpdates: data.resource_updates,
-      platformUpdates: data.platform_updates
+      platformUpdates: data.platform_updates,
+      bookingNotifications: data.booking_notifications !== false // Default to true if not set
     };
   } catch (error) {
     console.error("Error in getUserNotificationPreferences:", error);
@@ -54,7 +58,8 @@ export async function getUserNotificationPreferences(userId: string): Promise<No
       sessionReminders: true,
       newMessages: true,
       resourceUpdates: true,
-      platformUpdates: false
+      platformUpdates: false,
+      bookingNotifications: true // Default to true for booking notifications
     };
   }
 }
@@ -83,6 +88,7 @@ export async function saveUserNotificationPreferences(
           new_messages: preferences.newMessages,
           resource_updates: preferences.resourceUpdates,
           platform_updates: preferences.platformUpdates,
+          booking_notifications: preferences.bookingNotifications,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', userId);
@@ -95,7 +101,8 @@ export async function saveUserNotificationPreferences(
           session_reminders: preferences.sessionReminders,
           new_messages: preferences.newMessages,
           resource_updates: preferences.resourceUpdates,
-          platform_updates: preferences.platformUpdates
+          platform_updates: preferences.platformUpdates,
+          booking_notifications: preferences.bookingNotifications
         });
     }
     
@@ -152,6 +159,57 @@ export async function sendNotificationEmail({
   }
 }
 
+// Send session booking notification to tutor
+export async function sendSessionBookingNotification({
+  tutorId,
+  tutorEmail,
+  tutorName,
+  studentName,
+  sessionId,
+  sessionDate,
+  startTime,
+  endTime,
+  courseName,
+  location
+}: {
+  tutorId: string;
+  tutorEmail: string;
+  tutorName: string;
+  studentName: string;
+  sessionId: string;
+  sessionDate: string;
+  startTime: string;
+  endTime: string;
+  courseName?: string;
+  location?: string;
+}): Promise<{success: boolean, error?: string}> {
+  // Check if tutor has enabled booking notifications
+  const preferences = await getUserNotificationPreferences(tutorId);
+  
+  if (!preferences.bookingNotifications) {
+    console.log("Booking notifications disabled for tutor:", tutorId);
+    return { success: true };
+  }
+  
+  return sendNotificationEmail({
+    recipientEmail: tutorEmail,
+    recipientName: tutorName,
+    subject: "New Tutoring Session Booked",
+    notificationType: 'session_booked',
+    data: {
+      bookingInfo: {
+        sessionId,
+        studentName,
+        date: sessionDate,
+        startTime,
+        endTime,
+        courseName: courseName || 'General tutoring',
+        location: location || 'Not specified'
+      }
+    }
+  });
+}
+
 // Send session reminder notification
 export async function sendSessionReminder({
   userId,
@@ -161,7 +219,9 @@ export async function sendSessionReminder({
   sessionDate,
   tutorName,
   courseName,
-  location
+  location,
+  startTime,
+  endTime
 }: {
   userId: string;
   userEmail: string;
@@ -171,6 +231,8 @@ export async function sendSessionReminder({
   tutorName: string;
   courseName?: string;
   location?: string;
+  startTime: string;
+  endTime: string;
 }): Promise<{success: boolean, error?: string}> {
   // Check if user has enabled session reminders
   const preferences = await getUserNotificationPreferences(userId);
@@ -190,7 +252,9 @@ export async function sendSessionReminder({
       sessionDate,
       tutorName,
       courseName,
-      location
+      location,
+      startTime,
+      endTime
     }
   });
 }
