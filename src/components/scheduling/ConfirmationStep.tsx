@@ -15,7 +15,7 @@ interface ConfirmationStepProps {
 
 export function ConfirmationStep({ onClose, onReset }: ConfirmationStepProps) {
   const { state, tutor, calculatePrice } = useScheduling();
-  const { selectedDate, selectedTimeSlot, selectedDuration, selectedCourse } = state;
+  const { selectedDate, selectedTimeSlot, selectedDuration, selectedCourseId } = state;
   
   // Calculate session cost
   const sessionCost = selectedDuration ? calculatePrice(selectedDuration) : 0;
@@ -63,7 +63,8 @@ export function ConfirmationStep({ onClose, onReset }: ConfirmationStepProps) {
     const startDateTime = new Date(selectedDate);
     startDateTime.setHours(startHour, startMinute, 0, 0);
     
-    const courseSuffix = selectedCourse ? ` for ${selectedCourse.name}` : '';
+    // Get course info if available
+    const courseSuffix = selectedCourseId ? ` for ${selectedCourseId}` : '';
     const eventTitle = `Tutoring Session with ${tutor.name}${courseSuffix}`;
     
     const url = generateGoogleCalendarUrl(
@@ -72,7 +73,7 @@ export function ConfirmationStep({ onClose, onReset }: ConfirmationStepProps) {
       selectedTimeSlot.start, 
       selectedDuration,
       eventTitle,
-      selectedCourse?.code || null
+      selectedCourseId || null
     );
     
     window.open(url, '_blank');
@@ -89,11 +90,12 @@ export function ConfirmationStep({ onClose, onReset }: ConfirmationStepProps) {
     
     const endDateTime = addMinutes(startDateTime, selectedDuration);
     
-    const courseSuffix = selectedCourse ? ` for ${selectedCourse.name}` : '';
+    // Get course info if available
+    const courseSuffix = selectedCourseId ? ` for ${selectedCourseId}` : '';
     
     const eventData: ICalEventData = {
       title: `Tutoring Session with ${tutor.name}${courseSuffix}`,
-      description: `Tutoring session with ${tutor.name}${selectedCourse ? ` for course ${selectedCourse.code}` : ''}`,
+      description: `Tutoring session with ${tutor.name}${selectedCourseId ? ` for course ${selectedCourseId}` : ''}`,
       location: "USC Campus",
       startDate: startDateTime,
       endDate: endDateTime,

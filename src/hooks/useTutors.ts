@@ -2,11 +2,52 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Tutor, Subject } from "@/types/tutor";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function useTutors() {
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { profile } = useAuth();
+
+  const [studentCourseTutors, setStudentCourseTutors] = useState<Tutor[]>([]);
+  const [loadingStudentTutors, setLoadingStudentTutors] = useState(false);
+
+  // Function to extract course numbers from student profile
+  const getStudentCourses = (): string[] => {
+    if (!profile || !profile.subjects || !Array.isArray(profile.subjects)) {
+      return [];
+    }
+    return profile.subjects;
+  };
+
+  // Function to find tutors who match student courses
+  const findMatchingTutors = (allTutors: Tutor[], studentCourses: string[]): Tutor[] => {
+    if (!studentCourses.length) return [];
+    
+    // Map tutors with their matching course count
+    const tutorsWithMatches = allTutors.map(tutor => {
+      const matchingCourseCount = tutor.subjects.filter(subject => 
+        studentCourses.includes(subject.code)
+      ).length;
+      
+      return { tutor, matchingCourseCount };
+    });
+    
+    // Filter tutors who have at least one matching course
+    const matching = tutorsWithMatches
+      .filter(item => item.matchingCourseCount > 0)
+      // Sort by matching count first, then by rating
+      .sort((a, b) => {
+        if (b.matchingCourseCount !== a.matchingCourseCount) {
+          return b.matchingCourseCount - a.matchingCourseCount;
+        }
+        return b.tutor.rating - a.tutor.rating;
+      })
+      .map(item => item.tutor);
+      
+    return matching;
+  };
 
   useEffect(() => {
     const fetchTutors = async () => {
@@ -67,6 +108,15 @@ export function useTutors() {
         });
 
         setTutors(processedTutors);
+        
+        // If student profile exists, find matching tutors
+        if (profile && profile.role === 'student') {
+          setLoadingStudentTutors(true);
+          const studentCourses = getStudentCourses();
+          const matchingTutors = findMatchingTutors(processedTutors, studentCourses);
+          setStudentCourseTutors(matchingTutors);
+          setLoadingStudentTutors(false);
+        }
 
       } catch (error: any) {
         console.error("Error fetching tutors:", error);
@@ -78,7 +128,13 @@ export function useTutors() {
     };
 
     fetchTutors();
-  }, []);
+  }, [profile]);
 
-  return { tutors, loading, error };
+  return { 
+    tutors, 
+    loading, 
+    error, 
+    studentCourseTutors, 
+    loadingStudentTutors 
+  };
 }
