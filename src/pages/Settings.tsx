@@ -2,12 +2,12 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
-import ProfileSettings from "@/components/settings/ProfileSettings";
-import AccountSettings from "@/components/settings/AccountSettings";
-import NotificationSettings from "@/components/settings/NotificationSettings";
-import PaymentSettingsTab from "@/components/settings/PaymentSettingsTab";
-import PrivacySettings from "@/components/settings/PrivacySettings";
-import TutorSettingsTab from "@/components/settings/TutorSettingsTab";
+import { ProfileSettings } from "@/components/settings/ProfileSettings";
+import { AccountSettings } from "@/components/settings/AccountSettings";
+import { NotificationSettings } from "@/components/settings/NotificationSettings";
+import { PaymentSettingsTab } from "@/components/settings/PaymentSettingsTab";
+import { PrivacySettings } from "@/components/settings/PrivacySettings";
+import { TutorSettingsTab } from "@/components/settings/TutorSettingsTab";
 import { CoursesSettings } from "@/components/settings/CoursesSettings";
 import { TutorStudentCoursesSettings } from "@/components/settings/TutorStudentCoursesSettings";
 
