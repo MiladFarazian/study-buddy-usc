@@ -32,7 +32,9 @@ export const NotificationSettings = () => {
       }
 
       try {
+        console.log("Fetching notification preferences for user:", user.id);
         const prefs = await getUserNotificationPreferences(user.id);
+        console.log("Fetched preferences:", prefs);
         setNotificationSettings(prefs);
       } catch (error) {
         console.error("Failed to fetch notification preferences:", error);
@@ -61,6 +63,7 @@ export const NotificationSettings = () => {
     
     setSaving(true);
     try {
+      console.log("Saving notification preferences:", notificationSettings);
       const { success, error } = await saveUserNotificationPreferences(
         user.id, 
         notificationSettings

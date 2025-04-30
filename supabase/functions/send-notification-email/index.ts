@@ -25,7 +25,11 @@ serve(async (req) => {
   }
 
   try {
-    const { recipientEmail, recipientName, subject, notificationType, data } = await req.json() as NotificationRequest;
+    console.log("Notification request received");
+    const payload = await req.json();
+    console.log("Request payload:", JSON.stringify(payload, null, 2));
+    
+    const { recipientEmail, recipientName, subject, notificationType, data } = payload as NotificationRequest;
     
     if (!recipientEmail || !notificationType) {
       throw new Error("Missing required parameters: recipientEmail and notificationType");
@@ -37,6 +41,7 @@ serve(async (req) => {
     switch (notificationType) {
       case 'session_reminder':
         const { sessionDate, tutorName, courseName, location } = data || {};
+        console.log("Processing session reminder notification with data:", { sessionDate, tutorName, courseName, location });
         htmlContent = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
             <div style="background-color: #990000; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0;">
@@ -66,6 +71,7 @@ serve(async (req) => {
       
       case 'new_message':
         const { senderName, messagePreview } = data || {};
+        console.log("Processing new message notification with data:", { senderName, messagePreview });
         htmlContent = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
             <div style="background-color: #990000; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0;">
@@ -155,6 +161,7 @@ serve(async (req) => {
         break;
       
       default:
+        console.log("Using default notification template");
         htmlContent = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
             <div style="background-color: #990000; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0;">
@@ -178,6 +185,8 @@ serve(async (req) => {
         `;
     }
 
+    console.log("Sending email to:", recipientEmail);
+    
     // Send email through Resend
     const emailResponse = await resend.emails.send({
       from: "USC Study Buddy <notifications@studybuddyusc.com>",
@@ -203,7 +212,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false,
-        error: error.message || "An unknown error occurred" 
+        error: error instanceof Error ? error.message : "An unknown error occurred" 
       }),
       {
         status: 500,

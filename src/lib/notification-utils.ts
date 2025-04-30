@@ -11,34 +11,47 @@ export interface NotificationPreferences {
   platformUpdates: boolean;
 }
 
+// Default notification preferences
+export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
+  sessionReminders: true,
+  newMessages: true,
+  resourceUpdates: true,
+  platformUpdates: false
+};
+
 // Get user notification preferences from database
 export async function getUserNotificationPreferences(userId: string): Promise<NotificationPreferences> {
   try {
+    // First check if preferences exist for the user
     const { data, error } = await supabase
       .from('notification_preferences')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
     
     if (error) {
       console.error("Error fetching notification preferences:", error);
-      // Return default preferences if error
-      return {
-        sessionReminders: true,
-        newMessages: true,
-        resourceUpdates: true,
-        platformUpdates: false
-      };
+      return DEFAULT_NOTIFICATION_PREFERENCES;
     }
     
-    // If no preferences exist yet, return defaults
+    // If no preferences exist yet, create default preferences
     if (!data) {
-      return {
-        sessionReminders: true,
-        newMessages: true,
-        resourceUpdates: true,
-        platformUpdates: false
-      };
+      console.log("No preferences found, creating default preferences for user:", userId);
+      const { error: createError } = await supabase
+        .from('notification_preferences')
+        .insert({
+          user_id: userId,
+          session_reminders: DEFAULT_NOTIFICATION_PREFERENCES.sessionReminders,
+          new_messages: DEFAULT_NOTIFICATION_PREFERENCES.newMessages,
+          resource_updates: DEFAULT_NOTIFICATION_PREFERENCES.resourceUpdates,
+          platform_updates: DEFAULT_NOTIFICATION_PREFERENCES.platformUpdates
+        });
+      
+      if (createError) {
+        console.error("Error creating default notification preferences:", createError);
+      }
+      
+      return DEFAULT_NOTIFICATION_PREFERENCES;
     }
     
     return {
@@ -49,13 +62,7 @@ export async function getUserNotificationPreferences(userId: string): Promise<No
     };
   } catch (error) {
     console.error("Error in getUserNotificationPreferences:", error);
-    // Return default preferences if exception
-    return {
-      sessionReminders: true,
-      newMessages: true,
-      resourceUpdates: true,
-      platformUpdates: false
-    };
+    return DEFAULT_NOTIFICATION_PREFERENCES;
   }
 }
 
@@ -128,6 +135,14 @@ export async function sendNotificationEmail({
   data?: Record<string, any>;
 }): Promise<{success: boolean, error?: string}> {
   try {
+    console.log("Sending notification email:", { 
+      recipientEmail,
+      recipientName,
+      subject,
+      notificationType,
+      data
+    });
+    
     const { error } = await supabase.functions.invoke('send-notification-email', {
       body: {
         recipientEmail,
@@ -142,6 +157,7 @@ export async function sendNotificationEmail({
       throw error;
     }
     
+    console.log("Notification email sent successfully");
     return { success: true };
   } catch (error) {
     console.error("Error sending notification email:", error);
@@ -229,9 +245,41 @@ export async function sendNewMessageNotification({
   });
 }
 
-// Update the email-utils to use our new notification system
-export function updateEmailUtils() {
-  // This function provides a migration path from old email system to new
-  console.log("Email system has been migrated to notification-utils.ts");
-  console.log("Please update your code to use the new notification functions");
+// Function to ensure a user has notification preferences
+export async function ensureNotificationPreferences(userId: string): Promise<void> {
+  if (!userId) return;
+  
+  try {
+    // Check if preferences already exist
+    const { data, error } = await supabase
+      .from('notification_preferences')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
+      
+    if (error) {
+      console.error("Error checking for notification preferences:", error);
+      return;
+    }
+    
+    // If no preferences exist, create defaults
+    if (!data) {
+      console.log("Creating default notification preferences for user:", userId);
+      const { error: insertError } = await supabase
+        .from('notification_preferences')
+        .insert({
+          user_id: userId,
+          session_reminders: DEFAULT_NOTIFICATION_PREFERENCES.sessionReminders,
+          new_messages: DEFAULT_NOTIFICATION_PREFERENCES.newMessages,
+          resource_updates: DEFAULT_NOTIFICATION_PREFERENCES.resourceUpdates,
+          platform_updates: DEFAULT_NOTIFICATION_PREFERENCES.platformUpdates
+        });
+        
+      if (insertError) {
+        console.error("Error creating default notification preferences:", insertError);
+      }
+    }
+  } catch (error) {
+    console.error("Error in ensureNotificationPreferences:", error);
+  }
 }
