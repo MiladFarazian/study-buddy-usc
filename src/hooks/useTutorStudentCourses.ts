@@ -1,13 +1,12 @@
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { TutorStudentCourse } from "@/integrations/supabase/types-extension";
 import { getTutorStudentCourses } from "@/lib/tutor-student-utils";
-import { Course } from "@/types/CourseTypes";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function useTutorStudentCourses() {
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [courses, setCourses] = useState<TutorStudentCourse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -20,20 +19,10 @@ export function useTutorStudentCourses() {
 
       setLoading(true);
       try {
-        const coursesData = await getTutorStudentCourses(user.id);
-        
-        const formattedCourses = coursesData.map((course: any) => ({
-          id: course.id,
-          course_number: course.course_number,
-          course_title: course.course_title || "",
-          instructor: null,
-          department: course.department || course.course_number?.split('-')[0] || "",
-        }));
-        
-        setCourses(formattedCourses);
-      } catch (err: any) {
-        setError(err.message || "Failed to fetch tutor student courses");
-        console.error("Error fetching tutor student courses:", err);
+        const data = await getTutorStudentCourses(user.id);
+        setCourses(data);
+      } catch (error) {
+        console.error("Error fetching tutor student courses:", error);
       } finally {
         setLoading(false);
       }
@@ -42,5 +31,7 @@ export function useTutorStudentCourses() {
     fetchCourses();
   }, [user]);
 
-  return { courses, loading, error };
+  return { courses, loading };
 }
+
+export default useTutorStudentCourses;

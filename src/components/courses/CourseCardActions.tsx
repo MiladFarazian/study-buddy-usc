@@ -1,11 +1,10 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { addCourseToProfile } from "@/lib/course-utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
 import { CourseSelectionDialog } from "./CourseSelectionDialog";
 
 interface CourseCardActionsProps {
@@ -24,6 +23,9 @@ export function CourseCardActions({
   const [loading, setLoading] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
 
+  // Debug logs
+  console.log("User is tutor:", isTutor);
+
   const handleAddCourse = async () => {
     if (!user) {
       toast({
@@ -36,6 +38,7 @@ export function CourseCardActions({
 
     // For tutors, show the selection dialog
     if (isTutor) {
+      console.log("Showing course purpose dialog");
       setShowDialog(true);
       return;
     }

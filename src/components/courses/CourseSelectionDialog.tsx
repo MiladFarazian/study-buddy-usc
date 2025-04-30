@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import {
   Dialog,
@@ -31,7 +32,7 @@ export const CourseSelectionDialog = ({
   courseTitle,
   onSuccess,
 }: CourseSelectionDialogProps) => {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [selection, setSelection] = useState<"tutor" | "student">("tutor");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,6 +40,9 @@ export const CourseSelectionDialog = ({
   const handleSubmit = async () => {
     if (!user) return;
     setIsSubmitting(true);
+    
+    // Debug log
+    console.log("Selected option:", selection);
 
     try {
       if (selection === "tutor") {
