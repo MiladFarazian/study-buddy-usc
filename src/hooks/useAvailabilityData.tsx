@@ -164,8 +164,6 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
       currentSlot = nextSlot;
     }
     
-    console.log("Found consecutive slots:", consecutiveSlots.length, "for start time:", startSlot.start);
-    
     return consecutiveSlots;
   }, [availableSlots]);
 

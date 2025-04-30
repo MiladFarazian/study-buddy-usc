@@ -106,16 +106,16 @@ export async function getUserSessions(
       // Format the session with default course details
       let courseDetails = null;
       
-      // If there's a course ID, try to get its details
+      // If there's a course ID, use it directly since it's now a text field
       if (session.course_id) {
+        courseDetails = {
+          id: session.course_id,
+          course_number: session.course_id,
+          course_title: '' 
+        };
+        
+        // Try to get the course title if available
         try {
-          courseDetails = {
-            id: session.course_id,
-            course_number: session.course_id,
-            course_title: '' 
-          };
-          
-          // Try to get the course title if available
           const { data: courseData } = await supabase
             .from('courses-20251')
             .select('Course number, Course title')
