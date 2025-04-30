@@ -14,7 +14,7 @@ export function SessionCalendarDialog({ session, open, onClose }: SessionCalenda
   const sessionDate = new Date(session.start_time);
   const startTime = sessionDate.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
   const duration = Math.round((new Date(session.end_time).getTime() - sessionDate.getTime()) / (1000 * 60));
-
+  
   // Create a complete tutor object that satisfies the Tutor type requirements
   const tutor = {
     id: session.tutor_id,
@@ -40,6 +40,8 @@ export function SessionCalendarDialog({ session, open, onClose }: SessionCalenda
           sessionDate={sessionDate}
           sessionDuration={duration}
           sessionStartTime={startTime}
+          courseId={session.course?.id || null}
+          courseName={session.course?.course_title || null}
           onClose={onClose}
         />
       </DialogContent>

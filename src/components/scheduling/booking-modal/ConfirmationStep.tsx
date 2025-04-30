@@ -1,15 +1,19 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Check, Calendar, Clock, User, CreditCard } from "lucide-react";
-import { format } from 'date-fns';
+import { Check, Calendar, Clock, User, CreditCard, Apple } from "lucide-react";
+import { format, addMinutes } from 'date-fns';
 import { Tutor } from "@/types/tutor";
 import { BookingSlot } from "@/lib/scheduling/types";
+import { ICalEventData, downloadICSFile } from "@/lib/calendar/icsGenerator";
+import { generateGoogleCalendarUrl } from "@/lib/calendar/googleCalendarUtils";
 
 interface ConfirmationStepProps {
   tutor: Tutor;
   selectedSlot: BookingSlot;
   selectedDuration: number;
+  selectedCourseId?: string | null;
+  selectedCourseName?: string | null;
   onClose: () => void;
   onReset?: () => void;
 }
@@ -18,6 +22,8 @@ export function ConfirmationStep({
   tutor, 
   selectedSlot,
   selectedDuration,
+  selectedCourseId,
+  selectedCourseName,
   onClose,
   onReset
 }: ConfirmationStepProps) {
@@ -53,6 +59,46 @@ export function ConfirmationStep({
   const hourlyRate = tutor.hourlyRate || 60; // Default to $60 if not set
   const sessionCost = (hourlyRate / 60) * selectedDuration;
   
+  // Handle adding to Google Calendar
+  const handleAddToGoogleCalendar = () => {
+    const courseSuffix = selectedCourseId ? ` for ${selectedCourseName || selectedCourseId}` : '';
+    const eventTitle = `Tutoring Session with ${tutor.name}${courseSuffix}`;
+    
+    const url = generateGoogleCalendarUrl(
+      tutor, 
+      slotDay, 
+      selectedSlot.start, 
+      selectedDuration,
+      eventTitle,
+      selectedCourseId
+    );
+    
+    window.open(url, '_blank');
+  };
+  
+  // Handle adding to Apple Calendar
+  const handleAddToAppleCalendar = () => {
+    // Format the session date with the time
+    const [hours, minutes] = selectedSlot.start.split(':').map(Number);
+    
+    const startDateTime = new Date(slotDay);
+    startDateTime.setHours(hours, minutes, 0, 0);
+    
+    const endDateTime = addMinutes(startDateTime, selectedDuration);
+    
+    const courseSuffix = selectedCourseId ? ` for ${selectedCourseName || selectedCourseId}` : '';
+    
+    const eventData: ICalEventData = {
+      title: `Tutoring Session with ${tutor.name}${courseSuffix}`,
+      description: `Tutoring session with ${tutor.name}${selectedCourseId ? ` for course ${selectedCourseId}` : ''}`,
+      location: "USC Campus",
+      startDate: startDateTime,
+      endDate: endDateTime,
+    };
+    
+    downloadICSFile(eventData, `tutoring-session-${format(startDateTime, 'yyyy-MM-dd')}.ics`);
+  };
+  
   return (
     <div className="space-y-6">
       <div className="text-center">
@@ -78,6 +124,13 @@ export function ConfirmationStep({
           </div>
         </div>
         
+        {selectedCourseId && (
+          <div className="flex items-start">
+            <span className="text-muted-foreground mr-3">Course:</span>
+            <span className="font-medium">{selectedCourseName || selectedCourseId}</span>
+          </div>
+        )}
+        
         <div className="flex items-center">
           <Calendar className="h-5 w-5 mr-3 text-muted-foreground" />
           <span>{formattedDate}</span>
@@ -96,6 +149,32 @@ export function ConfirmationStep({
         <div className="flex items-center">
           <CreditCard className="h-5 w-5 mr-3 text-muted-foreground" />
           <span className="font-medium">${sessionCost.toFixed(2)} paid</span>
+        </div>
+      </div>
+      
+      <div className="space-y-3">
+        <p className="text-center text-sm text-muted-foreground">
+          Add this session to your calendar:
+        </p>
+        
+        <div className="flex flex-col space-y-2">
+          <Button
+            variant="outline"
+            className="w-full border-green-600 text-green-600 hover:bg-green-50"
+            onClick={handleAddToGoogleCalendar}
+          >
+            <Calendar className="mr-2 h-4 w-4" />
+            Add to Google Calendar
+          </Button>
+          
+          <Button
+            variant="outline"
+            className="w-full border-green-600 text-green-600 hover:bg-green-50"
+            onClick={handleAddToAppleCalendar}
+          >
+            <Apple className="mr-2 h-4 w-4" />
+            Add to Apple Calendar
+          </Button>
         </div>
       </div>
       

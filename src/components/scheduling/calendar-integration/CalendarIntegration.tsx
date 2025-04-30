@@ -3,9 +3,10 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { format, addMinutes } from "date-fns";
-import { CalendarDays, CheckCircle, Download } from "lucide-react";
+import { CalendarDays, CheckCircle, Download, Apple } from "lucide-react";
 import { Tutor } from "@/types/tutor";
 import { generateGoogleCalendarUrl } from "@/lib/calendar/googleCalendarUtils";
+import { ICalEventData, downloadICSFile } from "@/lib/calendar/icsGenerator";
 
 interface CalendarIntegrationProps {
   tutor: Tutor;
@@ -28,23 +29,37 @@ export function CalendarIntegration({
 }: CalendarIntegrationProps) {
   const courseSuffix = courseId ? ` for ${courseName || courseId}` : '';
   
+  // Format the session date with the time
+  const [hours, minutes] = sessionStartTime.split(':').map(Number);
+  
+  const startDateTime = new Date(sessionDate);
+  startDateTime.setHours(hours, minutes, 0, 0);
+  
+  const endDateTime = addMinutes(startDateTime, sessionDuration);
+  
+  // Generate a title that includes the course if available
+  const eventTitle = `Tutoring Session with ${tutor.name}${courseSuffix}`;
+  
   const handleAddToGoogleCalendar = () => {
-    // Format the session date with the time
-    const [hours, minutes] = sessionStartTime.split(':').map(Number);
-    
-    const startDateTime = new Date(sessionDate);
-    startDateTime.setHours(hours, minutes, 0, 0);
-    
-    const endDateTime = addMinutes(startDateTime, sessionDuration);
-    
-    // Generate a title that includes the course if available
-    const eventTitle = `Tutoring Session with ${tutor.name}${courseSuffix}`;
-    
     // Generate Google Calendar URL
     const url = generateGoogleCalendarUrl(tutor, sessionDate, sessionStartTime, sessionDuration, eventTitle, courseId);
     
     // Open in a new window
     window.open(url, '_blank');
+  };
+  
+  const handleAddToAppleCalendar = () => {
+    // Create event data for Apple Calendar
+    const eventData: ICalEventData = {
+      title: eventTitle,
+      description: `Tutoring session with ${tutor.name}${courseId ? ` for course ${courseId}` : ''}`,
+      location: "USC Campus",
+      startDate: startDateTime,
+      endDate: endDateTime,
+    };
+    
+    // Download the ICS file
+    downloadICSFile(eventData, `tutoring-session-${format(startDateTime, 'yyyy-MM-dd')}.ics`);
   };
   
   // Format the session date and time for display
@@ -121,6 +136,15 @@ export function CalendarIntegration({
           >
             <CalendarDays className="mr-2 h-4 w-4" />
             Add to Google Calendar
+          </Button>
+          
+          <Button
+            variant="outline"
+            className="w-full mb-2 border-green-600 text-green-600 hover:bg-green-50"
+            onClick={handleAddToAppleCalendar}
+          >
+            <Apple className="mr-2 h-4 w-4" />
+            Add to Apple Calendar
           </Button>
         </div>
       </CardContent>
