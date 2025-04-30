@@ -1,6 +1,6 @@
 
 import { useEffect } from "react";
-import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import { RouterProvider, createBrowserRouter, Outlet } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { Toaster } from "./components/ui/toaster";
 import Layout from "./components/layout/Layout";
@@ -31,7 +31,9 @@ import Analytics from "./pages/Analytics";
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Layout />,
+    element: <Layout>
+      <Outlet />
+    </Layout>,
     children: [
       {
         path: "/",
