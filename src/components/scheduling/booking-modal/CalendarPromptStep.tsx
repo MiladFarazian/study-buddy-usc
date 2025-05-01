@@ -1,15 +1,13 @@
 
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { format, parseISO } from "date-fns";
-import { BookingSlot } from "@/lib/scheduling/types";
-import { Tutor } from "@/types/tutor";
-import { ICalEventData } from "@/lib/calendar/icsGenerator";
-import { CalendarPlus, Check } from "lucide-react";
 import { useState } from "react";
-import { downloadICSFile } from "@/lib/calendar/icsGenerator";
-import { addToGoogleCalendar } from "@/lib/calendar/googleCalendarUtils";
+import { Button } from "@/components/ui/button";
+import { Tutor } from "@/types/tutor";
+import { BookingSlot } from "@/lib/scheduling/types";
+import { format, parseISO, addMinutes } from "date-fns";
+import { Check, Calendar, ArrowRight } from "lucide-react";
+import { ICalEventData, downloadICSFile } from "@/lib/calendar/icsGenerator";
 import { SessionType } from "@/contexts/SchedulingContext";
+import { Badge } from "@/components/ui/badge";
 
 interface CalendarPromptStepProps {
   tutor: Tutor;
@@ -30,106 +28,143 @@ export function CalendarPromptStep({
   onClose,
   onDone
 }: CalendarPromptStepProps) {
-  const [addedToCalendar, setAddedToCalendar] = useState(false);
-  
-  // Format the date and time for display
-  const day = selectedSlot.day instanceof Date ? selectedSlot.day : new Date(selectedSlot.day);
-  const startHour = selectedSlot.start.split(':')[0];
-  const startMinute = selectedSlot.start.split(':')[1];
-  
-  const startDate = new Date(day);
-  startDate.setHours(parseInt(startHour, 10), parseInt(startMinute, 10), 0, 0);
-  
-  const endDate = new Date(startDate);
-  endDate.setMinutes(endDate.getMinutes() + selectedDuration);
-  
-  const sessionTypeText = sessionType === SessionType.VIRTUAL ? 'Virtual Session (Zoom)' : 'In-Person Session';
-  const courseName = selectedCourseId ? `${selectedCourseId}` : 'General Tutoring';
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [hasDownloaded, setHasDownloaded] = useState(false);
 
-  // Function to add to calendar
+  const getSessionDate = () => {
+    const slotDay = selectedSlot.day instanceof Date 
+      ? selectedSlot.day 
+      : new Date(selectedSlot.day);
+      
+    const [hour, minute] = selectedSlot.start.split(':').map(Number);
+    
+    const startDateTime = new Date(slotDay);
+    startDateTime.setHours(hour, minute, 0, 0);
+    
+    return startDateTime;
+  };
+  
+  const getFormattedDate = () => {
+    const startDateTime = getSessionDate();
+    return format(startDateTime, 'MMMM d, yyyy');
+  };
+  
+  const getFormattedTime = () => {
+    const startDateTime = getSessionDate();
+    const endDateTime = addMinutes(startDateTime, selectedDuration);
+    
+    return `${format(startDateTime, 'h:mm a')} - ${format(endDateTime, 'h:mm a')}`;
+  };
+  
   const handleAddToCalendar = () => {
+    const startDateTime = getSessionDate();
+    const endDateTime = addMinutes(startDateTime, selectedDuration);
+    
+    const courseText = selectedCourseId 
+      ? ` for ${selectedCourseId}` 
+      : '';
+      
+    const sessionTypeText = sessionType === SessionType.VIRTUAL 
+      ? 'virtual'
+      : 'in-person';
+      
+    // Create event data for the calendar
     const eventData: ICalEventData = {
-      title: `Tutoring: ${courseName} with ${tutor.name}`,
-      description: `${sessionTypeText} with ${tutor.name} for ${courseName}.${sessionType === SessionType.VIRTUAL ? '\n\nThis is a virtual session. A Zoom link will be provided.' : ''}`,
-      location: sessionType === SessionType.VIRTUAL ? 'Zoom' : 'USC Campus',
-      startDate: startDate,
-      endDate: endDate
+      title: `Tutoring Session with ${tutor.name}${courseText}`,
+      description: `${sessionTypeText.charAt(0).toUpperCase() + sessionTypeText.slice(1)} tutoring session with ${tutor.name}${courseText}.\n\nDuration: ${selectedDuration} minutes`,
+      location: sessionType === SessionType.VIRTUAL 
+        ? 'Zoom (check email for link)'
+        : 'USC Campus',
+      startDate: startDateTime,
+      endDate: endDateTime
     };
     
-    downloadICSFile(eventData);
-    setAddedToCalendar(true);
-  };
-  
-  // Function to add to Google Calendar
-  const handleAddToGoogleCalendar = () => {
-    const eventData = {
-      title: `Tutoring: ${courseName} with ${tutor.name}`,
-      description: `${sessionTypeText} with ${tutor.name} for ${courseName}.${sessionType === SessionType.VIRTUAL ? '\n\nThis is a virtual session. A Zoom link will be provided.' : ''}`,
-      location: sessionType === SessionType.VIRTUAL ? 'Zoom' : 'USC Campus',
-      startDate: startDate,
-      endDate: endDate
-    };
+    setIsDownloading(true);
     
-    addToGoogleCalendar(eventData);
-    setAddedToCalendar(true);
+    try {
+      // Use the downloadICSFile function
+      downloadICSFile(eventData, 'usc-tutoring-session.ics');
+      setHasDownloaded(true);
+    } catch (error) {
+      console.error("Error downloading calendar file:", error);
+    } finally {
+      setIsDownloading(false);
+    }
   };
-  
+
   return (
-    <div className="text-center space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Session Booked!</h2>
-        <p className="text-gray-500 mt-2">
-          Your session has been scheduled successfully.
-        </p>
+    <div className="text-center">
+      <div className="flex justify-center mb-6">
+        <div className="rounded-full bg-green-100 p-3">
+          <Check className="h-10 w-10 text-green-600" />
+        </div>
       </div>
       
-      <Card className="p-6 bg-gray-50 space-y-3">
-        <div>
-          <p className="font-semibold">{courseName}</p>
-          <p>{sessionTypeText}</p>
-        </div>
-        <div>
-          <p className="font-semibold">{format(startDate, 'EEEE, MMMM d, yyyy')}</p>
-          <p>{format(startDate, 'h:mm a')} - {format(endDate, 'h:mm a')}</p>
-        </div>
-        <div>
-          <p className="font-semibold">With {tutor.name}</p>
-          <p className="text-sm text-gray-500">${tutor.hourlyRate ? ((tutor.hourlyRate / 60) * selectedDuration).toFixed(2) : "25.00"}</p>
-        </div>
-      </Card>
+      <h2 className="text-2xl font-bold mb-2">
+        Session Booked!
+      </h2>
       
-      <div className="border rounded-md p-6 space-y-3">
-        <p className="font-semibold">Add to your calendar</p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button 
-            onClick={handleAddToCalendar} 
-            variant="outline" 
-            className="flex items-center"
-          >
-            <CalendarPlus className="h-4 w-4 mr-2" />
-            Download Calendar File
-          </Button>
-          <Button 
-            onClick={handleAddToGoogleCalendar}
-            variant="outline" 
-            className="flex items-center"
-          >
-            <CalendarPlus className="h-4 w-4 mr-2" />
-            Add to Google Calendar
-          </Button>
-        </div>
-        
-        {addedToCalendar && (
-          <div className="text-green-600 flex items-center justify-center">
-            <Check className="h-4 w-4 mr-2" />
-            Added to calendar
+      <p className="text-muted-foreground mb-6">
+        Your {selectedDuration}-minute session with {tutor.firstName || tutor.name.split(' ')[0]} has been scheduled.
+      </p>
+      
+      <div className="bg-gray-50 rounded-lg p-6 mb-6">
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-medium mb-2">Session Details</h3>
+            <p className="font-medium">{getFormattedDate()}</p>
+            <p>{getFormattedTime()}</p>
+            
+            <div className="mt-2">
+              <Badge className={sessionType === SessionType.VIRTUAL ? 
+                "bg-blue-100 text-blue-800 hover:bg-blue-100" : 
+                "bg-gray-100 text-gray-800 hover:bg-gray-100"
+              }>
+                {sessionType === SessionType.VIRTUAL ? 'Virtual' : 'In-Person'}
+              </Badge>
+            </div>
           </div>
-        )}
+          
+          {selectedCourseId && (
+            <div>
+              <p className="text-sm text-muted-foreground">Course</p>
+              <p>{selectedCourseId}</p>
+            </div>
+          )}
+          
+          {sessionType === SessionType.VIRTUAL && (
+            <div className="text-sm bg-blue-50 p-3 rounded border border-blue-100">
+              <p>A Zoom link for this session has been created and will be sent to your email.</p>
+            </div>
+          )}
+        </div>
       </div>
       
-      <Button onClick={onDone} className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white">
-        Done
-      </Button>
+      <div className="flex flex-col sm:flex-row justify-center gap-4 mb-2">
+        <Button
+          variant="outline"
+          className="flex items-center gap-2"
+          onClick={handleAddToCalendar}
+          disabled={isDownloading}
+        >
+          <Calendar className="h-4 w-4" />
+          {isDownloading ? "Generating..." : "Add to Calendar"}
+        </Button>
+        
+        <Button 
+          onClick={onDone}
+          className="flex items-center gap-2"
+        >
+          Continue
+          <ArrowRight className="h-4 w-4" />
+        </Button>
+      </div>
+      
+      {hasDownloaded && (
+        <p className="text-sm text-muted-foreground mt-2">
+          Calendar file downloaded!
+        </p>
+      )}
     </div>
   );
 }

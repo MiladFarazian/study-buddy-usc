@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tutor } from "@/types/tutor";
 import { BookingSlot } from "@/lib/scheduling/types";
 import { DateSelector } from "./date-selector/DateSelector";
@@ -27,9 +27,9 @@ export function BookingStepSelector({
   const [loading, setLoading] = useState(false);
   
   // Set the tutor in the scheduling context
-  useState(() => {
+  useEffect(() => {
     setTutor(tutor);
-  });
+  }, [tutor, setTutor]);
   
   // Render the current step
   const renderStep = () => {
@@ -50,7 +50,6 @@ export function BookingStepSelector({
       case BookingStep.SELECT_COURSE:
         return (
           <CourseSelector
-            tutorId={tutor.id}
             onBack={() => dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_DURATION })}
             onContinue={() => dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_SESSION_TYPE })}
           />

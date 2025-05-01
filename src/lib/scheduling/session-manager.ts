@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { BookedSession } from "./types/booking";
+import { BookedSession, SessionType } from "./types/booking";
 import { format } from "date-fns";
 import { Session } from "@/types/session";
 
@@ -130,9 +130,14 @@ export async function getUserSessions(
         }
       }
       
+      // Convert session_type string to SessionType enum
+      const sessionType = session.session_type === 'virtual' ? 
+        SessionType.VIRTUAL : SessionType.IN_PERSON;
+      
       processedSessions.push({
         ...session,
-        course: courseDetails
+        course: courseDetails,
+        session_type: sessionType
       });
     }
     
