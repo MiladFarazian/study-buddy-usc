@@ -11,6 +11,7 @@ import { createSessionBooking } from "@/lib/scheduling/booking-utils";
 import { useAuthState } from "@/hooks/useAuthState";
 import { LoginPrompt } from "./booking-modal/LoginPrompt";
 import { CalendarPromptStep } from "./booking-modal/CalendarPromptStep";
+import { SessionType } from "@/contexts/SchedulingContext";
 
 interface BookSessionModalProps {
   isOpen: boolean;
@@ -33,6 +34,7 @@ export function BookSessionModal({
   const [bookedSlot, setBookedSlot] = useState<BookingSlot | null>(null);
   const [selectedDuration, setSelectedDuration] = useState<number>(60);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  const [sessionType, setSessionType] = useState<SessionType>(SessionType.IN_PERSON);
   const [showCalendarPrompt, setShowCalendarPrompt] = useState(false);
   const { toast } = useToast();
   const { user } = useAuthState();
@@ -47,7 +49,11 @@ export function BookSessionModal({
     }
   }, [isOpen, tutor]);
 
-  const handleSelectSlot = async (slot: BookingSlot, duration: number = 60, courseId: string | null = null) => {
+  const handleSelectSlot = async (
+    slot: BookingSlot,
+    duration: number = 60,
+    courseId: string | null = null
+  ) => {
     if (isSubmitting) return;
     
     setIsSubmitting(true);
@@ -82,7 +88,8 @@ export function BookSessionModal({
         startTime.toISOString(),
         endTime.toISOString(),
         null, // No location
-        null // No notes
+        null, // No notes
+        sessionType // Pass the selected session type
       );
       
       if (!session) {
@@ -93,9 +100,11 @@ export function BookSessionModal({
         `for ${courseId}` : 
         '';
       
+      const sessionTypeText = sessionType === SessionType.VIRTUAL ? 'virtual' : 'in-person';
+      
       toast({
         title: "Session booked!",
-        description: `You've successfully booked a ${durationMinutes}-minute session ${courseName} with ${tutor.firstName || tutor.name.split(' ')[0]}.`
+        description: `You've successfully booked a ${durationMinutes}-minute ${sessionTypeText} session ${courseName} with ${tutor.firstName || tutor.name.split(' ')[0]}.`
       });
       
       // Store the booked slot for later use
@@ -147,6 +156,7 @@ export function BookSessionModal({
           selectedSlot={bookedSlot}
           selectedDuration={selectedDuration}
           selectedCourseId={selectedCourseId}
+          sessionType={sessionType}
           onClose={handleClose}
           onDone={handleCalendarDone}
         />

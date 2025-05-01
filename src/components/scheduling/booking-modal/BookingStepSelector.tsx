@@ -1,235 +1,113 @@
-import { useState, useCallback, useEffect } from 'react';
-import { Card } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
+
+import { useState } from "react";
 import { Tutor } from "@/types/tutor";
 import { BookingSlot } from "@/lib/scheduling/types";
-import { useAvailabilityData } from "@/hooks/useAvailabilityData";
-import { DurationSelector } from "./duration/DurationSelector";
 import { DateSelector } from "./date-selector/DateSelector";
-import { format, isSameDay } from 'date-fns';
+import { DurationSelector } from "./duration/DurationSelector";
 import { CourseSelector } from "./course/CourseSelector";
-import { useTutorCourses } from "@/hooks/useTutorCourses";
+import { SessionTypeSelector } from "./session-type/SessionTypeSelector";
+import { BookingStep, useScheduling } from "@/contexts/SchedulingContext";
+import { LoadingState } from "./LoadingState";
+import { SlotSelectionFooter } from "./SlotSelectionFooter";
 
 interface BookingStepSelectorProps {
   tutor: Tutor;
-  onSelectSlot: (slot: BookingSlot, duration?: number, courseId?: string | null) => void;
+  onSelectSlot: (slot: BookingSlot, duration: number, courseId: string | null) => void;
   onClose: () => void;
   disabled?: boolean;
 }
 
-type BookingStep = 'date' | 'time' | 'course' | 'duration' | 'payment';
-
-export function BookingStepSelector({ 
-  tutor, 
-  onSelectSlot, 
-  onClose, 
-  disabled = false 
+export function BookingStepSelector({
+  tutor,
+  onSelectSlot,
+  onClose,
+  disabled = false,
 }: BookingStepSelectorProps) {
-  const [step, setStep] = useState<BookingStep>('date');
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState<BookingSlot | null>(null);
-  const [selectedDuration, setSelectedDuration] = useState<number>(60); // Default: 1 hour
-  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
-  const { toast } = useToast();
+  const { state, dispatch, setTutor } = useScheduling();
+  const [loading, setLoading] = useState(false);
   
-  const hourlyRate = tutor.hourlyRate || 25; // Default to $25/hour if not set
-
-  console.log("[BookingStepSelector] Using tutor ID:", tutor.id);
-  const { courses, loading: coursesLoading } = useTutorCourses(tutor.id);
+  // Set the tutor in the scheduling context
+  useState(() => {
+    setTutor(tutor);
+  });
   
-  useEffect(() => {
-    console.log("[BookingStepSelector] Courses loaded:", courses);
-  }, [courses]);
-  
-  const dateKey = selectedDate ? selectedDate.toISOString() : 'initial';
-  const { 
-    loading, 
-    availableSlots, 
-    hasAvailability, 
-    errorMessage, 
-    getConsecutiveSlots 
-  } = useAvailabilityData(tutor, selectedDate || new Date());
-
-  const handleDateChange = (date: Date) => {
-    setSelectedTimeSlot(null);
-    setSelectedDate(date);
-    setStep('date');
-  };
-  
-  const handleSelectTimeSlot = (slot: BookingSlot) => {
-    console.log("[BookingStepSelector] Selected time slot:", slot);
-    setSelectedTimeSlot(slot);
+  // Render the current step
+  const renderStep = () => {
+    if (loading) {
+      return <LoadingState />;
+    }
     
-    // If there are no courses for this tutor, skip to duration selection
-    if (!courses || courses.length === 0) {
-      setStep('duration');
-    } else {
-      setStep('course');
+    switch (state.bookingStep) {
+      case BookingStep.SELECT_DATE_TIME:
+        return <DateSelector />;
+      case BookingStep.SELECT_DURATION:
+        return (
+          <DurationSelector 
+            onBack={() => dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_DATE_TIME })}
+            onContinue={() => dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_COURSE })}
+          />
+        );
+      case BookingStep.SELECT_COURSE:
+        return (
+          <CourseSelector
+            tutorId={tutor.id}
+            onBack={() => dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_DURATION })}
+            onContinue={() => dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_SESSION_TYPE })}
+          />
+        );
+      case BookingStep.SELECT_SESSION_TYPE:
+        return (
+          <SessionTypeSelector
+            onBack={() => dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_COURSE })}
+            onContinue={handleBookSession}
+          />
+        );
+      default:
+        return <DateSelector />;
     }
   };
-
-  const handleSelectCourse = (courseId: string | null) => {
-    console.log("[BookingStepSelector] Selected course ID:", courseId);
-    setSelectedCourseId(courseId);
-    setStep('duration');
-  };
   
-  const handleDurationSelect = (duration: number) => {
-    setSelectedDuration(duration);
-  };
-  
-  const handleBack = () => {
-    if (step === 'course') {
-      setStep('date');
-    } else if (step === 'duration') {
-      if (courses && courses.length > 0) {
-        setStep('course');
-      } else {
-        setStep('date');
-      }
-    }
-  };
-  
-  const handleContinue = () => {
-    if (step === 'duration' && selectedTimeSlot) {
-      // Create enhanced slot with course ID and duration
-      const finalSlot: BookingSlot = {
-        ...selectedTimeSlot,
-        durationMinutes: selectedDuration,
-        courseId: selectedCourseId // Add course ID to the slot
-      };
-      
-      console.log("[BookingStepSelector] Finalizing booking with:", {
-        slot: finalSlot,
-        duration: selectedDuration,
-        courseId: selectedCourseId
+  // Handle booking session
+  const handleBookSession = () => {
+    setLoading(true);
+    
+    if (state.selectedTimeSlot && state.selectedDuration) {
+      console.log("[BookingStepSelector] Creating session with:", {
+        slot: state.selectedTimeSlot,
+        duration: state.selectedDuration,
+        courseId: state.selectedCourseId,
+        sessionType: state.sessionType
       });
       
-      onSelectSlot(finalSlot, selectedDuration, selectedCourseId);
+      // Pass the booking information to parent component
+      onSelectSlot(
+        state.selectedTimeSlot, 
+        state.selectedDuration, 
+        state.selectedCourseId
+      );
     }
   };
-
-  const calculateCost = (durationMinutes: number): number => {
-    return (hourlyRate / 60) * durationMinutes;
-  };
-
-  const durationOptions = [
-    { minutes: 30, cost: calculateCost(30) },
-    { minutes: 60, cost: calculateCost(60) },
-    { minutes: 90, cost: calculateCost(90) }
-  ];
   
-  const consecutiveSlots = selectedTimeSlot 
-    ? getConsecutiveSlots(selectedTimeSlot, 180)
-    : [];
+  // Render footer for date selection step
+  const renderFooter = () => {
+    if (state.bookingStep === BookingStep.SELECT_DATE_TIME) {
+      return (
+        <SlotSelectionFooter 
+          onClose={onClose} 
+          onContinue={() => dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_DURATION })}
+          disableContinue={!state.selectedTimeSlot || !state.selectedDate}
+          disabled={disabled}
+        />
+      );
+    }
     
-  const hasSlotsForSelectedDate = selectedDate 
-    ? availableSlots.some(slot => {
-        const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
-        return isSameDay(slotDay, selectedDate) && slot.available;
-      })
-    : false;
-
-  if (loading) {
-    return (
-      <Card className="p-6">
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-usc-cardinal"></div>
-          <span className="ml-2">Loading availability...</span>
-        </div>
-      </Card>
-    );
-  }
-
-  if (!hasAvailability) {
-    return (
-      <Card className="p-6">
-        <div className="text-center py-12">
-          <h3 className="text-lg font-medium mb-2">No Availability</h3>
-          <p className="text-muted-foreground mb-6">
-            {errorMessage || "This tutor doesn't have any available slots."}
-          </p>
-          <button
-            className="px-4 py-2 bg-usc-cardinal text-white rounded-md"
-            onClick={onClose}
-          >
-            Close
-          </button>
-        </div>
-      </Card>
-    );
-  }
-
+    return null;
+  };
+  
   return (
-    <div className="min-h-[400px]">
-      {step === 'date' ? (
-        <div className="space-y-6">
-          <DateSelector
-            date={selectedDate}
-            onDateChange={handleDateChange}
-            availableSlots={availableSlots}
-            isLoading={loading}
-          />
-          
-          {selectedDate && (
-            <div className="mt-8">
-              <h3 className="text-xl font-semibold mb-4">Available Time Slots</h3>
-              
-              {hasSlotsForSelectedDate ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {availableSlots
-                    .filter(slot => {
-                      const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
-                      return isSameDay(slotDay, selectedDate) && slot.available;
-                    })
-                    .sort((a, b) => a.start.localeCompare(b.start))
-                    .map((slot, index) => (
-                      <button
-                        key={`${slot.start}-${index}`}
-                        className={`
-                          p-3 rounded-md border text-center transition-colors
-                          hover:border-usc-cardinal hover:bg-red-50/50
-                          ${selectedTimeSlot && selectedTimeSlot.start === slot.start ? 
-                            'border-usc-cardinal bg-red-50' : ''}
-                        `}
-                        onClick={() => handleSelectTimeSlot(slot)}
-                        disabled={disabled}
-                      >
-                        {slot.start}
-                      </button>
-                    ))}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/30 rounded-md">
-                  <p className="text-muted-foreground">No available time slots on {format(selectedDate, 'EEEE, MMMM d')}</p>
-                  <p className="text-muted-foreground text-sm mt-2">Please select another date from the calendar.</p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      ) : step === 'course' ? (
-        <CourseSelector
-          courses={courses}
-          selectedCourseId={selectedCourseId}
-          onSelectCourse={handleSelectCourse}
-          onBack={handleBack}
-          loading={coursesLoading}
-        />
-      ) : step === 'duration' ? (
-        <DurationSelector
-          selectedSlot={selectedTimeSlot!}
-          durationOptions={durationOptions}
-          selectedDuration={selectedDuration}
-          onSelectDuration={handleDurationSelect}
-          onBack={handleBack}
-          onContinue={handleContinue}
-          hourlyRate={hourlyRate}
-          consecutiveSlots={consecutiveSlots}
-          selectedCourseId={selectedCourseId}
-          courses={courses}
-        />
-      ) : null}
+    <div>
+      {renderStep()}
+      {renderFooter()}
     </div>
   );
 }

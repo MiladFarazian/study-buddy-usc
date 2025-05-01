@@ -1,4 +1,6 @@
 
+import { SessionType } from "@/lib/scheduling/types/booking";
+
 export interface Session {
   id: string;
   course_id: string | null;
@@ -12,6 +14,9 @@ export interface Session {
   payment_status: string;
   created_at: string;
   updated_at: string;
+  session_type?: SessionType;
+  zoom_meeting_id?: string | null;
+  zoom_join_url?: string | null;
   tutor?: {
     id: string;
     first_name: string | null;

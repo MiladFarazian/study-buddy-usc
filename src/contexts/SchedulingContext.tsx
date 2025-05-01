@@ -4,12 +4,20 @@ import { Tutor } from "@/types/tutor";
 import { BookingSlot } from "@/lib/scheduling/types";
 import { toast } from "sonner";
 
+// Define the session type enum
+export enum SessionType {
+  IN_PERSON = 'in_person',
+  VIRTUAL = 'virtual'
+}
+
 // Define the booking steps enum
 export enum BookingStep {
   SELECT_DATE_TIME = 0,
   SELECT_DURATION = 1,
-  FILL_FORM = 2,
-  CONFIRMATION = 3,
+  SELECT_COURSE = 2,
+  SELECT_SESSION_TYPE = 3,
+  FILL_FORM = 4,
+  CONFIRMATION = 5,
 }
 
 // Define the scheduling state
@@ -21,7 +29,9 @@ interface SchedulingState {
   notes: string;
   studentName: string;
   studentEmail: string;
-  selectedCourseId: string | null; // Course number as string or null
+  selectedCourseId: string | null;
+  sessionType: SessionType;
+  location: string | null;
 }
 
 // Define the scheduling actions
@@ -32,7 +42,9 @@ type SchedulingAction =
   | { type: 'SET_STEP'; payload: BookingStep }
   | { type: 'SET_NOTES'; payload: string }
   | { type: 'SET_STUDENT_INFO'; payload: { name: string; email: string } }
-  | { type: 'SET_COURSE'; payload: string | null } // Course number as string or null
+  | { type: 'SET_COURSE'; payload: string | null }
+  | { type: 'SET_SESSION_TYPE'; payload: SessionType }
+  | { type: 'SET_LOCATION'; payload: string | null }
   | { type: 'RESET' };
 
 // Initial state
@@ -44,7 +56,9 @@ const initialState: SchedulingState = {
   notes: '',
   studentName: '',
   studentEmail: '',
-  selectedCourseId: null, // Default to null
+  selectedCourseId: null,
+  sessionType: SessionType.IN_PERSON,
+  location: null,
 };
 
 // Reducer function
@@ -67,7 +81,11 @@ function schedulingReducer(state: SchedulingState, action: SchedulingAction): Sc
         studentEmail: action.payload.email 
       };
     case 'SET_COURSE':
-      return { ...state, selectedCourseId: action.payload }; // Handle course selection
+      return { ...state, selectedCourseId: action.payload };
+    case 'SET_SESSION_TYPE':
+      return { ...state, sessionType: action.payload };
+    case 'SET_LOCATION':
+      return { ...state, location: action.payload };
     case 'RESET':
       return { 
         ...initialState,
@@ -87,7 +105,9 @@ interface SchedulingContextType {
   calculatePrice: (durationMinutes: number) => number;
   continueToNextStep: () => void;
   goToPreviousStep: () => void;
-  setCourse: (courseId: string | null) => void; // Course number as string or null
+  setCourse: (courseId: string | null) => void;
+  setSessionType: (type: SessionType) => void;
+  setLocation: (location: string | null) => void;
 }
 
 const SchedulingContext = createContext<SchedulingContextType | undefined>(undefined);
@@ -115,6 +135,18 @@ export const SchedulingProvider: React.FC<{ children: ReactNode }> = ({ children
     dispatch({ type: 'SET_COURSE', payload: courseId });
   }, [dispatch]);
 
+  // Helper function to set the session type
+  const setSessionType = useCallback((type: SessionType) => {
+    console.log("[SchedulingContext] Setting session type:", type);
+    dispatch({ type: 'SET_SESSION_TYPE', payload: type });
+  }, [dispatch]);
+
+  // Helper function to set the location
+  const setLocation = useCallback((location: string | null) => {
+    console.log("[SchedulingContext] Setting location:", location);
+    dispatch({ type: 'SET_LOCATION', payload: location });
+  }, [dispatch]);
+
   const continueToNextStep = useCallback(() => {
     // Validation before moving to the next step
     switch (state.bookingStep) {
@@ -129,6 +161,12 @@ export const SchedulingProvider: React.FC<{ children: ReactNode }> = ({ children
           toast.error("Please select a session duration");
           return;
         }
+        break;
+      case BookingStep.SELECT_COURSE:
+        // Course is optional, so no validation needed
+        break;
+      case BookingStep.SELECT_SESSION_TYPE:
+        // Session type is required but always has a default value
         break;
       case BookingStep.FILL_FORM:
         if (!state.studentName || !state.studentEmail) {
@@ -165,7 +203,9 @@ export const SchedulingProvider: React.FC<{ children: ReactNode }> = ({ children
       calculatePrice,
       continueToNextStep,
       goToPreviousStep,
-      setCourse // Add the setCourse function to the context
+      setCourse,
+      setSessionType,
+      setLocation
     }}>
       {children}
     </SchedulingContext.Provider>

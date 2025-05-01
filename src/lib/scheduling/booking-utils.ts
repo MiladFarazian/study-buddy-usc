@@ -1,8 +1,43 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { SessionCreationParams, SessionDetails } from "./types/booking";
+import { SessionCreationParams, SessionDetails, SessionType } from "./types/booking";
 import { sendSessionBookingNotification } from "@/lib/notification-utils";
 import { format } from "date-fns";
+
+/**
+ * Create Zoom meeting for a virtual session
+ */
+async function createZoomMeeting(
+  tutorId: string,
+  studentName: string,
+  courseName: string,
+  startTime: string,
+  endTime: string
+): Promise<{ id: string; join_url: string } | null> {
+  try {
+    // Call Supabase Edge Function to create Zoom meeting
+    const { data, error } = await supabase.functions.invoke('create-zoom-meeting', {
+      body: {
+        tutor_id: tutorId,
+        student_name: studentName,
+        course_name: courseName,
+        start_time: startTime,
+        end_time: endTime
+      }
+    });
+    
+    if (error) {
+      console.error("Error creating Zoom meeting:", error);
+      return null;
+    }
+    
+    console.log("Zoom meeting created:", data);
+    return data;
+  } catch (err) {
+    console.error("Failed to create Zoom meeting:", err);
+    return null;
+  }
+}
 
 /**
  * Create a new session booking
@@ -14,7 +49,8 @@ export async function createSessionBooking(
   startTime: string,
   endTime: string,
   location: string | null,
-  notes: string | null
+  notes: string | null,
+  sessionType: SessionType = SessionType.IN_PERSON
 ): Promise<SessionDetails | null> {
   try {
     console.log("[createSessionBooking] Creating session with params:", {
@@ -22,8 +58,45 @@ export async function createSessionBooking(
       tutor_id: tutorId,
       course_id: courseId, // This is a course number string or null
       start_time: startTime,
-      end_time: endTime
+      end_time: endTime,
+      location: location,
+      session_type: sessionType
     });
+    
+    // If it's a virtual session, create a Zoom meeting
+    let zoomMeetingId = null;
+    let zoomJoinUrl = null;
+    
+    if (sessionType === SessionType.VIRTUAL) {
+      // Get student information
+      const { data: studentData } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', studentId)
+        .single();
+        
+      // Get course information (if provided)
+      const courseName = courseId ? 
+        (await supabase.from('tutor_courses').select('course_title').eq('course_number', courseId).single())?.data?.course_title || courseId :
+        "Tutoring Session";
+        
+      const studentName = studentData ? 
+        `${studentData.first_name || ''} ${studentData.last_name || ''}`.trim() : 
+        "Student";
+        
+      const zoomMeeting = await createZoomMeeting(
+        tutorId,
+        studentName,
+        courseName,
+        startTime,
+        endTime
+      );
+      
+      if (zoomMeeting) {
+        zoomMeetingId = zoomMeeting.id;
+        zoomJoinUrl = zoomMeeting.join_url;
+      }
+    }
     
     // Create the session record - ensuring courseId is stored as a string value
     const { data, error } = await supabase
@@ -38,6 +111,9 @@ export async function createSessionBooking(
         notes: notes,
         status: 'pending' as const,
         payment_status: 'unpaid' as const,
+        session_type: sessionType,
+        zoom_meeting_id: zoomMeetingId,
+        zoom_join_url: zoomJoinUrl,
         created_at: new Date().toISOString()
       })
       .select()
@@ -86,7 +162,9 @@ export async function createSessionBooking(
           startTime: formattedStartTime,
           endTime: formattedEndTime,
           courseName,
-          location
+          location,
+          sessionType,
+          zoomJoinUrl
         });
         console.log("[createSessionBooking] Booking notification sent to tutor");
       } catch (notifError) {
@@ -105,7 +183,10 @@ export async function createSessionBooking(
       location: data.location || undefined,
       notes: data.notes || undefined,
       status: data.status as 'pending' | 'confirmed' | 'cancelled' | 'completed',
-      paymentStatus: data.payment_status as 'unpaid' | 'paid' | 'refunded'
+      paymentStatus: data.payment_status as 'unpaid' | 'paid' | 'refunded',
+      sessionType: data.session_type,
+      zoomMeetingId: data.zoom_meeting_id || undefined,
+      zoomJoinUrl: data.zoom_join_url || undefined
     };
   } catch (err) {
     console.error("Failed to create session booking:", err);

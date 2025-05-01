@@ -1,6 +1,6 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { NotificationPreference } from "@/integrations/supabase/types-extension";
+import { SessionType } from "@/lib/scheduling/types/booking";
 
 export type NotificationType = 'session_reminder' | 'new_message' | 'resource_update' | 'platform_update' | 'session_booked';
 
@@ -160,54 +160,101 @@ export async function sendNotificationEmail({
 }
 
 // Send session booking notification to tutor
-export async function sendSessionBookingNotification({
-  tutorId,
-  tutorEmail,
-  tutorName,
-  studentName,
-  sessionId,
-  sessionDate,
-  startTime,
-  endTime,
-  courseName,
-  location
-}: {
-  tutorId: string;
-  tutorEmail: string;
-  tutorName: string;
-  studentName: string;
-  sessionId: string;
-  sessionDate: string;
-  startTime: string;
-  endTime: string;
-  courseName?: string;
-  location?: string;
-}): Promise<{success: boolean, error?: string}> {
-  // Check if tutor has enabled booking notifications
-  const preferences = await getUserNotificationPreferences(tutorId);
-  
-  if (!preferences.bookingNotifications) {
-    console.log("Booking notifications disabled for tutor:", tutorId);
-    return { success: true };
-  }
-  
-  return sendNotificationEmail({
-    recipientEmail: tutorEmail,
-    recipientName: tutorName,
-    subject: "New Tutoring Session Booked",
-    notificationType: 'session_booked',
-    data: {
-      bookingInfo: {
-        sessionId,
-        studentName,
-        date: sessionDate,
-        startTime,
-        endTime,
-        courseName: courseName || 'General tutoring',
-        location: location || 'Not specified'
+export async function sendSessionBookingNotification(params: SessionBookingNotificationParams): Promise<boolean> {
+  try {
+    // Check if the tutor has notifications enabled
+    const { data: preferences } = await supabase
+      .from('notification_preferences')
+      .select('booking_notifications')
+      .eq('user_id', params.tutorId)
+      .single();
+    
+    const bookingNotificationsEnabled = preferences?.booking_notifications !== false;
+    
+    if (!bookingNotificationsEnabled) {
+      console.log(`Tutor ${params.tutorId} has booking notifications disabled`);
+      return false;
+    }
+    
+    // Prepare location text based on session type
+    let locationText = "Not specified";
+    if (params.sessionType === SessionType.VIRTUAL) {
+      locationText = "Virtual (Zoom)";
+    } else if (params.location) {
+      locationText = params.location;
+    }
+    
+    // Create notification entry in database
+    const { error: notificationError } = await supabase
+      .from('notifications')
+      .insert({
+        user_id: params.tutorId,
+        type: 'session_booked',
+        title: 'New Tutoring Session Booked',
+        message: `${params.studentName} has booked a session with you on ${params.sessionDate} from ${params.startTime} to ${params.endTime} for ${params.courseName}.`,
+        metadata: {
+          session_id: params.sessionId,
+          session_date: params.sessionDate,
+          start_time: params.startTime,
+          end_time: params.endTime,
+          course_name: params.courseName,
+          student_name: params.studentName,
+          location: locationText,
+          session_type: params.sessionType,
+          zoom_link: params.zoomJoinUrl
+        }
+      });
+    
+    if (notificationError) {
+      console.error("Error creating notification:", notificationError);
+    }
+    
+    // Send email notification if email is available
+    if (params.tutorEmail) {
+      // Build email content
+      let sessionDetails = `
+        <p><strong>Date:</strong> ${params.sessionDate}</p>
+        <p><strong>Time:</strong> ${params.startTime} - ${params.endTime}</p>
+        <p><strong>Course:</strong> ${params.courseName}</p>
+        <p><strong>Student:</strong> ${params.studentName}</p>
+        <p><strong>Session Type:</strong> ${params.sessionType === SessionType.VIRTUAL ? 'Virtual (Zoom)' : 'In Person'}</p>
+      `;
+      
+      // Add location or Zoom link based on session type
+      if (params.sessionType === SessionType.VIRTUAL && params.zoomJoinUrl) {
+        sessionDetails += `<p><strong>Zoom Link:</strong> <a href="${params.zoomJoinUrl}">${params.zoomJoinUrl}</a></p>`;
+      } else if (params.location) {
+        sessionDetails += `<p><strong>Location:</strong> ${params.location}</p>`;
+      }
+      
+      // Call the edge function to send the email
+      const { error } = await supabase.functions.invoke('send-notification-email', {
+        body: {
+          to: params.tutorEmail,
+          subject: `New Session Booked with ${params.studentName}`,
+          tutorName: params.tutorName,
+          type: 'session_booked',
+          content: {
+            greeting: `Hi ${params.tutorName},`,
+            message: `${params.studentName} has booked a new tutoring session with you.`,
+            sessionDetails: sessionDetails,
+            ctaText: 'View Session Details',
+            ctaLink: `${window.location.origin}/schedule`
+          }
+        }
+      });
+      
+      if (error) {
+        console.error("Error sending booking notification email:", error);
+        return false;
       }
     }
-  });
+    
+    return true;
+  } catch (error) {
+    console.error("Failed to send session booking notification:", error);
+    return false;
+  }
 }
 
 // Send session reminder notification

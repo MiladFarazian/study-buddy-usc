@@ -1,4 +1,3 @@
-
 import { WeeklyAvailability, AvailabilitySlot } from './availability';
 
 // BookingSlot represents a specific time slot for booking
@@ -27,15 +26,24 @@ export interface BookedSession {
   studentId: string;
 }
 
+// Add session type enum
+export enum SessionType {
+  IN_PERSON = 'in_person',
+  VIRTUAL = 'virtual'
+}
+
 // Session creation parameters
 export interface SessionCreationParams {
   studentId: string;
   tutorId: string;
-  courseId: string | null; // Course number as string or null
+  courseId: string | null;
   startTime: string;
   endTime: string;
   location: string | null;
   notes: string | null;
+  sessionType?: SessionType;
+  zoomMeetingId?: string;
+  zoomJoinUrl?: string;
 }
 
 // Session details response
@@ -43,13 +51,16 @@ export interface SessionDetails {
   id: string;
   studentId: string;
   tutorId: string;
-  courseId?: string; // Course number as string
+  courseId?: string;
   startTime: string;
   endTime: string;
   location?: string;
   notes?: string;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
-  paymentStatus?: 'unpaid' | 'paid' | 'refunded';
+  paymentStatus: 'unpaid' | 'paid' | 'refunded';
+  sessionType?: SessionType;
+  zoomMeetingId?: string;
+  zoomJoinUrl?: string;
 }
 
 // Re-export Session type from the existing session.ts type file
