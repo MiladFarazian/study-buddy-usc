@@ -1,49 +1,35 @@
 
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { memo } from "react";
 
 interface SlotSelectionFooterProps {
-  onProceed: () => void;
-  onCancel: () => void;
-  isLoading: boolean;
-  isDisabled: boolean;
+  disableContinue: boolean;
+  disabled: boolean;
+  onClose: () => void;
+  onContinue: () => void;
 }
 
-export const SlotSelectionFooter = memo(({
-  onProceed,
-  onCancel,
-  isLoading,
-  isDisabled
-}: SlotSelectionFooterProps) => {
+export function SlotSelectionFooter({
+  disableContinue,
+  disabled,
+  onClose,
+  onContinue
+}: SlotSelectionFooterProps) {
   return (
-    <div className="flex justify-between items-center pt-4 mt-4 border-t w-full">
-      <Button
-        variant="outline"
-        onClick={onCancel}
-        disabled={isLoading}
-        className="min-w-20"
+    <div className="flex items-center justify-between mt-6">
+      <Button 
+        variant="outline" 
+        onClick={onClose} 
+        disabled={disabled}
       >
         Cancel
       </Button>
-      
-      <Button
-        onClick={onProceed}
-        disabled={isDisabled || isLoading}
-        className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white min-w-28"
+      <Button 
+        onClick={onContinue} 
+        disabled={disableContinue || disabled}
+        className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
       >
-        {isLoading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Processing
-          </>
-        ) : (
-          "Book Session"
-        )}
+        Continue
       </Button>
     </div>
   );
-});
-
-// Add display name for debugging
-SlotSelectionFooter.displayName = "SlotSelectionFooter";
+}

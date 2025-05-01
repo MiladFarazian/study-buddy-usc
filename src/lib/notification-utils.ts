@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { NotificationPreference } from "@/integrations/supabase/types-extension";
 import { SessionType } from "@/lib/scheduling/types/booking";
@@ -10,6 +11,22 @@ export interface NotificationPreferences {
   resourceUpdates: boolean;
   platformUpdates: boolean;
   bookingNotifications: boolean; // New preference for booking notifications
+}
+
+// Session booking notification parameters interface
+export interface SessionBookingNotificationParams {
+  tutorId: string;
+  tutorEmail: string;
+  tutorName: string;
+  studentName: string;
+  sessionId: string;
+  sessionDate: string;
+  startTime: string;
+  endTime: string;
+  courseName: string;
+  location?: string | null;
+  sessionType: SessionType;
+  zoomJoinUrl?: string | null;
 }
 
 // Get user notification preferences from database

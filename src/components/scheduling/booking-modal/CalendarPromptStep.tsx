@@ -1,11 +1,13 @@
 
 import { Button } from "@/components/ui/button";
-import { Tutor } from "@/types/tutor";
-import { BookingSlot } from "@/lib/scheduling/types";
+import { Card } from "@/components/ui/card";
 import { format, parseISO } from "date-fns";
+import { BookingSlot } from "@/lib/scheduling/types";
+import { Tutor } from "@/types/tutor";
+import { ICalEventData } from "@/lib/calendar/icsGenerator";
 import { CalendarPlus, Check } from "lucide-react";
 import { useState } from "react";
-import { downloadICS } from "@/lib/calendar/icsGenerator";
+import { downloadICSFile } from "@/lib/calendar/icsGenerator";
 import { addToGoogleCalendar } from "@/lib/calendar/googleCalendarUtils";
 import { SessionType } from "@/contexts/SchedulingContext";
 
@@ -14,7 +16,7 @@ interface CalendarPromptStepProps {
   selectedSlot: BookingSlot;
   selectedDuration: number;
   selectedCourseId: string | null;
-  sessionType?: SessionType;
+  sessionType: SessionType;
   onClose: () => void;
   onDone: () => void;
 }
@@ -24,114 +26,110 @@ export function CalendarPromptStep({
   selectedSlot,
   selectedDuration,
   selectedCourseId,
-  sessionType = SessionType.IN_PERSON,
+  sessionType,
   onClose,
   onDone
 }: CalendarPromptStepProps) {
-  const [addingToCalendar, setAddingToCalendar] = useState(false);
+  const [addedToCalendar, setAddedToCalendar] = useState(false);
   
-  // Calculate the event times
-  const startDate = new Date(selectedSlot.day);
-  const [hours, minutes] = selectedSlot.start.split(':').map(Number);
-  startDate.setHours(hours, minutes, 0, 0);
+  // Format the date and time for display
+  const day = selectedSlot.day instanceof Date ? selectedSlot.day : new Date(selectedSlot.day);
+  const startHour = selectedSlot.start.split(':')[0];
+  const startMinute = selectedSlot.start.split(':')[1];
+  
+  const startDate = new Date(day);
+  startDate.setHours(parseInt(startHour, 10), parseInt(startMinute, 10), 0, 0);
   
   const endDate = new Date(startDate);
-  endDate.setMinutes(startDate.getMinutes() + selectedDuration);
+  endDate.setMinutes(endDate.getMinutes() + selectedDuration);
   
-  // Format the date and times for display
-  const dateString = format(startDate, 'EEEE, MMMM d, yyyy');
-  const timeString = `${format(startDate, 'h:mm a')} - ${format(endDate, 'h:mm a')}`;
-  
-  // Course info
-  const courseText = selectedCourseId ? ` for ${selectedCourseId}` : '';
-  
-  // Session type text
-  const sessionTypeText = sessionType === SessionType.VIRTUAL ? 'Virtual' : 'In-person';
-  
-  // Event title and description for calendar
-  const eventTitle = `Tutoring with ${tutor.name}${courseText}`;
-  const eventDescription = `${sessionTypeText} tutoring session with ${tutor.name}${courseText}. Duration: ${selectedDuration} minutes.`;
-  
-  const handleAddToCalendar = (type: 'google' | 'ics') => {
-    setAddingToCalendar(true);
+  const sessionTypeText = sessionType === SessionType.VIRTUAL ? 'Virtual Session (Zoom)' : 'In-Person Session';
+  const courseName = selectedCourseId ? `${selectedCourseId}` : 'General Tutoring';
+
+  // Function to add to calendar
+  const handleAddToCalendar = () => {
+    const eventData: ICalEventData = {
+      title: `Tutoring: ${courseName} with ${tutor.name}`,
+      description: `${sessionTypeText} with ${tutor.name} for ${courseName}.${sessionType === SessionType.VIRTUAL ? '\n\nThis is a virtual session. A Zoom link will be provided.' : ''}`,
+      location: sessionType === SessionType.VIRTUAL ? 'Zoom' : 'USC Campus',
+      startDate: startDate,
+      endDate: endDate
+    };
     
-    try {
-      if (type === 'google') {
-        addToGoogleCalendar({
-          title: eventTitle,
-          description: eventDescription,
-          startTime: startDate.toISOString(),
-          endTime: endDate.toISOString(),
-          location: sessionType === SessionType.VIRTUAL ? 'Virtual (Zoom)' : 'USC Campus'
-        });
-      } else {
-        downloadICS({
-          title: eventTitle,
-          description: eventDescription,
-          startTime: startDate.toISOString(),
-          endTime: endDate.toISOString(),
-          location: sessionType === SessionType.VIRTUAL ? 'Virtual (Zoom)' : 'USC Campus'
-        });
-      }
-    } catch (error) {
-      console.error('Error adding to calendar:', error);
-    } finally {
-      setAddingToCalendar(false);
-    }
+    downloadICSFile(eventData);
+    setAddedToCalendar(true);
+  };
+  
+  // Function to add to Google Calendar
+  const handleAddToGoogleCalendar = () => {
+    const eventData = {
+      title: `Tutoring: ${courseName} with ${tutor.name}`,
+      description: `${sessionTypeText} with ${tutor.name} for ${courseName}.${sessionType === SessionType.VIRTUAL ? '\n\nThis is a virtual session. A Zoom link will be provided.' : ''}`,
+      location: sessionType === SessionType.VIRTUAL ? 'Zoom' : 'USC Campus',
+      startDate: startDate,
+      endDate: endDate
+    };
+    
+    addToGoogleCalendar(eventData);
+    setAddedToCalendar(true);
   };
   
   return (
-    <div className="text-center">
-      <div className="mx-auto w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
-        <Check className="h-6 w-6 text-green-600" />
-      </div>
-      
-      <h3 className="text-lg font-medium mb-2">Session Successfully Booked!</h3>
-      
-      <div className="bg-gray-50 rounded-lg p-4 mb-4 text-left">
-        <p className="font-medium">Session Details:</p>
-        <p className="text-sm text-gray-600 mt-1"><strong>Date:</strong> {dateString}</p>
-        <p className="text-sm text-gray-600"><strong>Time:</strong> {timeString}</p>
-        {selectedCourseId && (
-          <p className="text-sm text-gray-600"><strong>Course:</strong> {selectedCourseId}</p>
-        )}
-        <p className="text-sm text-gray-600">
-          <strong>Session Type:</strong> {sessionTypeText}
+    <div className="text-center space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold">Session Booked!</h2>
+        <p className="text-gray-500 mt-2">
+          Your session has been scheduled successfully.
         </p>
-        <p className="text-sm text-gray-600"><strong>Tutor:</strong> {tutor.name}</p>
       </div>
       
-      <p className="text-sm text-gray-500 mb-6">
-        Would you like to add this session to your calendar?
-      </p>
+      <Card className="p-6 bg-gray-50 space-y-3">
+        <div>
+          <p className="font-semibold">{courseName}</p>
+          <p>{sessionTypeText}</p>
+        </div>
+        <div>
+          <p className="font-semibold">{format(startDate, 'EEEE, MMMM d, yyyy')}</p>
+          <p>{format(startDate, 'h:mm a')} - {format(endDate, 'h:mm a')}</p>
+        </div>
+        <div>
+          <p className="font-semibold">With {tutor.name}</p>
+          <p className="text-sm text-gray-500">${tutor.hourlyRate ? ((tutor.hourlyRate / 60) * selectedDuration).toFixed(2) : "25.00"}</p>
+        </div>
+      </Card>
       
-      <div className="flex flex-col sm:flex-row gap-3 justify-center mb-4">
-        <Button
-          variant="outline"
-          className="flex items-center justify-center"
-          onClick={() => handleAddToCalendar('google')}
-          disabled={addingToCalendar}
-        >
-          <CalendarPlus className="mr-2 h-4 w-4" />
-          Add to Google Calendar
-        </Button>
+      <div className="border rounded-md p-6 space-y-3">
+        <p className="font-semibold">Add to your calendar</p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Button 
+            onClick={handleAddToCalendar} 
+            variant="outline" 
+            className="flex items-center"
+          >
+            <CalendarPlus className="h-4 w-4 mr-2" />
+            Download Calendar File
+          </Button>
+          <Button 
+            onClick={handleAddToGoogleCalendar}
+            variant="outline" 
+            className="flex items-center"
+          >
+            <CalendarPlus className="h-4 w-4 mr-2" />
+            Add to Google Calendar
+          </Button>
+        </div>
         
-        <Button
-          variant="outline"
-          className="flex items-center justify-center"
-          onClick={() => handleAddToCalendar('ics')}
-          disabled={addingToCalendar}
-        >
-          <CalendarPlus className="mr-2 h-4 w-4" />
-          Download .ics File
-        </Button>
+        {addedToCalendar && (
+          <div className="text-green-600 flex items-center justify-center">
+            <Check className="h-4 w-4 mr-2" />
+            Added to calendar
+          </div>
+        )}
       </div>
       
-      <div className="mt-6">
-        <Button onClick={onDone} className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white">
-          Done
-        </Button>
-      </div>
+      <Button onClick={onDone} className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white">
+        Done
+      </Button>
     </div>
   );
 }

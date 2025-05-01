@@ -513,11 +513,14 @@ export type Database = {
           location: string | null
           notes: string | null
           payment_status: string | null
+          session_type: string | null
           start_time: string
           status: string
           student_id: string
           tutor_id: string
           updated_at: string
+          zoom_join_url: string | null
+          zoom_meeting_id: string | null
         }
         Insert: {
           course_id?: string | null
@@ -527,11 +530,14 @@ export type Database = {
           location?: string | null
           notes?: string | null
           payment_status?: string | null
+          session_type?: string | null
           start_time: string
           status?: string
           student_id: string
           tutor_id: string
           updated_at?: string
+          zoom_join_url?: string | null
+          zoom_meeting_id?: string | null
         }
         Update: {
           course_id?: string | null
@@ -541,11 +547,14 @@ export type Database = {
           location?: string | null
           notes?: string | null
           payment_status?: string | null
+          session_type?: string | null
           start_time?: string
           status?: string
           student_id?: string
           tutor_id?: string
           updated_at?: string
+          zoom_join_url?: string | null
+          zoom_meeting_id?: string | null
         }
         Relationships: [
           {

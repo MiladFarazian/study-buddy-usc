@@ -1,3 +1,4 @@
+
 import { WeeklyAvailability, AvailabilitySlot } from './availability';
 
 // BookingSlot represents a specific time slot for booking

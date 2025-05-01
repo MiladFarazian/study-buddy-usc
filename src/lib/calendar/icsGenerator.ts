@@ -61,3 +61,6 @@ export function downloadICSFile(event: ICalEventData, filename = 'tutoring-sessi
   link.click();
   document.body.removeChild(link);
 }
+
+// Export an alias for backward compatibility
+export const downloadICS = downloadICSFile;

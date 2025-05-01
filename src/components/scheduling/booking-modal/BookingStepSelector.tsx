@@ -34,7 +34,7 @@ export function BookingStepSelector({
   // Render the current step
   const renderStep = () => {
     if (loading) {
-      return <LoadingState />;
+      return <LoadingState message="Loading..." />;
     }
     
     switch (state.bookingStep) {
