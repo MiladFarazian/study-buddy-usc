@@ -111,7 +111,7 @@ export async function createSessionBooking(
         notes: notes,
         status: 'pending' as const,
         payment_status: 'unpaid' as const,
-        session_type: sessionType,
+        session_type: sessionType as string,
         zoom_meeting_id: zoomMeetingId,
         zoom_join_url: zoomJoinUrl,
         created_at: new Date().toISOString()
@@ -184,7 +184,7 @@ export async function createSessionBooking(
       notes: data.notes || undefined,
       status: data.status as 'pending' | 'confirmed' | 'cancelled' | 'completed',
       paymentStatus: data.payment_status as 'unpaid' | 'paid' | 'refunded',
-      sessionType: data.session_type,
+      sessionType: data.session_type as SessionType,
       zoomMeetingId: data.zoom_meeting_id || undefined,
       zoomJoinUrl: data.zoom_join_url || undefined
     };

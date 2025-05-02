@@ -6,9 +6,12 @@ import { DateSelector } from "./date-selector/DateSelector";
 import { DurationSelector } from "./duration/DurationSelector";
 import { CourseSelector } from "./course/CourseSelector";
 import { SessionTypeSelector } from "./session-type/SessionTypeSelector";
-import { BookingStep, useScheduling } from "@/contexts/SchedulingContext";
+import { BookingStep, useScheduling, SessionType } from "@/contexts/SchedulingContext";
 import { LoadingState } from "./LoadingState";
 import { SlotSelectionFooter } from "./SlotSelectionFooter";
+import { useAvailabilityData } from "@/hooks/useAvailabilityData";
+import { startOfDay } from "date-fns";
+import { useTutorCourses } from "@/hooks/useTutorCourses";
 
 interface BookingStepSelectorProps {
   tutor: Tutor;
@@ -26,10 +29,26 @@ export function BookingStepSelector({
   const { state, dispatch, setTutor } = useScheduling();
   const [loading, setLoading] = useState(false);
   
+  // Get tutor courses for the CourseSelector
+  const { courses, isLoading: coursesLoading } = useTutorCourses(tutor.id);
+  
+  // Get availability data for date selection
+  const today = startOfDay(new Date());
+  const { availableSlots, loading: availabilityLoading } = 
+    useAvailabilityData(tutor, today);
+  
   // Set the tutor in the scheduling context
   useEffect(() => {
     setTutor(tutor);
   }, [tutor, setTutor]);
+  
+  // Calculate duration options based on tutor's rate
+  const durationOptions = [
+    { minutes: 30, cost: (tutor.hourlyRate || 25) / 2 },
+    { minutes: 60, cost: tutor.hourlyRate || 25 },
+    { minutes: 90, cost: (tutor.hourlyRate || 25) * 1.5 },
+    { minutes: 120, cost: (tutor.hourlyRate || 25) * 2 }
+  ];
   
   // Render the current step
   const renderStep = () => {
@@ -39,19 +58,35 @@ export function BookingStepSelector({
     
     switch (state.bookingStep) {
       case BookingStep.SELECT_DATE_TIME:
-        return <DateSelector />;
+        return (
+          <DateSelector 
+            date={state.selectedDate} 
+            onDateChange={(date) => dispatch({ type: 'SELECT_DATE', payload: date })}
+            availableSlots={availableSlots}
+            isLoading={availabilityLoading}
+          />
+        );
       case BookingStep.SELECT_DURATION:
         return (
           <DurationSelector 
+            selectedSlot={state.selectedTimeSlot!}
+            durationOptions={durationOptions}
+            selectedDuration={state.selectedDuration}
+            onSelectDuration={(duration) => dispatch({ type: 'SET_DURATION', payload: duration })}
             onBack={() => dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_DATE_TIME })}
             onContinue={() => dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_COURSE })}
+            hourlyRate={tutor.hourlyRate || 25}
+            consecutiveSlots={[]}  // We'd need to compute this from availableSlots
           />
         );
       case BookingStep.SELECT_COURSE:
         return (
           <CourseSelector
+            courses={courses || []}
+            selectedCourseId={state.selectedCourseId}
+            onSelectCourse={(courseId) => dispatch({ type: 'SET_COURSE', payload: courseId })}
             onBack={() => dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_DURATION })}
-            onContinue={() => dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_SESSION_TYPE })}
+            loading={coursesLoading}
           />
         );
       case BookingStep.SELECT_SESSION_TYPE:
@@ -62,7 +97,14 @@ export function BookingStepSelector({
           />
         );
       default:
-        return <DateSelector />;
+        return (
+          <DateSelector 
+            date={state.selectedDate} 
+            onDateChange={(date) => dispatch({ type: 'SELECT_DATE', payload: date })}
+            availableSlots={availableSlots}
+            isLoading={availabilityLoading}
+          />
+        );
     }
   };
   

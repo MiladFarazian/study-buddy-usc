@@ -1,13 +1,13 @@
 
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BookingSlot } from "@/lib/scheduling/types";
 import { useScheduling } from '@/contexts/SchedulingContext';
+import { DateSelector } from "@/components/scheduling/booking-modal/date-selector/DateSelector";
 import { TimeSelector } from "@/lib/scheduling/ui/TimeSelector";
 
 interface DateSelectionStepProps {
@@ -84,13 +84,34 @@ export function DateSelectionStep({ availableSlots, isLoading }: DateSelectionSt
       <h2 className="text-2xl font-bold">Select Date & Time</h2>
       
       <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-1">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Date</label>
-            </div>
+        <DateSelector 
+          date={selectedDate} 
+          onDateChange={(date) => dispatch({ type: 'SELECT_DATE', payload: date })}
+          availableSlots={availableSlots}
+          isLoading={isLoading}
+        />
+        
+        {selectedDate && !isLoading && (
+          <div className="mt-6">
+            <h3 className="text-lg font-medium mb-3">Available Times</h3>
+            <TimeSelector
+              availableTimes={getTimeSlots()}
+              selectedTime={selectedTimeSlot?.start}
+              onSelectTime={handleTimeSelect}
+            />
           </div>
-        </div>
+        )}
+        
+        {selectedDate && selectedTimeSlot && (
+          <div className="mt-6 flex justify-end">
+            <Button 
+              className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
+              onClick={continueToNextStep}
+            >
+              Continue
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
