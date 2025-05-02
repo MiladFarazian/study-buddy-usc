@@ -95,9 +95,9 @@ export function DateSelectionStep({ availableSlots, isLoading }: DateSelectionSt
           <div className="mt-6">
             <h3 className="text-lg font-medium mb-3">Available Times</h3>
             <TimeSelector
-              availableTimes={getTimeSlots()}
+              timeSlots={getTimeSlots()}
               selectedTime={selectedTimeSlot?.start}
-              onSelectTime={handleTimeSelect}
+              onTimeChange={handleTimeSelect}
             />
           </div>
         )}

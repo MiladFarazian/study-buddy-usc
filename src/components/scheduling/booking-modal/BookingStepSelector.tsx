@@ -30,7 +30,7 @@ export function BookingStepSelector({
   const [loading, setLoading] = useState(false);
   
   // Get tutor courses for the CourseSelector
-  const { courses, isLoading: coursesLoading } = useTutorCourses(tutor.id);
+  const { courses, loading: coursesLoading } = useTutorCourses(tutor.id);
   
   // Get availability data for date selection
   const today = startOfDay(new Date());

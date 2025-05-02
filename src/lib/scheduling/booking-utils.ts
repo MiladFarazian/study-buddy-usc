@@ -111,7 +111,7 @@ export async function createSessionBooking(
         notes: notes,
         status: 'pending' as const,
         payment_status: 'unpaid' as const,
-        session_type: sessionType as string,
+        session_type: sessionType,
         zoom_meeting_id: zoomMeetingId,
         zoom_join_url: zoomJoinUrl,
         created_at: new Date().toISOString()
