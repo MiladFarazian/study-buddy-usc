@@ -1,12 +1,13 @@
 
 import { useState, useEffect } from "react";
-import { Bell, MessageSquare } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import UserMenu from "@/components/auth/UserMenu";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { NotificationsDropdown } from "@/components/notifications/NotificationsDropdown";
 
 const NavBar = () => {
   let user = null;
@@ -55,10 +56,7 @@ const NavBar = () => {
                   <MessageSquare className="h-5 w-5 text-gray-600" />
                 </Link>
               </Button>
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5 text-gray-600" />
-                <span className="absolute top-1 right-1 flex h-2 w-2 rounded-full bg-red-500" />
-              </Button>
+              <NotificationsDropdown />
             </>
           )}
 
@@ -70,4 +68,3 @@ const NavBar = () => {
 };
 
 export default NavBar;
-
