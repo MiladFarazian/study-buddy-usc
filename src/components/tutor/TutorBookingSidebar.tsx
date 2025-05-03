@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Clock, ArrowRightLeft } from "lucide-react";
@@ -8,6 +9,7 @@ import { BookSessionModal } from "../scheduling/BookSessionModal";
 import { AuthRequiredDialog } from "../scheduling/booking-modal/AuthRequiredDialog";
 import { useAuthState } from "@/hooks/useAuthState";
 import { useLocation } from "react-router-dom";
+import { SchedulingProvider } from "@/contexts/SchedulingContext";
 
 interface TutorBookingSidebarProps {
   tutor: Tutor;
@@ -85,12 +87,14 @@ export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
       />
 
       {user && (
-        <BookSessionModal 
-          isOpen={showBookingModal} 
-          onClose={() => setShowBookingModal(false)}
-          tutor={tutor}
-        />
+        <SchedulingProvider>
+          <BookSessionModal 
+            isOpen={showBookingModal} 
+            onClose={() => setShowBookingModal(false)}
+            tutor={tutor}
+          />
+        </SchedulingProvider>
       )}
     </>
   );
-};
+}

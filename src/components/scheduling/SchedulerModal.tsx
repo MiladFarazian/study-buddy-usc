@@ -1,6 +1,7 @@
 
 import { BookSessionModal } from "./BookSessionModal";
 import { Tutor } from "@/types/tutor";
+import { SchedulingProvider } from "@/contexts/SchedulingContext";
 
 interface SchedulerModalProps {
   isOpen: boolean;
@@ -18,12 +19,14 @@ export function SchedulerModal({
   initialTime 
 }: SchedulerModalProps) {
   return (
-    <BookSessionModal 
-      isOpen={isOpen} 
-      onClose={onClose} 
-      tutor={tutor}
-      initialDate={initialDate}
-      initialTime={initialTime}
-    />
+    <SchedulingProvider>
+      <BookSessionModal 
+        isOpen={isOpen} 
+        onClose={onClose} 
+        tutor={tutor}
+        initialDate={initialDate}
+        initialTime={initialTime}
+      />
+    </SchedulingProvider>
   );
 }
