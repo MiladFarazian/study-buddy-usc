@@ -4,6 +4,7 @@ import { BookingSlot } from "@/lib/scheduling/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Clock } from "lucide-react";
 import { formatTimeDisplay } from "@/lib/scheduling/time-utils";
+import { format } from "date-fns";
 
 export interface TimeSlotListProps {
   slots: BookingSlot[];
@@ -18,8 +19,24 @@ export function TimeSlotList({
   selectedSlot = null,
   disabled = false 
 }: TimeSlotListProps) {
-  const validSlots = slots.filter(slot => slot.available)
-    .sort((a, b) => a.start.localeCompare(b.start));
+  // Filter for available slots and those matching the selected date
+  const validSlots = slots.filter(slot => {
+    const isAvailable = slot.available;
+    
+    // If we have a selected slot, filter by matching date
+    if (selectedSlot) {
+      const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
+      const selectedDay = selectedSlot.day instanceof Date ? 
+        selectedSlot.day : new Date(selectedSlot.day);
+      
+      return isAvailable && 
+        format(slotDay, 'yyyy-MM-dd') === format(selectedDay, 'yyyy-MM-dd');
+    }
+    
+    return isAvailable;
+  }).sort((a, b) => a.start.localeCompare(b.start));
+
+  console.log("TimeSlotList rendered with", slots.length, "total slots and", validSlots.length, "valid slots");
 
   return (
     <div className="space-y-4">
@@ -61,12 +78,13 @@ export function TimeSlotList({
 
 function isSlotSelected(slot: BookingSlot, selectedSlot: BookingSlot | null): boolean {
   if (!selectedSlot) return false;
+  
   const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
   const selectedDay = selectedSlot.day instanceof Date ? 
     selectedSlot.day : new Date(selectedSlot.day);
   
   return (
-    slotDay.toDateString() === selectedDay.toDateString() &&
+    format(slotDay, 'yyyy-MM-dd') === format(selectedDay, 'yyyy-MM-dd') &&
     slot.start === selectedSlot.start &&
     slot.end === selectedSlot.end
   );

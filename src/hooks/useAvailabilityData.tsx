@@ -118,61 +118,11 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
     setFetchTrigger(prev => prev + 1);
   }, []);
 
-  // Function to get consecutive available slots
-  const getConsecutiveSlots = useCallback((startSlot: BookingSlot, durationMinutes: number = 180) => {
-    // Calculate how many 30-minute slots we need to accommodate the requested duration
-    const slotsNeeded = Math.ceil(durationMinutes / 30);
-    
-    // If only one slot is needed, just return the starting slot
-    if (slotsNeeded <= 1) return [startSlot];
-    
-    // Get all slots for the same day
-    const sameDay = availableSlots.filter(slot => {
-      // Handle both Date objects and string dates
-      const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
-      const startDay = startSlot.day instanceof Date ? startSlot.day : new Date(startSlot.day);
-      return slotDay.toDateString() === startDay.toDateString();
-    });
-    
-    // Sort by start time
-    sameDay.sort((a, b) => a.start.localeCompare(b.start));
-    
-    // Find the index of our starting slot
-    const startIndex = sameDay.findIndex(slot => 
-      slot.start === startSlot.start && 
-      (slot.end === startSlot.end || !slot.end || !startSlot.end)
-    );
-    
-    if (startIndex === -1) return [startSlot];
-    
-    // Check if we have enough consecutive slots
-    const consecutiveSlots = [];
-    let currentSlot = startSlot;
-    consecutiveSlots.push(currentSlot);
-    
-    for (let i = 1; i < slotsNeeded; i++) {
-      // Find the next slot that starts when the current one ends
-      const nextSlotIndex = sameDay.findIndex(slot => 
-        slot.start === currentSlot.end && 
-        slot.available === true
-      );
-      
-      if (nextSlotIndex === -1) break;
-      
-      const nextSlot = sameDay[nextSlotIndex];
-      consecutiveSlots.push(nextSlot);
-      currentSlot = nextSlot;
-    }
-    
-    return consecutiveSlots;
-  }, [availableSlots]);
-
   return { 
     loading, 
     availableSlots, 
     hasAvailability, 
     errorMessage, 
-    refreshAvailability,
-    getConsecutiveSlots
+    refreshAvailability 
   };
 }

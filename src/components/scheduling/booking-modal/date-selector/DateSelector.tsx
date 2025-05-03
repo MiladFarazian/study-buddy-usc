@@ -41,6 +41,9 @@ export const DateSelector = ({
     addDays(currentWeekStart, i)
   );
 
+  // Log for debugging
+  console.log("DateSelector rendering with", availableSlots.length, "available slots");
+
   const hasAvailableSlots = (day: Date) => {
     return availableSlots.some(slot => {
       const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);

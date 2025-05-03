@@ -1,19 +1,16 @@
 
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useAvailabilityData } from "@/hooks/useAvailabilityData";
 import { Tutor } from "@/types/tutor";
-import { BookingStepSelector } from "./booking-modal/BookingStepSelector";
-import { BookingSlot } from "@/lib/scheduling/types";
-import { ErrorDisplay } from "./booking-modal/ErrorDisplay";
-import { LoadingScreen } from "./booking-modal/LoadingScreen";
-import { useToast } from "@/hooks/use-toast";
-import { createSessionBooking } from "@/lib/scheduling/booking-utils";
-import { useAuthState } from "@/hooks/useAuthState";
-import { LoginPrompt } from "./booking-modal/LoginPrompt";
-import { CalendarPromptStep } from "./booking-modal/CalendarPromptStep";
-import { SessionType } from "@/contexts/SchedulingContext";
+import { useScheduling } from "@/contexts/SchedulingContext";
+import { DateSelector } from "./booking-modal/date-selector/DateSelector";
+import { TimeSlotList } from "./booking-modal/time-slot/TimeSlotList";
+import { startOfDay } from "date-fns";
+import { Loader2 } from "lucide-react";
+import { Button } from "../ui/button";
 
-interface BookSessionModalProps {
+export interface BookSessionModalProps {
   isOpen: boolean;
   onClose: () => void;
   tutor: Tutor;
@@ -21,167 +18,102 @@ interface BookSessionModalProps {
   initialTime?: string;
 }
 
-export function BookSessionModal({ 
-  isOpen, 
-  onClose, 
+export function BookSessionModal({
+  isOpen,
+  onClose,
   tutor,
   initialDate,
   initialTime
 }: BookSessionModalProps) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [bookedSlot, setBookedSlot] = useState<BookingSlot | null>(null);
-  const [selectedDuration, setSelectedDuration] = useState<number>(60);
-  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
-  const [sessionType, setSessionType] = useState<SessionType>(SessionType.IN_PERSON);
-  const [showCalendarPrompt, setShowCalendarPrompt] = useState(false);
-  const { toast } = useToast();
-  const { user } = useAuthState();
-
-  // Log tutor information for debugging
-  useEffect(() => {
-    if (isOpen && tutor) {
-      console.log("[BookSessionModal] Modal opened for tutor:", {
-        id: tutor.id,
-        name: tutor.name
-      });
-    }
-  }, [isOpen, tutor]);
-
-  const handleSelectSlot = async (
-    slot: BookingSlot,
-    duration: number = 60,
-    courseId: string | null = null
-  ) => {
-    if (isSubmitting) return;
-    
-    setIsSubmitting(true);
-    setLoading(true);
-    setSelectedDuration(duration);
-    setSelectedCourseId(courseId);
-    
-    console.log("[BookSessionModal] Selected course ID for session:", courseId);
-    
-    try {
-      if (!user) {
-        throw new Error("You must be logged in to book a session");
-      }
-      
-      // Calculate start and end time from the slot
-      const startTime = new Date(slot.day);
-      const [startHour, startMinute] = slot.start.split(':').map(Number);
-      startTime.setHours(startHour, startMinute, 0, 0);
-      
-      // Use the slot's duration to calculate end time, fallback to provided duration
-      const durationMinutes = duration || slot.durationMinutes || 30;
-      const endTime = new Date(startTime);
-      endTime.setMinutes(startTime.getMinutes() + durationMinutes);
-      
-      console.log("[BookSessionModal] Creating session with course_id:", courseId);
-      
-      // Create the session in the database
-      const session = await createSessionBooking(
-        user.id,
-        tutor.id,
-        courseId, // Pass the selected course ID (may be null)
-        startTime.toISOString(),
-        endTime.toISOString(),
-        null, // No location
-        null, // No notes
-        sessionType // Pass the selected session type
-      );
-      
-      if (!session) {
-        throw new Error("Failed to create session");
-      }
-      
-      const courseName = courseId ? 
-        `for ${courseId}` : 
-        '';
-      
-      const sessionTypeText = sessionType === SessionType.VIRTUAL ? 'virtual' : 'in-person';
-      
-      toast({
-        title: "Session booked!",
-        description: `You've successfully booked a ${durationMinutes}-minute ${sessionTypeText} session ${courseName} with ${tutor.firstName || tutor.name.split(' ')[0]}.`
-      });
-      
-      // Store the booked slot for later use
-      setBookedSlot(slot);
-      setLoading(false);
-      setIsSubmitting(false);
-      
-      // Show calendar prompt instead of closing
-      setShowCalendarPrompt(true);
-      
-    } catch (err) {
-      console.error("Error booking session:", err);
-      setError(err instanceof Error ? err.message : "An unknown error occurred");
-      setLoading(false);
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleClose = () => {
-    if (!isSubmitting) {
-      // Reset all state when closing
-      setShowCalendarPrompt(false);
-      setBookedSlot(null);
-      setSelectedCourseId(null);
-      onClose();
-    }
-  };
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(initialDate);
+  const { state, dispatch, setTutor } = useScheduling();
   
-  const handleCalendarDone = () => {
-    // Force refresh the schedule page if we're on it
-    if (window.location.pathname === '/schedule') {
-      window.location.reload();
-    }
-  };
+  // Initialize starting date
+  const today = startOfDay(new Date());
+  
+  // Fetch availability data
+  const { 
+    loading, 
+    availableSlots, 
+    hasAvailability, 
+    errorMessage 
+  } = useAvailabilityData(tutor, today);
 
-  const renderContent = () => {
-    if (loading) {
-      return <LoadingScreen message="Processing your booking..." />;
-    }
-
-    if (error) {
-      return <ErrorDisplay message={error} onClose={handleClose} />;
+  // Set the tutor in the scheduling context
+  useEffect(() => {
+    if (tutor && tutor.id) {
+      setTutor(tutor);
     }
     
-    if (showCalendarPrompt && bookedSlot) {
-      return (
-        <CalendarPromptStep
-          tutor={tutor}
-          selectedSlot={bookedSlot}
-          selectedDuration={selectedDuration}
-          selectedCourseId={selectedCourseId}
-          sessionType={sessionType}
-          onClose={handleClose}
-          onDone={handleCalendarDone}
-        />
-      );
+    // Initialize with initial date/time if provided
+    if (initialDate) {
+      setSelectedDate(initialDate);
     }
+  }, [tutor, setTutor, initialDate]);
 
-    return (
-      <BookingStepSelector 
-        tutor={tutor}
-        onSelectSlot={handleSelectSlot}
-        onClose={handleClose}
-        disabled={isSubmitting}
-      />
-    );
+  const handleDateChange = (date: Date) => {
+    setSelectedDate(date);
+    dispatch({ type: 'SELECT_DATE', payload: date });
   };
+
+  const handleSelectSlot = (slot: any) => {
+    dispatch({ type: 'SELECT_TIME_SLOT', payload: slot });
+  };
+
+  if (!isOpen) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[800px] p-0 max-h-[90vh] overflow-y-auto">
-        <DialogTitle className="sr-only">Book a Session</DialogTitle>
-        <div className="p-6">
-          {!user ? (
-            <LoginPrompt onClose={handleClose} />
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Book a Session with {tutor.firstName || tutor.name.split(' ')[0]}</DialogTitle>
+        </DialogHeader>
+        
+        <div className="space-y-6 py-4">
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal mr-2" />
+              <p>Loading available times...</p>
+            </div>
+          ) : !hasAvailability ? (
+            <div className="text-center py-8">
+              <p className="text-lg font-medium mb-2">No Availability Found</p>
+              <p className="text-muted-foreground mb-4">
+                {errorMessage || "This tutor hasn't set their availability yet."}
+              </p>
+            </div>
           ) : (
-            renderContent()
+            <>
+              <DateSelector 
+                date={selectedDate}
+                onDateChange={handleDateChange}
+                availableSlots={availableSlots}
+                isLoading={loading}
+              />
+              
+              {selectedDate && (
+                <TimeSlotList
+                  slots={availableSlots}
+                  onSelectSlot={handleSelectSlot}
+                  selectedSlot={state.selectedTimeSlot}
+                />
+              )}
+              
+              {state.selectedTimeSlot && (
+                <div className="mt-6">
+                  <Button 
+                    className="w-full bg-usc-cardinal hover:bg-usc-cardinal-dark"
+                    onClick={() => {
+                      // Handle booking
+                      console.log("Booking with selected slot:", state.selectedTimeSlot);
+                      // Here we would transition to the next step
+                    }}
+                  >
+                    Continue
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </DialogContent>
