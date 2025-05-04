@@ -34,9 +34,32 @@ export function TimeSlotList({
     }
     
     return isAvailable;
-  }).sort((a, b) => a.start.localeCompare(b.start));
+  });
+  
+  // Create a unique key for each time slot and remove duplicates
+  const uniqueSlots = validSlots.reduce((unique: BookingSlot[], slot) => {
+    const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
+    const dayStr = format(slotDay, 'yyyy-MM-dd');
+    const key = `${dayStr}-${slot.start}`;
+    
+    // Check if we already have this time slot
+    const exists = unique.some(existingSlot => {
+      const existingDay = existingSlot.day instanceof Date ? existingSlot.day : new Date(existingSlot.day);
+      const existingDayStr = format(existingDay, 'yyyy-MM-dd');
+      return existingDayStr === dayStr && existingSlot.start === slot.start;
+    });
+    
+    if (!exists) {
+      unique.push(slot);
+    }
+    
+    return unique;
+  }, []);
+  
+  // Sort by start time
+  const sortedUniqueSlots = uniqueSlots.sort((a, b) => a.start.localeCompare(b.start));
 
-  console.log("TimeSlotList rendered with", slots.length, "total slots and", validSlots.length, "valid slots");
+  console.log("TimeSlotList rendered with", slots.length, "total slots,", validSlots.length, "valid slots, and", sortedUniqueSlots.length, "unique slots");
 
   return (
     <div className="space-y-4">
@@ -45,7 +68,7 @@ export function TimeSlotList({
         Select a Time
       </h3>
       
-      {validSlots.length === 0 ? (
+      {sortedUniqueSlots.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/30 rounded-md">
           <Clock className="h-12 w-12 text-muted-foreground mb-3" />
           <p className="text-muted-foreground">No available time slots for this date.</p>
@@ -54,9 +77,9 @@ export function TimeSlotList({
         <ScrollArea className="h-[300px] rounded-md border">
           <div className="p-4">
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {validSlots.map((slot, index) => (
+              {sortedUniqueSlots.map((slot, index) => (
                 <Button
-                  key={index}
+                  key={`${index}-${slot.start}`}
                   variant={isSlotSelected(slot, selectedSlot) ? "default" : "outline"}
                   className={`
                     h-12 flex items-center justify-center
