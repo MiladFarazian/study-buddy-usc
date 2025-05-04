@@ -72,6 +72,7 @@ export function BookSessionModal({
             }}
             calculatedCost={state.selectedTimeSlot && tutor.hourlyRate ? 
               (tutor.hourlyRate / 60) * state.selectedDuration : undefined}
+            tutor={tutor}  // Pass the tutor prop to ModalContent
           />
         </div>
       </DialogContent>

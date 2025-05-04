@@ -10,6 +10,7 @@ import { SessionTypeSelector } from "./session-type/SessionTypeSelector";
 import { StudentInfoForm } from "./student-info/StudentInfoForm";
 import { ConfirmationStep } from "./ConfirmationStep";
 import { BookingSlot } from "@/lib/scheduling/types";
+import { Tutor } from "@/types/tutor";
 
 interface ModalContentProps {
   step: BookingStep;
@@ -29,6 +30,7 @@ interface ModalContentProps {
   selectedDuration: number;
   onDurationChange: (duration: number) => void;
   calculatedCost?: number;
+  tutor: Tutor;  // Add the required tutor prop
 }
 
 export function ModalContent({
@@ -48,7 +50,8 @@ export function ModalContent({
   sessionTimeRange,
   selectedDuration,
   onDurationChange,
-  calculatedCost
+  calculatedCost,
+  tutor  // Accept the tutor prop
 }: ModalContentProps) {
   if (loading) {
     return (
@@ -110,6 +113,7 @@ export function ModalContent({
           onCourseSelect={(courseId) => console.log(courseId)}
           onBack={onBack}
           onContinue={onContinue}
+          tutor={tutor}  // Pass the tutor prop to CourseSelector
         />
       );
       
