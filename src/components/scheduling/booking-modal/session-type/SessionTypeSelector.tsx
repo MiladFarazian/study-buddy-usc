@@ -1,101 +1,136 @@
 
 import { useState } from "react";
 import { useScheduling, SessionType } from "@/contexts/SchedulingContext";
-import { Video, MapPin, Check } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { MapPin, Video } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
 
-export function SessionTypeSelector() {
+interface SessionTypeSelectorProps {
+  onBack?: () => void;
+  onContinue?: () => void;
+}
+
+export function SessionTypeSelector({
+  onBack,
+  onContinue
+}: SessionTypeSelectorProps) {
   const { state, setSessionType, setLocation } = useScheduling();
-  const [locationInput, setLocationInput] = useState(state.location || '');
-  const [showLocationInput, setShowLocationInput] = useState(state.sessionType === SessionType.IN_PERSON);
-  
-  // Handle session type selection
-  const handleSessionTypeSelect = (type: SessionType) => {
+  const [customLocation, setCustomLocation] = useState(state.location || "");
+
+  const handleSessionTypeChange = (type: SessionType) => {
     setSessionType(type);
     
-    if (type === SessionType.IN_PERSON) {
-      setShowLocationInput(true);
-    } else {
-      setShowLocationInput(false);
+    // Reset location if switching to virtual
+    if (type === SessionType.VIRTUAL) {
       setLocation(null);
+      setCustomLocation("");
     }
   };
 
-  // Handle location input change
   const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setLocationInput(value);
-    setLocation(value);
+    const location = e.target.value;
+    setCustomLocation(location);
+    setLocation(location);
+  };
+
+  const handleContinue = () => {
+    if (onContinue) {
+      onContinue();
+    }
+  };
+
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+    }
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-xl font-semibold">Session Location</h3>
+        <h3 className="text-xl font-semibold">Session Format</h3>
         <p className="text-sm text-muted-foreground mt-1">
           Choose how you want to meet with your tutor.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card 
-          className={cn(
-            "p-4 cursor-pointer border-2 hover:border-usc-cardinal",
-            state.sessionType === SessionType.IN_PERSON ? "border-usc-cardinal" : "border-gray-200"
-          )}
-          onClick={() => handleSessionTypeSelect(SessionType.IN_PERSON)}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center">
-              <MapPin className="h-5 w-5 mr-2 text-usc-cardinal" />
-              <h4 className="font-medium">In-person</h4>
-            </div>
-            {state.sessionType === SessionType.IN_PERSON && (
-              <Check className="h-5 w-5 text-usc-cardinal" />
+      <div className="border rounded-md p-6 space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Button
+            type="button"
+            onClick={() => handleSessionTypeChange(SessionType.IN_PERSON)}
+            className={cn(
+              "flex flex-col items-center h-auto py-6 px-4",
+              state.sessionType === SessionType.IN_PERSON
+                ? "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark"
+                : "bg-white text-gray-800 border hover:bg-gray-100"
             )}
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Meet on campus or at a location of your choice
-          </p>
-        </Card>
+            variant={state.sessionType === SessionType.IN_PERSON ? "default" : "outline"}
+          >
+            <MapPin className="h-8 w-8 mb-2" />
+            <span className="text-lg font-medium">In-Person</span>
+            <span className="text-sm text-center mt-1">
+              Meet on campus or another location
+            </span>
+          </Button>
 
-        <Card 
-          className={cn(
-            "p-4 cursor-pointer border-2 hover:border-usc-cardinal",
-            state.sessionType === SessionType.VIRTUAL ? "border-usc-cardinal" : "border-gray-200"
-          )}
-          onClick={() => handleSessionTypeSelect(SessionType.VIRTUAL)}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center">
-              <Video className="h-5 w-5 mr-2 text-usc-cardinal" />
-              <h4 className="font-medium">Virtual</h4>
-            </div>
-            {state.sessionType === SessionType.VIRTUAL && (
-              <Check className="h-5 w-5 text-usc-cardinal" />
+          <Button
+            type="button"
+            onClick={() => handleSessionTypeChange(SessionType.VIRTUAL)}
+            className={cn(
+              "flex flex-col items-center h-auto py-6 px-4",
+              state.sessionType === SessionType.VIRTUAL
+                ? "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark"
+                : "bg-white text-gray-800 border hover:bg-gray-100"
             )}
+            variant={state.sessionType === SessionType.VIRTUAL ? "default" : "outline"}
+          >
+            <Video className="h-8 w-8 mb-2" />
+            <span className="text-lg font-medium">Virtual</span>
+            <span className="text-sm text-center mt-1">
+              Meet online via video call
+            </span>
+          </Button>
+        </div>
+
+        {state.sessionType === SessionType.IN_PERSON && (
+          <div className="pt-4 border-t">
+            <Label htmlFor="location" className="mb-2 block">
+              Meeting Location
+            </Label>
+            <Input
+              id="location"
+              placeholder="Enter a meeting location (e.g., Leavey Library)"
+              value={customLocation}
+              onChange={handleLocationChange}
+              className="w-full"
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              Specify where on campus you'd like to meet your tutor
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Meet via Zoom video call
-          </p>
-        </Card>
+        )}
       </div>
 
-      {showLocationInput && (
-        <div className="space-y-2 mt-4">
-          <Label htmlFor="location">Meeting Location</Label>
-          <Input
-            id="location"
-            placeholder="Enter a meeting location (e.g., Doheny Library, Leavey Library)"
-            value={locationInput}
-            onChange={handleLocationChange}
-            className="w-full"
-          />
-        </div>
-      )}
+      <div className="flex justify-between pt-4">
+        {onBack && (
+          <Button variant="outline" onClick={handleBack}>
+            Back
+          </Button>
+        )}
+        
+        {onContinue && (
+          <Button 
+            className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white ml-auto"
+            onClick={handleContinue}
+            disabled={state.sessionType === SessionType.IN_PERSON && !customLocation.trim()}
+          >
+            Continue
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

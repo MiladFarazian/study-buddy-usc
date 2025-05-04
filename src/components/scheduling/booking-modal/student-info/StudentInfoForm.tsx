@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { useScheduling } from "@/contexts/SchedulingContext";
 import { useAuthState } from "@/hooks/useAuthState";
-import { User } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";

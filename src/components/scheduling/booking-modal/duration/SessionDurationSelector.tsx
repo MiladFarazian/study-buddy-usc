@@ -7,6 +7,15 @@ import { cn } from "@/lib/utils";
 interface SessionDurationSelectorProps {
   selectedDuration: number;
   onDurationChange: (duration: number) => void;
+  sessionTimeRange?: { start: string; end: string };
+  calculatedCost?: number;
+  sessionDuration?: number;
+  onStartTimeChange?: (time: string) => void;
+  maxDuration?: number;
+  hourlyRate?: number;
+  availableStartTimes?: string[];
+  selectedStartTime?: string;
+  formatTimeForDisplay?: (time: string) => string;
 }
 
 export function SessionDurationSelector({

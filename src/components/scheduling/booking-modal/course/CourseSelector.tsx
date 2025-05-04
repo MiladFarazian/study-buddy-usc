@@ -1,31 +1,35 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useScheduling } from "@/contexts/SchedulingContext";
 import { Check, BookOpen, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Tutor } from "@/types/tutor";
 import { cn } from "@/lib/utils";
+import { Course } from "@/types/CourseTypes";
 
 interface CourseSelectorProps {
-  tutor: Tutor | null;
   selectedCourseId: string | null;
   onCourseSelect: (courseId: string | null) => void;
+  onBack?: () => void;
+  loading?: boolean;
+  courses?: Course[];
 }
 
 export function CourseSelector({
-  tutor,
   selectedCourseId,
-  onCourseSelect
+  onCourseSelect,
+  onBack,
+  loading = false,
+  courses = []
 }: CourseSelectorProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const { setCourse } = useScheduling();
   
   // Filter courses based on search query
-  const filteredCourses = tutor?.subjects.filter(subject => 
-    subject.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    subject.name.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  const filteredCourses = courses.filter(course => 
+    course.course_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    course.course_title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // Handle course selection
   const handleSelectCourse = (courseId: string) => {
@@ -38,6 +42,15 @@ export function CourseSelector({
     onCourseSelect(null);
     setCourse(null);
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-usc-cardinal"></div>
+        <span className="ml-2">Loading courses...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -64,22 +77,22 @@ export function CourseSelector({
 
         <div className="grid gap-2 max-h-60 overflow-y-auto">
           {filteredCourses.length > 0 ? (
-            filteredCourses.map((subject) => (
+            filteredCourses.map((course) => (
               <Button
-                key={subject.code}
+                key={course.course_number}
                 variant="outline"
                 className={cn(
                   "w-full justify-start text-left",
-                  selectedCourseId === subject.code ? "border-usc-cardinal border-2" : ""
+                  selectedCourseId === course.course_number ? "border-usc-cardinal border-2" : ""
                 )}
-                onClick={() => handleSelectCourse(subject.code)}
+                onClick={() => handleSelectCourse(course.course_number)}
               >
                 <div className="flex justify-between w-full items-center">
                   <div>
-                    <p className="font-medium">{subject.code}</p>
-                    <p className="text-sm text-muted-foreground">{subject.name}</p>
+                    <p className="font-medium">{course.course_number}</p>
+                    <p className="text-sm text-muted-foreground">{course.course_title}</p>
                   </div>
-                  {selectedCourseId === subject.code && (
+                  {selectedCourseId === course.course_number && (
                     <Check className="h-4 w-4 text-usc-cardinal" />
                   )}
                 </div>
@@ -99,6 +112,16 @@ export function CourseSelector({
         >
           I don't need a specific course
         </Button>
+
+        {onBack && (
+          <Button 
+            variant="outline" 
+            className="w-full mt-2"
+            onClick={onBack}
+          >
+            Back
+          </Button>
+        )}
       </div>
     </div>
   );

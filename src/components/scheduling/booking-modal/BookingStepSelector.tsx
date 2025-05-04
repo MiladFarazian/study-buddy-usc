@@ -12,6 +12,7 @@ import { SlotSelectionFooter } from "./SlotSelectionFooter";
 import { useAvailabilityData } from "@/hooks/useAvailabilityData";
 import { startOfDay } from "date-fns";
 import { useTutorCourses } from "@/hooks/useTutorCourses";
+import { Course } from "@/types/CourseTypes";
 
 interface BookingStepSelectorProps {
   tutor: Tutor;
@@ -77,14 +78,16 @@ export function BookingStepSelector({
             onContinue={() => dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_COURSE })}
             hourlyRate={tutor.hourlyRate || 25}
             consecutiveSlots={[]}  // We'd need to compute this from availableSlots
+            selectedCourseId={state.selectedCourseId}
+            courses={courses as Course[]}
           />
         );
       case BookingStep.SELECT_COURSE:
         return (
           <CourseSelector
-            courses={courses || []}
+            courses={courses as Course[]}
             selectedCourseId={state.selectedCourseId}
-            onSelectCourse={(courseId) => dispatch({ type: 'SET_COURSE', payload: courseId })}
+            onCourseSelect={(courseId) => dispatch({ type: 'SET_COURSE', payload: courseId })}
             onBack={() => dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_DURATION })}
             loading={coursesLoading}
           />
