@@ -44,7 +44,13 @@ export const generateGoogleCalendarUrl = (
   }
   
   if (tutor.subjects && tutor.subjects.length > 0) {
-    descriptionText += `Subject: ${tutor.subjects[0]?.name || 'Not specified'}\n`;
+    // Handle subjects that might be strings or objects
+    const subject = tutor.subjects[0];
+    const subjectName = typeof subject === 'string' ? subject : 
+      (subject && typeof subject === 'object' && 'name' in subject) ? 
+        (subject as any).name : 'Not specified';
+        
+    descriptionText += `Subject: ${subjectName}\n`;
   }
   
   const description = encodeURIComponent(descriptionText);
@@ -60,14 +66,28 @@ export const addToGoogleCalendar = (
   courseId?: string | null,
   courseName?: string | null
 ): void => {
+  if (!slot || !slot.day) {
+    console.error("Invalid slot data for Google Calendar", slot);
+    return;
+  }
+  
   const sessionDate = slot.day instanceof Date ? slot.day : new Date(slot.day);
+  
+  if (isNaN(sessionDate.getTime())) {
+    console.error("Invalid date for Google Calendar", slot.day);
+    return;
+  }
   
   // Generate custom title with course if available
   const courseSuffix = courseId ? ` for ${courseName || courseId}` : '';
   const title = `Tutoring Session with ${tutor.name}${courseSuffix}`;
   
-  const url = generateGoogleCalendarUrl(tutor, sessionDate, slot.start, durationMinutes, title, courseId);
-  
-  // Open in a new window
-  window.open(url, '_blank');
+  // Generate and open URL
+  try {
+    const url = generateGoogleCalendarUrl(tutor, sessionDate, slot.start, durationMinutes, title, courseId);
+    console.log("Opening Google Calendar URL:", url);
+    window.open(url, '_blank');
+  } catch (error) {
+    console.error("Error opening Google Calendar:", error);
+  }
 };

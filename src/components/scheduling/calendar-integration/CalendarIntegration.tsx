@@ -3,7 +3,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { format, addMinutes } from "date-fns";
-import { CalendarDays, CheckCircle, Download, Apple } from "lucide-react";
+import { CalendarDays, CheckCircle, Apple } from "lucide-react";
 import { Tutor } from "@/types/tutor";
 import { generateGoogleCalendarUrl } from "@/lib/calendar/googleCalendarUtils";
 import { ICalEventData, downloadICSFile } from "@/lib/calendar/icsGenerator";
@@ -41,25 +41,46 @@ export function CalendarIntegration({
   const eventTitle = `Tutoring Session with ${tutor.name}${courseSuffix}`;
   
   const handleAddToGoogleCalendar = () => {
-    // Generate Google Calendar URL
-    const url = generateGoogleCalendarUrl(tutor, sessionDate, sessionStartTime, sessionDuration, eventTitle, courseId);
-    
-    // Open in a new window
-    window.open(url, '_blank');
+    try {
+      // Generate Google Calendar URL
+      const url = generateGoogleCalendarUrl(
+        tutor, 
+        sessionDate, 
+        sessionStartTime, 
+        sessionDuration, 
+        eventTitle, 
+        courseId
+      );
+      
+      // Log the URL for debugging
+      console.log("Google Calendar URL:", url);
+      
+      // Open in a new window
+      window.open(url, '_blank');
+    } catch (error) {
+      console.error("Error adding to Google Calendar:", error);
+    }
   };
   
   const handleAddToAppleCalendar = () => {
-    // Create event data for Apple Calendar
-    const eventData: ICalEventData = {
-      title: eventTitle,
-      description: `Tutoring session with ${tutor.name}${courseId ? ` for course ${courseId}` : ''}`,
-      location: "USC Campus",
-      startDate: startDateTime,
-      endDate: endDateTime,
-    };
-    
-    // Download the ICS file
-    downloadICSFile(eventData, `tutoring-session-${format(startDateTime, 'yyyy-MM-dd')}.ics`);
+    try {
+      // Create event data for Apple Calendar
+      const eventData: ICalEventData = {
+        title: eventTitle,
+        description: `Tutoring session with ${tutor.name}${courseId ? ` for course ${courseId}` : ''}`,
+        location: "USC Campus",
+        startDate: startDateTime,
+        endDate: endDateTime,
+      };
+      
+      // Log the event data for debugging
+      console.log("Apple Calendar event data:", eventData);
+      
+      // Download the ICS file
+      downloadICSFile(eventData, `tutoring-session-${format(startDateTime, 'yyyy-MM-dd')}.ics`);
+    } catch (error) {
+      console.error("Error adding to Apple Calendar:", error);
+    }
   };
   
   // Format the session date and time for display

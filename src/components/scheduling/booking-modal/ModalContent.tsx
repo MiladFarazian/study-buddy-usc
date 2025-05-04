@@ -30,7 +30,7 @@ interface ModalContentProps {
   selectedDuration: number;
   onDurationChange: (duration: number) => void;
   calculatedCost?: number;
-  tutor: Tutor;  // Add the required tutor prop
+  tutor: Tutor;  // Required tutor prop
 }
 
 export function ModalContent({
@@ -110,7 +110,7 @@ export function ModalContent({
       return (
         <CourseSelector 
           selectedCourseId={selectedSlot ? selectedSlot.tutorId : null}
-          onCourseSelect={(courseId) => console.log(courseId)}
+          onCourseSelect={(courseId) => console.log("Selected course:", courseId)}
           onBack={onBack}
           onContinue={onContinue}
           tutor={tutor}  // Pass the tutor prop to CourseSelector

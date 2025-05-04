@@ -1,7 +1,6 @@
 
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Check } from "lucide-react";
 import { Tutor } from "@/types/tutor";
 import { useBookSessionModal } from "./hooks/useBookSessionModal";
 import { ModalContent } from "./ModalContent";
@@ -68,7 +67,8 @@ export function BookSessionModal({
             } : undefined}
             selectedDuration={state.selectedDuration}
             onDurationChange={(duration) => {
-              console.log("Setting duration to:", duration);
+              // Update the duration in the state
+              setState(prev => ({ ...prev, selectedDuration: duration }));
             }}
             calculatedCost={state.selectedTimeSlot && tutor.hourlyRate ? 
               (tutor.hourlyRate / 60) * state.selectedDuration : undefined}

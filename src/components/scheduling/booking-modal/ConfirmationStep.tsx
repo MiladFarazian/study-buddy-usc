@@ -5,10 +5,10 @@ import { formatDate, formatTime } from "@/lib/scheduling/time-utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, Clock, BookOpen, MapPin, Video, User, Download, Check, ArrowLeft } from "lucide-react";
+import { Calendar, Clock, BookOpen, MapPin, Video, User, Check, ArrowLeft } from "lucide-react";
 import { SessionType } from "@/contexts/SchedulingContext";
 import { toast } from "sonner";
-import { format, addMinutes, parseISO } from "date-fns";
+import { format, addMinutes } from "date-fns";
 import { generateGoogleCalendarUrl } from "@/lib/calendar/googleCalendarUtils";
 import { ICalEventData, downloadICSFile } from "@/lib/calendar/icsGenerator";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -18,7 +18,6 @@ export function ConfirmationStep() {
   const { state, tutor } = useScheduling();
   const [calendarMenuOpen, setCalendarMenuOpen] = useState(false);
   const [addingToCalendar, setAddingToCalendar] = useState(false);
-  const [bookingComplete, setBookingComplete] = useState(false);
   
   // Format selected time
   const formatTimeSlot = () => {
@@ -32,8 +31,18 @@ export function ConfirmationStep() {
   const getSubjectName = () => {
     if (!state.selectedCourseId || !tutor) return "General Tutoring";
     
-    const subject = tutor.subjects.find(s => s.code === state.selectedCourseId);
-    return subject ? `${subject.code} - ${subject.name}` : state.selectedCourseId;
+    const subject = tutor.subjects?.find(s => 
+      (typeof s === 'string' && s === state.selectedCourseId) || 
+      (typeof s === 'object' && s && 'code' in s && s.code === state.selectedCourseId)
+    );
+    
+    if (subject) {
+      return typeof subject === 'string' ? subject : 
+        (subject && 'code' in subject && 'name' in subject) ? 
+          `${subject.code} - ${subject.name}` : state.selectedCourseId;
+    }
+    
+    return state.selectedCourseId;
   };
   
   // Calculate session price
@@ -47,7 +56,10 @@ export function ConfirmationStep() {
 
   // Handle adding to Google Calendar
   const handleAddToGoogleCalendar = () => {
-    if (!state.selectedDate || !state.selectedTimeSlot || !tutor) return;
+    if (!state.selectedDate || !state.selectedTimeSlot || !tutor) {
+      toast.error("Missing session information for calendar");
+      return;
+    }
     
     try {
       setAddingToCalendar(true);
@@ -55,6 +67,16 @@ export function ConfirmationStep() {
       // Generate course info text if available
       const courseSuffix = state.selectedCourseId ? ` for ${state.selectedCourseId}` : '';
       const title = `Tutoring Session with ${tutor.name}${courseSuffix}`;
+      
+      // Log debug information
+      console.log("Google Calendar data:", {
+        tutor,
+        date: state.selectedDate,
+        startTime: state.selectedTimeSlot.start,
+        duration: state.selectedDuration,
+        title,
+        courseId: state.selectedCourseId
+      });
       
       // Generate the Google Calendar URL
       const url = generateGoogleCalendarUrl(
@@ -65,6 +87,8 @@ export function ConfirmationStep() {
         title,
         state.selectedCourseId
       );
+      
+      console.log("Generated Google Calendar URL:", url);
       
       // Open in a new tab
       window.open(url, '_blank');
@@ -81,7 +105,10 @@ export function ConfirmationStep() {
   
   // Handle adding to Apple Calendar
   const handleAddToAppleCalendar = () => {
-    if (!state.selectedDate || !state.selectedTimeSlot || !tutor) return;
+    if (!state.selectedDate || !state.selectedTimeSlot || !tutor) {
+      toast.error("Missing session information for calendar");
+      return;
+    }
     
     try {
       setAddingToCalendar(true);
@@ -93,6 +120,14 @@ export function ConfirmationStep() {
       startDateTime.setHours(hours, minutes, 0, 0);
       
       const endDateTime = addMinutes(startDateTime, state.selectedDuration);
+      
+      // Log debug information
+      console.log("Apple Calendar data:", {
+        startDateTime,
+        endDateTime,
+        courseId: state.selectedCourseId,
+        duration: state.selectedDuration
+      });
       
       // Generate course info text if available
       const courseSuffix = state.selectedCourseId ? ` for ${state.selectedCourseId}` : '';
@@ -205,7 +240,7 @@ export function ConfirmationStep() {
             <Button
               variant="outline"
               className="w-full flex items-center justify-center"
-              disabled={addingToCalendar || bookingComplete}
+              disabled={addingToCalendar}
             >
               <Calendar className="h-4 w-4 mr-2" />
               Add to Calendar

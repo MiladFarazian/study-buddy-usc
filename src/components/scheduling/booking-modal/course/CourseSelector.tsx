@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useTutorCourses } from "@/hooks/useTutorCourses";
@@ -89,7 +90,7 @@ export function CourseSelector({
                 onClick={handleNoSpecificCourse}
               >
                 <RadioGroupItem value="no-course" id="no-course" />
-                <Label htmlFor="no-course" className="cursor-pointer">
+                <Label htmlFor="no-course" className="cursor-pointer flex-1">
                   <div className="font-medium">General Tutoring Session</div>
                   <p className="text-sm text-muted-foreground">Not specific to any particular class</p>
                 </Label>
@@ -106,7 +107,7 @@ export function CourseSelector({
                     onClick={() => handleCourseSelect(course.course_number)}
                   >
                     <RadioGroupItem value={course.course_number} id={`course-${course.course_number}`} />
-                    <Label htmlFor={`course-${course.course_number}`} className="cursor-pointer">
+                    <Label htmlFor={`course-${course.course_number}`} className="cursor-pointer flex-1">
                       <div className="font-medium">{course.course_number}</div>
                       {course.course_title && (
                         <p className="text-sm text-muted-foreground">{course.course_title}</p>

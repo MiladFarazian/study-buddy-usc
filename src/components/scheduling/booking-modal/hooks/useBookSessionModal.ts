@@ -1,109 +1,137 @@
 
-import { useState, useEffect } from "react";
-import { useAvailabilityData } from "@/hooks/useAvailabilityData";
+import { useState, useEffect, useCallback } from "react";
+import { addDays, startOfDay } from "date-fns";
 import { Tutor } from "@/types/tutor";
-import { useScheduling, BookingStep } from "@/contexts/SchedulingContext";
-import { startOfDay } from "date-fns";
+import { BookingSlot } from "@/lib/scheduling/types";
 import { toast } from "sonner";
+import { BookingStep } from "@/contexts/SchedulingContext";
+import { useAvailabilityData } from "@/hooks/useAvailabilityData";
+import { addToGoogleCalendar } from "@/lib/calendar/googleCalendarUtils";
+import { ICalEventData, downloadICSFile } from "@/lib/calendar/icsGenerator";
+
+interface BookingState {
+  bookingStep: BookingStep; 
+  selectedTimeSlot: BookingSlot | null;
+  selectedDuration: number;
+  selectedCourseId: string | null;
+}
 
 export function useBookSessionModal(
-  tutor: Tutor,
-  isOpen: boolean,
+  tutor: Tutor, 
+  isOpen: boolean, 
   onClose: () => void,
   initialDate?: Date,
   initialTime?: string
 ) {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(initialDate);
-  const { state, dispatch, setTutor, continueToNextStep, goToPreviousStep } = useScheduling();
+  // State for the booking flow
+  const [state, setState] = useState<BookingState>({
+    bookingStep: BookingStep.SELECT_DATE_TIME,
+    selectedTimeSlot: null,
+    selectedDuration: 60, // Default to 1 hour
+    selectedCourseId: null
+  });
   
-  // Initialize starting date
-  const today = startOfDay(new Date());
+  // State for selected date
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    if (initialDate) return startOfDay(initialDate);
+    return startOfDay(new Date());
+  });
   
-  // Fetch availability data
-  const { 
-    loading, 
-    availableSlots, 
-    hasAvailability, 
-    errorMessage,
-    refreshAvailability
-  } = useAvailabilityData(tutor, today);
-
-  // Set the tutor in the scheduling context
+  // If the modal is closed, reset state
   useEffect(() => {
-    if (tutor && tutor.id) {
-      setTutor(tutor);
+    if (!isOpen) {
+      setState({
+        bookingStep: BookingStep.SELECT_DATE_TIME,
+        selectedTimeSlot: null,
+        selectedDuration: 60,
+        selectedCourseId: null
+      });
     }
-    
-    // Initialize with initial date/time if provided
-    if (initialDate) {
-      setSelectedDate(initialDate);
-      dispatch({ type: 'SELECT_DATE', payload: initialDate });
-    }
-  }, [tutor, setTutor, initialDate, dispatch]);
-
-  // Debug log for tracking availability
-  useEffect(() => {
-    console.log(`BookSessionModal: ${availableSlots.length} slots available, loading: ${loading}`);
-    
-    // When loading completes with no slots, show a toast
-    if (!loading && availableSlots.length === 0 && isOpen) {
-      toast.error("No available slots found for this tutor");
-    }
-  }, [loading, availableSlots.length, isOpen]);
-
+  }, [isOpen]);
+  
+  // Get available slots for the selected date
+  const { availableSlots, loading, error, refresh: refreshAvailability } = 
+    useAvailabilityData(tutor, selectedDate);
+  
+  // Check if there's any availability
+  const hasAvailability = availableSlots.length > 0;
+  
+  // Error message from availability fetch
+  const errorMessage = error?.message;
+  
+  // Handle date change
   const handleDateChange = (date: Date) => {
-    console.log("Date changed to:", date);
     setSelectedDate(date);
-    dispatch({ type: 'SELECT_DATE', payload: date });
+    setState(prev => ({ ...prev, selectedTimeSlot: null }));
   };
-
-  const handleSelectSlot = (slot: any) => {
-    console.log("Selected slot:", slot);
-    dispatch({ type: 'SELECT_TIME_SLOT', payload: slot });
+  
+  // Handle slot selection
+  const handleSelectSlot = (slot: BookingSlot) => {
+    setState(prev => ({ ...prev, selectedTimeSlot: slot }));
   };
-
+  
+  // Handle when user continues to next step
+  const handleContinue = () => {
+    if (state.bookingStep === BookingStep.SELECT_COURSE) {
+      console.log("Selected course:", state.selectedCourseId);
+    }
+    setState(prev => ({ 
+      ...prev, 
+      bookingStep: prev.bookingStep + 1 as BookingStep 
+    }));
+  };
+  
+  // Handle when user goes back to previous step
+  const handleBack = () => {
+    setState(prev => ({ 
+      ...prev, 
+      bookingStep: Math.max(0, prev.bookingStep - 1) as BookingStep 
+    }));
+  };
+  
+  // Handle closing the modal
   const handleClose = () => {
-    // Reset the booking state when closing
-    dispatch({ type: 'RESET' });
     onClose();
   };
-
-  // Handler for moving to the next step
-  const handleContinue = () => {
-    console.log("Moving to next step from:", state.bookingStep);
-    continueToNextStep();
-  };
-
-  // Handler for moving to the previous step
-  const handleBack = () => {
-    console.log("Moving to previous step from:", state.bookingStep);
-    goToPreviousStep();
-  };
   
-  const handleBookingComplete = () => {
-    toast.success("Session booked successfully!");
-    handleClose();
-  };
-
+  // Get the title for the current step
   const getStepTitle = (): string => {
     switch (state.bookingStep) {
       case BookingStep.SELECT_DATE_TIME:
         return "Select Date & Time";
       case BookingStep.SELECT_DURATION:
-        return "Select Session Duration";
+        return "Select Duration";
       case BookingStep.SELECT_COURSE:
         return "Select Course";
       case BookingStep.SELECT_SESSION_TYPE:
-        return "Session Location";
+        return "Select Session Type";
       case BookingStep.FILL_FORM:
-        return "Your Details";
+        return "Student Information";
       case BookingStep.CONFIRMATION:
-        return "Confirm Your Booking";
+        return "Confirm Booking";
       default:
         return "Book a Session";
     }
   };
   
+  // Handle booking completion
+  const handleBookingComplete = useCallback(() => {
+    console.log("Booking completed!");
+    toast.success("Your session has been booked!");
+    
+    // Here we would typically make an API call to save the booking
+    // For now, we'll just log the details and close the modal
+    console.log("Booking details:", {
+      tutor: tutor.name,
+      date: selectedDate,
+      timeSlot: state.selectedTimeSlot,
+      duration: state.selectedDuration,
+      course: state.selectedCourseId
+    });
+    
+    onClose();
+  }, [onClose, tutor, selectedDate, state]);
+
   return {
     selectedDate,
     state,
