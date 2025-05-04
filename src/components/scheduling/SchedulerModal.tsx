@@ -18,6 +18,7 @@ export function SchedulerModal({
   initialDate, 
   initialTime 
 }: SchedulerModalProps) {
+  // This component ensures the BookSessionModal is always wrapped in SchedulingProvider
   return (
     <SchedulingProvider>
       <BookSessionModal 
