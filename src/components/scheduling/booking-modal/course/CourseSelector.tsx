@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useTutorCourses } from "@/hooks/useTutorCourses";
@@ -14,6 +13,8 @@ interface CourseSelectorProps {
   tutor: Tutor;
   onBack?: () => void;
   onContinue?: () => void;
+  loading?: boolean;
+  courses?: Course[];
 }
 
 export function CourseSelector({ 
@@ -21,10 +22,17 @@ export function CourseSelector({
   onCourseSelect, 
   tutor,
   onBack,
-  onContinue
+  onContinue,
+  loading: externalLoading,
+  courses: externalCourses
 }: CourseSelectorProps) {
-  const { courses, loading } = useTutorCourses(tutor.id);
+  const { courses: fetchedCourses, loading: fetchLoading } = useTutorCourses(tutor.id);
   const [noSpecificCourse, setNoSpecificCourse] = useState<boolean>(selectedCourseId === null);
+  
+  // Use external courses if provided, otherwise use the fetched courses
+  const courses = externalCourses || fetchedCourses;
+  // Use external loading state if provided, otherwise use the fetch loading state
+  const loading = externalLoading !== undefined ? externalLoading : fetchLoading;
   
   // Select "No specific course" if no course is selected and we have courses
   useEffect(() => {
