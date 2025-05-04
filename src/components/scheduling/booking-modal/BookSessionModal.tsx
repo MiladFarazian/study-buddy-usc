@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tutor } from "@/types/tutor";
 import { useBookSessionModal } from "./hooks/useBookSessionModal";
@@ -67,8 +67,10 @@ export function BookSessionModal({
             } : undefined}
             selectedDuration={state.selectedDuration}
             onDurationChange={(duration) => {
-              // Update the duration in the state
-              setState(prev => ({ ...prev, selectedDuration: duration }));
+              // Update the duration in the state using the function from useBookSessionModal
+              // We don't have direct access to setState, so we need to use the proper handler
+              // This will be implemented in useBookSessionModal.ts
+              handleDurationChange(duration);
             }}
             calculatedCost={state.selectedTimeSlot && tutor.hourlyRate ? 
               (tutor.hourlyRate / 60) * state.selectedDuration : undefined}

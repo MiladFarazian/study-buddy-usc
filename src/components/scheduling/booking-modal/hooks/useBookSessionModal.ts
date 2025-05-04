@@ -50,14 +50,11 @@ export function useBookSessionModal(
   }, [isOpen]);
   
   // Get available slots for the selected date
-  const { availableSlots, loading, error, refresh: refreshAvailability } = 
+  const { availableSlots, loading, errorMessage, refreshAvailability } = 
     useAvailabilityData(tutor, selectedDate);
   
   // Check if there's any availability
   const hasAvailability = availableSlots.length > 0;
-  
-  // Error message from availability fetch
-  const errorMessage = error?.message;
   
   // Handle date change
   const handleDateChange = (date: Date) => {
@@ -68,6 +65,11 @@ export function useBookSessionModal(
   // Handle slot selection
   const handleSelectSlot = (slot: BookingSlot) => {
     setState(prev => ({ ...prev, selectedTimeSlot: slot }));
+  };
+  
+  // Handle duration change
+  const handleDurationChange = (duration: number) => {
+    setState(prev => ({ ...prev, selectedDuration: duration }));
   };
   
   // Handle when user continues to next step
@@ -142,6 +144,7 @@ export function useBookSessionModal(
     refreshAvailability,
     handleDateChange,
     handleSelectSlot,
+    handleDurationChange, // Export the new handler
     handleClose,
     handleContinue,
     handleBack,
