@@ -5,13 +5,18 @@ import { formatDate, formatTime } from "@/lib/scheduling/time-utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, Clock, BookOpen, MapPin, Video, User, Download, Check } from "lucide-react";
+import { Calendar, Clock, BookOpen, MapPin, Video, User, Download, Check, ArrowLeft } from "lucide-react";
 import { SessionType } from "@/contexts/SchedulingContext";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, addMinutes, parseISO } from "date-fns";
+import { generateGoogleCalendarUrl } from "@/lib/calendar/googleCalendarUtils";
+import { ICalEventData, downloadICSFile } from "@/lib/calendar/icsGenerator";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Apple } from "lucide-react";
 
 export function ConfirmationStep() {
   const { state, tutor } = useScheduling();
+  const [calendarMenuOpen, setCalendarMenuOpen] = useState(false);
   const [addingToCalendar, setAddingToCalendar] = useState(false);
   const [bookingComplete, setBookingComplete] = useState(false);
   
@@ -39,33 +44,78 @@ export function ConfirmationStep() {
     const cost = (hourlyRate / 60) * state.selectedDuration;
     return `$${cost.toFixed(2)}`;
   };
-  
-  // Handle adding to calendar
-  const handleAddToCalendar = async () => {
+
+  // Handle adding to Google Calendar
+  const handleAddToGoogleCalendar = () => {
+    if (!state.selectedDate || !state.selectedTimeSlot || !tutor) return;
+    
     try {
       setAddingToCalendar(true);
       
-      // Simulate calendar download
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Generate course info text if available
+      const courseSuffix = state.selectedCourseId ? ` for ${state.selectedCourseId}` : '';
+      const title = `Tutoring Session with ${tutor.name}${courseSuffix}`;
       
-      toast.success("Event added to calendar");
-      setAddingToCalendar(false);
+      // Generate the Google Calendar URL
+      const url = generateGoogleCalendarUrl(
+        tutor,
+        state.selectedDate,
+        state.selectedTimeSlot.start,
+        state.selectedDuration,
+        title,
+        state.selectedCourseId
+      );
+      
+      // Open in a new tab
+      window.open(url, '_blank');
+      
+      toast.success("Added to Google Calendar");
     } catch (error) {
-      console.error("Failed to add to calendar:", error);
-      toast.error("Failed to add event to calendar");
+      console.error("Failed to add to Google Calendar:", error);
+      toast.error("Failed to add to Google Calendar");
+    } finally {
       setAddingToCalendar(false);
+      setCalendarMenuOpen(false);
     }
   };
   
-  // Handle booking confirmation
-  const handleConfirmBooking = async () => {
+  // Handle adding to Apple Calendar
+  const handleAddToAppleCalendar = () => {
+    if (!state.selectedDate || !state.selectedTimeSlot || !tutor) return;
+    
     try {
-      // This would integrate with backend in a real implementation
-      setBookingComplete(true);
-      toast.success("Your session has been booked!");
+      setAddingToCalendar(true);
+      
+      // Parse start time and create start/end dates
+      const [hours, minutes] = state.selectedTimeSlot.start.split(':').map(Number);
+      
+      const startDateTime = new Date(state.selectedDate);
+      startDateTime.setHours(hours, minutes, 0, 0);
+      
+      const endDateTime = addMinutes(startDateTime, state.selectedDuration);
+      
+      // Generate course info text if available
+      const courseSuffix = state.selectedCourseId ? ` for ${state.selectedCourseId}` : '';
+      
+      // Create ICS event data
+      const eventData: ICalEventData = {
+        title: `Tutoring Session with ${tutor.name}${courseSuffix}`,
+        description: `Tutoring session with ${tutor.name}${state.selectedCourseId ? ` for course ${state.selectedCourseId}` : ''}`,
+        location: state.sessionType === SessionType.VIRTUAL ? 'Virtual (Zoom)' : (state.location || 'USC Campus'),
+        startDate: startDateTime,
+        endDate: endDateTime,
+      };
+      
+      // Download the ICS file
+      downloadICSFile(eventData, `tutoring-session-${format(startDateTime, 'yyyy-MM-dd')}.ics`);
+      
+      toast.success("Added to Apple Calendar");
     } catch (error) {
-      console.error("Booking failed:", error);
-      toast.error("Failed to book session");
+      console.error("Failed to add to Apple Calendar:", error);
+      toast.error("Failed to add to Apple Calendar");
+    } finally {
+      setAddingToCalendar(false);
+      setCalendarMenuOpen(false);
     }
   };
 
@@ -149,24 +199,42 @@ export function ConfirmationStep() {
         </CardContent>
       </Card>
       
-      <Button
-        variant="outline"
-        className="w-full flex items-center justify-center"
-        disabled={addingToCalendar || bookingComplete}
-        onClick={handleAddToCalendar}
-      >
-        {addingToCalendar ? (
-          <>
-            <Clock className="h-4 w-4 mr-2 animate-spin" />
-            Adding to calendar...
-          </>
-        ) : (
-          <>
-            <Download className="h-4 w-4 mr-2" />
-            Add to Calendar
-          </>
-        )}
-      </Button>
+      <div className="flex flex-col gap-3">
+        <Popover open={calendarMenuOpen} onOpenChange={setCalendarMenuOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className="w-full flex items-center justify-center"
+              disabled={addingToCalendar || bookingComplete}
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              Add to Calendar
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="p-2 w-48">
+            <div className="flex flex-col gap-1">
+              <Button 
+                variant="ghost" 
+                className="justify-start"
+                onClick={handleAddToGoogleCalendar}
+                disabled={addingToCalendar}
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Google Calendar
+              </Button>
+              <Button 
+                variant="ghost" 
+                className="justify-start"
+                onClick={handleAddToAppleCalendar}
+                disabled={addingToCalendar}
+              >
+                <Apple className="h-4 w-4 mr-2" />
+                Apple Calendar
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
     </div>
   );
 }
