@@ -18,8 +18,6 @@ export function TimeSlotList({
   selectedSlot,
   selectedDate
 }: TimeSlotListProps) {
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
-
   // Filter slots for the selected date and group them by time
   const availableTimeSlots = useMemo(() => {
     // Filter slots for selected date
@@ -58,7 +56,6 @@ export function TimeSlotList({
   }, [slots, selectedDate]);
 
   const handleSelectTime = (slot: BookingSlot) => {
-    setSelectedTime(slot.start);
     onSelectSlot(slot);
   };
   
@@ -68,6 +65,14 @@ export function TimeSlotList({
     const period = hours >= 12 ? 'PM' : 'AM';
     const hour = hours % 12 || 12;
     return `${hour}:${minutes.toString().padStart(2, '0')} ${period}`;
+  };
+
+  // Helper function to check if a slot is currently selected
+  const isSlotSelected = (slot: BookingSlot): boolean => {
+    if (!selectedSlot) return false;
+    return selectedSlot.start === slot.start && 
+           selectedSlot.end === slot.end && 
+           isSameDay(slot.day, selectedSlot.day);
   };
 
   return (
@@ -87,7 +92,7 @@ export function TimeSlotList({
               className={cn(
                 "py-4 px-3 border rounded-md text-center transition-colors",
                 "hover:border-usc-cardinal focus:outline-none focus:ring-2 focus:ring-usc-cardinal",
-                selectedSlot && selectedSlot.id === slot.id
+                isSlotSelected(slot)
                   ? "bg-usc-cardinal text-white border-usc-cardinal hover:bg-usc-cardinal-dark"
                   : "bg-white"
               )}
