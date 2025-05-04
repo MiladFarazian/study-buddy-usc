@@ -86,6 +86,18 @@ export function BookSessionModal({
     onClose();
   };
 
+  // Handler for moving to the next step
+  const handleContinue = () => {
+    console.log("Moving to next step from:", state.bookingStep);
+    continueToNextStep();
+  };
+
+  // Handler for moving to the previous step
+  const handleBack = () => {
+    console.log("Moving to previous step from:", state.bookingStep);
+    goToPreviousStep();
+  };
+
   const renderStepContent = () => {
     switch (state.bookingStep) {
       case BookingStep.SELECT_DATE_TIME:
@@ -122,21 +134,24 @@ export function BookSessionModal({
           <CourseSelector 
             selectedCourseId={state.selectedCourseId}
             onCourseSelect={(courseId) => dispatch({ type: 'SET_COURSE', payload: courseId })}
-            tutor={tutor} // Now valid since we updated the interface
+            tutor={tutor}
           />
         );
         
       case BookingStep.SELECT_SESSION_TYPE:
         return (
           <SessionTypeSelector 
-            onBack={() => goToPreviousStep()}
-            onContinue={() => continueToNextStep()}
+            onBack={handleBack}
+            onContinue={handleContinue}
           />
         );
         
       case BookingStep.FILL_FORM:
         return (
-          <StudentInfoForm />
+          <StudentInfoForm 
+            onBack={handleBack}
+            onContinue={handleContinue}
+          />
         );
         
       case BookingStep.CONFIRMATION:
@@ -201,33 +216,29 @@ export function BookSessionModal({
             <>
               {renderStepContent()}
               
-              <div className="flex justify-between mt-6 pt-4 border-t">
-                {state.bookingStep > BookingStep.SELECT_DATE_TIME ? (
-                  <Button 
-                    variant="outline" 
-                    onClick={goToPreviousStep}
-                    className="flex items-center"
-                  >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back
-                  </Button>
-                ) : (
-                  <div></div> 
-                )}
-                
-                {state.bookingStep < BookingStep.CONFIRMATION ? (
+              {/* Only show navigation buttons for the first and last steps - all others manage their own navigation */}
+              {state.bookingStep === BookingStep.SELECT_DATE_TIME && (
+                <div className="flex justify-between mt-6 pt-4 border-t">
+                  <div></div>
                   <Button 
                     className="bg-usc-cardinal hover:bg-usc-cardinal-dark"
-                    onClick={continueToNextStep}
-                    disabled={
-                      (state.bookingStep === BookingStep.SELECT_DATE_TIME && !state.selectedTimeSlot) ||
-                      (state.bookingStep === BookingStep.SELECT_DURATION && !state.selectedDuration)
-                    }
+                    onClick={handleContinue}
+                    disabled={!state.selectedTimeSlot}
                   >
                     Continue
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
-                ) : (
+                </div>
+              )}
+              
+              {state.bookingStep === BookingStep.CONFIRMATION && (
+                <div className="flex justify-between mt-6 pt-4 border-t">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleBack}
+                  >
+                    Back
+                  </Button>
                   <Button 
                     className="bg-usc-cardinal hover:bg-usc-cardinal-dark"
                     onClick={() => {
@@ -238,8 +249,8 @@ export function BookSessionModal({
                     Confirm Booking
                     <Check className="w-4 h-4 ml-2" />
                   </Button>
-                )}
-              </div>
+                </div>
+              )}
             </>
           )}
         </div>

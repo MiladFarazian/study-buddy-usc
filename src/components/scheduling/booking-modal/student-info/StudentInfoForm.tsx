@@ -67,10 +67,13 @@ export function StudentInfoForm({ onBack, onContinue }: StudentInfoFormProps) {
     e.preventDefault();
     
     if (validateForm()) {
+      // Save the student info and notes to context
       dispatch({ type: 'SET_STUDENT_INFO', payload: { name, email } });
       dispatch({ type: 'SET_NOTES', payload: notes });
       
+      // If onContinue is provided, call it to go to the next step
       if (onContinue) {
+        console.log("StudentInfoForm: Continuing to next step");
         onContinue();
       }
     }
@@ -80,7 +83,7 @@ export function StudentInfoForm({ onBack, onContinue }: StudentInfoFormProps) {
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="flex items-center">
         {onBack && (
-          <Button variant="ghost" onClick={onBack} className="mr-2 p-0">
+          <Button type="button" variant="ghost" onClick={onBack} className="mr-2 p-0">
             <ArrowLeft className="h-4 w-4" />
             <span className="ml-2">Back</span>
           </Button>
