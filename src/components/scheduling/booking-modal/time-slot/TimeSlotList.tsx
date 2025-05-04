@@ -71,41 +71,40 @@ export function TimeSlotList({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div>
-        <h3 className="text-xl font-semibold flex items-center">
-          <Clock className="mr-2 h-5 w-5" />
-          Select a Time Slot
-        </h3>
+        <h2 className="text-xl font-semibold">Available Time Slots</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Choose from available time slots on {format(selectedDate, 'MMMM d, yyyy')}
+          {format(selectedDate, 'EEEE, MMMM d, yyyy')}
         </p>
       </div>
 
-      <div className="border rounded-md">
-        {availableTimeSlots.length > 0 ? (
-          <div className="grid grid-cols-3 gap-2 p-4">
-            {availableTimeSlots.map((slot, index) => (
-              <button
-                key={`${slot.start}-${index}`}
-                className={cn(
-                  "py-2 px-3 rounded-md border text-center transition-colors",
-                  "hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-usc-cardinal",
-                  selectedSlot && selectedSlot.id === slot.id
-                    ? "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark"
-                    : "bg-white"
-                )}
-                onClick={() => handleSelectTime(slot)}
-              >
-                {formatTimeDisplay(slot.start)}
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div className="p-6 text-center">
-            <p className="text-muted-foreground">No available time slots for this date</p>
-          </div>
-        )}
+      {availableTimeSlots.length > 0 ? (
+        <div className="grid grid-cols-3 gap-2">
+          {availableTimeSlots.map((slot, index) => (
+            <button
+              key={`${slot.start}-${index}`}
+              className={cn(
+                "py-4 px-3 border rounded-md text-center transition-colors",
+                "hover:border-usc-cardinal focus:outline-none focus:ring-2 focus:ring-usc-cardinal",
+                selectedSlot && selectedSlot.id === slot.id
+                  ? "bg-usc-cardinal text-white border-usc-cardinal hover:bg-usc-cardinal-dark"
+                  : "bg-white"
+              )}
+              onClick={() => handleSelectTime(slot)}
+            >
+              {formatTimeDisplay(slot.start)}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="p-6 text-center border rounded-lg">
+          <p className="text-muted-foreground">No available time slots for this date</p>
+        </div>
+      )}
+      
+      <div className="text-center text-sm text-muted-foreground">
+        All times shown are in your local timezone
       </div>
     </div>
   );

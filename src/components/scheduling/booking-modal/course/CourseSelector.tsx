@@ -1,12 +1,13 @@
 
 import { useState } from "react";
 import { useScheduling } from "@/contexts/SchedulingContext";
-import { Check, BookOpen, Search } from "lucide-react";
+import { Check, BookOpen, Search, ArrowLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Course } from "@/types/CourseTypes";
 import { Tutor } from "@/types/tutor";
+import { useTutorCourses } from "@/hooks/useTutorCourses";
 
 interface CourseSelectorProps {
   selectedCourseId: string | null;
@@ -14,7 +15,7 @@ interface CourseSelectorProps {
   onBack?: () => void;
   loading?: boolean;
   courses?: Course[];
-  tutor?: Tutor; // Added tutor prop to the interface
+  tutor?: Tutor;
 }
 
 export function CourseSelector({
@@ -22,11 +23,18 @@ export function CourseSelector({
   onCourseSelect,
   onBack,
   loading = false,
-  courses = [],
-  tutor // Added tutor parameter
+  courses: propsCourses,
+  tutor
 }: CourseSelectorProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const { setCourse } = useScheduling();
+  
+  // Fetch courses if they weren't provided as props
+  const { courses: fetchedCourses, loading: coursesLoading } = useTutorCourses(tutor?.id);
+  
+  // Use courses from props if available, otherwise use fetched courses
+  const courses = propsCourses || fetchedCourses || [];
+  const isLoading = loading || coursesLoading;
   
   // Filter courses based on search query
   const filteredCourses = courses.filter(course => 
@@ -46,7 +54,7 @@ export function CourseSelector({
     setCourse(null);
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center py-12">
         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-usc-cardinal"></div>
@@ -57,17 +65,17 @@ export function CourseSelector({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-xl font-semibold flex items-center">
-          <BookOpen className="mr-2 h-5 w-5" />
-          Select a Course
-        </h3>
-        <p className="text-sm text-muted-foreground mt-1">
-          Choose which course you need help with.
-        </p>
+      <div className="flex items-center">
+        {onBack && (
+          <Button variant="ghost" onClick={onBack} className="mr-2 p-0">
+            <ArrowLeft className="h-4 w-4" />
+            <span className="ml-2">Back</span>
+          </Button>
+        )}
+        <h3 className="text-xl font-semibold">Select Class</h3>
       </div>
 
-      <div className="border rounded-md p-4 space-y-4">
+      <div className="space-y-4">
         <div className="relative">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
@@ -78,28 +86,34 @@ export function CourseSelector({
           />
         </div>
 
-        <div className="grid gap-2 max-h-60 overflow-y-auto">
+        <div className="space-y-2 max-h-[400px] overflow-y-auto">
           {filteredCourses.length > 0 ? (
             filteredCourses.map((course) => (
-              <Button
+              <div
                 key={course.course_number}
-                variant="outline"
                 className={cn(
-                  "w-full justify-start text-left",
+                  "border rounded-md p-4 cursor-pointer hover:border-usc-cardinal",
                   selectedCourseId === course.course_number ? "border-usc-cardinal border-2" : ""
                 )}
                 onClick={() => handleSelectCourse(course.course_number)}
               >
-                <div className="flex justify-between w-full items-center">
-                  <div>
+                <div className="flex items-start">
+                  <div className="flex-shrink-0 pt-0.5">
+                    <div className={cn(
+                      "w-5 h-5 rounded-full border flex items-center justify-center",
+                      selectedCourseId === course.course_number ? "border-usc-cardinal bg-usc-cardinal" : "border-gray-300"
+                    )}>
+                      {selectedCourseId === course.course_number && (
+                        <Check className="h-3 w-3 text-white" />
+                      )}
+                    </div>
+                  </div>
+                  <div className="ml-3">
                     <p className="font-medium">{course.course_number}</p>
                     <p className="text-sm text-muted-foreground">{course.course_title}</p>
                   </div>
-                  {selectedCourseId === course.course_number && (
-                    <Check className="h-4 w-4 text-usc-cardinal" />
-                  )}
                 </div>
-              </Button>
+              </div>
             ))
           ) : (
             <div className="text-center py-4 text-muted-foreground">
@@ -115,16 +129,6 @@ export function CourseSelector({
         >
           I don't need a specific course
         </Button>
-
-        {onBack && (
-          <Button 
-            variant="outline" 
-            className="w-full mt-2"
-            onClick={onBack}
-          >
-            Back
-          </Button>
-        )}
       </div>
     </div>
   );

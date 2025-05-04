@@ -4,8 +4,8 @@ import { useScheduling, SessionType } from "@/contexts/SchedulingContext";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { VideoIcon, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { VideoIcon, MapPin, ArrowLeft } from "lucide-react";
 
 interface SessionTypeSelectorProps {
   onBack?: () => void;
@@ -33,12 +33,19 @@ export function SessionTypeSelector({ onBack, onContinue }: SessionTypeSelectorP
   
   return (
     <div className="space-y-6">
-      <div>
+      <div className="flex items-center">
+        {onBack && (
+          <Button variant="ghost" onClick={onBack} className="mr-2 p-0">
+            <ArrowLeft className="h-4 w-4" />
+            <span className="ml-2">Back</span>
+          </Button>
+        )}
         <h3 className="text-xl font-semibold">Session Location</h3>
-        <p className="text-sm text-muted-foreground mt-1">
-          Choose how you'd like to meet with your tutor.
-        </p>
       </div>
+      
+      <p className="text-sm text-muted-foreground">
+        Choose how you'd like to meet with your tutor.
+      </p>
       
       <RadioGroup 
         value={state.sessionType} 
