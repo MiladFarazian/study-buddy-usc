@@ -30,6 +30,7 @@ export function BookSessionModal({
     refreshAvailability,
     handleDateChange,
     handleSelectSlot,
+    handleDurationChange,
     handleClose,
     handleContinue,
     handleBack,
@@ -68,8 +69,6 @@ export function BookSessionModal({
             selectedDuration={state.selectedDuration}
             onDurationChange={(duration) => {
               // Update the duration in the state using the function from useBookSessionModal
-              // We don't have direct access to setState, so we need to use the proper handler
-              // This will be implemented in useBookSessionModal.ts
               handleDurationChange(duration);
             }}
             calculatedCost={state.selectedTimeSlot && tutor.hourlyRate ? 
