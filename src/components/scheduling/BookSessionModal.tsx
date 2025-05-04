@@ -3,13 +3,18 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAvailabilityData } from "@/hooks/useAvailabilityData";
 import { Tutor } from "@/types/tutor";
-import { useScheduling } from "@/contexts/SchedulingContext";
+import { useScheduling, BookingStep } from "@/contexts/SchedulingContext";
 import { DateSelector } from "./booking-modal/date-selector/DateSelector";
 import { TimeSlotList } from "./booking-modal/time-slot/TimeSlotList";
-import { startOfDay } from "date-fns";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowLeft, ArrowRight, Calendar, Check } from "lucide-react";
 import { Button } from "../ui/button";
 import { toast } from "sonner";
+import { CourseSelector } from "./booking-modal/course/CourseSelector";
+import { SessionDurationSelector } from "./booking-modal/duration/SessionDurationSelector";
+import { SessionTypeSelector } from "./booking-modal/session-type/SessionTypeSelector";
+import { StudentInfoForm } from "./booking-modal/student-info/StudentInfoForm";
+import { ConfirmationStep } from "./booking-modal/ConfirmationStep";
+import { startOfDay } from "date-fns";
 
 export interface BookSessionModalProps {
   isOpen: boolean;
@@ -27,7 +32,7 @@ export function BookSessionModal({
   initialTime
 }: BookSessionModalProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(initialDate);
-  const { state, dispatch, setTutor } = useScheduling();
+  const { state, dispatch, setTutor, continueToNextStep, goToPreviousStep } = useScheduling();
   
   // Initialize starting date
   const today = startOfDay(new Date());
@@ -50,8 +55,9 @@ export function BookSessionModal({
     // Initialize with initial date/time if provided
     if (initialDate) {
       setSelectedDate(initialDate);
+      dispatch({ type: 'SELECT_DATE', payload: initialDate });
     }
-  }, [tutor, setTutor, initialDate]);
+  }, [tutor, setTutor, initialDate, dispatch]);
 
   // Debug log for tracking availability
   useEffect(() => {
@@ -74,13 +80,98 @@ export function BookSessionModal({
     dispatch({ type: 'SELECT_TIME_SLOT', payload: slot });
   };
 
+  const handleClose = () => {
+    // Reset the booking state when closing
+    dispatch({ type: 'RESET' });
+    onClose();
+  };
+
+  const renderStepContent = () => {
+    switch (state.bookingStep) {
+      case BookingStep.SELECT_DATE_TIME:
+        return (
+          <>
+            <DateSelector 
+              date={selectedDate}
+              onDateChange={handleDateChange}
+              availableSlots={availableSlots}
+              isLoading={loading}
+            />
+            
+            {selectedDate && (
+              <TimeSlotList
+                slots={availableSlots}
+                onSelectSlot={handleSelectSlot}
+                selectedSlot={state.selectedTimeSlot}
+                selectedDate={selectedDate}
+              />
+            )}
+          </>
+        );
+        
+      case BookingStep.SELECT_DURATION:
+        return (
+          <SessionDurationSelector
+            selectedDuration={state.selectedDuration}
+            onDurationChange={(duration) => dispatch({ type: 'SET_DURATION', payload: duration })}
+          />
+        );
+        
+      case BookingStep.SELECT_COURSE:
+        return (
+          <CourseSelector 
+            tutor={tutor}
+            selectedCourseId={state.selectedCourseId}
+            onCourseSelect={(courseId) => dispatch({ type: 'SET_COURSE', payload: courseId })}
+          />
+        );
+        
+      case BookingStep.SELECT_SESSION_TYPE:
+        return (
+          <SessionTypeSelector />
+        );
+        
+      case BookingStep.FILL_FORM:
+        return (
+          <StudentInfoForm />
+        );
+        
+      case BookingStep.CONFIRMATION:
+        return (
+          <ConfirmationStep />
+        );
+        
+      default:
+        return <div>Unknown step</div>;
+    }
+  };
+
+  const getStepTitle = (): string => {
+    switch (state.bookingStep) {
+      case BookingStep.SELECT_DATE_TIME:
+        return "Select Date & Time";
+      case BookingStep.SELECT_DURATION:
+        return "Select Session Duration";
+      case BookingStep.SELECT_COURSE:
+        return "Select Course";
+      case BookingStep.SELECT_SESSION_TYPE:
+        return "Session Location";
+      case BookingStep.FILL_FORM:
+        return "Your Details";
+      case BookingStep.CONFIRMATION:
+        return "Confirm Your Booking";
+      default:
+        return "Book a Session";
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Book a Session with {tutor.firstName || tutor.name.split(' ')[0]}</DialogTitle>
+          <DialogTitle>{getStepTitle()}</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-6 py-4">
@@ -105,35 +196,47 @@ export function BookSessionModal({
             </div>
           ) : (
             <>
-              <DateSelector 
-                date={selectedDate}
-                onDateChange={handleDateChange}
-                availableSlots={availableSlots}
-                isLoading={loading}
-              />
+              {renderStepContent()}
               
-              {selectedDate && (
-                <TimeSlotList
-                  slots={availableSlots}
-                  onSelectSlot={handleSelectSlot}
-                  selectedSlot={state.selectedTimeSlot}
-                />
-              )}
-              
-              {state.selectedTimeSlot && (
-                <div className="mt-6">
+              <div className="flex justify-between mt-6 pt-4 border-t">
+                {state.bookingStep > BookingStep.SELECT_DATE_TIME ? (
                   <Button 
-                    className="w-full bg-usc-cardinal hover:bg-usc-cardinal-dark"
-                    onClick={() => {
-                      // Handle booking
-                      console.log("Booking with selected slot:", state.selectedTimeSlot);
-                      // Here we would transition to the next step
-                    }}
+                    variant="outline" 
+                    onClick={goToPreviousStep}
+                    className="flex items-center"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back
+                  </Button>
+                ) : (
+                  <div></div> 
+                )}
+                
+                {state.bookingStep < BookingStep.CONFIRMATION ? (
+                  <Button 
+                    className="bg-usc-cardinal hover:bg-usc-cardinal-dark"
+                    onClick={continueToNextStep}
+                    disabled={
+                      (state.bookingStep === BookingStep.SELECT_DATE_TIME && !state.selectedTimeSlot) ||
+                      (state.bookingStep === BookingStep.SELECT_DURATION && !state.selectedDuration)
+                    }
                   >
                     Continue
+                    <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
-                </div>
-              )}
+                ) : (
+                  <Button 
+                    className="bg-usc-cardinal hover:bg-usc-cardinal-dark"
+                    onClick={() => {
+                      toast.success("Session booked successfully!");
+                      handleClose();
+                    }}
+                  >
+                    Confirm Booking
+                    <Check className="w-4 h-4 ml-2" />
+                  </Button>
+                )}
+              </div>
             </>
           )}
         </div>

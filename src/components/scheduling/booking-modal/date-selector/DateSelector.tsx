@@ -2,7 +2,7 @@
 import { Calendar } from "@/components/ui/calendar";
 import { BookingSlot } from "@/lib/scheduling/types";
 import { CalendarIcon } from "lucide-react";
-import { format, isEqual, parseISO } from "date-fns";
+import { format, isEqual, parseISO, isSameDay } from "date-fns";
 import { useEffect, useMemo } from "react";
 
 interface DateSelectorProps {
@@ -23,16 +23,16 @@ export function DateSelector({
   // Get all available dates from the slots
   const availableDates = useMemo(() => {
     console.log("DateSelector rendering with", availableSlots.length, "available slots");
-    const dates = new Set<string>();
+    const dateSet = new Set<string>();
     
     availableSlots.forEach(slot => {
       if (slot.available) {
         const slotDate = slot.day instanceof Date ? slot.day : new Date(slot.day);
-        dates.add(format(slotDate, 'yyyy-MM-dd'));
+        dateSet.add(format(slotDate, 'yyyy-MM-dd'));
       }
     });
     
-    return Array.from(dates).map(dateStr => parseISO(dateStr));
+    return Array.from(dateSet).map(dateStr => parseISO(dateStr));
   }, [availableSlots]);
 
   // Set first available date if none is selected
@@ -41,6 +41,11 @@ export function DateSelector({
       onDateChange(availableDates[0]);
     }
   }, [date, availableDates, onDateChange, isLoading]);
+
+  // Function to determine if a date has available slots
+  const hasAvailableSlots = (day: Date): boolean => {
+    return availableDates.some(availableDate => isSameDay(availableDate, day));
+  };
 
   return (
     <div className="space-y-4">
@@ -59,12 +64,7 @@ export function DateSelector({
           mode="single"
           selected={date}
           onSelect={(selectedDate) => selectedDate && onDateChange(selectedDate)}
-          disabled={(calendarDate) => {
-            // Check if this date is in our available dates
-            return !availableDates.some(availableDate => 
-              format(availableDate, 'yyyy-MM-dd') === format(calendarDate, 'yyyy-MM-dd')
-            );
-          }}
+          disabled={(calendarDate) => !hasAvailableSlots(calendarDate)}
           initialFocus={true}
           className="mx-auto"
         />

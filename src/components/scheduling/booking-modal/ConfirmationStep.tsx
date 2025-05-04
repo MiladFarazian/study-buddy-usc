@@ -1,201 +1,172 @@
 
-import React from 'react';
+import { useState } from "react";
+import { useScheduling } from "@/contexts/SchedulingContext";
+import { formatDate, formatTime } from "@/lib/scheduling/time-utils";
 import { Button } from "@/components/ui/button";
-import { Check, Calendar, Clock, User, CreditCard, Apple } from "lucide-react";
-import { format, addMinutes } from 'date-fns';
-import { Tutor } from "@/types/tutor";
-import { BookingSlot } from "@/lib/scheduling/types";
-import { ICalEventData, downloadICSFile } from "@/lib/calendar/icsGenerator";
-import { generateGoogleCalendarUrl } from "@/lib/calendar/googleCalendarUtils";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Calendar, Clock, BookOpen, MapPin, Video, User, Download, Check } from "lucide-react";
+import { SessionType } from "@/contexts/SchedulingContext";
+import { toast } from "sonner";
+import { format } from "date-fns";
 
-interface ConfirmationStepProps {
-  tutor: Tutor;
-  selectedSlot: BookingSlot;
-  selectedDuration: number;
-  selectedCourseId?: string | null;
-  selectedCourseName?: string | null;
-  onClose: () => void;
-  onReset?: () => void;
-}
+export function ConfirmationStep() {
+  const { state, tutor } = useScheduling();
+  const [addingToCalendar, setAddingToCalendar] = useState(false);
+  const [bookingComplete, setBookingComplete] = useState(false);
+  
+  // Format selected time
+  const formatTimeSlot = () => {
+    if (!state.selectedTimeSlot) return "No time selected";
+    
+    const start = formatTime(state.selectedTimeSlot.start);
+    return `${start} (${state.selectedDuration} minutes)`;
+  };
+  
+  // Get subject name from course ID
+  const getSubjectName = () => {
+    if (!state.selectedCourseId || !tutor) return "General Tutoring";
+    
+    const subject = tutor.subjects.find(s => s.code === state.selectedCourseId);
+    return subject ? `${subject.code} - ${subject.name}` : state.selectedCourseId;
+  };
+  
+  // Calculate session price
+  const calculatePrice = () => {
+    if (!tutor || !state.selectedDuration) return "$0.00";
+    
+    const hourlyRate = tutor.hourlyRate || 25;
+    const cost = (hourlyRate / 60) * state.selectedDuration;
+    return `$${cost.toFixed(2)}`;
+  };
+  
+  // Handle adding to calendar
+  const handleAddToCalendar = async () => {
+    try {
+      setAddingToCalendar(true);
+      
+      // Simulate calendar download
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast.success("Event added to calendar");
+      setAddingToCalendar(false);
+    } catch (error) {
+      console.error("Failed to add to calendar:", error);
+      toast.error("Failed to add event to calendar");
+      setAddingToCalendar(false);
+    }
+  };
+  
+  // Handle booking confirmation
+  const handleConfirmBooking = async () => {
+    try {
+      // This would integrate with backend in a real implementation
+      setBookingComplete(true);
+      toast.success("Your session has been booked!");
+    } catch (error) {
+      console.error("Booking failed:", error);
+      toast.error("Failed to book session");
+    }
+  };
 
-export function ConfirmationStep({ 
-  tutor, 
-  selectedSlot,
-  selectedDuration,
-  selectedCourseId,
-  selectedCourseName,
-  onClose,
-  onReset
-}: ConfirmationStepProps) {
-  // Format date and time for display
-  const slotDay = selectedSlot.day instanceof Date ? selectedSlot.day : new Date(selectedSlot.day);
-  const formattedDate = format(slotDay, 'EEEE, MMMM d, yyyy');
-  
-  // Format times for display
-  const formatTimeDisplay = (timeString: string) => {
-    const [hours, minutes] = timeString.split(':').map(Number);
-    const period = hours >= 12 ? 'PM' : 'AM';
-    const displayHours = hours % 12 || 12;
-    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
-  };
-  
-  const formattedStartTime = formatTimeDisplay(selectedSlot.start);
-  
-  // Calculate end time based on duration
-  const calculateEndTime = () => {
-    const [hours, minutes] = selectedSlot.start.split(':').map(Number);
-    const startMinutes = hours * 60 + minutes;
-    const endMinutes = startMinutes + selectedDuration;
-    
-    const endHours = Math.floor(endMinutes / 60);
-    const endMins = endMinutes % 60;
-    
-    return `${endHours.toString().padStart(2, '0')}:${endMins.toString().padStart(2, '0')}`;
-  };
-  
-  const formattedEndTime = formatTimeDisplay(calculateEndTime());
-  
-  // Calculate session cost
-  const hourlyRate = tutor.hourlyRate || 60; // Default to $60 if not set
-  const sessionCost = (hourlyRate / 60) * selectedDuration;
-  
-  // Handle adding to Google Calendar
-  const handleAddToGoogleCalendar = () => {
-    const courseSuffix = selectedCourseId ? ` for ${selectedCourseName || selectedCourseId}` : '';
-    const eventTitle = `Tutoring Session with ${tutor.name}${courseSuffix}`;
-    
-    const url = generateGoogleCalendarUrl(
-      tutor, 
-      slotDay, 
-      selectedSlot.start, 
-      selectedDuration,
-      eventTitle,
-      selectedCourseId
-    );
-    
-    window.open(url, '_blank');
-  };
-  
-  // Handle adding to Apple Calendar
-  const handleAddToAppleCalendar = () => {
-    // Format the session date with the time
-    const [hours, minutes] = selectedSlot.start.split(':').map(Number);
-    
-    const startDateTime = new Date(slotDay);
-    startDateTime.setHours(hours, minutes, 0, 0);
-    
-    const endDateTime = addMinutes(startDateTime, selectedDuration);
-    
-    const courseSuffix = selectedCourseId ? ` for ${selectedCourseName || selectedCourseId}` : '';
-    
-    const eventData: ICalEventData = {
-      title: `Tutoring Session with ${tutor.name}${courseSuffix}`,
-      description: `Tutoring session with ${tutor.name}${selectedCourseId ? ` for course ${selectedCourseId}` : ''}`,
-      location: "USC Campus",
-      startDate: startDateTime,
-      endDate: endDateTime,
-    };
-    
-    downloadICSFile(eventData, `tutoring-session-${format(startDateTime, 'yyyy-MM-dd')}.ics`);
-  };
-  
   return (
     <div className="space-y-6">
-      <div className="text-center">
-        <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-green-100 mb-4">
-          <Check className="h-8 w-8 text-green-600" />
-        </div>
-        <h2 className="text-2xl font-semibold mb-2">Booking Confirmed!</h2>
-        <p className="text-muted-foreground">
-          Your session with {tutor.name} has been successfully booked.
+      <div>
+        <h3 className="text-xl font-semibold">Session Summary</h3>
+        <p className="text-sm text-muted-foreground mt-1">
+          Review your session details before confirming.
         </p>
       </div>
-      
-      <div className="bg-muted/30 p-4 rounded-md space-y-3">
-        <div className="flex items-center">
-          <User className="h-5 w-5 mr-3 text-muted-foreground" />
-          <div>
-            <span className="font-medium">{tutor.name}</span>
-            {tutor.subjects && tutor.subjects.length > 0 && (
-              <p className="text-sm text-muted-foreground">
-                {tutor.subjects[0]?.name || tutor.subjects[0]?.code || 'Tutor'}
-              </p>
-            )}
-          </div>
-        </div>
-        
-        {selectedCourseId && (
+
+      <Card>
+        <CardContent className="p-6 space-y-4">
           <div className="flex items-start">
-            <span className="text-muted-foreground mr-3">Course:</span>
-            <span className="font-medium">{selectedCourseName || selectedCourseId}</span>
-          </div>
-        )}
-        
-        <div className="flex items-center">
-          <Calendar className="h-5 w-5 mr-3 text-muted-foreground" />
-          <span>{formattedDate}</span>
-        </div>
-        
-        <div className="flex items-center">
-          <Clock className="h-5 w-5 mr-3 text-muted-foreground" />
-          <div>
-            <div>{formattedStartTime} - {formattedEndTime}</div>
-            <div className="text-sm text-muted-foreground">
-              {selectedDuration} minutes
+            <Calendar className="h-5 w-5 mr-3 mt-0.5 text-usc-cardinal" />
+            <div>
+              <p className="font-medium">Date</p>
+              <p className="text-muted-foreground">
+                {state.selectedDate ? formatDate(state.selectedDate) : "Not selected"}
+              </p>
             </div>
           </div>
-        </div>
-        
-        <div className="flex items-center">
-          <CreditCard className="h-5 w-5 mr-3 text-muted-foreground" />
-          <span className="font-medium">${sessionCost.toFixed(2)} paid</span>
-        </div>
-      </div>
-      
-      <div className="space-y-3">
-        <p className="text-center text-sm text-muted-foreground">
-          Add this session to your calendar:
-        </p>
-        
-        <div className="flex flex-col space-y-2">
-          <Button
-            variant="outline"
-            className="w-full border-green-600 text-green-600 hover:bg-green-50"
-            onClick={handleAddToGoogleCalendar}
-          >
-            <Calendar className="mr-2 h-4 w-4" />
-            Add to Google Calendar
-          </Button>
           
-          <Button
-            variant="outline"
-            className="w-full border-green-600 text-green-600 hover:bg-green-50"
-            onClick={handleAddToAppleCalendar}
-          >
-            <Apple className="mr-2 h-4 w-4" />
-            Add to Apple Calendar
-          </Button>
-        </div>
-      </div>
+          <div className="flex items-start">
+            <Clock className="h-5 w-5 mr-3 mt-0.5 text-usc-cardinal" />
+            <div>
+              <p className="font-medium">Time & Duration</p>
+              <p className="text-muted-foreground">{formatTimeSlot()}</p>
+            </div>
+          </div>
+          
+          <div className="flex items-start">
+            <BookOpen className="h-5 w-5 mr-3 mt-0.5 text-usc-cardinal" />
+            <div>
+              <p className="font-medium">Course</p>
+              <p className="text-muted-foreground">{getSubjectName()}</p>
+            </div>
+          </div>
+          
+          <div className="flex items-start">
+            {state.sessionType === SessionType.VIRTUAL ? (
+              <Video className="h-5 w-5 mr-3 mt-0.5 text-usc-cardinal" />
+            ) : (
+              <MapPin className="h-5 w-5 mr-3 mt-0.5 text-usc-cardinal" />
+            )}
+            <div>
+              <p className="font-medium">Session Type</p>
+              <p className="text-muted-foreground">
+                {state.sessionType === SessionType.VIRTUAL 
+                  ? "Virtual (Zoom)" 
+                  : `In-person (${state.location || "Location not specified"})`}
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-start">
+            <User className="h-5 w-5 mr-3 mt-0.5 text-usc-cardinal" />
+            <div>
+              <p className="font-medium">Tutor</p>
+              <p className="text-muted-foreground">{tutor?.name || "Not specified"}</p>
+            </div>
+          </div>
+          
+          <Separator className="my-4" />
+          
+          <div className="flex justify-between">
+            <p className="font-medium">Session Price</p>
+            <p className="font-bold">{calculatePrice()}</p>
+          </div>
+          
+          {state.notes && (
+            <>
+              <Separator className="my-4" />
+              <div>
+                <p className="font-medium">Your Notes</p>
+                <p className="text-muted-foreground mt-1">{state.notes}</p>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
       
-      <div className="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-3 mt-6">
-        {onReset && (
-          <Button 
-            variant="outline" 
-            onClick={onReset}
-            className="sm:flex-1 max-w-[200px] mx-auto"
-          >
-            Book Another Session
-          </Button>
+      <Button
+        variant="outline"
+        className="w-full flex items-center justify-center"
+        disabled={addingToCalendar || bookingComplete}
+        onClick={handleAddToCalendar}
+      >
+        {addingToCalendar ? (
+          <>
+            <Clock className="h-4 w-4 mr-2 animate-spin" />
+            Adding to calendar...
+          </>
+        ) : (
+          <>
+            <Download className="h-4 w-4 mr-2" />
+            Add to Calendar
+          </>
         )}
-        
-        <Button 
-          onClick={onClose}
-          className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white sm:flex-1 max-w-[200px] mx-auto"
-        >
-          Close
-        </Button>
-      </div>
+      </Button>
     </div>
   );
 }

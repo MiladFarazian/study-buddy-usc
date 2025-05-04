@@ -1,61 +1,99 @@
 
+import { useState, useEffect } from "react";
+import { useScheduling } from "@/contexts/SchedulingContext";
+import { useAuthState } from "@/hooks/useAuthState";
+import { User } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ChangeEvent, useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 
-interface StudentInfoFormProps {
-  email: string;
-  onEmailChange: (e: ChangeEvent<HTMLInputElement>) => void;
-}
-
-export const StudentInfoForm = ({
-  email,
-  onEmailChange
-}: StudentInfoFormProps) => {
-  const [notes, setNotes] = useState("");
-  const { user } = useAuth();
+export function StudentInfoForm() {
+  const { state, dispatch } = useScheduling();
+  const { user } = useAuthState();
   
-  // Auto-fill the email field with the user's email if available and email is empty
+  const [name, setName] = useState(state.studentName || "");
+  const [email, setEmail] = useState(state.studentEmail || "");
+  const [notes, setNotes] = useState(state.notes || "");
+  
+  // Populate form with user data if available
   useEffect(() => {
-    if (user?.email && !email) {
-      // Create a synthetic event to simulate user input
-      const syntheticEvent = {
-        target: { value: user.email }
-      } as ChangeEvent<HTMLInputElement>;
+    if (user) {
+      const userName = user.user_metadata?.name || "";
+      const userEmail = user.email || "";
       
-      onEmailChange(syntheticEvent);
+      if (name === "") setName(userName);
+      if (email === "") setEmail(userEmail);
+      
+      dispatch({ 
+        type: 'SET_STUDENT_INFO', 
+        payload: { 
+          name: userName, 
+          email: userEmail 
+        } 
+      });
     }
-  }, [user, email, onEmailChange]);
+  }, [user, dispatch, name, email]);
+  
+  // Update context when form values change
+  useEffect(() => {
+    dispatch({ 
+      type: 'SET_STUDENT_INFO', 
+      payload: { 
+        name, 
+        email 
+      } 
+    });
+    
+    dispatch({ 
+      type: 'SET_NOTES', 
+      payload: notes 
+    });
+  }, [name, email, notes, dispatch]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-3">Contact Information</h3>
-        <Label htmlFor="email" className="mb-2 block">Email</Label>
-        <Input
-          id="email"
-          type="email"
-          placeholder="Enter your email address"
-          value={email}
-          onChange={onEmailChange}
-          required
-        />
+        <h3 className="text-xl font-semibold">Your Details</h3>
+        <p className="text-sm text-muted-foreground mt-1">
+          Please confirm your information and add any specific details for your tutor.
+        </p>
       </div>
-      
-      <div>
-        <Label htmlFor="notes" className="mb-2 block">
-          Notes for the tutor <span className="text-sm text-muted-foreground">(optional)</span>
-        </Label>
-        <Textarea
-          id="notes"
-          placeholder="Any specific topics or areas you'd like to cover in the session?"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          className="h-24 resize-none"
-        />
+
+      <div className="space-y-4">
+        <div className="grid gap-2">
+          <Label htmlFor="name">Your Name</Label>
+          <Input
+            id="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Enter your name"
+            required
+          />
+        </div>
+        
+        <div className="grid gap-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Enter your email"
+            required
+          />
+        </div>
+        
+        <div className="grid gap-2">
+          <Label htmlFor="notes">Notes for Your Tutor (Optional)</Label>
+          <Textarea
+            id="notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Add any specific topics or questions you'd like to cover"
+            className="min-h-[100px]"
+          />
+        </div>
       </div>
     </div>
   );
-};
+}
