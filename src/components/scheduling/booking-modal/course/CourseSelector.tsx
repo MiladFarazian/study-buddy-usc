@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Course } from "@/types/CourseTypes";
+import { Tutor } from "@/types/tutor";
 
 interface CourseSelectorProps {
   selectedCourseId: string | null;
@@ -13,6 +14,7 @@ interface CourseSelectorProps {
   onBack?: () => void;
   loading?: boolean;
   courses?: Course[];
+  tutor?: Tutor; // Added tutor prop to the interface
 }
 
 export function CourseSelector({
@@ -20,7 +22,8 @@ export function CourseSelector({
   onCourseSelect,
   onBack,
   loading = false,
-  courses = []
+  courses = [],
+  tutor // Added tutor parameter
 }: CourseSelectorProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const { setCourse } = useScheduling();

@@ -120,15 +120,18 @@ export function BookSessionModal({
       case BookingStep.SELECT_COURSE:
         return (
           <CourseSelector 
-            tutor={tutor}
             selectedCourseId={state.selectedCourseId}
             onCourseSelect={(courseId) => dispatch({ type: 'SET_COURSE', payload: courseId })}
+            tutor={tutor} // Now valid since we updated the interface
           />
         );
         
       case BookingStep.SELECT_SESSION_TYPE:
         return (
-          <SessionTypeSelector />
+          <SessionTypeSelector 
+            onBack={() => goToPreviousStep()}
+            onContinue={() => continueToNextStep()}
+          />
         );
         
       case BookingStep.FILL_FORM:

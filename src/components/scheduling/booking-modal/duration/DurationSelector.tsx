@@ -129,6 +129,7 @@ export function DurationSelector({
       )}
       
       <SessionDurationSelector 
+        selectedDuration={selectedDuration}
         sessionTimeRange={getSessionTimeRange()}
         calculatedCost={calculatedCost}
         sessionDuration={selectedDuration}

@@ -1,136 +1,116 @@
 
-import { useState } from "react";
+import React from "react";
 import { useScheduling, SessionType } from "@/contexts/SchedulingContext";
-import { MapPin, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { VideoIcon, MapPin } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 interface SessionTypeSelectorProps {
   onBack?: () => void;
   onContinue?: () => void;
 }
 
-export function SessionTypeSelector({
-  onBack,
-  onContinue
-}: SessionTypeSelectorProps) {
+export function SessionTypeSelector({ onBack, onContinue }: SessionTypeSelectorProps) {
   const { state, setSessionType, setLocation } = useScheduling();
-  const [customLocation, setCustomLocation] = useState(state.location || "");
-
-  const handleSessionTypeChange = (type: SessionType) => {
-    setSessionType(type);
+  const [locationInput, setLocationInput] = React.useState(state.location || "");
+  
+  const handleSessionTypeChange = (value: string) => {
+    setSessionType(value as SessionType);
     
-    // Reset location if switching to virtual
-    if (type === SessionType.VIRTUAL) {
+    // Reset location if switching from in-person to virtual
+    if (value === SessionType.VIRTUAL) {
       setLocation(null);
-      setCustomLocation("");
+      setLocationInput("");
     }
   };
-
+  
   const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const location = e.target.value;
-    setCustomLocation(location);
-    setLocation(location);
+    setLocationInput(e.target.value);
+    setLocation(e.target.value);
   };
-
-  const handleContinue = () => {
-    if (onContinue) {
-      onContinue();
-    }
-  };
-
-  const handleBack = () => {
-    if (onBack) {
-      onBack();
-    }
-  };
-
+  
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-xl font-semibold">Session Format</h3>
+        <h3 className="text-xl font-semibold">Session Location</h3>
         <p className="text-sm text-muted-foreground mt-1">
-          Choose how you want to meet with your tutor.
+          Choose how you'd like to meet with your tutor.
         </p>
       </div>
-
-      <div className="border rounded-md p-6 space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Button
-            type="button"
-            onClick={() => handleSessionTypeChange(SessionType.IN_PERSON)}
-            className={cn(
-              "flex flex-col items-center h-auto py-6 px-4",
-              state.sessionType === SessionType.IN_PERSON
-                ? "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark"
-                : "bg-white text-gray-800 border hover:bg-gray-100"
-            )}
-            variant={state.sessionType === SessionType.IN_PERSON ? "default" : "outline"}
-          >
-            <MapPin className="h-8 w-8 mb-2" />
-            <span className="text-lg font-medium">In-Person</span>
-            <span className="text-sm text-center mt-1">
-              Meet on campus or another location
-            </span>
-          </Button>
-
-          <Button
-            type="button"
-            onClick={() => handleSessionTypeChange(SessionType.VIRTUAL)}
-            className={cn(
-              "flex flex-col items-center h-auto py-6 px-4",
-              state.sessionType === SessionType.VIRTUAL
-                ? "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark"
-                : "bg-white text-gray-800 border hover:bg-gray-100"
-            )}
-            variant={state.sessionType === SessionType.VIRTUAL ? "default" : "outline"}
-          >
-            <Video className="h-8 w-8 mb-2" />
-            <span className="text-lg font-medium">Virtual</span>
-            <span className="text-sm text-center mt-1">
-              Meet online via video call
-            </span>
-          </Button>
-        </div>
-
-        {state.sessionType === SessionType.IN_PERSON && (
-          <div className="pt-4 border-t">
-            <Label htmlFor="location" className="mb-2 block">
-              Meeting Location
-            </Label>
-            <Input
-              id="location"
-              placeholder="Enter a meeting location (e.g., Leavey Library)"
-              value={customLocation}
-              onChange={handleLocationChange}
-              className="w-full"
-            />
-            <p className="text-xs text-muted-foreground mt-2">
-              Specify where on campus you'd like to meet your tutor
-            </p>
+      
+      <RadioGroup 
+        value={state.sessionType} 
+        onValueChange={handleSessionTypeChange}
+        className="space-y-4"
+      >
+        <div className={`border rounded-md p-4 ${state.sessionType === SessionType.IN_PERSON ? "border-usc-cardinal" : ""}`}>
+          <div className="flex items-start space-x-3">
+            <RadioGroupItem value={SessionType.IN_PERSON} id="in-person" />
+            <div className="grid gap-1.5">
+              <Label htmlFor="in-person" className="font-medium flex items-center">
+                <MapPin className="h-4 w-4 mr-2" />
+                Meet In Person
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Meet your tutor at an agreed location on campus.
+              </p>
+              
+              {state.sessionType === SessionType.IN_PERSON && (
+                <div className="mt-3">
+                  <Label htmlFor="location" className="text-sm font-medium">
+                    Suggested Meeting Location
+                  </Label>
+                  <Input
+                    id="location"
+                    placeholder="e.g. USC Library, Leavey Library, etc."
+                    className="mt-1"
+                    value={locationInput}
+                    onChange={handleLocationChange}
+                  />
+                </div>
+              )}
+            </div>
           </div>
-        )}
-      </div>
-
-      <div className="flex justify-between pt-4">
-        {onBack && (
-          <Button variant="outline" onClick={handleBack}>
+        </div>
+        
+        <div className={`border rounded-md p-4 ${state.sessionType === SessionType.VIRTUAL ? "border-usc-cardinal" : ""}`}>
+          <div className="flex items-start space-x-3">
+            <RadioGroupItem value={SessionType.VIRTUAL} id="virtual" />
+            <div className="grid gap-1.5">
+              <Label htmlFor="virtual" className="font-medium flex items-center">
+                <VideoIcon className="h-4 w-4 mr-2" />
+                Meet Online
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Connect virtually through Zoom, Google Meet, or other platforms.
+              </p>
+              
+              {state.sessionType === SessionType.VIRTUAL && (
+                <p className="mt-2 text-sm">
+                  We'll set up the virtual meeting details after booking.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </RadioGroup>
+      
+      {onBack && onContinue && (
+        <div className="flex justify-between mt-8">
+          <Button variant="outline" onClick={onBack}>
             Back
           </Button>
-        )}
-        
-        {onContinue && (
+          
           <Button 
-            className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white ml-auto"
-            onClick={handleContinue}
-            disabled={state.sessionType === SessionType.IN_PERSON && !customLocation.trim()}
+            className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
+            onClick={onContinue}
           >
             Continue
           </Button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -20,7 +20,16 @@ interface SessionDurationSelectorProps {
 
 export function SessionDurationSelector({
   selectedDuration,
-  onDurationChange
+  onDurationChange,
+  sessionTimeRange,
+  calculatedCost,
+  sessionDuration,
+  onStartTimeChange,
+  maxDuration,
+  hourlyRate,
+  availableStartTimes,
+  selectedStartTime,
+  formatTimeForDisplay
 }: SessionDurationSelectorProps) {
   // Session duration options in minutes
   const durationOptions = [

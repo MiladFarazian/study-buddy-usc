@@ -85,11 +85,12 @@ export function BookingStepSelector({
       case BookingStep.SELECT_COURSE:
         return (
           <CourseSelector
-            courses={courses as Course[]}
             selectedCourseId={state.selectedCourseId}
             onCourseSelect={(courseId) => dispatch({ type: 'SET_COURSE', payload: courseId })}
             onBack={() => dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_DURATION })}
             loading={coursesLoading}
+            courses={courses as Course[]}
+            tutor={tutor}
           />
         );
       case BookingStep.SELECT_SESSION_TYPE:
