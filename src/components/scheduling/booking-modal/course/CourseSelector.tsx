@@ -1,135 +1,141 @@
 
-import { useState } from "react";
-import { useScheduling } from "@/contexts/SchedulingContext";
-import { Check, BookOpen, Search, ArrowLeft } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { Course } from "@/types/CourseTypes";
-import { Tutor } from "@/types/tutor";
 import { useTutorCourses } from "@/hooks/useTutorCourses";
+import { Tutor } from "@/types/tutor";
+import { Course } from "@/types/CourseTypes";
+import { Loader2, ArrowLeft, ArrowRight } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 interface CourseSelectorProps {
   selectedCourseId: string | null;
   onCourseSelect: (courseId: string | null) => void;
+  tutor: Tutor;
   onBack?: () => void;
-  loading?: boolean;
-  courses?: Course[];
-  tutor?: Tutor;
+  onContinue?: () => void;
 }
 
-export function CourseSelector({
-  selectedCourseId,
-  onCourseSelect,
+export function CourseSelector({ 
+  selectedCourseId, 
+  onCourseSelect, 
+  tutor,
   onBack,
-  loading = false,
-  courses: propsCourses,
-  tutor
+  onContinue
 }: CourseSelectorProps) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const { setCourse } = useScheduling();
+  const { courses, loading } = useTutorCourses(tutor.id);
+  const [noSpecificCourse, setNoSpecificCourse] = useState<boolean>(selectedCourseId === null);
   
-  // Fetch courses if they weren't provided as props
-  const { courses: fetchedCourses, loading: coursesLoading } = useTutorCourses(tutor?.id);
-  
-  // Use courses from props if available, otherwise use fetched courses
-  const courses = propsCourses || fetchedCourses || [];
-  const isLoading = loading || coursesLoading;
-  
-  // Filter courses based on search query
-  const filteredCourses = courses.filter(course => 
-    course.course_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    course.course_title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Select "No specific course" if no course is selected and we have courses
+  useEffect(() => {
+    if (courses && courses.length > 0 && selectedCourseId === null && !noSpecificCourse) {
+      setNoSpecificCourse(true);
+    }
+  }, [courses, selectedCourseId, noSpecificCourse]);
 
-  // Handle course selection
-  const handleSelectCourse = (courseId: string) => {
+  const handleCourseSelect = (courseId: string) => {
+    setNoSpecificCourse(false);
     onCourseSelect(courseId);
-    setCourse(courseId);
   };
-
-  // Option to not select a specific course
-  const handleSkip = () => {
+  
+  const handleNoSpecificCourse = () => {
+    setNoSpecificCourse(true);
     onCourseSelect(null);
-    setCourse(null);
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-usc-cardinal"></div>
-        <span className="ml-2">Loading courses...</span>
-      </div>
-    );
-  }
-
+  
   return (
-    <div className="space-y-6">
-      <div className="flex items-center">
+    <div className="space-y-4">
+      <div className="flex items-center mb-4">
         {onBack && (
-          <Button variant="ghost" onClick={onBack} className="mr-2 p-0">
-            <ArrowLeft className="h-4 w-4" />
-            <span className="ml-2">Back</span>
+          <Button variant="ghost" onClick={onBack} className="pl-0">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
           </Button>
         )}
-        <h3 className="text-xl font-semibold">Select Class</h3>
+        <h3 className="text-xl font-semibold ml-2">Select Course</h3>
       </div>
-
-      <div className="space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search courses"
-            className="pl-9"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+      
+      {loading ? (
+        <div className="flex justify-center items-center py-6">
+          <Loader2 className="h-6 w-6 animate-spin text-usc-cardinal mr-2" />
+          <p>Loading courses...</p>
         </div>
-
-        <div className="space-y-2 max-h-[400px] overflow-y-auto">
-          {filteredCourses.length > 0 ? (
-            filteredCourses.map((course) => (
-              <div
-                key={course.course_number}
-                className={cn(
-                  "border rounded-md p-4 cursor-pointer hover:border-usc-cardinal",
-                  selectedCourseId === course.course_number ? "border-usc-cardinal border-2" : ""
-                )}
-                onClick={() => handleSelectCourse(course.course_number)}
+      ) : (
+        <>
+          <RadioGroup 
+            value={noSpecificCourse ? "no-course" : (selectedCourseId || "")}
+            onValueChange={(value) => {
+              if (value === "no-course") {
+                handleNoSpecificCourse();
+              } else {
+                handleCourseSelect(value);
+              }
+            }}
+          >
+            <div className="space-y-3">
+              <div 
+                className={`
+                  flex items-center space-x-2 rounded-lg border p-4 cursor-pointer
+                  ${noSpecificCourse ? "border-usc-cardinal bg-red-50" : ""}
+                `}
+                onClick={handleNoSpecificCourse}
               >
-                <div className="flex items-start">
-                  <div className="flex-shrink-0 pt-0.5">
-                    <div className={cn(
-                      "w-5 h-5 rounded-full border flex items-center justify-center",
-                      selectedCourseId === course.course_number ? "border-usc-cardinal bg-usc-cardinal" : "border-gray-300"
-                    )}>
-                      {selectedCourseId === course.course_number && (
-                        <Check className="h-3 w-3 text-white" />
-                      )}
-                    </div>
-                  </div>
-                  <div className="ml-3">
-                    <p className="font-medium">{course.course_number}</p>
-                    <p className="text-sm text-muted-foreground">{course.course_title}</p>
-                  </div>
-                </div>
+                <RadioGroupItem value="no-course" id="no-course" />
+                <Label htmlFor="no-course" className="cursor-pointer">
+                  <div className="font-medium">General Tutoring Session</div>
+                  <p className="text-sm text-muted-foreground">Not specific to any particular class</p>
+                </Label>
               </div>
-            ))
-          ) : (
-            <div className="text-center py-4 text-muted-foreground">
-              {searchQuery ? "No courses match your search" : "No courses available"}
+              
+              {courses && courses.length > 0 ? (
+                courses.map((course: Course) => (
+                  <div 
+                    key={course.course_number}
+                    className={`
+                      flex items-center space-x-2 rounded-lg border p-4 cursor-pointer
+                      ${selectedCourseId === course.course_number && !noSpecificCourse ? "border-usc-cardinal bg-red-50" : ""}
+                    `}
+                    onClick={() => handleCourseSelect(course.course_number)}
+                  >
+                    <RadioGroupItem value={course.course_number} id={`course-${course.course_number}`} />
+                    <Label htmlFor={`course-${course.course_number}`} className="cursor-pointer">
+                      <div className="font-medium">{course.course_number}</div>
+                      {course.course_title && (
+                        <p className="text-sm text-muted-foreground">{course.course_title}</p>
+                      )}
+                    </Label>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-4 bg-muted/30 rounded-lg">
+                  <p className="text-muted-foreground">This tutor hasn't added any courses yet.</p>
+                </div>
+              )}
+            </div>
+          </RadioGroup>
+
+          {(onBack || onContinue) && (
+            <div className="flex justify-between pt-4 mt-6">
+              {onBack && (
+                <Button variant="outline" onClick={onBack}>
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back
+                </Button>
+              )}
+              
+              {onContinue && (
+                <Button 
+                  className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
+                  onClick={onContinue}
+                >
+                  Continue
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              )}
             </div>
           )}
-        </div>
-
-        <Button
-          variant="ghost"
-          className="w-full mt-2"
-          onClick={handleSkip}
-        >
-          I don't need a specific course
-        </Button>
-      </div>
+        </>
+      )}
     </div>
   );
 }

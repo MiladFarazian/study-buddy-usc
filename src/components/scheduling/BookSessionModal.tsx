@@ -126,6 +126,14 @@ export function BookSessionModal({
           <SessionDurationSelector
             selectedDuration={state.selectedDuration}
             onDurationChange={(duration) => dispatch({ type: 'SET_DURATION', payload: duration })}
+            sessionTimeRange={state.selectedTimeSlot ? {
+              start: state.selectedTimeSlot.start,
+              end: state.selectedTimeSlot.end
+            } : undefined}
+            calculatedCost={state.selectedTimeSlot ? 
+              (tutor.hourlyRate / 60) * state.selectedDuration : undefined}
+            onBack={handleBack}
+            onContinue={handleContinue}
           />
         );
         
@@ -135,6 +143,8 @@ export function BookSessionModal({
             selectedCourseId={state.selectedCourseId}
             onCourseSelect={(courseId) => dispatch({ type: 'SET_COURSE', payload: courseId })}
             tutor={tutor}
+            onBack={handleBack}
+            onContinue={handleContinue}
           />
         );
         

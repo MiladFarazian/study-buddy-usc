@@ -4,6 +4,7 @@ import { Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 
 interface SessionDurationSelectorProps {
   selectedDuration: number;
@@ -17,6 +18,8 @@ interface SessionDurationSelectorProps {
   availableStartTimes?: string[];
   selectedStartTime?: string;
   formatTimeForDisplay?: (time: string) => string;
+  onBack?: () => void;
+  onContinue?: () => void;
 }
 
 export function SessionDurationSelector({
@@ -27,7 +30,9 @@ export function SessionDurationSelector({
   onStartTimeChange,
   availableStartTimes = [],
   selectedStartTime,
-  formatTimeForDisplay = (time) => time
+  formatTimeForDisplay = (time) => time,
+  onBack,
+  onContinue
 }: SessionDurationSelectorProps) {
   // Session duration options in minutes
   const durationOptions = [
@@ -105,6 +110,33 @@ export function SessionDurationSelector({
               </p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Add back the navigation buttons */}
+      {(onBack || onContinue) && (
+        <div className="flex justify-between pt-4 mt-8">
+          {onBack && (
+            <Button 
+              variant="outline" 
+              onClick={onBack}
+              className="px-6"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+          )}
+          
+          {onContinue && (
+            <Button 
+              className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white px-6"
+              onClick={onContinue}
+              disabled={!selectedDuration}
+            >
+              Continue
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          )}
         </div>
       )}
     </div>
