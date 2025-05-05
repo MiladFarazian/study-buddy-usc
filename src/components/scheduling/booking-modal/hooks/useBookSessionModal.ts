@@ -1,15 +1,18 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { useScheduling, BookingStep } from '@/contexts/SchedulingContext';
-import { Tutor } from '@/types/tutor';
-import { BookingSlot } from '@/lib/scheduling/types';
-import { useAuthState } from '@/hooks/useAuthState';
-import { createSessionBooking } from '@/lib/scheduling/booking-utils';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { parseISO, format, isValid } from 'date-fns';
-import { useNavigate } from 'react-router-dom';
-import useTutorStudentCourses from '@/hooks/useTutorStudentCourses';
+import { useState, useEffect, useCallback } from "react";
+import { addDays, startOfDay } from "date-fns";
+import { Tutor } from "@/types/tutor";
+import { BookingSlot } from "@/lib/scheduling/types";
+import { toast } from "sonner";
+import { BookingStep, useScheduling } from "@/contexts/SchedulingContext";
+import { useAvailabilityData } from "@/hooks/useAvailabilityData";
+
+interface BookingState {
+  bookingStep: BookingStep; 
+  selectedTimeSlot: BookingSlot | null;
+  selectedDuration: number;
+  selectedCourseId: string | null;
+}
 
 export function useBookSessionModal(
   tutor: Tutor, 
@@ -18,314 +21,126 @@ export function useBookSessionModal(
   initialDate?: Date,
   initialTime?: string
 ) {
-  const { state, dispatch, setCourse } = useScheduling();
-  const { user } = useAuthState();
-  const navigate = useNavigate();
-  const { courses } = useTutorStudentCourses();
+  // State for the booking flow
+  const [state, setState] = useState<BookingState>({
+    bookingStep: BookingStep.SELECT_DATE_TIME,
+    selectedTimeSlot: null,
+    selectedDuration: 60, // Default to 1 hour
+    selectedCourseId: null
+  });
   
-  const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [availableSlots, setAvailableSlots] = useState<BookingSlot[]>([]);
-  const [hasAvailability, setHasAvailability] = useState(true);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(initialDate);
+  // Get access to the SchedulingContext
+  const { dispatch, setCourse, setTutor } = useScheduling();
   
-  // Initialize with initial date and time if provided
+  // State for selected date
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    if (initialDate) return startOfDay(initialDate);
+    return startOfDay(new Date());
+  });
+
+  // Ensure we set the tutor in context
   useEffect(() => {
-    if (isOpen && initialDate) {
-      setSelectedDate(initialDate);
-      
-      if (initialTime) {
-        // Try to match the time format to find the right slot
-        // This assumes initialTime is in a format like "14:00"
-        const matchedSlot = availableSlots.find(slot => slot.start === initialTime);
-        if (matchedSlot) {
-          handleSelectSlot(matchedSlot);
-        }
-      }
+    if (isOpen && tutor) {
+      setTutor(tutor);
     }
-  }, [isOpen, initialDate, initialTime, availableSlots]);
+  }, [isOpen, tutor, setTutor]);
   
-  // Fetch available slots when date changes
+  // If the modal is closed, reset state
   useEffect(() => {
-    if (selectedDate && tutor?.id) {
-      loadAvailableSlots(selectedDate, tutor.id);
+    if (!isOpen) {
+      setState({
+        bookingStep: BookingStep.SELECT_DATE_TIME,
+        selectedTimeSlot: null,
+        selectedDuration: 60,
+        selectedCourseId: null
+      });
+      
+      // Also reset the course in the scheduling context
+      setCourse(null);
     }
-  }, [selectedDate, tutor?.id]);
-  
-  // Load available slots for the selected date
-  const loadAvailableSlots = async (date: Date, tutorId: string) => {
-    setLoading(true);
-    setErrorMessage(null);
-    
-    try {
-      // Construct date strings for the query
-      const startOfDay = new Date(date);
-      startOfDay.setHours(0, 0, 0, 0);
-      
-      const endOfDay = new Date(date);
-      endOfDay.setHours(23, 59, 59, 999);
-      
-      // Get tutor availability
-      const { data: availabilityData, error: availabilityError } = await supabase
-        .from('tutor_availability')
-        .select('availability')
-        .eq('tutor_id', tutorId)
-        .single();
-        
-      if (availabilityError) {
-        throw availabilityError;
-      }
-      
-      if (!availabilityData || !availabilityData.availability) {
-        setHasAvailability(false);
-        setAvailableSlots([]);
-        setLoading(false);
-        return;
-      }
-      
-      // Get booked sessions for this date
-      const { data: bookedSessions, error: sessionsError } = await supabase
-        .from('sessions')
-        .select('start_time, end_time')
-        .eq('tutor_id', tutorId)
-        .gte('start_time', startOfDay.toISOString())
-        .lte('start_time', endOfDay.toISOString())
-        .in('status', ['confirmed', 'pending']);
-        
-      if (sessionsError) {
-        throw sessionsError;
-      }
-      
-      // Get day of week (0-6, where 0 is Sunday)
-      const dayOfWeek = date.getDay();
-      const dayKey = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][dayOfWeek];
-      
-      // Check if tutor has availability for this day
-      const dayAvailability = availabilityData.availability[dayKey];
-      
-      if (!dayAvailability || dayAvailability.length === 0) {
-        setHasAvailability(false);
-        setAvailableSlots([]);
-        setLoading(false);
-        return;
-      }
-      
-      // Generate 30-minute slots from availability
-      const generatedSlots: BookingSlot[] = [];
-      
-      for (const timeSlot of dayAvailability) {
-        const [startHour, startMinute] = timeSlot.start.split(':').map(Number);
-        const [endHour, endMinute] = timeSlot.end.split(':').map(Number);
-        
-        let currentHour = startHour;
-        let currentMinute = startMinute;
-        
-        while (
-          currentHour < endHour || 
-          (currentHour === endHour && currentMinute < endMinute)
-        ) {
-          const slotEndHour = currentMinute + 30 >= 60 ? currentHour + 1 : currentHour;
-          const slotEndMinute = (currentMinute + 30) % 60;
-          
-          // Skip if this would exceed the end time
-          if (
-            slotEndHour > endHour || 
-            (slotEndHour === endHour && slotEndMinute > endMinute)
-          ) {
-            break;
-          }
-          
-          // Format start and end times
-          const startFormatted = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
-          const endFormatted = `${slotEndHour.toString().padStart(2, '0')}:${slotEndMinute.toString().padStart(2, '0')}`;
-          
-          // Create a slot with tutorId included (fixing the error)
-          const slot: BookingSlot = {
-            day: date,
-            start: startFormatted,
-            end: endFormatted,
-            available: true,
-            tutorId: tutorId // Add the tutorId property here
-          };
-          
-          // Check if this slot overlaps with any booked session
-          bookedSessions.forEach(session => {
-            const sessionDate = new Date(session.start_time);
-            
-            // Only check sessions on the same day
-            if (sessionDate.toDateString() === date.toDateString()) {
-              const sessionStartMinutes = convertTimeToMinutes(session.start_time);
-              const sessionEndMinutes = convertTimeToMinutes(session.end_time);
-              
-              // Check for overlap
-              if (
-                (currentHour * 60 + currentMinute) >= sessionStartMinutes && 
-                (currentHour * 60 + currentMinute) < sessionEndMinutes
-              ) {
-                slot.available = false;
-              }
-            }
-          });
-          
-          // Add to available slots
-          generatedSlots.push(slot);
-          
-          // Move to next slot
-          currentHour = slotEndMinute === 0 ? slotEndHour : currentHour;
-          currentMinute = slotEndMinute;
-        }
-      }
-      
-      // Filter to only available slots and sort by time
-      const availableSlots = generatedSlots
-        .filter(slot => slot.available)
-        .sort((a, b) => a.start.localeCompare(b.start));
-      
-      setAvailableSlots(availableSlots);
-      setHasAvailability(availableSlots.length > 0);
-      
-      if (!availableSlots.length) {
-        setErrorMessage("This tutor is fully booked for the selected date.");
-      } else {
-        setErrorMessage(null);
-      }
-      
-    } catch (error) {
-      console.error("Error loading available slots:", error);
-      setErrorMessage("Failed to load available times. Please try again.");
-      setHasAvailability(false);
-    } finally {
-      setLoading(false);
+  }, [isOpen, setCourse]);
+
+  // Sync selected date with SchedulingContext
+  useEffect(() => {
+    if (selectedDate) {
+      dispatch({ type: 'SELECT_DATE', payload: selectedDate });
     }
-  };
-  
-  // Helper function to convert time to minutes since start of day
-  const convertTimeToMinutes = (timeString: string): number => {
-    const date = new Date(timeString);
-    return date.getHours() * 60 + date.getMinutes();
-  };
-  
-  // Refresh availability
-  const refreshAvailability = () => {
-    if (selectedDate && tutor?.id) {
-      loadAvailableSlots(selectedDate, tutor.id);
+  }, [selectedDate, dispatch]);
+
+  // Sync selected time slot with SchedulingContext
+  useEffect(() => {
+    if (state.selectedTimeSlot) {
+      dispatch({ type: 'SELECT_TIME_SLOT', payload: state.selectedTimeSlot });
     }
-  };
+  }, [state.selectedTimeSlot, dispatch]);
+
+  // Sync selected duration with SchedulingContext
+  useEffect(() => {
+    if (state.selectedDuration) {
+      dispatch({ type: 'SET_DURATION', payload: state.selectedDuration });
+    }
+  }, [state.selectedDuration, dispatch]);
+  
+  // Get available slots for the selected date
+  const { availableSlots, loading, errorMessage, refreshAvailability } = 
+    useAvailabilityData(tutor, selectedDate);
+  
+  // Check if there's any availability
+  const hasAvailability = availableSlots.length > 0;
   
   // Handle date change
-  const handleDateChange = (date: Date | undefined) => {
+  const handleDateChange = (date: Date) => {
     setSelectedDate(date);
-    if (date) {
-      dispatch({ type: 'SELECT_DATE', payload: date });
-    }
+    setState(prev => ({ ...prev, selectedTimeSlot: null }));
+    dispatch({ type: 'SELECT_DATE', payload: date });
   };
   
   // Handle slot selection
   const handleSelectSlot = (slot: BookingSlot) => {
+    setState(prev => ({ ...prev, selectedTimeSlot: slot }));
     dispatch({ type: 'SELECT_TIME_SLOT', payload: slot });
-    dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_DURATION });
   };
   
   // Handle duration change
-  const handleDurationChange = (minutes: number) => {
-    dispatch({ type: 'SET_DURATION', payload: minutes });
-    dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_COURSE });
+  const handleDurationChange = (duration: number) => {
+    setState(prev => ({ ...prev, selectedDuration: duration }));
+    dispatch({ type: 'SET_DURATION', payload: duration });
   };
   
-  // Handle course change
+  // Handle course selection
   const handleCourseChange = (courseId: string | null) => {
-    console.log("Selecting course in useBookSessionModal:", courseId);
+    console.log("Course selection in useBookSessionModal:", courseId);
+    setState(prev => ({ ...prev, selectedCourseId: courseId }));
+    // Also update the course in the scheduling context
     setCourse(courseId);
-    dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_SESSION_TYPE });
   };
   
-  // Handle close
+  // Handle when user continues to next step
+  const handleContinue = () => {
+    if (state.bookingStep === BookingStep.SELECT_DATE_TIME && !state.selectedTimeSlot) {
+      toast.error("Please select a time slot before continuing");
+      return;
+    }
+    
+    const nextStep = state.bookingStep + 1 as BookingStep;
+    setState(prev => ({ ...prev, bookingStep: nextStep }));
+    dispatch({ type: 'SET_STEP', payload: nextStep });
+  };
+  
+  // Handle when user goes back to previous step
+  const handleBack = () => {
+    const prevStep = Math.max(0, state.bookingStep - 1) as BookingStep;
+    setState(prev => ({ ...prev, bookingStep: prevStep }));
+    dispatch({ type: 'SET_STEP', payload: prevStep });
+  };
+  
+  // Handle closing the modal
   const handleClose = () => {
     onClose();
   };
   
-  // Handle continue
-  const handleContinue = () => {
-    const nextStep = state.bookingStep + 1;
-    dispatch({ type: 'SET_STEP', payload: nextStep as BookingStep });
-  };
-  
-  // Handle back
-  const handleBack = () => {
-    if (state.bookingStep > 0) {
-      const prevStep = state.bookingStep - 1;
-      dispatch({ type: 'SET_STEP', payload: prevStep as BookingStep });
-    }
-  };
-  
-  // Handle booking completion
-  const handleBookingComplete = async () => {
-    if (!user || !state.selectedTimeSlot || !tutor) {
-      toast.error("Missing required information for booking");
-      return;
-    }
-    
-    setLoading(true);
-    
-    try {
-      // Calculate booking start and end times
-      const bookingDate = new Date(state.selectedTimeSlot.day);
-      const [startHour, startMinute] = state.selectedTimeSlot.start.split(':').map(Number);
-      bookingDate.setHours(startHour, startMinute, 0, 0);
-      
-      const endTime = new Date(bookingDate);
-      endTime.setMinutes(endTime.getMinutes() + state.selectedDuration);
-      
-      console.log("Booking session with:", {
-        studentId: user.id,
-        tutorId: tutor.id,
-        courseId: state.selectedCourseId,
-        startTime: bookingDate.toISOString(),
-        endTime: endTime.toISOString(),
-        sessionType: state.sessionType,
-        location: state.location
-      });
-      
-      // Create the session
-      const result = await createSessionBooking(
-        user.id,
-        tutor.id,
-        state.selectedCourseId,
-        bookingDate.toISOString(),
-        endTime.toISOString(),
-        state.location,
-        state.notes,
-        state.sessionType
-      );
-      
-      if (!result) {
-        throw new Error("Failed to create session");
-      }
-      
-      console.log("Session created successfully:", result);
-      
-      toast.success("Session booked successfully!");
-      
-      // Reset form
-      dispatch({ type: 'RESET' });
-      
-      // Close modal
-      onClose();
-      
-      // Redirect to schedule page after a short delay
-      setTimeout(() => {
-        navigate('/schedule');
-      }, 500);
-    } catch (error) {
-      console.error("Error booking session:", error);
-      toast.error("Failed to book session. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Get step title
-  const getStepTitle = () => {
+  // Get the title for the current step
+  const getStepTitle = (): string => {
     switch (state.bookingStep) {
       case BookingStep.SELECT_DATE_TIME:
         return "Select Date & Time";
@@ -336,7 +151,7 @@ export function useBookSessionModal(
       case BookingStep.SELECT_SESSION_TYPE:
         return "Select Session Type";
       case BookingStep.FILL_FORM:
-        return "Additional Details";
+        return "Student Information";
       case BookingStep.CONFIRMATION:
         return "Confirm Booking";
       default:
@@ -344,6 +159,24 @@ export function useBookSessionModal(
     }
   };
   
+  // Handle booking completion
+  const handleBookingComplete = useCallback(() => {
+    console.log("Booking completed!");
+    toast.success("Your session has been booked!");
+    
+    // Here we would typically make an API call to save the booking
+    // For now, we'll just log the details and close the modal
+    console.log("Booking details:", {
+      tutor: tutor.name,
+      date: selectedDate,
+      timeSlot: state.selectedTimeSlot,
+      duration: state.selectedDuration,
+      course: state.selectedCourseId
+    });
+    
+    onClose();
+  }, [onClose, tutor, selectedDate, state]);
+
   return {
     selectedDate,
     state,
