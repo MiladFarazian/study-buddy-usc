@@ -66,7 +66,13 @@ export async function getUserSessions(
   try {
     console.log("Getting sessions for user:", userId);
     
-    // Make two queries - one for sessions where user is tutor, one where user is student
+    // Ensure userId is valid
+    if (!userId) {
+      console.error("Invalid user ID provided to getUserSessions");
+      return [];
+    }
+    
+    // Make a query that includes all sessions where user is either tutor or student
     const { data: sessions, error } = await supabase
       .from('sessions')
       .select(`
@@ -75,7 +81,8 @@ export async function getUserSessions(
           id, 
           first_name, 
           last_name, 
-          avatar_url
+          avatar_url,
+          hourly_rate
         ),
         student:profiles!sessions_student_id_fkey (
           id, 

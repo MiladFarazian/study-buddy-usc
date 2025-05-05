@@ -19,14 +19,25 @@ export function SchedulerModal({
   initialDate,
   initialTime
 }: SchedulerModalProps) {
+  // Check if initialDate and initialTime are valid
+  const hasValidInitialDate = initialDate instanceof Date && !isNaN(initialDate.getTime());
+  const hasValidInitialTime = typeof initialTime === 'string' && initialTime.trim() !== '';
+  
+  console.log("SchedulerModal initialized with:", { 
+    isOpen, 
+    tutor: tutor?.id,
+    initialDate: hasValidInitialDate ? initialDate : undefined,
+    initialTime: hasValidInitialTime ? initialTime : undefined
+  });
+  
   return (
     <SchedulingProvider>
       <BookSessionModal
         isOpen={isOpen}
         onClose={onClose}
         tutor={tutor}
-        initialDate={initialDate}
-        initialTime={initialTime}
+        initialDate={hasValidInitialDate ? initialDate : undefined}
+        initialTime={hasValidInitialTime ? initialTime : undefined}
       />
     </SchedulingProvider>
   );

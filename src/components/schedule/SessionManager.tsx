@@ -42,11 +42,37 @@ export const SessionManager = () => {
     }
   }, [user, isTutor, toast]);
   
+  // Load sessions initially
   useEffect(() => {
     if (user) {
       loadSessions();
     }
   }, [user, loadSessions]);
+  
+  // Set up subscription for real-time updates to sessions
+  useEffect(() => {
+    if (!user) return;
+    
+    // Subscribe to session changes
+    const channel = supabase
+      .channel('sessions-changes')
+      .on('postgres_changes', {
+        event: '*', // Listen for all events (insert, update, delete)
+        schema: 'public',
+        table: 'sessions',
+        filter: `student_id=eq.${user.id}` + (isTutor ? `,tutor_id=eq.${user.id}` : '')
+      }, (payload) => {
+        console.log('Session changes detected:', payload);
+        // Reload sessions when changes are detected
+        loadSessions();
+      })
+      .subscribe();
+    
+    // Clean up subscription on unmount
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, isTutor, loadSessions]);
   
   const handleBookNewSession = () => {
     navigate('/tutors');
