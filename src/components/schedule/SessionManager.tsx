@@ -48,6 +48,18 @@ export const SessionManager = () => {
     }
   }, [user, loadSessions]);
   
+  // Add an effect to automatically refresh sessions periodically
+  useEffect(() => {
+    if (!user) return;
+    
+    // Refresh sessions every 30 seconds
+    const intervalId = setInterval(() => {
+      loadSessions();
+    }, 30000);
+    
+    return () => clearInterval(intervalId);
+  }, [user, loadSessions]);
+  
   const handleBookNewSession = () => {
     navigate('/tutors');
   };

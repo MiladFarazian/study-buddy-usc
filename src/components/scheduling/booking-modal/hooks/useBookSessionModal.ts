@@ -1,11 +1,12 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { addDays, startOfDay } from "date-fns";
 import { Tutor } from "@/types/tutor";
 import { BookingSlot } from "@/lib/scheduling/types";
 import { toast } from "sonner";
-import { BookingStep, useScheduling } from "@/contexts/SchedulingContext";
+import { BookingStep, useScheduling, SessionType } from "@/contexts/SchedulingContext";
 import { useAvailabilityData } from "@/hooks/useAvailabilityData";
+import { createSessionBooking } from "@/lib/scheduling/booking-utils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface BookingState {
   bookingStep: BookingStep; 
@@ -166,22 +167,61 @@ export function useBookSessionModal(
   };
   
   // Handle booking completion
-  const handleBookingComplete = useCallback(() => {
+  const handleBookingComplete = useCallback(async () => {
     console.log("Booking completed!");
-    toast.success("Your session has been booked!");
     
-    // Here we would typically make an API call to save the booking
-    // For now, we'll just log the details and close the modal
-    console.log("Booking details:", {
-      tutor: tutor.name,
-      date: selectedDate,
-      timeSlot: state.selectedTimeSlot,
-      duration: state.selectedDuration,
-      course: state.selectedCourseId
-    });
+    if (!state.selectedTimeSlot) {
+      toast.error("No time slot selected. Please try again.");
+      return;
+    }
+    
+    // Get the authenticated user
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      toast.error("You must be logged in to book a session");
+      return;
+    }
+    
+    try {
+      // Calculate start and end times based on the selected slot and duration
+      const startTime = new Date(selectedDate);
+      const [startHour, startMinute] = state.selectedTimeSlot.start.split(':').map(Number);
+      startTime.setHours(startHour, startMinute, 0, 0);
+      
+      const endTime = new Date(startTime);
+      endTime.setMinutes(endTime.getMinutes() + state.selectedDuration);
+      
+      // Get session type from context or default to in-person
+      const { sessionType, location } = useScheduling().state;
+      
+      // Actually create the session in the database
+      const sessionDetails = await createSessionBooking(
+        user.id,
+        tutor.id,
+        state.selectedCourseId,
+        startTime.toISOString(),
+        endTime.toISOString(),
+        location,
+        null,  // notes
+        sessionType
+      );
+      
+      if (sessionDetails) {
+        toast.success("Your session has been booked!");
+        console.log("Session created:", sessionDetails);
+      } else {
+        toast.error("Failed to book session. Please try again.");
+        return;
+      }
+    } catch (error) {
+      console.error("Error creating session:", error);
+      toast.error("An error occurred while booking your session");
+      return;
+    }
     
     onClose();
-  }, [onClose, tutor, selectedDate, state]);
+  }, [onClose, tutor, selectedDate, state, useScheduling]);
 
   return {
     selectedDate,

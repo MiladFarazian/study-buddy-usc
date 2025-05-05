@@ -23,8 +23,9 @@ export const SessionList = ({ sessions, loading, onCancelSession, onBookSession 
   
   const upcomingSessions = sessions.filter(session => {
     try {
-      // Fix possible date parsing issues by ensuring valid date format
-      const sessionStartTime = parseISO(session.start_time);
+      // Make sure session dates are valid
+      const sessionStartTime = typeof session.start_time === 'string' ? parseISO(session.start_time) : session.start_time;
+      // Check if session is in the future and not cancelled
       const isUpcoming = isFuture(sessionStartTime);
       const notCancelled = session.status !== 'cancelled';
       
@@ -39,7 +40,8 @@ export const SessionList = ({ sessions, loading, onCancelSession, onBookSession 
   
   const pastSessions = sessions.filter(session => {
     try {
-      return isPast(parseISO(session.end_time)) && session.status !== 'cancelled';
+      const sessionEndTime = typeof session.end_time === 'string' ? parseISO(session.end_time) : session.end_time;
+      return isPast(sessionEndTime) && session.status !== 'cancelled';
     } catch (error) {
       console.error(`Error processing session ${session.id}:`, error);
       return false;
@@ -58,6 +60,7 @@ export const SessionList = ({ sessions, loading, onCancelSession, onBookSession 
     try {
       return format(parseISO(timeString), 'h:mm a');
     } catch (e) {
+      console.error("Error formatting time:", e, timeString);
       return timeString;
     }
   };
@@ -66,6 +69,7 @@ export const SessionList = ({ sessions, loading, onCancelSession, onBookSession 
     try {
       return format(parseISO(timeString), 'EEE, MMM d, yyyy');
     } catch (e) {
+      console.error("Error formatting date:", e, timeString);
       return timeString;
     }
   };
