@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tutor } from "@/types/tutor";
 import { useBookSessionModal } from "./hooks/useBookSessionModal";
 import { ModalContent } from "./ModalContent";
-import { useScheduling } from "@/contexts/SchedulingContext";
+import { useScheduling, SchedulingProvider } from "@/contexts/SchedulingContext";
 
 export interface BookSessionModalProps {
   isOpen: boolean;
@@ -14,7 +14,8 @@ export interface BookSessionModalProps {
   initialTime?: string;
 }
 
-export function BookSessionModal({
+// This component ensures we have the SchedulingProvider
+function BookSessionModalContent({
   isOpen,
   onClose,
   tutor,
@@ -96,5 +97,14 @@ export function BookSessionModal({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// Export the wrapped component with the SchedulingProvider
+export function BookSessionModal(props: BookSessionModalProps) {
+  return (
+    <SchedulingProvider>
+      <BookSessionModalContent {...props} />
+    </SchedulingProvider>
   );
 }

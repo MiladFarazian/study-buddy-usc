@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { addDays, startOfDay } from "date-fns";
 import { Tutor } from "@/types/tutor";
@@ -31,7 +32,7 @@ export function useBookSessionModal(
   });
   
   // Get access to the SchedulingContext
-  const { dispatch, setCourse, setTutor } = useScheduling();
+  const { dispatch, setCourse, setTutor, state: contextState, sessionType, location } = useScheduling();
   
   // State for selected date
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
@@ -192,8 +193,19 @@ export function useBookSessionModal(
       const endTime = new Date(startTime);
       endTime.setMinutes(endTime.getMinutes() + state.selectedDuration);
       
-      // Get session type from context or default to in-person
-      const { sessionType, location } = useScheduling().state;
+      // Get session type and location from context
+      const sessionTypeValue = contextState.sessionType;
+      const locationValue = contextState.location;
+      
+      console.log("Creating session with:", {
+        userId: user.id,
+        tutorId: tutor.id,
+        courseId: state.selectedCourseId,
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+        location: locationValue,
+        sessionType: sessionTypeValue
+      });
       
       // Actually create the session in the database
       const sessionDetails = await createSessionBooking(
@@ -202,9 +214,9 @@ export function useBookSessionModal(
         state.selectedCourseId,
         startTime.toISOString(),
         endTime.toISOString(),
-        location,
+        locationValue,
         null,  // notes
-        sessionType
+        sessionTypeValue
       );
       
       if (sessionDetails) {
@@ -221,7 +233,7 @@ export function useBookSessionModal(
     }
     
     onClose();
-  }, [onClose, tutor, selectedDate, state, useScheduling]);
+  }, [onClose, tutor, selectedDate, state, contextState]);
 
   return {
     selectedDate,

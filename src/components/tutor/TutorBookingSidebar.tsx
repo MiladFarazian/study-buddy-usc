@@ -5,11 +5,10 @@ import { Calendar, Clock, ArrowRightLeft } from "lucide-react";
 import { Tutor } from "@/types/tutor";
 import MessageButton from "@/components/messaging/MessageButton";
 import { useState } from "react";
-import { SchedulerModal } from "../scheduling/SchedulerModal";
+import { BookSessionModal } from "../scheduling/booking-modal/BookSessionModal";
 import { AuthRequiredDialog } from "../scheduling/booking-modal/AuthRequiredDialog";
 import { useAuthState } from "@/hooks/useAuthState";
 import { useLocation } from "react-router-dom";
-import { SchedulingProvider } from "@/contexts/SchedulingContext";
 
 interface TutorBookingSidebarProps {
   tutor: Tutor;
@@ -87,7 +86,7 @@ export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
       />
 
       {user && (
-        <SchedulerModal 
+        <BookSessionModal
           isOpen={showBookingModal} 
           onClose={() => setShowBookingModal(false)}
           tutor={tutor}

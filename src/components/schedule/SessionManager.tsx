@@ -52,12 +52,40 @@ export const SessionManager = () => {
   useEffect(() => {
     if (!user) return;
     
-    // Refresh sessions every 30 seconds
+    // Refresh sessions every 15 seconds
     const intervalId = setInterval(() => {
       loadSessions();
-    }, 30000);
+    }, 15000);
     
     return () => clearInterval(intervalId);
+  }, [user, loadSessions]);
+  
+  // Subscribe to session changes using Supabase realtime
+  useEffect(() => {
+    if (!user) return;
+    
+    // Subscribe to changes in the sessions table for this user
+    const subscription = supabase
+      .channel('sessions-changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'sessions',
+          filter: `student_id=eq.${user.id}` 
+        },
+        (payload) => {
+          console.log('Session change detected:', payload);
+          // Reload sessions when a change is detected
+          loadSessions();
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }, [user, loadSessions]);
   
   const handleBookNewSession = () => {
