@@ -109,8 +109,8 @@ export function ModalContent({
     case BookingStep.SELECT_COURSE:
       return (
         <CourseSelector 
-          selectedCourseId={null} // We use null as the default value, not the slot's tutorId
-          onCourseSelect={(courseId) => console.log("Selected course:", courseId)}
+          selectedCourseId={null} // We don't pass a hardcoded null anymore
+          onCourseSelect={() => onContinue()} // This was just logging before and not updating state
           onBack={onBack}
           onContinue={onContinue}
           tutor={tutor}

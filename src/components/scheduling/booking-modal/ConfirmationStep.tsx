@@ -5,10 +5,10 @@ import { formatDate, formatTime } from "@/lib/scheduling/time-utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, Clock, BookOpen, MapPin, Video, User, Check, ArrowLeft, Apple } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, BookOpen, MapPin, Video, User, Check, ArrowLeft, Apple } from "lucide-react";
 import { SessionType } from "@/contexts/SchedulingContext";
 import { toast } from "sonner";
-import { format, addMinutes } from "date-fns";
+import { format, addMinutes, parseISO } from "date-fns";
 import { generateGoogleCalendarUrl } from "@/lib/calendar/googleCalendarUtils";
 import { ICalEventData, downloadICSFile } from "@/lib/calendar/icsGenerator";
 
@@ -65,10 +65,14 @@ export function ConfirmationStep() {
       const courseSuffix = state.selectedCourseId ? ` for ${state.selectedCourseId}` : '';
       const title = `Tutoring Session with ${tutor.name}${courseSuffix}`;
       
+      // Ensure selectedDate is a proper Date object
+      const sessionDate = state.selectedDate instanceof Date ? 
+        state.selectedDate : new Date();
+      
       // Log debug information
       console.log("Google Calendar data:", {
         tutor,
-        date: state.selectedDate,
+        date: sessionDate,
         startTime: state.selectedTimeSlot.start,
         duration: state.selectedDuration,
         title,
@@ -78,7 +82,7 @@ export function ConfirmationStep() {
       // Generate the Google Calendar URL
       const url = generateGoogleCalendarUrl(
         tutor,
-        state.selectedDate,
+        sessionDate,
         state.selectedTimeSlot.start,
         state.selectedDuration,
         title,
@@ -109,10 +113,14 @@ export function ConfirmationStep() {
     try {
       setAddingToCalendar(true);
       
+      // Ensure selectedDate is a proper Date object
+      const sessionDate = state.selectedDate instanceof Date ? 
+        state.selectedDate : new Date();
+      
       // Parse start time and create start/end dates
       const [hours, minutes] = state.selectedTimeSlot.start.split(':').map(Number);
       
-      const startDateTime = new Date(state.selectedDate);
+      const startDateTime = new Date(sessionDate);
       startDateTime.setHours(hours, minutes, 0, 0);
       
       const endDateTime = addMinutes(startDateTime, state.selectedDuration);
@@ -161,7 +169,7 @@ export function ConfirmationStep() {
       <Card>
         <CardContent className="p-6 space-y-4">
           <div className="flex items-start">
-            <Calendar className="h-5 w-5 mr-3 mt-0.5 text-usc-cardinal" />
+            <CalendarIcon className="h-5 w-5 mr-3 mt-0.5 text-usc-cardinal" />
             <div>
               <p className="font-medium">Date</p>
               <p className="text-muted-foreground">
@@ -232,17 +240,17 @@ export function ConfirmationStep() {
       <div className="flex flex-col sm:flex-row gap-3">
         <Button
           variant="outline"
-          className="flex-1 flex items-center justify-center"
+          className="flex-1 flex items-center justify-center bg-white hover:bg-slate-50"
           onClick={handleAddToGoogleCalendar}
           disabled={addingToCalendar}
         >
-          <Calendar className="h-4 w-4 mr-2" />
+          <CalendarIcon className="h-4 w-4 mr-2" />
           Google Calendar
         </Button>
         
         <Button
           variant="outline"
-          className="flex-1 flex items-center justify-center"
+          className="flex-1 flex items-center justify-center bg-white hover:bg-slate-50"
           onClick={handleAddToAppleCalendar}
           disabled={addingToCalendar}
         >

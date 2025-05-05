@@ -10,6 +10,12 @@ export interface ICalEventData {
 // Format date for iCal
 const formatDateForICal = (date: Date): string => {
   try {
+    // Validate date
+    if (!(date instanceof Date) || isNaN(date.getTime())) {
+      console.error("Invalid date provided to formatDateForICal:", date);
+      return new Date().toISOString().replace(/-|:|\.\d+/g, '');
+    }
+    
     // Format: YYYYMMDDTHHMMSSZ
     return date.toISOString().replace(/-|:|\.\d+/g, '');
   } catch (error) {
@@ -25,16 +31,23 @@ export const generateICSContent = (event: ICalEventData): string => {
     const formattedNow = formatDateForICal(now);
     
     // Check for invalid dates and use fallbacks if needed
-    const startDate = isNaN(event.startDate.getTime()) ? new Date() : event.startDate;
-    const endDate = isNaN(event.endDate.getTime()) ? new Date(startDate.getTime() + 60 * 60 * 1000) : event.endDate;
+    const startDate = event.startDate instanceof Date && !isNaN(event.startDate.getTime()) 
+      ? event.startDate 
+      : new Date();
+      
+    const endDate = event.endDate instanceof Date && !isNaN(event.endDate.getTime()) 
+      ? event.endDate 
+      : new Date(startDate.getTime() + 60 * 60 * 1000);
+    
+    console.log("ICS Calendar dates:", { startDate, endDate });
     
     const formattedStart = formatDateForICal(startDate);
     const formattedEnd = formatDateForICal(endDate);
     
     // Escape special characters in text fields
-    const escapedTitle = event.title.replace(/[\\;,]/g, (match) => '\\' + match);
-    const escapedDesc = event.description.replace(/[\\;,]/g, (match) => '\\' + match);
-    const escapedLocation = event.location.replace(/[\\;,]/g, (match) => '\\' + match);
+    const escapedTitle = event.title?.replace(/[\\;,]/g, (match) => '\\' + match) || "Tutoring Session";
+    const escapedDesc = event.description?.replace(/[\\;,]/g, (match) => '\\' + match) || "Tutoring Session Details";
+    const escapedLocation = event.location?.replace(/[\\;,]/g, (match) => '\\' + match) || "USC Campus";
     
     return `BEGIN:VCALENDAR
 VERSION:2.0

@@ -4,6 +4,10 @@ import { Tutor } from "@/types/tutor";
 
 // Helper to format date for Google Calendar URL
 export const formatDateForGoogleCalendar = (date: Date): string => {
+  if (!(date instanceof Date) || isNaN(date.getTime())) {
+    console.error("Invalid date provided to formatDateForGoogleCalendar:", date);
+    return new Date().toISOString().replace(/-|:|\.\d+/g, '');
+  }
   return date.toISOString().replace(/-|:|\.\d+/g, '');
 };
 
@@ -16,47 +20,72 @@ export const generateGoogleCalendarUrl = (
   customTitle?: string,
   courseId?: string | null
 ): string => {
-  // Parse start time
-  const [hours, minutes] = sessionStartTime.split(':').map(Number);
-  
-  // Set start date with time
-  const startDate = new Date(sessionDate);
-  startDate.setHours(hours, minutes);
-  
-  // Calculate end date
-  const endDate = new Date(startDate);
-  endDate.setMinutes(endDate.getMinutes() + sessionDurationMinutes);
-  
-  // Format dates for Google Calendar
-  const startIso = formatDateForGoogleCalendar(startDate);
-  const endIso = formatDateForGoogleCalendar(endDate);
-  
-  // Format title and details
-  const title = encodeURIComponent(customTitle || `Tutoring with ${tutor.name}`);
-  
-  // Build description including course information if available
-  let descriptionText = `Tutoring session with ${tutor.name}\n` +
+  try {
+    // Validate inputs
+    if (!tutor || !(sessionDate instanceof Date) || isNaN(sessionDate.getTime())) {
+      console.error("Invalid input for calendar URL generation:", { tutor, sessionDate });
+      throw new Error("Invalid input parameters");
+    }
+
+    // Parse start time
+    const timeParts = sessionStartTime.split(':');
+    if (timeParts.length !== 2) {
+      console.error("Invalid time format:", sessionStartTime);
+      throw new Error("Invalid time format");
+    }
+    
+    const hours = parseInt(timeParts[0], 10);
+    const minutes = parseInt(timeParts[1], 10);
+    
+    if (isNaN(hours) || isNaN(minutes)) {
+      console.error("Invalid time values:", { hours, minutes });
+      throw new Error("Invalid time values");
+    }
+    
+    // Set start date with time
+    const startDate = new Date(sessionDate);
+    startDate.setHours(hours, minutes, 0, 0);
+    
+    // Calculate end date
+    const endDate = new Date(startDate);
+    endDate.setMinutes(endDate.getMinutes() + sessionDurationMinutes);
+    
+    console.log("Calendar dates calculated:", { startDate, endDate });
+    
+    // Format dates for Google Calendar
+    const startIso = formatDateForGoogleCalendar(startDate);
+    const endIso = formatDateForGoogleCalendar(endDate);
+    
+    // Format title and details
+    const title = encodeURIComponent(customTitle || `Tutoring with ${tutor.name}`);
+    
+    // Build description including course information if available
+    let descriptionText = `Tutoring session with ${tutor.name}\n` +
                         `Duration: ${sessionDurationMinutes} minutes\n`;
-  
-  // Add course information if available                      
-  if (courseId) {
-    descriptionText += `Course: ${courseId}\n`;
+    
+    // Add course information if available                      
+    if (courseId) {
+      descriptionText += `Course: ${courseId}\n`;
+    }
+    
+    if (tutor.subjects && tutor.subjects.length > 0) {
+      // Handle subjects that might be strings or objects
+      const subject = tutor.subjects[0];
+      const subjectName = typeof subject === 'string' ? subject : 
+        (subject && typeof subject === 'object' && 'name' in subject) ? 
+          (subject as any).name : 'Not specified';
+          
+      descriptionText += `Subject: ${subjectName}\n`;
+    }
+    
+    const description = encodeURIComponent(descriptionText);
+    const location = encodeURIComponent('USC Campus');
+    
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startIso}/${endIso}&details=${description}&location=${location}`;
+  } catch (error) {
+    console.error("Error generating Google Calendar URL:", error);
+    return "#";
   }
-  
-  if (tutor.subjects && tutor.subjects.length > 0) {
-    // Handle subjects that might be strings or objects
-    const subject = tutor.subjects[0];
-    const subjectName = typeof subject === 'string' ? subject : 
-      (subject && typeof subject === 'object' && 'name' in subject) ? 
-        (subject as any).name : 'Not specified';
-        
-    descriptionText += `Subject: ${subjectName}\n`;
-  }
-  
-  const description = encodeURIComponent(descriptionText);
-  const location = encodeURIComponent('USC Campus');
-  
-  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startIso}/${endIso}&details=${description}&location=${location}`;
 };
 
 export const addToGoogleCalendar = (

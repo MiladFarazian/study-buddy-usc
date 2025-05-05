@@ -68,9 +68,7 @@ export function BookSessionModal({
               end: state.selectedTimeSlot.end
             } : undefined}
             selectedDuration={state.selectedDuration}
-            onDurationChange={(duration) => {
-              handleDurationChange(duration);
-            }}
+            onDurationChange={handleDurationChange}
             calculatedCost={state.selectedTimeSlot && tutor.hourlyRate ? 
               (tutor.hourlyRate / 60) * state.selectedDuration : undefined}
             tutor={tutor}

@@ -30,6 +30,7 @@ export function CourseSelector({
 }: CourseSelectorProps) {
   const { courses: fetchedCourses, loading: fetchLoading } = useTutorCourses(tutor.id);
   const [noSpecificCourse, setNoSpecificCourse] = useState<boolean>(selectedCourseId === null);
+  const [localSelectedCourseId, setLocalSelectedCourseId] = useState<string | null>(selectedCourseId);
   const { setCourse } = useScheduling();
   
   // Use external courses if provided, otherwise use the fetched courses
@@ -45,24 +46,31 @@ export function CourseSelector({
   }, [courses, selectedCourseId]);
 
   const handleCourseSelect = (courseId: string) => {
+    console.log("Course selected in CourseSelector:", courseId);
     setNoSpecificCourse(false);
+    setLocalSelectedCourseId(courseId);
     onCourseSelect(courseId);
     setCourse(courseId); // Update context state
-    console.log("Course selected:", courseId);
   };
   
   const handleNoSpecificCourse = () => {
+    console.log("No specific course selected in CourseSelector");
     setNoSpecificCourse(true);
+    setLocalSelectedCourseId(null);
     onCourseSelect(null);
     setCourse(null); // Update context state
-    console.log("No specific course selected");
   };
   
   const handleContinueClick = () => {
+    // Pass the selected course ID when continuing
     if (onContinue) {
-      // If no specific course was selected, make sure it's saved to context
+      // Ensure the selected course is properly set in context
       if (noSpecificCourse) {
         setCourse(null);
+        onCourseSelect(null);
+      } else if (localSelectedCourseId) {
+        setCourse(localSelectedCourseId);
+        onCourseSelect(localSelectedCourseId);
       }
       onContinue();
     }
@@ -88,7 +96,7 @@ export function CourseSelector({
       ) : (
         <>
           <RadioGroup 
-            value={noSpecificCourse ? "no-course" : (selectedCourseId || "")}
+            value={noSpecificCourse ? "no-course" : (localSelectedCourseId || "")}
             onValueChange={(value) => {
               if (value === "no-course") {
                 handleNoSpecificCourse();
@@ -118,7 +126,7 @@ export function CourseSelector({
                     key={course.course_number}
                     className={`
                       flex items-center space-x-2 rounded-lg border p-4 cursor-pointer
-                      ${selectedCourseId === course.course_number && !noSpecificCourse ? "border-usc-cardinal bg-red-50" : ""}
+                      ${localSelectedCourseId === course.course_number && !noSpecificCourse ? "border-usc-cardinal bg-red-50" : ""}
                     `}
                     onClick={() => handleCourseSelect(course.course_number)}
                   >
