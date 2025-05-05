@@ -3,7 +3,7 @@ import { useState, useMemo } from "react";
 import { BookingSlot } from "@/lib/scheduling/types";
 import { format, isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
-import { Clock } from "lucide-react";
+import { Clock, Calendar } from "lucide-react";
 
 interface TimeSlotListProps {
   slots: BookingSlot[];
@@ -85,7 +85,7 @@ export function TimeSlotList({
       </div>
 
       {availableTimeSlots.length > 0 ? (
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {availableTimeSlots.map((slot, index) => (
             <button
               key={`${slot.start}-${index}`}
@@ -104,7 +104,11 @@ export function TimeSlotList({
         </div>
       ) : (
         <div className="p-6 text-center border rounded-lg">
-          <p className="text-muted-foreground">No available time slots for this date</p>
+          <div className="flex flex-col items-center gap-2">
+            <Calendar className="h-8 w-8 text-muted-foreground" />
+            <p className="text-muted-foreground">No available time slots for this date</p>
+            <p className="text-sm text-muted-foreground">Try selecting another date</p>
+          </div>
         </div>
       )}
       

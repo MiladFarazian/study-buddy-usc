@@ -1,8 +1,8 @@
 
 import { Calendar } from "@/components/ui/calendar";
 import { BookingSlot } from "@/lib/scheduling/types";
-import { CalendarIcon } from "lucide-react";
-import { format, isEqual, parseISO, isSameDay } from "date-fns";
+import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { format, isEqual, parseISO, isSameDay, addWeeks, subWeeks, startOfWeek, endOfWeek } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -23,6 +23,9 @@ export function DateSelector({
   className
 }: DateSelectorProps) {
   const [viewMode, setViewMode] = useState<"week" | "month">("week");
+  
+  // State to track the current view date range
+  const [currentViewDate, setCurrentViewDate] = useState<Date>(new Date());
   
   // Get all available dates from the slots
   const availableDates = useMemo(() => {
@@ -51,46 +54,47 @@ export function DateSelector({
     return availableDates.some(availableDate => isSameDay(availableDate, day));
   };
   
-  // Function to get the first and last day of the current week
+  // Function to get the current week range as a formatted string
   const getCurrentWeekRange = () => {
-    if (!date) return "";
+    const weekStart = startOfWeek(currentViewDate, { weekStartsOn: 0 });
+    const weekEnd = endOfWeek(currentViewDate, { weekStartsOn: 0 });
     
-    const today = date;
-    const day = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
-    
-    const firstDayOfWeek = new Date(today);
-    firstDayOfWeek.setDate(today.getDate() - day);
-    
-    const lastDayOfWeek = new Date(today);
-    lastDayOfWeek.setDate(today.getDate() + (6 - day));
-    
-    return `${format(firstDayOfWeek, 'MMM d')} - ${format(lastDayOfWeek, 'MMM d, yyyy')}`;
+    return `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d, yyyy')}`;
+  };
+  
+  // Handle previous week navigation
+  const handlePrevWeek = () => {
+    setCurrentViewDate(prevDate => subWeeks(prevDate, 1));
+  };
+  
+  // Handle next week navigation
+  const handleNextWeek = () => {
+    setCurrentViewDate(prevDate => addWeeks(prevDate, 1));
   };
   
   // Render a weekly date selector
   const renderWeekView = () => {
-    const today = new Date();
-    const currentDayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
-    
     // Create array of days for the current week
+    const weekStart = startOfWeek(currentViewDate, { weekStartsOn: 0 });
     const daysOfWeek = Array.from({ length: 7 }, (_, i) => {
-      const day = new Date(today);
-      day.setDate(today.getDate() - currentDayOfWeek + i); // Start from Sunday
+      const day = new Date(weekStart);
+      day.setDate(weekStart.getDate() + i);
       return day;
     });
     
     const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const today = new Date();
     
     return (
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <button className="p-2 rounded-md hover:bg-gray-100">
-            &lt;
-          </button>
+          <Button variant="ghost" size="icon" onClick={handlePrevWeek} className="h-8 w-8 p-0">
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
           <h3 className="text-center font-medium">{getCurrentWeekRange()}</h3>
-          <button className="p-2 rounded-md hover:bg-gray-100">
-            &gt;
-          </button>
+          <Button variant="ghost" size="icon" onClick={handleNextWeek} className="h-8 w-8 p-0">
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
         
         <div className="grid grid-cols-7 gap-2 text-center">
