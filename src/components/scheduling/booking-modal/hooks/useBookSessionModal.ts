@@ -139,41 +139,40 @@ export function useBookSessionModal(
           const startFormatted = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
           const endFormatted = `${slotEndHour.toString().padStart(2, '0')}:${slotEndMinute.toString().padStart(2, '0')}`;
           
-          generatedSlots.push({
+          // Create a slot with tutorId included (fixing the error)
+          const slot: BookingSlot = {
             day: date,
             start: startFormatted,
             end: endFormatted,
-            available: true
+            available: true,
+            tutorId: tutorId // Add the tutorId property here
+          };
+          
+          // Check if this slot overlaps with any booked session
+          bookedSessions.forEach(session => {
+            const sessionDate = new Date(session.start_time);
+            
+            // Only check sessions on the same day
+            if (sessionDate.toDateString() === date.toDateString()) {
+              const sessionStartMinutes = convertTimeToMinutes(session.start_time);
+              const sessionEndMinutes = convertTimeToMinutes(session.end_time);
+              
+              // Check for overlap
+              if (
+                (currentHour * 60 + currentMinute) >= sessionStartMinutes && 
+                (currentHour * 60 + currentMinute) < sessionEndMinutes
+              ) {
+                slot.available = false;
+              }
+            }
           });
+          
+          // Add to available slots
+          generatedSlots.push(slot);
           
           // Move to next slot
           currentHour = slotEndMinute === 0 ? slotEndHour : currentHour;
           currentMinute = slotEndMinute;
-        }
-      }
-      
-      // Mark slots as unavailable if they conflict with booked sessions
-      for (const session of bookedSessions || []) {
-        const sessionStart = new Date(session.start_time);
-        const sessionEnd = new Date(session.end_time);
-        
-        for (const slot of generatedSlots) {
-          const slotStart = new Date(slot.day);
-          const [slotStartHour, slotStartMinute] = slot.start.split(':').map(Number);
-          slotStart.setHours(slotStartHour, slotStartMinute, 0, 0);
-          
-          const slotEnd = new Date(slot.day);
-          const [slotEndHour, slotEndMinute] = slot.end.split(':').map(Number);
-          slotEnd.setHours(slotEndHour, slotEndMinute, 0, 0);
-          
-          // Check if slot overlaps with session
-          if (
-            (slotStart >= sessionStart && slotStart < sessionEnd) || 
-            (slotEnd > sessionStart && slotEnd <= sessionEnd) ||
-            (slotStart <= sessionStart && slotEnd >= sessionEnd)
-          ) {
-            slot.available = false;
-          }
         }
       }
       
@@ -184,6 +183,13 @@ export function useBookSessionModal(
       
       setAvailableSlots(availableSlots);
       setHasAvailability(availableSlots.length > 0);
+      
+      if (!availableSlots.length) {
+        setErrorMessage("This tutor is fully booked for the selected date.");
+      } else {
+        setErrorMessage(null);
+      }
+      
     } catch (error) {
       console.error("Error loading available slots:", error);
       setErrorMessage("Failed to load available times. Please try again.");
@@ -191,6 +197,12 @@ export function useBookSessionModal(
     } finally {
       setLoading(false);
     }
+  };
+  
+  // Helper function to convert time to minutes since start of day
+  const convertTimeToMinutes = (timeString: string): number => {
+    const date = new Date(timeString);
+    return date.getHours() * 60 + date.getMinutes();
   };
   
   // Refresh availability
@@ -203,7 +215,9 @@ export function useBookSessionModal(
   // Handle date change
   const handleDateChange = (date: Date | undefined) => {
     setSelectedDate(date);
-    dispatch({ type: 'SELECT_DATE', payload: date as Date });
+    if (date) {
+      dispatch({ type: 'SELECT_DATE', payload: date });
+    }
   };
   
   // Handle slot selection
