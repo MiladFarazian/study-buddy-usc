@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -206,8 +205,6 @@ export function NewBookingWizard({ tutor, onClose }: NewBookingWizardProps) {
       
       await createPaymentTransaction(
         session.id,
-        user.id,
-        tutor.id,
         sessionCost
       );
       
