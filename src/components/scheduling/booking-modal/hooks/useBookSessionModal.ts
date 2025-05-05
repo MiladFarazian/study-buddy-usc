@@ -32,7 +32,7 @@ export function useBookSessionModal(
   });
   
   // Get access to the SchedulingContext
-  const { dispatch, setCourse, setTutor, state: contextState, sessionType, location } = useScheduling();
+  const { dispatch, setCourse, setTutor, state: contextState } = useScheduling();
   
   // State for selected date
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
