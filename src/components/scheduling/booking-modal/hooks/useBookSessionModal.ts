@@ -97,8 +97,14 @@ export function useBookSessionModal(
   
   // Handle slot selection
   const handleSelectSlot = (slot: BookingSlot) => {
-    setState(prev => ({ ...prev, selectedTimeSlot: slot }));
-    dispatch({ type: 'SELECT_TIME_SLOT', payload: slot });
+    // Ensure the slot has tutorId
+    const completeSlot: BookingSlot = {
+      ...slot,
+      tutorId: tutor.id
+    };
+    
+    setState(prev => ({ ...prev, selectedTimeSlot: completeSlot }));
+    dispatch({ type: 'SELECT_TIME_SLOT', payload: completeSlot });
   };
   
   // Handle duration change
