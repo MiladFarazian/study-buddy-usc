@@ -5,18 +5,15 @@ import { formatDate, formatTime } from "@/lib/scheduling/time-utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, Clock, BookOpen, MapPin, Video, User, Check, ArrowLeft } from "lucide-react";
+import { Calendar, Clock, BookOpen, MapPin, Video, User, Check, ArrowLeft, Apple } from "lucide-react";
 import { SessionType } from "@/contexts/SchedulingContext";
 import { toast } from "sonner";
 import { format, addMinutes } from "date-fns";
 import { generateGoogleCalendarUrl } from "@/lib/calendar/googleCalendarUtils";
 import { ICalEventData, downloadICSFile } from "@/lib/calendar/icsGenerator";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Apple } from "lucide-react";
 
 export function ConfirmationStep() {
   const { state, tutor } = useScheduling();
-  const [calendarMenuOpen, setCalendarMenuOpen] = useState(false);
   const [addingToCalendar, setAddingToCalendar] = useState(false);
   
   // Format selected time
@@ -99,7 +96,6 @@ export function ConfirmationStep() {
       toast.error("Failed to add to Google Calendar");
     } finally {
       setAddingToCalendar(false);
-      setCalendarMenuOpen(false);
     }
   };
   
@@ -150,7 +146,6 @@ export function ConfirmationStep() {
       toast.error("Failed to add to Apple Calendar");
     } finally {
       setAddingToCalendar(false);
-      setCalendarMenuOpen(false);
     }
   };
 
@@ -234,41 +229,26 @@ export function ConfirmationStep() {
         </CardContent>
       </Card>
       
-      <div className="flex flex-col gap-3">
-        <Popover open={calendarMenuOpen} onOpenChange={setCalendarMenuOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className="w-full flex items-center justify-center"
-              disabled={addingToCalendar}
-            >
-              <Calendar className="h-4 w-4 mr-2" />
-              Add to Calendar
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="p-2 w-48">
-            <div className="flex flex-col gap-1">
-              <Button 
-                variant="ghost" 
-                className="justify-start"
-                onClick={handleAddToGoogleCalendar}
-                disabled={addingToCalendar}
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                Google Calendar
-              </Button>
-              <Button 
-                variant="ghost" 
-                className="justify-start"
-                onClick={handleAddToAppleCalendar}
-                disabled={addingToCalendar}
-              >
-                <Apple className="h-4 w-4 mr-2" />
-                Apple Calendar
-              </Button>
-            </div>
-          </PopoverContent>
-        </Popover>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Button
+          variant="outline"
+          className="flex-1 flex items-center justify-center"
+          onClick={handleAddToGoogleCalendar}
+          disabled={addingToCalendar}
+        >
+          <Calendar className="h-4 w-4 mr-2" />
+          Google Calendar
+        </Button>
+        
+        <Button
+          variant="outline"
+          className="flex-1 flex items-center justify-center"
+          onClick={handleAddToAppleCalendar}
+          disabled={addingToCalendar}
+        >
+          <Apple className="h-4 w-4 mr-2" />
+          Apple Calendar
+        </Button>
       </div>
     </div>
   );

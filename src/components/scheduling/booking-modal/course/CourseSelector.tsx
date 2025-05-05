@@ -7,6 +7,7 @@ import { Course } from "@/types/CourseTypes";
 import { Loader2, ArrowLeft, ArrowRight } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { useScheduling } from "@/contexts/SchedulingContext";
 
 interface CourseSelectorProps {
   selectedCourseId: string | null;
@@ -29,27 +30,42 @@ export function CourseSelector({
 }: CourseSelectorProps) {
   const { courses: fetchedCourses, loading: fetchLoading } = useTutorCourses(tutor.id);
   const [noSpecificCourse, setNoSpecificCourse] = useState<boolean>(selectedCourseId === null);
+  const { setCourse } = useScheduling();
   
   // Use external courses if provided, otherwise use the fetched courses
   const courses = externalCourses || fetchedCourses;
   // Use external loading state if provided, otherwise use the fetch loading state
   const loading = externalLoading !== undefined ? externalLoading : fetchLoading;
   
-  // Select "No specific course" if no course is selected and we have courses
+  // Initialize with "No specific course" selected
   useEffect(() => {
-    if (courses && courses.length > 0 && selectedCourseId === null && !noSpecificCourse) {
+    if (courses?.length > 0 && selectedCourseId === null) {
       setNoSpecificCourse(true);
     }
-  }, [courses, selectedCourseId, noSpecificCourse]);
+  }, [courses, selectedCourseId]);
 
   const handleCourseSelect = (courseId: string) => {
     setNoSpecificCourse(false);
     onCourseSelect(courseId);
+    setCourse(courseId); // Update context state
+    console.log("Course selected:", courseId);
   };
   
   const handleNoSpecificCourse = () => {
     setNoSpecificCourse(true);
     onCourseSelect(null);
+    setCourse(null); // Update context state
+    console.log("No specific course selected");
+  };
+  
+  const handleContinueClick = () => {
+    if (onContinue) {
+      // If no specific course was selected, make sure it's saved to context
+      if (noSpecificCourse) {
+        setCourse(null);
+      }
+      onContinue();
+    }
   };
   
   return (
@@ -135,7 +151,7 @@ export function CourseSelector({
               {onContinue && (
                 <Button 
                   className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
-                  onClick={onContinue}
+                  onClick={handleContinueClick}
                 >
                   Continue
                   <ArrowRight className="ml-2 h-4 w-4" />

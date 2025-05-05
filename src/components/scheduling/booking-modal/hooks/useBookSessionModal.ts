@@ -72,6 +72,12 @@ export function useBookSessionModal(
     setState(prev => ({ ...prev, selectedDuration: duration }));
   };
   
+  // Handle course selection
+  const handleCourseChange = (courseId: string | null) => {
+    setState(prev => ({ ...prev, selectedCourseId: courseId }));
+    console.log("Course changed to:", courseId);
+  };
+  
   // Handle when user continues to next step
   const handleContinue = () => {
     if (state.bookingStep === BookingStep.SELECT_COURSE) {
@@ -144,7 +150,8 @@ export function useBookSessionModal(
     refreshAvailability,
     handleDateChange,
     handleSelectSlot,
-    handleDurationChange, // Export the new handler
+    handleDurationChange,
+    handleCourseChange,
     handleClose,
     handleContinue,
     handleBack,
