@@ -8,6 +8,7 @@ import { BookingStep } from "@/contexts/SchedulingContext";
 import { useAvailabilityData } from "@/hooks/useAvailabilityData";
 import { addToGoogleCalendar } from "@/lib/calendar/googleCalendarUtils";
 import { ICalEventData, downloadICSFile } from "@/lib/calendar/icsGenerator";
+import { useScheduling } from "@/contexts/SchedulingContext";
 
 interface BookingState {
   bookingStep: BookingStep; 
@@ -31,6 +32,9 @@ export function useBookSessionModal(
     selectedCourseId: null
   });
   
+  // Get access to the SchedulingContext
+  const { setCourse } = useScheduling();
+  
   // State for selected date
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
     if (initialDate) return startOfDay(initialDate);
@@ -46,8 +50,11 @@ export function useBookSessionModal(
         selectedDuration: 60,
         selectedCourseId: null
       });
+      
+      // Also reset the course in the scheduling context
+      setCourse(null);
     }
-  }, [isOpen]);
+  }, [isOpen, setCourse]);
   
   // Get available slots for the selected date
   const { availableSlots, loading, errorMessage, refreshAvailability } = 
@@ -76,6 +83,8 @@ export function useBookSessionModal(
   const handleCourseChange = (courseId: string | null) => {
     console.log("Course selection in useBookSessionModal:", courseId);
     setState(prev => ({ ...prev, selectedCourseId: courseId }));
+    // Also update the course in the scheduling context
+    setCourse(courseId);
   };
   
   // Handle when user continues to next step

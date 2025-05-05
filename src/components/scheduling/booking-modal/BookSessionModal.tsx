@@ -1,9 +1,10 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tutor } from "@/types/tutor";
 import { useBookSessionModal } from "./hooks/useBookSessionModal";
 import { ModalContent } from "./ModalContent";
+import { useScheduling } from "@/contexts/SchedulingContext";
 
 export interface BookSessionModalProps {
   isOpen: boolean;
@@ -20,6 +21,15 @@ export function BookSessionModal({
   initialDate,
   initialTime
 }: BookSessionModalProps) {
+  const { setTutor } = useScheduling();
+  
+  // Initialize the tutor in the SchedulingContext when modal opens
+  useEffect(() => {
+    if (isOpen && tutor) {
+      setTutor(tutor);
+    }
+  }, [isOpen, tutor, setTutor]);
+  
   const {
     selectedDate,
     state,
@@ -72,6 +82,8 @@ export function BookSessionModal({
             calculatedCost={state.selectedTimeSlot && tutor.hourlyRate ? 
               (tutor.hourlyRate / 60) * state.selectedDuration : undefined}
             tutor={tutor}
+            selectedCourseId={state.selectedCourseId}
+            onCourseSelect={handleCourseChange}
           />
         </div>
       </DialogContent>

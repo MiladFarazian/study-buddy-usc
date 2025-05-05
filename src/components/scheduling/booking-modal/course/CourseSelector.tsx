@@ -38,12 +38,11 @@ export function CourseSelector({
   // Use external loading state if provided, otherwise use the fetch loading state
   const loading = externalLoading !== undefined ? externalLoading : fetchLoading;
   
-  // Initialize with "No specific course" selected
+  // Update local state when selectedCourseId prop changes
   useEffect(() => {
-    if (courses?.length > 0 && selectedCourseId === null) {
-      setNoSpecificCourse(true);
-    }
-  }, [courses, selectedCourseId]);
+    setLocalSelectedCourseId(selectedCourseId);
+    setNoSpecificCourse(selectedCourseId === null);
+  }, [selectedCourseId]);
 
   const handleCourseSelect = (courseId: string) => {
     console.log("Course selected in CourseSelector:", courseId);

@@ -27,6 +27,8 @@ const formatDateForICal = (date: Date): string => {
 // Generate iCal content
 export const generateICSContent = (event: ICalEventData): string => {
   try {
+    console.log("Generating ICS content for event:", event);
+    
     const now = new Date();
     const formattedNow = formatDateForICal(now);
     
@@ -49,7 +51,7 @@ export const generateICSContent = (event: ICalEventData): string => {
     const escapedDesc = event.description?.replace(/[\\;,]/g, (match) => '\\' + match) || "Tutoring Session Details";
     const escapedLocation = event.location?.replace(/[\\;,]/g, (match) => '\\' + match) || "USC Campus";
     
-    return `BEGIN:VCALENDAR
+    const icsContent = `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//USC Tutoring//EN
 CALSCALE:GREGORIAN
@@ -64,6 +66,9 @@ STATUS:CONFIRMED
 SEQUENCE:0
 END:VEVENT
 END:VCALENDAR`;
+
+    console.log("Generated ICS content:", icsContent);
+    return icsContent;
   } catch (error) {
     console.error("Error generating ICS content:", error, event);
     return "";
@@ -73,6 +78,8 @@ END:VCALENDAR`;
 // Download ICS file
 export const downloadICSFile = (event: ICalEventData, filename: string): void => {
   try {
+    console.log("Downloading ICS file with event:", event);
+    
     const icsContent = generateICSContent(event);
     if (!icsContent) {
       console.error("Failed to generate ICS content");

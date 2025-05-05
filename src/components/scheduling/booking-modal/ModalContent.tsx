@@ -30,7 +30,9 @@ interface ModalContentProps {
   selectedDuration: number;
   onDurationChange: (duration: number) => void;
   calculatedCost?: number;
-  tutor: Tutor;  // Required tutor prop
+  tutor: Tutor;
+  selectedCourseId: string | null;
+  onCourseSelect: (courseId: string | null) => void;
 }
 
 export function ModalContent({
@@ -51,7 +53,9 @@ export function ModalContent({
   selectedDuration,
   onDurationChange,
   calculatedCost,
-  tutor  // Accept the tutor prop
+  tutor,
+  selectedCourseId,
+  onCourseSelect
 }: ModalContentProps) {
   if (loading) {
     return (
@@ -109,8 +113,8 @@ export function ModalContent({
     case BookingStep.SELECT_COURSE:
       return (
         <CourseSelector 
-          selectedCourseId={null} // We don't pass a hardcoded null anymore
-          onCourseSelect={() => onContinue()} // This was just logging before and not updating state
+          selectedCourseId={selectedCourseId} 
+          onCourseSelect={onCourseSelect}
           onBack={onBack}
           onContinue={onContinue}
           tutor={tutor}

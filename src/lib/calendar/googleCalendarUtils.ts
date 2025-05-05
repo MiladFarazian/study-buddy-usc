@@ -4,11 +4,16 @@ import { Tutor } from "@/types/tutor";
 
 // Helper to format date for Google Calendar URL
 export const formatDateForGoogleCalendar = (date: Date): string => {
-  if (!(date instanceof Date) || isNaN(date.getTime())) {
-    console.error("Invalid date provided to formatDateForGoogleCalendar:", date);
+  try {
+    if (!(date instanceof Date) || isNaN(date.getTime())) {
+      console.error("Invalid date provided to formatDateForGoogleCalendar:", date);
+      return new Date().toISOString().replace(/-|:|\.\d+/g, '');
+    }
+    return date.toISOString().replace(/-|:|\.\d+/g, '');
+  } catch (error) {
+    console.error("Error in formatDateForGoogleCalendar:", error);
     return new Date().toISOString().replace(/-|:|\.\d+/g, '');
   }
-  return date.toISOString().replace(/-|:|\.\d+/g, '');
 };
 
 // Generate Google Calendar URL for a session
@@ -21,6 +26,10 @@ export const generateGoogleCalendarUrl = (
   courseId?: string | null
 ): string => {
   try {
+    console.log("generateGoogleCalendarUrl inputs:", {
+      tutor, sessionDate, sessionStartTime, sessionDurationMinutes, customTitle, courseId
+    });
+    
     // Validate inputs
     if (!tutor || !(sessionDate instanceof Date) || isNaN(sessionDate.getTime())) {
       console.error("Invalid input for calendar URL generation:", { tutor, sessionDate });
@@ -42,6 +51,8 @@ export const generateGoogleCalendarUrl = (
       throw new Error("Invalid time values");
     }
     
+    console.log("Parsed time:", { hours, minutes });
+    
     // Set start date with time
     const startDate = new Date(sessionDate);
     startDate.setHours(hours, minutes, 0, 0);
@@ -55,6 +66,8 @@ export const generateGoogleCalendarUrl = (
     // Format dates for Google Calendar
     const startIso = formatDateForGoogleCalendar(startDate);
     const endIso = formatDateForGoogleCalendar(endDate);
+    
+    console.log("Formatted ISO dates:", { startIso, endIso });
     
     // Format title and details
     const title = encodeURIComponent(customTitle || `Tutoring with ${tutor.name}`);
@@ -81,7 +94,9 @@ export const generateGoogleCalendarUrl = (
     const description = encodeURIComponent(descriptionText);
     const location = encodeURIComponent('USC Campus');
     
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startIso}/${endIso}&details=${description}&location=${location}`;
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startIso}/${endIso}&details=${description}&location=${location}`;
+    console.log("Generated Google Calendar URL:", url);
+    return url;
   } catch (error) {
     console.error("Error generating Google Calendar URL:", error);
     return "#";
@@ -95,24 +110,28 @@ export const addToGoogleCalendar = (
   courseId?: string | null,
   courseName?: string | null
 ): void => {
-  if (!slot || !slot.day) {
-    console.error("Invalid slot data for Google Calendar", slot);
-    return;
-  }
-  
-  const sessionDate = slot.day instanceof Date ? slot.day : new Date(slot.day);
-  
-  if (isNaN(sessionDate.getTime())) {
-    console.error("Invalid date for Google Calendar", slot.day);
-    return;
-  }
-  
-  // Generate custom title with course if available
-  const courseSuffix = courseId ? ` for ${courseName || courseId}` : '';
-  const title = `Tutoring Session with ${tutor.name}${courseSuffix}`;
-  
-  // Generate and open URL
   try {
+    if (!slot || !slot.day) {
+      console.error("Invalid slot data for Google Calendar", slot);
+      return;
+    }
+    
+    const sessionDate = slot.day instanceof Date ? slot.day : new Date(slot.day);
+    
+    if (isNaN(sessionDate.getTime())) {
+      console.error("Invalid date for Google Calendar", slot.day);
+      return;
+    }
+    
+    // Generate custom title with course if available
+    const courseSuffix = courseId ? ` for ${courseName || courseId}` : '';
+    const title = `Tutoring Session with ${tutor.name}${courseSuffix}`;
+    
+    console.log("addToGoogleCalendar data:", {
+      tutor, sessionDate, slotStart: slot.start, durationMinutes, title
+    });
+    
+    // Generate and open URL
     const url = generateGoogleCalendarUrl(tutor, sessionDate, slot.start, durationMinutes, title, courseId);
     console.log("Opening Google Calendar URL:", url);
     window.open(url, '_blank');

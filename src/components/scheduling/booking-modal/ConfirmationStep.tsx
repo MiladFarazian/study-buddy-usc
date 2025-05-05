@@ -16,12 +16,23 @@ export function ConfirmationStep() {
   const { state, tutor } = useScheduling();
   const [addingToCalendar, setAddingToCalendar] = useState(false);
   
+  if (!tutor) {
+    return <div>Loading tutor information...</div>;
+  }
+
   // Format selected time
   const formatTimeSlot = () => {
     if (!state.selectedTimeSlot) return "No time selected";
     
     const start = formatTime(state.selectedTimeSlot.start);
-    return `${start} (${state.selectedDuration} minutes)`;
+    const totalMinutes = state.selectedDuration || 60;
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    const durationText = hours > 0 
+      ? (minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`)
+      : `${minutes}m`;
+
+    return `${start} (${durationText})`;
   };
   
   // Get subject name from course ID
@@ -55,6 +66,11 @@ export function ConfirmationStep() {
   const handleAddToGoogleCalendar = () => {
     if (!state.selectedDate || !state.selectedTimeSlot || !tutor) {
       toast.error("Missing session information for calendar");
+      console.error("Missing data for Google Calendar:", {
+        date: state.selectedDate,
+        timeSlot: state.selectedTimeSlot,
+        tutor
+      });
       return;
     }
     
@@ -107,6 +123,11 @@ export function ConfirmationStep() {
   const handleAddToAppleCalendar = () => {
     if (!state.selectedDate || !state.selectedTimeSlot || !tutor) {
       toast.error("Missing session information for calendar");
+      console.error("Missing data for Apple Calendar:", {
+        date: state.selectedDate,
+        timeSlot: state.selectedTimeSlot,
+        tutor
+      });
       return;
     }
     
@@ -144,6 +165,8 @@ export function ConfirmationStep() {
         startDate: startDateTime,
         endDate: endDateTime,
       };
+      
+      console.log("ICS event data:", eventData);
       
       // Download the ICS file
       downloadICSFile(eventData, `tutoring-session-${format(startDateTime, 'yyyy-MM-dd')}.ics`);
