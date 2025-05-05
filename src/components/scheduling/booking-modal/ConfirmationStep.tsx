@@ -64,7 +64,7 @@ export function ConfirmationStep() {
 
   // Handle adding to Google Calendar
   const handleAddToGoogleCalendar = () => {
-    if (!state.selectedDate || !state.selectedTimeSlot || !tutor) {
+    if (!state.selectedDate || !state.selectedTimeSlot || !state.selectedTimeSlot.start || !tutor) {
       toast.error("Missing session information for calendar");
       console.error("Missing data for Google Calendar:", {
         date: state.selectedDate,
@@ -81,36 +81,20 @@ export function ConfirmationStep() {
       const courseSuffix = state.selectedCourseId ? ` for ${state.selectedCourseId}` : '';
       const title = `Tutoring Session with ${tutor.name}${courseSuffix}`;
       
-      // Ensure selectedDate is a proper Date object
-      const sessionDate = state.selectedDate instanceof Date ? 
-        state.selectedDate : new Date();
-      
-      // Log debug information
-      console.log("Google Calendar data:", {
-        tutor,
-        date: sessionDate,
-        startTime: state.selectedTimeSlot.start,
-        duration: state.selectedDuration,
-        title,
-        courseId: state.selectedCourseId
-      });
-      
-      // Generate the Google Calendar URL
+      // Create a valid URL for Google Calendar
       const url = generateGoogleCalendarUrl(
         tutor,
-        sessionDate,
+        state.selectedDate,
         state.selectedTimeSlot.start,
         state.selectedDuration,
         title,
         state.selectedCourseId
       );
       
-      console.log("Generated Google Calendar URL:", url);
-      
       // Open in a new tab
       window.open(url, '_blank');
       
-      toast.success("Added to Google Calendar");
+      toast.success("Opening Google Calendar");
     } catch (error) {
       console.error("Failed to add to Google Calendar:", error);
       toast.error("Failed to add to Google Calendar");
@@ -121,7 +105,7 @@ export function ConfirmationStep() {
   
   // Handle adding to Apple Calendar
   const handleAddToAppleCalendar = () => {
-    if (!state.selectedDate || !state.selectedTimeSlot || !tutor) {
+    if (!state.selectedDate || !state.selectedTimeSlot || !state.selectedTimeSlot.start || !tutor) {
       toast.error("Missing session information for calendar");
       console.error("Missing data for Apple Calendar:", {
         date: state.selectedDate,
@@ -134,25 +118,13 @@ export function ConfirmationStep() {
     try {
       setAddingToCalendar(true);
       
-      // Ensure selectedDate is a proper Date object
-      const sessionDate = state.selectedDate instanceof Date ? 
-        state.selectedDate : new Date();
-      
       // Parse start time and create start/end dates
       const [hours, minutes] = state.selectedTimeSlot.start.split(':').map(Number);
       
-      const startDateTime = new Date(sessionDate);
+      const startDateTime = new Date(state.selectedDate);
       startDateTime.setHours(hours, minutes, 0, 0);
       
       const endDateTime = addMinutes(startDateTime, state.selectedDuration);
-      
-      // Log debug information
-      console.log("Apple Calendar data:", {
-        startDateTime,
-        endDateTime,
-        courseId: state.selectedCourseId,
-        duration: state.selectedDuration
-      });
       
       // Generate course info text if available
       const courseSuffix = state.selectedCourseId ? ` for ${state.selectedCourseId}` : '';
@@ -166,12 +138,10 @@ export function ConfirmationStep() {
         endDate: endDateTime,
       };
       
-      console.log("ICS event data:", eventData);
-      
       // Download the ICS file
       downloadICSFile(eventData, `tutoring-session-${format(startDateTime, 'yyyy-MM-dd')}.ics`);
       
-      toast.success("Added to Apple Calendar");
+      toast.success("Downloaded calendar file");
     } catch (error) {
       console.error("Failed to add to Apple Calendar:", error);
       toast.error("Failed to add to Apple Calendar");

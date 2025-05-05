@@ -1,38 +1,8 @@
 
-import React, { useEffect } from "react";
-import { BookSessionModal } from "./BookSessionModal";
+import React from "react";
+import { BookSessionModal } from "./booking-modal/BookSessionModal";
 import { Tutor } from "@/types/tutor";
-import { SchedulingProvider, useScheduling } from "@/contexts/SchedulingContext";
-
-interface SchedulerWrapperProps {
-  tutor: Tutor;
-  isOpen: boolean;
-  onClose: () => void;
-  initialDate?: Date;
-  initialTime?: string;
-}
-
-// Internal wrapper component that has access to context
-function SchedulerWrapper({ tutor, isOpen, onClose, initialDate, initialTime }: SchedulerWrapperProps) {
-  const { setTutor } = useScheduling();
-
-  // Set the tutor in context when opened
-  useEffect(() => {
-    if (isOpen && tutor) {
-      setTutor(tutor);
-    }
-  }, [isOpen, tutor, setTutor]);
-
-  return (
-    <BookSessionModal
-      isOpen={isOpen}
-      onClose={onClose}
-      tutor={tutor}
-      initialDate={initialDate}
-      initialTime={initialTime}
-    />
-  );
-}
+import { SchedulingProvider } from "@/contexts/SchedulingContext";
 
 interface SchedulerModalProps {
   isOpen: boolean;
@@ -51,7 +21,7 @@ export function SchedulerModal({
 }: SchedulerModalProps) {
   return (
     <SchedulingProvider>
-      <SchedulerWrapper
+      <BookSessionModal
         isOpen={isOpen}
         onClose={onClose}
         tutor={tutor}

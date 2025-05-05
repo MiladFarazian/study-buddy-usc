@@ -91,7 +91,7 @@ export const downloadICSFile = (event: ICalEventData, filename: string): void =>
     // Create download link
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = filename;
+    link.download = filename || 'tutoring-session.ics';
     
     // Add to body to ensure it works in all browsers
     document.body.appendChild(link);

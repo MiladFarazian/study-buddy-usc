@@ -4,11 +4,8 @@ import { addDays, startOfDay } from "date-fns";
 import { Tutor } from "@/types/tutor";
 import { BookingSlot } from "@/lib/scheduling/types";
 import { toast } from "sonner";
-import { BookingStep } from "@/contexts/SchedulingContext";
+import { BookingStep, useScheduling } from "@/contexts/SchedulingContext";
 import { useAvailabilityData } from "@/hooks/useAvailabilityData";
-import { addToGoogleCalendar } from "@/lib/calendar/googleCalendarUtils";
-import { ICalEventData, downloadICSFile } from "@/lib/calendar/icsGenerator";
-import { useScheduling } from "@/contexts/SchedulingContext";
 
 interface BookingState {
   bookingStep: BookingStep; 
@@ -33,13 +30,20 @@ export function useBookSessionModal(
   });
   
   // Get access to the SchedulingContext
-  const { setCourse } = useScheduling();
+  const { dispatch, setCourse, setTutor } = useScheduling();
   
   // State for selected date
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
     if (initialDate) return startOfDay(initialDate);
     return startOfDay(new Date());
   });
+
+  // Ensure we set the tutor in context
+  useEffect(() => {
+    if (isOpen && tutor) {
+      setTutor(tutor);
+    }
+  }, [isOpen, tutor, setTutor]);
   
   // If the modal is closed, reset state
   useEffect(() => {
@@ -55,6 +59,27 @@ export function useBookSessionModal(
       setCourse(null);
     }
   }, [isOpen, setCourse]);
+
+  // Sync selected date with SchedulingContext
+  useEffect(() => {
+    if (selectedDate) {
+      dispatch({ type: 'SELECT_DATE', payload: selectedDate });
+    }
+  }, [selectedDate, dispatch]);
+
+  // Sync selected time slot with SchedulingContext
+  useEffect(() => {
+    if (state.selectedTimeSlot) {
+      dispatch({ type: 'SELECT_TIME_SLOT', payload: state.selectedTimeSlot });
+    }
+  }, [state.selectedTimeSlot, dispatch]);
+
+  // Sync selected duration with SchedulingContext
+  useEffect(() => {
+    if (state.selectedDuration) {
+      dispatch({ type: 'SET_DURATION', payload: state.selectedDuration });
+    }
+  }, [state.selectedDuration, dispatch]);
   
   // Get available slots for the selected date
   const { availableSlots, loading, errorMessage, refreshAvailability } = 
@@ -67,16 +92,19 @@ export function useBookSessionModal(
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
     setState(prev => ({ ...prev, selectedTimeSlot: null }));
+    dispatch({ type: 'SELECT_DATE', payload: date });
   };
   
   // Handle slot selection
   const handleSelectSlot = (slot: BookingSlot) => {
     setState(prev => ({ ...prev, selectedTimeSlot: slot }));
+    dispatch({ type: 'SELECT_TIME_SLOT', payload: slot });
   };
   
   // Handle duration change
   const handleDurationChange = (duration: number) => {
     setState(prev => ({ ...prev, selectedDuration: duration }));
+    dispatch({ type: 'SET_DURATION', payload: duration });
   };
   
   // Handle course selection
@@ -89,21 +117,21 @@ export function useBookSessionModal(
   
   // Handle when user continues to next step
   const handleContinue = () => {
-    if (state.bookingStep === BookingStep.SELECT_COURSE) {
-      console.log("Selected course before continuing:", state.selectedCourseId);
+    if (state.bookingStep === BookingStep.SELECT_DATE_TIME && !state.selectedTimeSlot) {
+      toast.error("Please select a time slot before continuing");
+      return;
     }
-    setState(prev => ({ 
-      ...prev, 
-      bookingStep: prev.bookingStep + 1 as BookingStep 
-    }));
+    
+    const nextStep = state.bookingStep + 1 as BookingStep;
+    setState(prev => ({ ...prev, bookingStep: nextStep }));
+    dispatch({ type: 'SET_STEP', payload: nextStep });
   };
   
   // Handle when user goes back to previous step
   const handleBack = () => {
-    setState(prev => ({ 
-      ...prev, 
-      bookingStep: Math.max(0, prev.bookingStep - 1) as BookingStep 
-    }));
+    const prevStep = Math.max(0, state.bookingStep - 1) as BookingStep;
+    setState(prev => ({ ...prev, bookingStep: prevStep }));
+    dispatch({ type: 'SET_STEP', payload: prevStep });
   };
   
   // Handle closing the modal

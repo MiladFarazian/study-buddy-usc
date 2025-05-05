@@ -53,7 +53,7 @@ export const generateGoogleCalendarUrl = (
     
     console.log("Parsed time:", { hours, minutes });
     
-    // Set start date with time
+    // Clone the date to avoid modifying the original
     const startDate = new Date(sessionDate);
     startDate.setHours(hours, minutes, 0, 0);
     
@@ -99,7 +99,8 @@ export const generateGoogleCalendarUrl = (
     return url;
   } catch (error) {
     console.error("Error generating Google Calendar URL:", error);
-    return "#";
+    // Return a fallback URL that will at least open Google Calendar
+    return "https://calendar.google.com/calendar/";
   }
 };
 

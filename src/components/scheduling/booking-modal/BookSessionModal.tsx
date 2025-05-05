@@ -23,9 +23,10 @@ export function BookSessionModal({
 }: BookSessionModalProps) {
   const { setTutor } = useScheduling();
   
-  // Initialize the tutor in the SchedulingContext when modal opens
+  // Initialize the tutor and other data in the SchedulingContext when modal opens
   useEffect(() => {
     if (isOpen && tutor) {
+      // Set tutor in context when modal opens
       setTutor(tutor);
     }
   }, [isOpen, tutor, setTutor]);
@@ -48,6 +49,13 @@ export function BookSessionModal({
     handleBookingComplete,
     getStepTitle
   } = useBookSessionModal(tutor, isOpen, onClose, initialDate, initialTime);
+
+  // Debug the selected date and time slot
+  useEffect(() => {
+    console.log("BookSessionModal - Selected Date:", selectedDate);
+    console.log("BookSessionModal - Selected Time Slot:", state.selectedTimeSlot);
+    console.log("BookSessionModal - Selected Course:", state.selectedCourseId);
+  }, [selectedDate, state.selectedTimeSlot, state.selectedCourseId]);
 
   if (!isOpen) return null;
 
