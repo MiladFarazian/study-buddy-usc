@@ -4,9 +4,13 @@ import React from 'react'
 import App from './App.tsx'
 import './index.css'
 
-// Wrap App in StrictMode to ensure React hooks work properly
+// Only use StrictMode in development, not in preview
 createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
+  import.meta.env.DEV ? (
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  ) : (
     <App />
-  </React.StrictMode>
+  )
 );
