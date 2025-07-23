@@ -1,27 +1,24 @@
 
-import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export const useAuthMethods = () => {
   const { toast } = useToast();
 
   const signIn = async (provider: 'google') => {
     try {
-      // Get the full current URL (including hostname) to determine environment
-      const currentUrl = window.location.href;
+      console.log("Initiating sign in with provider:", provider);
       
-      // Store the current URL in session storage to maintain the same environment after auth
-      sessionStorage.setItem('authOriginUrl', currentUrl);
+      // Store the current path for redirect after login
+      const currentPath = window.location.pathname;
+      if (currentPath !== '/login' && currentPath !== '/auth/callback') {
+        sessionStorage.setItem('redirectAfterAuth', currentPath);
+      }
       
-      // Use the current origin as the base URL for the redirect
+      // Use the current origin for the redirect URL
       const redirectUrl = `${window.location.origin}/auth/callback`;
       
       console.log(`Authentication initiated with redirect URL: ${redirectUrl}`);
-      console.log(`Storing origin URL: ${currentUrl}`);
-      
-      // Store the current URL to redirect back to after auth
-      sessionStorage.setItem('redirectAfterAuth', window.location.pathname);
       
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
@@ -58,9 +55,7 @@ export const useAuthMethods = () => {
 
   const signOut = async () => {
     try {
-      // Store current URL before signing out, to ensure we stay in the same environment
-      const currentUrl = window.location.href;
-      sessionStorage.setItem('authOriginUrl', currentUrl);
+      console.log("Signing out user");
       
       const { error } = await supabase.auth.signOut();
       if (error) {
@@ -72,6 +67,10 @@ export const useAuthMethods = () => {
         });
         return { success: false, error };
       } 
+      
+      // Clean up any stored auth-related data
+      sessionStorage.removeItem('redirectAfterAuth');
+      sessionStorage.removeItem('authOriginUrl');
       
       toast({
         title: "Signed Out",

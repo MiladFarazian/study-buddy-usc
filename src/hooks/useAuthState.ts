@@ -15,31 +15,39 @@ export const useAuthState = () => {
     const initializeAuth = async () => {
       console.log("Initializing auth state...");
       
-      // First set up the listener to avoid race conditions
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        (event, newSession) => {
-          console.log("Auth state changed:", event);
-          setSession(newSession);
-          setUser(newSession?.user ?? null);
-          
-          // Don't finalize loading state here, as we need to wait for profile data
-        }
-      );
-      
-      // Then check for existing session
+      // First check for existing session
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         console.log("Current session:", currentSession ? "Found" : "None");
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
         
-        if (!currentSession?.user) {
-          setLoading(false); // No user, so no profile to wait for
+        if (currentSession) {
+          setSession(currentSession);
+          setUser(currentSession.user);
         }
       } catch (error) {
         console.error("Error fetching session:", error);
-        setLoading(false);
       }
+      
+      // Set up the auth state listener
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event, newSession) => {
+          console.log("Auth state changed:", event, newSession ? "with session" : "no session");
+          
+          // Only update state, don't do any complex operations here
+          setSession(newSession);
+          setUser(newSession?.user ?? null);
+          
+          // Handle specific events
+          if (event === 'SIGNED_OUT') {
+            console.log("User signed out");
+          } else if (event === 'SIGNED_IN' && newSession) {
+            console.log("User signed in");
+          }
+        }
+      );
+      
+      // Set loading to false after initial setup
+      setLoading(false);
 
       return () => subscription.unsubscribe();
     };
@@ -47,17 +55,13 @@ export const useAuthState = () => {
     initializeAuth();
   }, []);
 
-  // Set loading to false when profile is loaded (after user is set)
-  // This ensures we wait for profile data before making decisions
+  // Update loading state based on profile data
   useEffect(() => {
-    if (user === null || profile !== null) {
-      // Wait a bit to ensure profile data is fully populated
-      const timer = setTimeout(() => {
-        setLoading(false);
-      }, 100);
-      
-      return () => clearTimeout(timer);
+    if (user && profile === null) {
+      // Still loading profile data
+      return;
     }
+    setLoading(false);
   }, [user, profile]);
 
   // Log profile information for debugging
@@ -74,7 +78,6 @@ export const useAuthState = () => {
   }, [profile]);
 
   // Calculate profile completeness and role flags
-  // Make sure this matches the check in RequireProfileCompletion
   const isProfileComplete = !!profile && !!profile.first_name && !!profile.last_name && !!profile.major;
   const isStudent = profile?.role === 'student';
   const isTutor = profile?.role === 'tutor';
