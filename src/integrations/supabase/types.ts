@@ -593,6 +593,100 @@ export type Database = {
           },
         ]
       }
+      student_reviews: {
+        Row: {
+          comfortable_asking_questions:
+            | Database["public"]["Enums"]["comfortable_asking_questions"]
+            | null
+          confidence_improvement: number | null
+          created_at: string
+          emotional_support: number | null
+          felt_judged: boolean | null
+          learning_anxiety_reduction: number | null
+          overall_wellbeing_impact: number | null
+          review_id: string
+          session_id: string
+          stress_after: number | null
+          stress_before: number | null
+          student_id: string
+          subject_clarity: number | null
+          teaching_quality: number | null
+          tutor_id: string
+          tutor_showed_up: boolean
+          updated_at: string
+          would_book_again: boolean | null
+          written_feedback: string | null
+        }
+        Insert: {
+          comfortable_asking_questions?:
+            | Database["public"]["Enums"]["comfortable_asking_questions"]
+            | null
+          confidence_improvement?: number | null
+          created_at?: string
+          emotional_support?: number | null
+          felt_judged?: boolean | null
+          learning_anxiety_reduction?: number | null
+          overall_wellbeing_impact?: number | null
+          review_id?: string
+          session_id: string
+          stress_after?: number | null
+          stress_before?: number | null
+          student_id: string
+          subject_clarity?: number | null
+          teaching_quality?: number | null
+          tutor_id: string
+          tutor_showed_up: boolean
+          updated_at?: string
+          would_book_again?: boolean | null
+          written_feedback?: string | null
+        }
+        Update: {
+          comfortable_asking_questions?:
+            | Database["public"]["Enums"]["comfortable_asking_questions"]
+            | null
+          confidence_improvement?: number | null
+          created_at?: string
+          emotional_support?: number | null
+          felt_judged?: boolean | null
+          learning_anxiety_reduction?: number | null
+          overall_wellbeing_impact?: number | null
+          review_id?: string
+          session_id?: string
+          stress_after?: number | null
+          stress_before?: number | null
+          student_id?: string
+          subject_clarity?: number | null
+          teaching_quality?: number | null
+          tutor_id?: string
+          tutor_showed_up?: boolean
+          updated_at?: string
+          would_book_again?: boolean | null
+          written_feedback?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_reviews_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_reviews_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_reviews_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       terms: {
         Row: {
           code: string
@@ -768,6 +862,7 @@ export type Database = {
       }
     }
     Enums: {
+      comfortable_asking_questions: "very" | "somewhat" | "not_at_all"
       completion_method:
         | "auto"
         | "manual_both"
@@ -902,6 +997,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      comfortable_asking_questions: ["very", "somewhat", "not_at_all"],
       completion_method: [
         "auto",
         "manual_both",
