@@ -511,6 +511,11 @@ export type Database = {
       }
       sessions: {
         Row: {
+          actual_end_time: string | null
+          actual_start_time: string | null
+          completion_method:
+            | Database["public"]["Enums"]["completion_method"]
+            | null
           course_id: string | null
           created_at: string
           end_time: string
@@ -520,7 +525,7 @@ export type Database = {
           payment_status: string | null
           session_type: string | null
           start_time: string
-          status: string
+          status: Database["public"]["Enums"]["session_status"] | null
           student_id: string
           tutor_id: string
           updated_at: string
@@ -528,6 +533,11 @@ export type Database = {
           zoom_meeting_id: string | null
         }
         Insert: {
+          actual_end_time?: string | null
+          actual_start_time?: string | null
+          completion_method?:
+            | Database["public"]["Enums"]["completion_method"]
+            | null
           course_id?: string | null
           created_at?: string
           end_time: string
@@ -537,7 +547,7 @@ export type Database = {
           payment_status?: string | null
           session_type?: string | null
           start_time: string
-          status?: string
+          status?: Database["public"]["Enums"]["session_status"] | null
           student_id: string
           tutor_id: string
           updated_at?: string
@@ -545,6 +555,11 @@ export type Database = {
           zoom_meeting_id?: string | null
         }
         Update: {
+          actual_end_time?: string | null
+          actual_start_time?: string | null
+          completion_method?:
+            | Database["public"]["Enums"]["completion_method"]
+            | null
           course_id?: string | null
           created_at?: string
           end_time?: string
@@ -554,7 +569,7 @@ export type Database = {
           payment_status?: string | null
           session_type?: string | null
           start_time?: string
-          status?: string
+          status?: Database["public"]["Enums"]["session_status"] | null
           student_id?: string
           tutor_id?: string
           updated_at?: string
@@ -753,6 +768,12 @@ export type Database = {
       }
     }
     Enums: {
+      completion_method:
+        | "auto"
+        | "manual_both"
+        | "manual_student"
+        | "manual_tutor"
+      session_status: "scheduled" | "in_progress" | "completed" | "cancelled"
       user_role: "student" | "tutor"
     }
     CompositeTypes: {
@@ -881,6 +902,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      completion_method: [
+        "auto",
+        "manual_both",
+        "manual_student",
+        "manual_tutor",
+      ],
+      session_status: ["scheduled", "in_progress", "completed", "cancelled"],
       user_role: ["student", "tutor"],
     },
   },
