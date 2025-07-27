@@ -49,8 +49,8 @@ export function useSessionCreation() {
           student_id: user.id,
           start_time: startTime.toISOString(),
           end_time: endTime.toISOString(),
-          status: 'pending',
-          payment_status: 'pending'
+          status: 'scheduled',
+          payment_status: 'unpaid'
         })
         .select()
         .single();

@@ -169,17 +169,25 @@ export function useBookSessionModal(
   
   // Handle booking completion
   const handleBookingComplete = useCallback(async () => {
-    console.log("Booking completed!");
+    console.log("[handleBookingComplete] Starting booking process...");
     
     if (!state.selectedTimeSlot) {
+      console.error("[handleBookingComplete] No time slot selected");
       toast.error("No time slot selected. Please try again.");
       return;
     }
     
     // Get the authenticated user
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError) {
+      console.error("[handleBookingComplete] Auth error:", authError);
+      toast.error("Authentication error. Please try logging in again.");
+      return;
+    }
     
     if (!user) {
+      console.error("[handleBookingComplete] User not logged in");
       toast.error("You must be logged in to book a session");
       return;
     }
@@ -197,17 +205,19 @@ export function useBookSessionModal(
       const sessionTypeValue = contextState.sessionType;
       const locationValue = contextState.location;
       
-      console.log("Creating session with:", {
+      console.log("[handleBookingComplete] Session details:", {
         userId: user.id,
         tutorId: tutor.id,
         courseId: state.selectedCourseId,
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
         location: locationValue,
-        sessionType: sessionTypeValue
+        sessionType: sessionTypeValue,
+        duration: state.selectedDuration
       });
       
       // Actually create the session in the database
+      console.log("[handleBookingComplete] Calling createSessionBooking...");
       const sessionDetails = await createSessionBooking(
         user.id,
         tutor.id,
@@ -219,20 +229,26 @@ export function useBookSessionModal(
         sessionTypeValue
       );
       
+      console.log("[handleBookingComplete] createSessionBooking result:", sessionDetails);
+      
       if (sessionDetails) {
+        console.log("[handleBookingComplete] Session created successfully:", sessionDetails);
         toast.success("Your session has been booked!");
-        console.log("Session created:", sessionDetails);
+        onClose();
       } else {
+        console.error("[handleBookingComplete] createSessionBooking returned null");
         toast.error("Failed to book session. Please try again.");
         return;
       }
     } catch (error) {
-      console.error("Error creating session:", error);
-      toast.error("An error occurred while booking your session");
+      console.error("[handleBookingComplete] Error creating session:", error);
+      if (error instanceof Error) {
+        toast.error(`Booking failed: ${error.message}`);
+      } else {
+        toast.error("An unexpected error occurred while booking your session");
+      }
       return;
     }
-    
-    onClose();
   }, [onClose, tutor, selectedDate, state, contextState]);
 
   return {

@@ -34,7 +34,7 @@ export async function createSessionBooking(
         end_time: endTime,
         location: location,
         notes: notes,
-        status: 'pending',
+        status: 'scheduled',
         payment_status: 'unpaid'
       })
       .select()
@@ -78,7 +78,7 @@ export async function bookSession(
         course_id: courseId, // Store course ID as string
         start_time: startDateTime.toISOString(),
         end_time: endDateTime.toISOString(),
-        status: 'pending',
+        status: 'scheduled',
         payment_status: 'unpaid'
       })
       .select()

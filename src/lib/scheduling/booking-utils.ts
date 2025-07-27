@@ -60,7 +60,8 @@ export async function createSessionBooking(
       start_time: startTime,
       end_time: endTime,
       location: location,
-      session_type: sessionType
+      session_type: sessionType,
+      status_will_be: 'scheduled'
     });
     
     // If it's a virtual session, create a Zoom meeting
@@ -109,7 +110,7 @@ export async function createSessionBooking(
         end_time: endTime,
         location: location,
         notes: notes,
-        status: 'pending' as const,
+        status: 'scheduled' as const,
         payment_status: 'unpaid' as const,
         session_type: sessionType,
         zoom_meeting_id: zoomMeetingId,
@@ -120,7 +121,13 @@ export async function createSessionBooking(
       .single();
     
     if (error) {
-      console.error("Error creating session booking:", error);
+      console.error("[createSessionBooking] Supabase error:", error);
+      console.error("[createSessionBooking] Error details:", {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
       return null;
     }
     
@@ -182,7 +189,7 @@ export async function createSessionBooking(
       endTime: data.end_time,
       location: data.location || undefined,
       notes: data.notes || undefined,
-      status: data.status as 'pending' | 'confirmed' | 'cancelled' | 'completed',
+      status: data.status as 'scheduled' | 'in_progress' | 'cancelled' | 'completed',
       paymentStatus: data.payment_status as 'unpaid' | 'paid' | 'refunded',
       sessionType: data.session_type as SessionType,
       zoomMeetingId: data.zoom_meeting_id || undefined,

@@ -57,7 +57,7 @@ export interface SessionDetails {
   endTime: string;
   location?: string;
   notes?: string;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  status: 'scheduled' | 'in_progress' | 'cancelled' | 'completed';
   paymentStatus: 'unpaid' | 'paid' | 'refunded';
   sessionType?: SessionType;
   zoomMeetingId?: string;

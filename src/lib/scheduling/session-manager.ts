@@ -24,7 +24,7 @@ export async function getTutorBookedSessions(
       .eq('tutor_id', tutorId)
       .gte('start_time', startDateStr)
       .lte('start_time', endDateStr)
-      .in('status', ['confirmed', 'pending']); // Only include active bookings
+      .in('status', ['scheduled', 'in_progress']); // Only include active bookings
     
     if (error) {
       console.error("Error fetching tutor booked sessions:", error);
