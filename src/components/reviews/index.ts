@@ -5,3 +5,7 @@ export { MentalHealthStep } from './MentalHealthStep';
 export { AcademicMetricsStep } from './AcademicMetricsStep';
 export { FinalFeedbackStep } from './FinalFeedbackStep';
 export { ReviewSubmissionStep } from './ReviewSubmissionStep';
+export { TutorReviewModal, type TutorReviewData, TutorReviewStep } from './TutorReviewModal';
+export { TutorShowUpVerificationStep } from './TutorShowUpVerificationStep';
+export { StudentEvaluationStep } from './StudentEvaluationStep';
+export { TutorReviewSubmissionStep } from './TutorReviewSubmissionStep';
