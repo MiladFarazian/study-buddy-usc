@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { RouterProvider, createBrowserRouter, Outlet } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { Toaster } from "./components/ui/toaster";
+import { ReviewRequirement } from "./components/reviews";
 import Layout from "./components/layout/Layout";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -132,6 +133,7 @@ function App() {
     <>
       <AuthProvider>
         <RouterProvider router={router} />
+        <ReviewRequirement />
         <Toaster />
       </AuthProvider>
     </>

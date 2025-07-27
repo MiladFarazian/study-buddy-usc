@@ -9,3 +9,4 @@ export { TutorReviewModal, type TutorReviewData, TutorReviewStep } from './Tutor
 export { TutorShowUpVerificationStep } from './TutorShowUpVerificationStep';
 export { StudentEvaluationStep } from './StudentEvaluationStep';
 export { TutorReviewSubmissionStep } from './TutorReviewSubmissionStep';
+export { ReviewRequirement } from './ReviewRequirement';
