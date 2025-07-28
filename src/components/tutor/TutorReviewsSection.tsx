@@ -3,15 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Review } from "@/types/tutor";
 import { format } from "date-fns";
 import StarRating from "@/components/ui/StarRating";
-import { AddReviewForm } from "./AddReviewForm";
 
 interface TutorReviewsSectionProps {
   reviews: Review[];
-  tutorId: string;
-  onReviewAdded: () => void;
 }
 
-export const TutorReviewsSection = ({ reviews, tutorId, onReviewAdded }: TutorReviewsSectionProps) => {
+export const TutorReviewsSection = ({ reviews }: TutorReviewsSectionProps) => {
   return (
     <Card className="mt-8">
       <CardHeader>
@@ -19,7 +16,9 @@ export const TutorReviewsSection = ({ reviews, tutorId, onReviewAdded }: TutorRe
       </CardHeader>
       <CardContent>
         {reviews.length === 0 ? (
-          <p className="text-muted-foreground py-4">No reviews yet. Be the first to leave a review!</p>
+          <p className="text-muted-foreground py-4">
+            No reviews yet. Reviews are automatically added after students complete sessions.
+          </p>
         ) : (
           <div className="space-y-6">
             {reviews.map((review) => (
@@ -40,8 +39,6 @@ export const TutorReviewsSection = ({ reviews, tutorId, onReviewAdded }: TutorRe
             ))}
           </div>
         )}
-        
-        <AddReviewForm tutorId={tutorId} onReviewAdded={onReviewAdded} />
       </CardContent>
     </Card>
   );

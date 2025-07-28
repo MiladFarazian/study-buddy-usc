@@ -46,8 +46,8 @@ export function ReviewSubmissionStep({
     setIsSubmitting(true);
 
     try {
-      // Insert the review into the database
-      const { error } = await supabase
+      // Insert the detailed review into student_reviews table
+      const { error: studentReviewError } = await supabase
         .from('student_reviews')
         .insert({
           session_id: session.id,
@@ -68,10 +68,33 @@ export function ReviewSubmissionStep({
           would_book_again: reviewData.wouldBookAgain
         });
 
-      if (error) {
-        console.error("Error submitting review:", error);
+      if (studentReviewError) {
+        console.error("Error submitting student review:", studentReviewError);
         toast.error("Failed to submit review. Please try again.");
         return;
+      }
+
+      // If tutor showed up, also create a review entry for the tutor's overall rating
+      if (reviewData.tutorShowedUp && reviewData.teachingQuality && reviewData.subjectClarity) {
+        // Calculate overall rating from academic metrics (teaching quality and subject clarity)
+        const overallRating = Math.round((reviewData.teachingQuality + reviewData.subjectClarity) / 2);
+        
+        const { error: reviewError } = await supabase
+          .from('reviews')
+          .insert({
+            tutor_id: tutor.id,
+            reviewer_id: user.id,
+            rating: overallRating,
+            comment: reviewData.writtenFeedback || null
+          });
+
+        if (reviewError) {
+          console.error("Error submitting tutor review:", reviewError);
+          // Don't fail the entire process if this fails - the student review was already saved
+          toast("Review submitted, but there was an issue updating the tutor's rating.", { 
+            description: "The review was still recorded successfully." 
+          });
+        }
       }
 
       toast.success("Review submitted successfully!");

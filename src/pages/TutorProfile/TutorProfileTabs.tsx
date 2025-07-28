@@ -77,8 +77,6 @@ const AboutTabContent = ({ tutor, reviews, getInitials, refreshReviews }: AboutT
       {/* Reviews Section */}
       <TutorReviewsSection 
         reviews={reviews} 
-        tutorId={tutor.id} 
-        onReviewAdded={refreshReviews}
       />
     </div>
   );
