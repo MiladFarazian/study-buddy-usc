@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,15 +11,43 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { getTutorStudentCourses } from "@/lib/tutor-student-utils";
 
 const Tutors = () => {
   const { tutors, loading, studentCourseTutors, loadingStudentTutors } = useTutors();
+  const [studentCourses, setStudentCourses] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
   const [showOnlyForMyCourses, setShowOnlyForMyCourses] = useState(false);
   const isMobile = useIsMobile();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
+
+  // Effect to populate student courses
+  useEffect(() => {
+    const fetchStudentCourses = async () => {
+      if (!profile) {
+        setStudentCourses([]);
+        return;
+      }
+      
+      if (profile.role === 'student' && profile.subjects && Array.isArray(profile.subjects)) {
+        setStudentCourses(profile.subjects);
+      } else if (profile.role === 'tutor' && user) {
+        try {
+          const tutorStudentCourses = await getTutorStudentCourses(user.id);
+          setStudentCourses(tutorStudentCourses.map((course: any) => course.course_number));
+        } catch (err) {
+          console.error("Error fetching tutor student courses:", err);
+          setStudentCourses([]);
+        }
+      } else {
+        setStudentCourses([]);
+      }
+    };
+
+    fetchStudentCourses();
+  }, [profile, user]);
 
   // Check if user is logged in and is a student or tutor
   const isLoggedIn = profile !== null;
@@ -224,7 +252,7 @@ const Tutors = () => {
             >
               {displayTutors.map((tutor) => (
                 <div key={tutor.id} className="flex-shrink-0 w-[280px] md:w-[320px]">
-                  <TutorCard tutor={tutor} />
+                  <TutorCard tutor={tutor} highlightedCourses={studentCourses} />
                 </div>
               ))}
             </div>
@@ -338,7 +366,10 @@ const Tutors = () => {
         <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 transition-all duration-300">
           {filteredTutors.map((tutor) => (
             <div key={tutor.id} className="w-full">
-              <TutorCard tutor={tutor} />
+              <TutorCard 
+                tutor={tutor} 
+                highlightedCourses={showOnlyForMyCourses && hasMatchingTutors ? studentCourses : undefined} 
+              />
             </div>
           ))}
         </div>

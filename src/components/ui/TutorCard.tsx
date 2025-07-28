@@ -6,9 +6,10 @@ import TutorCardDesktop from "./TutorCardDesktop";
 
 interface TutorCardProps {
   tutor: Tutor;
+  highlightedCourses?: string[]; // Courses to highlight as matching
 }
 
-const TutorCard = ({ tutor }: TutorCardProps) => {
+const TutorCard = ({ tutor, highlightedCourses }: TutorCardProps) => {
   const isMobile = useIsMobile();
   
   const getInitials = (name: string) => {
@@ -20,10 +21,10 @@ const TutorCard = ({ tutor }: TutorCardProps) => {
 
   // Render appropriate card based on screen size
   if (isMobile) {
-    return <TutorCardMobile tutor={tutor} getInitials={getInitials} />;
+    return <TutorCardMobile tutor={tutor} getInitials={getInitials} highlightedCourses={highlightedCourses} />;
   }
 
-  return <TutorCardDesktop tutor={tutor} getInitials={getInitials} />;
+  return <TutorCardDesktop tutor={tutor} getInitials={getInitials} highlightedCourses={highlightedCourses} />;
 };
 
 export default TutorCard;

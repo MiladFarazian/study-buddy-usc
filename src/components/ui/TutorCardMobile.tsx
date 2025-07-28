@@ -10,9 +10,10 @@ import StarRating from "./StarRating";
 interface TutorCardMobileProps {
   tutor: Tutor;
   getInitials: (name: string) => string;
+  highlightedCourses?: string[];
 }
 
-const TutorCardMobile = ({ tutor, getInitials }: TutorCardMobileProps) => {
+const TutorCardMobile = ({ tutor, getInitials, highlightedCourses = [] }: TutorCardMobileProps) => {
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow w-full">
       <div className="bg-gradient-to-r from-yellow-500 to-red-600 h-2"></div>
@@ -50,15 +51,23 @@ const TutorCardMobile = ({ tutor, getInitials }: TutorCardMobileProps) => {
             <div>
               <h4 className="font-medium text-xs mb-1">Available for:</h4>
               <div className="flex flex-nowrap overflow-hidden gap-1">
-                {tutor.subjects.slice(0, 2).map((subject) => (
-                  <Badge
-                    key={subject.code}
-                    variant="outline"
-                    className="bg-red-50 hover:bg-red-100 text-usc-cardinal border-red-100 text-xs py-0 h-5 flex-shrink-0"
-                  >
-                    {subject.code}
-                  </Badge>
-                ))}
+                {tutor.subjects.slice(0, 2).map((subject) => {
+                  const isHighlighted = highlightedCourses.includes(subject.code);
+                  return (
+                    <Badge
+                      key={subject.code}
+                      variant="outline"
+                      className={`${
+                        isHighlighted 
+                          ? "bg-usc-cardinal text-white border-usc-cardinal font-semibold" 
+                          : "bg-red-50 hover:bg-red-100 text-usc-cardinal border-red-100"
+                      } text-xs py-0 h-5 flex-shrink-0`}
+                    >
+                      {subject.code}
+                      {isHighlighted && <span className="ml-1">✓</span>}
+                    </Badge>
+                  );
+                })}
                 {tutor.subjects.length > 2 && (
                   <Badge 
                     variant="outline" 
