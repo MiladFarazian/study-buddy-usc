@@ -30,10 +30,12 @@ export const TutorProfileHeader = ({
           <div>
             <h1 className="text-3xl font-bold">{tutor.name}</h1>
             <p className="text-xl text-muted-foreground">{tutor.field}</p>
-            <div className="flex items-center mt-2">
-              <StarRating rating={tutor.rating} />
-              <span className="ml-2 text-muted-foreground">({reviewsCount} reviews)</span>
-            </div>
+            {reviewsCount > 0 && (
+              <div className="flex items-center mt-2">
+                <StarRating rating={tutor.rating} />
+                <span className="ml-2 text-muted-foreground">({reviewsCount} reviews)</span>
+              </div>
+            )}
           </div>
         </div>
       ) : (

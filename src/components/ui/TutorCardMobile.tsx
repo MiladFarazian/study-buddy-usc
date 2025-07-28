@@ -35,7 +35,7 @@ const TutorCardMobile = ({ tutor, getInitials }: TutorCardMobileProps) => {
                 <MapPin className="h-3 w-3 text-gray-500 mr-1 flex-shrink-0" />
                 <p className="text-gray-600 text-xs truncate">USC Campus</p>
               </div>
-              <StarRating rating={tutor.rating} className="mt-1" />
+              {tutor.rating > 0 && <StarRating rating={tutor.rating} className="mt-1" />}
             </div>
           </div>
           

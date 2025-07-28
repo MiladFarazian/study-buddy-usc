@@ -38,10 +38,12 @@ const TutorCardDesktop = ({
                 <MapPin className="h-4 w-4 text-gray-500 mr-1 flex-shrink-0" />
                 <p className="text-gray-600 text-sm text-ellipsis overflow-hidden whitespace-nowrap">USC Campus</p>
               </div>
-              <div className="flex items-center mt-2">
-                <StarRating rating={tutor.rating} />
-                <span className="text-sm text-gray-500 ml-1 whitespace-nowrap">({tutor.subjects.length} courses)</span>
-              </div>
+              {tutor.rating > 0 && (
+                <div className="flex items-center mt-2">
+                  <StarRating rating={tutor.rating} />
+                </div>
+              )}
+              <span className="text-sm text-gray-500 mt-1 whitespace-nowrap">({tutor.subjects.length} courses)</span>
             </div>
           </div>
           
