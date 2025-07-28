@@ -4,7 +4,6 @@ import FeatureCards from "@/components/home/FeatureCards";
 import FeaturedTutors from "@/components/home/FeaturedTutors";
 import PopularCourses from "@/components/home/PopularCourses";
 import AuthSection from "@/components/home/AuthSection";
-import { ReviewDemo } from "@/components/demo/ReviewDemo";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const Index = () => {
@@ -18,9 +17,6 @@ const Index = () => {
       </div>
       <div className={isMobile ? "mt-6" : "mt-12"}>
         <FeatureCards />
-      </div>
-      <div className={isMobile ? "mt-6" : "mt-12"}>
-        <ReviewDemo />
       </div>
       <FeaturedTutors />
       <PopularCourses />
