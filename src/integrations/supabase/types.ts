@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      badge_progress: {
+        Row: {
+          avg_rating: number
+          avg_response_time_hours: number
+          created_at: string
+          current_streak_weeks: number
+          id: string
+          last_session_date: string | null
+          student_improvement_score: number
+          total_sessions: number
+          total_stress_reduction: number
+          tutor_id: string
+          updated_at: string
+        }
+        Insert: {
+          avg_rating?: number
+          avg_response_time_hours?: number
+          created_at?: string
+          current_streak_weeks?: number
+          id?: string
+          last_session_date?: string | null
+          student_improvement_score?: number
+          total_sessions?: number
+          total_stress_reduction?: number
+          tutor_id: string
+          updated_at?: string
+        }
+        Update: {
+          avg_rating?: number
+          avg_response_time_hours?: number
+          created_at?: string
+          current_streak_weeks?: number
+          id?: string
+          last_session_date?: string | null
+          student_improvement_score?: number
+          total_sessions?: number
+          total_stress_reduction?: number
+          tutor_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string
@@ -735,6 +777,39 @@ export type Database = {
         }
         Relationships: []
       }
+      tutor_badges: {
+        Row: {
+          badge_type: Database["public"]["Enums"]["badge_type"]
+          created_at: string
+          criteria_met: Json | null
+          earned_date: string
+          id: string
+          is_active: boolean
+          tutor_id: string
+          updated_at: string
+        }
+        Insert: {
+          badge_type: Database["public"]["Enums"]["badge_type"]
+          created_at?: string
+          criteria_met?: Json | null
+          earned_date?: string
+          id?: string
+          is_active?: boolean
+          tutor_id: string
+          updated_at?: string
+        }
+        Update: {
+          badge_type?: Database["public"]["Enums"]["badge_type"]
+          created_at?: string
+          criteria_met?: Json | null
+          earned_date?: string
+          id?: string
+          is_active?: boolean
+          tutor_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tutor_courses: {
         Row: {
           course_number: string
@@ -862,6 +937,17 @@ export type Database = {
       }
     }
     Enums: {
+      badge_type:
+        | "founding_tutor"
+        | "weekly_streak"
+        | "top_rated"
+        | "sessions_50"
+        | "sessions_100"
+        | "student_success_champion"
+        | "quick_responder"
+        | "industry_professional"
+        | "advanced_degree"
+        | "superstar"
       comfortable_asking_questions: "very" | "somewhat" | "not_at_all"
       completion_method:
         | "auto"
@@ -997,6 +1083,18 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      badge_type: [
+        "founding_tutor",
+        "weekly_streak",
+        "top_rated",
+        "sessions_50",
+        "sessions_100",
+        "student_success_champion",
+        "quick_responder",
+        "industry_professional",
+        "advanced_degree",
+        "superstar",
+      ],
       comfortable_asking_questions: ["very", "somewhat", "not_at_all"],
       completion_method: [
         "auto",
