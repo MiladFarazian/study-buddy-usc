@@ -27,7 +27,6 @@ export const TutorProfileTabs = ({
   getInitials,
   onBookSession
 }: TutorProfileTabsProps) => {
-  const { earnedBadges, progressData } = useTutorBadges(tutor.id);
   return (
     <Tabs defaultValue="about" className="w-full">
       <TabsList className="w-full grid grid-cols-3 mb-6">
@@ -63,6 +62,8 @@ interface AboutTabContentProps {
 }
 
 const AboutTabContent = ({ tutor, reviews, getInitials, refreshReviews }: AboutTabContentProps) => {
+  const { earnedBadges, progressData } = useTutorBadges(tutor.id);
+  
   return (
     <div className="space-y-6">
       <div>

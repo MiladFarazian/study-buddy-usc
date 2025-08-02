@@ -350,4 +350,5 @@ const calculateProgress = (badgeType, progressData) => {
   return null;
 };
 
+export { TutorBadges };
 export default TutorBadges;

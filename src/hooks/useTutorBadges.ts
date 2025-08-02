@@ -6,7 +6,7 @@ export interface EarnedBadge {
   id: string;
   badge_type: string;
   earned_date: string;
-  criteria_met: Record<string, any>;
+  criteria_met: any;
 }
 
 export interface BadgeProgress {
@@ -119,8 +119,8 @@ export function useTutorBadges(tutorId: string) {
       .filter(([badgeType]) => !earnedBadgeTypes.includes(badgeType))
       .filter(([badgeType, config]) => {
         // Check if the badge has progress criteria we can track
-        const criteria = config.criteria;
-        return criteria.min_sessions || criteria.min_avg_rating || criteria.min_streak_weeks;
+        const criteria = (config as any)?.criteria;
+        return criteria?.min_sessions || criteria?.min_avg_rating || criteria?.min_streak_weeks;
       })
       .map(([badgeType]) => badgeType);
   }, [progressData, earnedBadges]);
