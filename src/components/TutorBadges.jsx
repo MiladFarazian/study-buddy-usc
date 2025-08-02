@@ -24,7 +24,7 @@ const TutorBadges = ({
   const badges = allBadgeTypes.map(badgeType => {
     const config = getBadgeConfig(badgeType);
     const isEarned = earnedBadgeTypes.includes(badgeType);
-    const meetsRequirements = meetsBadgeCriteria(progressData, {}, badgeType);
+    const meetsRequirements = progressData ? meetsBadgeCriteria(progressData, {}, badgeType) : false;
     
     return {
       type: badgeType,
@@ -305,7 +305,7 @@ const getRarityStyles = (rarity) => {
 
 const calculateProgress = (badgeType, progressData) => {
   const config = getBadgeConfig(badgeType);
-  if (!config) return null;
+  if (!config || !progressData) return null;
 
   const { criteria } = config;
   
