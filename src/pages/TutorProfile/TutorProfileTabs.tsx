@@ -9,6 +9,8 @@ import { TutorEducationSection } from "@/components/tutor/TutorEducationSection"
 import { TutorSubjectsSection } from "@/components/tutor/TutorSubjectsSection";
 import { TutorAvailabilitySection } from "@/components/tutor/TutorAvailabilitySection";
 import { TutorReviewsSection } from "@/components/tutor/TutorReviewsSection";
+import { TutorBadges } from "@/components/TutorBadges";
+import { useTutorBadges } from "@/hooks/useTutorBadges";
 
 interface TutorProfileTabsProps {
   tutor: Tutor;
@@ -25,6 +27,7 @@ export const TutorProfileTabs = ({
   getInitials,
   onBookSession
 }: TutorProfileTabsProps) => {
+  const { earnedBadges, progressData } = useTutorBadges(tutor.id);
   return (
     <Tabs defaultValue="about" className="w-full">
       <TabsList className="w-full grid grid-cols-3 mb-6">
@@ -73,6 +76,17 @@ const AboutTabContent = ({ tutor, reviews, getInitials, refreshReviews }: AboutT
       
       <TutorBioSection bio={tutor.bio} />
       <TutorEducationSection field={tutor.field} graduationYear={tutor.graduationYear} />
+      
+      {/* Badges Section */}
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Achievements</h3>
+        <TutorBadges 
+          tutorId={tutor.id}
+          earnedBadges={earnedBadges}
+          progressData={progressData}
+          showProgress={true}
+        />
+      </div>
       
       {/* Reviews Section */}
       <TutorReviewsSection 

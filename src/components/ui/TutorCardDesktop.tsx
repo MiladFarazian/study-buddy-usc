@@ -6,6 +6,8 @@ import { GraduationCap, MapPin, Calendar, DollarSign } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Tutor } from "@/types/tutor";
 import StarRating from "./StarRating";
+import { useTutorBadges } from "@/hooks/useTutorBadges";
+import { getBadgeConfig } from "@/lib/badgeConfig";
 
 interface TutorCardDesktopProps {
   tutor: Tutor;
@@ -18,6 +20,7 @@ const TutorCardDesktop = ({
   getInitials,
   highlightedCourses = []
 }: TutorCardDesktopProps) => {
+  const { earnedBadges } = useTutorBadges(tutor.id);
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow w-full min-w-[260px] max-w-[400px] mx-auto">
       <div className="bg-gradient-to-r from-yellow-500 to-red-600 h-4"></div>
@@ -45,7 +48,24 @@ const TutorCardDesktop = ({
                   <StarRating rating={tutor.rating} />
                 </div>
               )}
-              <span className="text-sm text-gray-500 mt-1 whitespace-nowrap">({tutor.subjects.length} courses)</span>
+              <div className="flex items-center justify-between mt-1">
+                <span className="text-sm text-gray-500 whitespace-nowrap">({tutor.subjects.length} courses)</span>
+                {earnedBadges.length > 0 && (
+                  <div className="flex items-center gap-1">
+                    {earnedBadges.slice(0, 2).map(badge => {
+                      const config = getBadgeConfig(badge.badge_type);
+                      return (
+                        <span key={badge.id} className="text-xs" title={config?.name}>
+                          {config?.icon}
+                        </span>
+                      );
+                    })}
+                    {earnedBadges.length > 2 && (
+                      <span className="text-xs text-gray-400">+{earnedBadges.length - 2}</span>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           

@@ -6,6 +6,8 @@ import { GraduationCap, MapPin, DollarSign } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Tutor } from "@/types/tutor";
 import StarRating from "./StarRating";
+import { useTutorBadges } from "@/hooks/useTutorBadges";
+import { getBadgeConfig } from "@/lib/badgeConfig";
 
 interface TutorCardMobileProps {
   tutor: Tutor;
@@ -14,6 +16,7 @@ interface TutorCardMobileProps {
 }
 
 const TutorCardMobile = ({ tutor, getInitials, highlightedCourses = [] }: TutorCardMobileProps) => {
+  const { earnedBadges } = useTutorBadges(tutor.id);
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow w-full">
       <div className="bg-gradient-to-r from-yellow-500 to-red-600 h-2"></div>
@@ -36,7 +39,24 @@ const TutorCardMobile = ({ tutor, getInitials, highlightedCourses = [] }: TutorC
                 <MapPin className="h-3 w-3 text-gray-500 mr-1 flex-shrink-0" />
                 <p className="text-gray-600 text-xs truncate">USC Campus</p>
               </div>
-              {tutor.rating > 0 && <StarRating rating={tutor.rating} className="mt-1" />}
+              <div className="flex items-center justify-between mt-1">
+                {tutor.rating > 0 && <StarRating rating={tutor.rating} />}
+                {earnedBadges.length > 0 && (
+                  <div className="flex items-center gap-1">
+                    {earnedBadges.slice(0, 2).map(badge => {
+                      const config = getBadgeConfig(badge.badge_type);
+                      return (
+                        <span key={badge.id} className="text-xs" title={config?.name}>
+                          {config?.icon}
+                        </span>
+                      );
+                    })}
+                    {earnedBadges.length > 2 && (
+                      <span className="text-xs text-gray-400">+{earnedBadges.length - 2}</span>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           
