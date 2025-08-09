@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import { BookingStep, useScheduling, SessionType } from "@/contexts/SchedulingContext";
 import { useAvailabilityData } from "@/hooks/useAvailabilityData";
 import { createSessionBooking } from "@/lib/scheduling/booking-utils";
+import { useSessionBooking } from "@/contexts/SessionBookingContext";
+import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 
 interface BookingState {
@@ -33,6 +35,7 @@ export function useBookSessionModal(
   
   // Get access to the SchedulingContext
   const { dispatch, setCourse, setTutor, state: contextState } = useScheduling();
+  const { showConfirmation } = useSessionBooking();
   
   // State for selected date
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
@@ -233,6 +236,18 @@ export function useBookSessionModal(
       
       if (sessionDetails) {
         console.log("[handleBookingComplete] Session created successfully:", sessionDetails);
+        
+        // Show animated confirmation
+        showConfirmation({
+          tutorName: `${tutor.firstName || tutor.name} ${tutor.lastName || ''}`.trim() || tutor.name,
+          date: startTime.toISOString(),
+          startTime: format(startTime, 'h:mm a'),
+          endTime: format(endTime, 'h:mm a'),
+          location: locationValue || 'Location TBD',
+          courseName: state.selectedCourseId || undefined,
+          sessionType: sessionTypeValue || 'In Person'
+        });
+        
         toast.success("Your session has been booked!");
         onClose();
       } else {

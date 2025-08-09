@@ -2,6 +2,7 @@
 import { useEffect } from "react";
 import { RouterProvider, createBrowserRouter, Outlet } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { SessionBookingProvider } from "./contexts/SessionBookingContext";
 import { Toaster } from "./components/ui/toaster";
 import { ReviewRequirement } from "./components/reviews";
 import Layout from "./components/layout/Layout";
@@ -137,9 +138,11 @@ function App() {
   return (
     <>
       <AuthProvider>
-        <RouterProvider router={router} />
-        <ReviewRequirement />
-        <Toaster />
+        <SessionBookingProvider>
+          <RouterProvider router={router} />
+          <ReviewRequirement />
+          <Toaster />
+        </SessionBookingProvider>
       </AuthProvider>
     </>
   );

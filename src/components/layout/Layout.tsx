@@ -3,6 +3,7 @@ import { ReactNode } from "react";
 import Sidebar from "./Sidebar";
 import NavBar from "./NavBar";
 import MobileNavBar from "./MobileNavBar";
+import { SessionBookingWrapper } from "./SessionBookingWrapper";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -26,6 +27,7 @@ const Layout = ({ children }: LayoutProps) => {
         </main>
       </div>
       {isMobile && <MobileNavBar />}
+      <SessionBookingWrapper />
     </div>
   );
 };
