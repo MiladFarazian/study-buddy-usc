@@ -553,6 +553,7 @@ export type Database = {
       }
       sessions: {
         Row: {
+          accepted_at: string | null
           actual_end_time: string | null
           actual_start_time: string | null
           completion_method:
@@ -575,6 +576,7 @@ export type Database = {
           zoom_meeting_id: string | null
         }
         Insert: {
+          accepted_at?: string | null
           actual_end_time?: string | null
           actual_start_time?: string | null
           completion_method?:
@@ -597,6 +599,7 @@ export type Database = {
           zoom_meeting_id?: string | null
         }
         Update: {
+          accepted_at?: string | null
           actual_end_time?: string | null
           actual_start_time?: string | null
           completion_method?:
@@ -917,6 +920,10 @@ export type Database = {
     }
     Functions: {
       approve_tutor: {
+        Args: { tutor_id: string }
+        Returns: undefined
+      }
+      award_badges_for_tutor: {
         Args: { tutor_id: string }
         Returns: undefined
       }
