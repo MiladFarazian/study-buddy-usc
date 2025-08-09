@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { getAllBadgeConfigs, meetsBadgeCriteria } from "@/lib/badgeConfig";
+import { badgeConfigs } from "@/lib/badgeConfig";
 
 export interface EarnedBadge {
   id: string;
@@ -112,10 +112,9 @@ export function useTutorBadges(tutorId: string) {
   const getProgressBadges = useCallback(() => {
     if (!progressData) return [];
     
-    const allBadges = getAllBadgeConfigs();
     const earnedBadgeTypes = earnedBadges.map(badge => badge.badge_type);
     
-    return Object.entries(allBadges)
+    return Object.entries(badgeConfigs)
       .filter(([badgeType]) => !earnedBadgeTypes.includes(badgeType))
       .filter(([badgeType, config]) => {
         // Check if the badge has progress criteria we can track
