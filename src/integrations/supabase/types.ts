@@ -924,7 +924,7 @@ export type Database = {
         Returns: undefined
       }
       award_badges_for_tutor: {
-        Args: { tutor_id: string }
+        Args: { input_tutor_id: string }
         Returns: undefined
       }
       check_column_exists: {
@@ -941,6 +941,10 @@ export type Database = {
           term_code: string
           table_name: string
         }[]
+      }
+      retroactive_badge_award: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
     }
     Enums: {

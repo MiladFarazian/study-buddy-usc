@@ -71,9 +71,9 @@ export async function checkAndAwardBadges(tutorId) {
 
   // Ask the database to award (SECURITY DEFINER RPC)
   try {
-    await supabase.rpc('award_badges_for_tutor', { tutor_id: tutorId });
+    await supabase.rpc('award_badges_for_tutor', { input_tutor_id: tutorId });
   } catch (e) {
-    console.warn('award_badges_for_tutor RPC not available yet or failed', e);
+    console.warn('award_badges_for_tutor RPC failed', e);
   }
 
   return Array.from(newlyEarned);
@@ -108,8 +108,11 @@ export async function checkFoundingTutor(tutorId) {
     .eq('id', tutorId)
     .maybeSingle();
   if (error || !data?.created_at) return false;
-  // Consider founding users those signed up before Jan 15, 2025
-  const cutoff = new Date('2025-01-15T00:00:00Z');
+  
+  // Get cutoff date from badge config
+  const foundingBadgeConfig = getBadgeConfig('founding_tutor');
+  const cutoffDate = foundingBadgeConfig?.criteria?.signup_before || '2025-10-01';
+  const cutoff = new Date(cutoffDate + 'T00:00:00Z');
   return new Date(data.created_at) < cutoff;
 }
 
