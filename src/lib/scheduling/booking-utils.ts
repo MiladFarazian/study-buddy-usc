@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { SessionCreationParams, SessionDetails, SessionType } from "./types/booking";
 import { sendSessionBookingNotification } from "@/lib/notification-utils";
@@ -13,7 +12,7 @@ async function createZoomMeeting(
   courseName: string,
   startTime: string,
   endTime: string
-): Promise<{ id: string; join_url: string } | null> {
+): Promise<{ id: string; join_url: string; host_url?: string; start_url?: string; password?: string } | null> {
   try {
     // Call Supabase Edge Function to create Zoom meeting
     const { data, error } = await supabase.functions.invoke('create-zoom-meeting', {
@@ -65,8 +64,10 @@ export async function createSessionBooking(
     });
     
     // If it's a virtual session, create a Zoom meeting
-    let zoomMeetingId = null;
-    let zoomJoinUrl = null;
+    let zoomMeetingId: string | null = null;
+    let zoomJoinUrl: string | null = null;
+    let zoomStartUrl: string | null = null;
+    let zoomPassword: string | null = null;
     
     if (sessionType === SessionType.VIRTUAL) {
       // Get student information
@@ -96,6 +97,9 @@ export async function createSessionBooking(
       if (zoomMeeting) {
         zoomMeetingId = zoomMeeting.id;
         zoomJoinUrl = zoomMeeting.join_url;
+        // Edge function returns host_url; some SDKs may return start_url; support both
+        zoomStartUrl = zoomMeeting.host_url || zoomMeeting.start_url || null;
+        zoomPassword = zoomMeeting.password || null;
       }
     }
     
@@ -115,6 +119,8 @@ export async function createSessionBooking(
         session_type: sessionType,
         zoom_meeting_id: zoomMeetingId,
         zoom_join_url: zoomJoinUrl,
+        zoom_start_url: zoomStartUrl,
+        zoom_password: zoomPassword,
         created_at: new Date().toISOString()
       })
       .select()
@@ -193,7 +199,9 @@ export async function createSessionBooking(
       paymentStatus: data.payment_status as 'unpaid' | 'paid' | 'refunded',
       sessionType: data.session_type as SessionType,
       zoomMeetingId: data.zoom_meeting_id || undefined,
-      zoomJoinUrl: data.zoom_join_url || undefined
+      zoomJoinUrl: data.zoom_join_url || undefined,
+      zoomStartUrl: data.zoom_start_url || undefined,
+      zoomPassword: data.zoom_password || undefined
     };
   } catch (err) {
     console.error("Failed to create session booking:", err);

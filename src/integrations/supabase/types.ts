@@ -572,8 +572,12 @@ export type Database = {
           student_id: string
           tutor_id: string
           updated_at: string
+          zoom_created_at: string | null
           zoom_join_url: string | null
           zoom_meeting_id: string | null
+          zoom_password: string | null
+          zoom_start_url: string | null
+          zoom_updated_at: string | null
         }
         Insert: {
           accepted_at?: string | null
@@ -595,8 +599,12 @@ export type Database = {
           student_id: string
           tutor_id: string
           updated_at?: string
+          zoom_created_at?: string | null
           zoom_join_url?: string | null
           zoom_meeting_id?: string | null
+          zoom_password?: string | null
+          zoom_start_url?: string | null
+          zoom_updated_at?: string | null
         }
         Update: {
           accepted_at?: string | null
@@ -618,8 +626,12 @@ export type Database = {
           student_id?: string
           tutor_id?: string
           updated_at?: string
+          zoom_created_at?: string | null
           zoom_join_url?: string | null
           zoom_meeting_id?: string | null
+          zoom_password?: string | null
+          zoom_start_url?: string | null
+          zoom_updated_at?: string | null
         }
         Relationships: [
           {

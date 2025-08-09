@@ -1,4 +1,3 @@
-
 import { WeeklyAvailability, AvailabilitySlot } from './availability';
 
 // BookingSlot represents a specific time slot for booking
@@ -62,6 +61,8 @@ export interface SessionDetails {
   sessionType?: SessionType;
   zoomMeetingId?: string;
   zoomJoinUrl?: string;
+  zoomStartUrl?: string;
+  zoomPassword?: string;
 }
 
 // Re-export Session type from the existing session.ts type file
