@@ -77,6 +77,12 @@ const Sidebar = () => {
       showWhen: !!user // Only for authenticated users
     },
     {
+      title: "Badges",
+      icon: Users,
+      path: "/badges",
+      showWhen: isTutor // Only for tutors
+    },
+    {
       title: "Analytics",
       icon: BarChart,
       path: "/analytics",

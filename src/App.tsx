@@ -28,6 +28,7 @@ import Students from "./pages/Students";
 import AuthCallback from "./pages/AuthCallback";
 import BookingCalendly from "./pages/BookingCalendly";
 import Analytics from "./pages/Analytics";
+import BadgesDashboard from "./pages/TutorDashboard/BadgesDashboard";
 
 const router = createBrowserRouter([
   {
@@ -115,6 +116,10 @@ const router = createBrowserRouter([
       {
         path: "/analytics",
         element: <PrivateRoute><RequireProfileCompletion><Analytics /></RequireProfileCompletion></PrivateRoute>
+      },
+      {
+        path: "/badges",
+        element: <PrivateRoute><RequireProfileCompletion><BadgesDashboard /></RequireProfileCompletion></PrivateRoute>
       },
       {
         path: "*",
