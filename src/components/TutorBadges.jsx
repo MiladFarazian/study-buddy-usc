@@ -73,6 +73,14 @@ const BadgeCard = ({
   const styles = getBadgeStyles(badgeType);
   const rarityStyles = getRarityStyles(config.rarity);
 
+  const hasProgress = progress && typeof progress.current === 'number' && typeof progress.target === 'number' && progress.target > 0 && progress.current > 0;
+  const stateLabel = isEarned ? 'Earned' : hasProgress ? 'In Progress' : 'Locked';
+  const stateClass = isEarned 
+    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+    : hasProgress 
+      ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
+      : 'bg-muted text-muted-foreground';
+ 
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -112,6 +120,14 @@ const BadgeCard = ({
                 />
               </div>
             )}
+
+            {/* State Indicator */}
+            <div className={`
+              absolute -top-1 -left-1 px-2 py-0.5 text-xs rounded-full
+              ${stateClass}
+            `}>
+              {stateLabel}
+            </div>
 
             {/* Rarity Indicator */}
             <div className={`
@@ -162,7 +178,7 @@ const ProgressIndicator = ({ badgeType, progress, config }) => {
         <div className="text-xs text-muted-foreground">
           {progress.current}/{progress.target} sessions
         </div>
-        <Progress value={(progress.current / progress.target) * 100} className="h-1" />
+        <Progress value={Math.max(0, Math.min(100, (progress?.target ? (progress.current / progress.target) * 100 : 0)))} className="h-1" />
       </div>
     );
   }
@@ -174,7 +190,7 @@ const ProgressIndicator = ({ badgeType, progress, config }) => {
           <Star className="w-3 h-3 mr-1" />
           {progress.current?.toFixed(1)}/{progress.target}
         </div>
-        <Progress value={(progress.current / progress.target) * 100} className="h-1" />
+        <Progress value={Math.max(0, Math.min(100, (progress?.target ? (progress.current / progress.target) * 100 : 0)))} className="h-1" />
       </div>
     );
   }
@@ -186,7 +202,7 @@ const ProgressIndicator = ({ badgeType, progress, config }) => {
           <Calendar className="w-3 h-3 mr-1" />
           {progress.current} weeks
         </div>
-        <Progress value={Math.min((progress.current / progress.target) * 100, 100)} className="h-1" />
+        <Progress value={Math.max(0, Math.min(100, (progress?.target ? (progress.current / progress.target) * 100 : 0)))} className="h-1" />
       </div>
     );
   }
@@ -198,7 +214,7 @@ const ProgressIndicator = ({ badgeType, progress, config }) => {
           <Clock className="w-3 h-3 mr-1" />
           {progress.current?.toFixed(1)}h avg
         </div>
-        <Progress value={Math.max(0, (1 - (progress.current / progress.target)) * 100)} className="h-1" />
+        <Progress value={Math.max(0, Math.min(100, (progress?.target ? (1 - (progress.current / progress.target)) * 100 : 0)))} className="h-1" />
       </div>
     );
   }
@@ -210,7 +226,7 @@ const ProgressIndicator = ({ badgeType, progress, config }) => {
           <TrendingUp className="w-3 h-3 mr-1" />
           {progress.current?.toFixed(1)} improvement
         </div>
-        <Progress value={(progress.current / progress.target) * 100} className="h-1" />
+        <Progress value={Math.max(0, Math.min(100, (progress?.target ? (progress.current / progress.target) * 100 : 0)))} className="h-1" />
       </div>
     );
   }
