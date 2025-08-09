@@ -1,8 +1,8 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { ProfilePictureCard } from "./ProfilePictureCard";
-import { ProfileForm } from "./ProfileForm";
-import { useProfileSettingsState } from "@/hooks/useProfileSettingsState";
+import { ProfileAvatarCard } from "@/components/profile-editor/ProfileAvatarCard";
+import { ProfileEditorForm } from "@/components/profile-editor/ProfileEditorForm";
+import { useProfileEditor } from "@/hooks/useProfileEditor";
 import { updateUserProfile, updateUserRole } from "./profileSettingsUtils";
 import { Database } from "@/integrations/supabase/types";
 
@@ -24,7 +24,7 @@ export const ProfileSettings = () => {
     avatarFile,
     setAvatarFile,
     handleInputChange
-  } = useProfileSettingsState(profile);
+  } = useProfileEditor(profile);
 
   const handleRoleChange = async (role: UserRole) => {
     if (!user) return;
@@ -106,21 +106,21 @@ export const ProfileSettings = () => {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <ProfileForm
-        formData={formData}
+      <ProfileEditorForm
+        formData={formData as any}
         handleInputChange={handleInputChange}
         isStudent={isStudent}
         isTutor={isTutor}
         loading={loading}
         uploadingAvatar={uploadingAvatar}
-        handleRoleChange={handleRoleChange}
+        handleRoleChange={handleRoleChange as any}
         handleProfileUpdate={handleProfileUpdate}
         userEmail={user?.email}
         approvedTutor={profile?.approved_tutor}
       />
       
       <div className="lg:col-span-1">
-        <ProfilePictureCard 
+        <ProfileAvatarCard 
           avatarUrl={avatarUrl}
           setAvatarUrl={setAvatarUrl}
           setAvatarFile={setAvatarFile}
