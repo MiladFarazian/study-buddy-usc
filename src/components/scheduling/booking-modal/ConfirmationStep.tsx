@@ -79,16 +79,37 @@ export function ConfirmationStep() {
       
       // Generate course info text if available
       const courseSuffix = state.selectedCourseId ? ` for ${state.selectedCourseId}` : '';
-      const title = `Tutoring Session with ${tutor.name}${courseSuffix}`;
+      const subject = getSubjectName();
+      const isVirtual = state.sessionType === SessionType.VIRTUAL;
+      const title = isVirtual ? `Tutoring Session: ${subject} (Virtual)` : `Tutoring Session with ${tutor.name}${courseSuffix}`;
+
+      const locationText = isVirtual ? 'Virtual - Zoom Meeting' : (state.location || 'USC Campus');
+      const descriptionText = isVirtual
+        ? `Tutoring Session Details:\n` +
+          `Course: ${subject}\n` +
+          `Tutor: ${tutor.name}\n` +
+          `Duration: ${state.selectedDuration} minutes\n\n` +
+          `JOIN ZOOM MEETING:\n` +
+          `Link will be sent to your email\n` +
+          `Meeting ID: N/A\n` +
+          `Password: N/A\n` +
+          `Backup: Dial +1-669-900-6833, enter meeting ID\n\n` +
+          `Test Zoom: https://zoom.us/test`
+        : `Tutoring session with ${tutor.name}${state.selectedCourseId ? ` for course ${state.selectedCourseId}` : ''}\nDuration: ${state.selectedDuration} minutes`;
       
-      // Create a valid URL for Google Calendar
+      // Create a valid URL for Google Calendar with details/location/attendees
       const url = generateGoogleCalendarUrl(
         tutor,
         state.selectedDate,
         state.selectedTimeSlot.start,
         state.selectedDuration,
         title,
-        state.selectedCourseId
+        state.selectedCourseId,
+        {
+          description: descriptionText,
+          location: locationText,
+          attendees: state.studentEmail ? [state.studentEmail] : undefined,
+        }
       );
       
       // Open in a new tab
@@ -130,10 +151,26 @@ export function ConfirmationStep() {
       const courseSuffix = state.selectedCourseId ? ` for ${state.selectedCourseId}` : '';
       
       // Create ICS event data
+      const isVirtual = state.sessionType === SessionType.VIRTUAL;
+      const subject = getSubjectName();
+      const titleForIcs = isVirtual ? `Tutoring Session: ${subject} (Virtual)` : `Tutoring Session with ${tutor.name}${courseSuffix}`;
+      const locationText = isVirtual ? 'Virtual - Zoom Meeting' : (state.location || 'USC Campus');
+      const descriptionText = isVirtual
+        ? `Tutoring Session Details:\n` +
+          `Course: ${subject}\n` +
+          `Tutor: ${tutor.name}\n` +
+          `Duration: ${state.selectedDuration} minutes\n\n` +
+          `JOIN ZOOM MEETING:\n` +
+          `Link will be sent to your email\n` +
+          `Meeting ID: N/A\n` +
+          `Password: N/A\n` +
+          `Backup: Dial +1-669-900-6833, enter meeting ID\n\n` +
+          `Test Zoom: https://zoom.us/test`
+        : `Tutoring session with ${tutor.name}${state.selectedCourseId ? ` for course ${state.selectedCourseId}` : ''}`;
       const eventData: ICalEventData = {
-        title: `Tutoring Session with ${tutor.name}${courseSuffix}`,
-        description: `Tutoring session with ${tutor.name}${state.selectedCourseId ? ` for course ${state.selectedCourseId}` : ''}`,
-        location: state.sessionType === SessionType.VIRTUAL ? 'Virtual (Zoom)' : (state.location || 'USC Campus'),
+        title: titleForIcs,
+        description: descriptionText,
+        location: locationText,
         startDate: startDateTime,
         endDate: endDateTime,
       };

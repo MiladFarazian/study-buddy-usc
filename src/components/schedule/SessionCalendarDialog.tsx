@@ -42,6 +42,10 @@ export function SessionCalendarDialog({ session, open, onClose }: SessionCalenda
           sessionStartTime={startTime}
           courseId={session.course?.id || null}
           courseName={session.course?.course_title || null}
+          sessionType={session.session_type}
+          zoomJoinUrl={session.zoom_join_url || (session as any).zoom_join_url || null}
+          zoomMeetingId={session.zoom_meeting_id || (session as any).zoom_meeting_id || null}
+          zoomPassword={(session as any).zoom_password || null}
           onClose={onClose}
         />
       </DialogContent>

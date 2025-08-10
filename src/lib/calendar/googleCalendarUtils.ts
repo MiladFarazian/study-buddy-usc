@@ -23,11 +23,16 @@ export const generateGoogleCalendarUrl = (
   sessionStartTime: string,
   sessionDurationMinutes: number,
   customTitle?: string,
-  courseId?: string | null
+  courseId?: string | null,
+  options?: {
+    description?: string;
+    location?: string;
+    attendees?: string[]; // emails
+  }
 ): string => {
   try {
     console.log("generateGoogleCalendarUrl inputs:", {
-      tutor, sessionDate, sessionStartTime, sessionDurationMinutes, customTitle, courseId
+      tutor, sessionDate, sessionStartTime, sessionDurationMinutes, customTitle, courseId, options
     });
     
     // Validate inputs
@@ -72,29 +77,37 @@ export const generateGoogleCalendarUrl = (
     // Format title and details
     const title = encodeURIComponent(customTitle || `Tutoring with ${tutor.name}`);
     
-    // Build description including course information if available
+    // Build default description including course information if available
     let descriptionText = `Tutoring session with ${tutor.name}\n` +
                         `Duration: ${sessionDurationMinutes} minutes\n`;
     
-    // Add course information if available                      
     if (courseId) {
       descriptionText += `Course: ${courseId}\n`;
     }
     
     if (tutor.subjects && tutor.subjects.length > 0) {
-      // Handle subjects that might be strings or objects
       const subject = tutor.subjects[0];
       const subjectName = typeof subject === 'string' ? subject : 
         (subject && typeof subject === 'object' && 'name' in subject) ? 
           (subject as any).name : 'Not specified';
-          
       descriptionText += `Subject: ${subjectName}\n`;
     }
+
+    // Override with provided description if present
+    const description = encodeURIComponent(options?.description ?? descriptionText);
     
-    const description = encodeURIComponent(descriptionText);
-    const location = encodeURIComponent('USC Campus');
-    
-    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startIso}/${endIso}&details=${description}&location=${location}`;
+    // Location handling
+    const location = encodeURIComponent(options?.location ?? 'USC Campus');
+
+    // Base URL
+    let url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startIso}/${endIso}&details=${description}&location=${location}`;
+
+    // Add attendees if provided
+    if (options?.attendees && options.attendees.length > 0) {
+      const attendeeStr = encodeURIComponent(options.attendees.join(','));
+      url += `&add=${attendeeStr}`;
+    }
+
     console.log("Generated Google Calendar URL:", url);
     return url;
   } catch (error) {

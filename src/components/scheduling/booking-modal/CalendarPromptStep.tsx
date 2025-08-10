@@ -70,10 +70,21 @@ export function CalendarPromptStep({
       
     // Create event data for the calendar
     const eventData: ICalEventData = {
-      title: `Tutoring Session with ${tutor.name}${courseText}`,
-      description: `${sessionTypeText.charAt(0).toUpperCase() + sessionTypeText.slice(1)} tutoring session with ${tutor.name}${courseText}.\n\nDuration: ${selectedDuration} minutes`,
+      title: `${sessionType === SessionType.VIRTUAL ? `Tutoring Session: ${selectedCourseId || 'General Tutoring'} (Virtual)` : `Tutoring Session with ${tutor.name}${courseText}`}`,
+      description: sessionType === SessionType.VIRTUAL
+        ? `Tutoring Session Details:\n` +
+          `Course: ${selectedCourseId || 'General Tutoring'}\n` +
+          `Tutor: ${tutor.name}\n` +
+          `Duration: ${selectedDuration} minutes\n\n` +
+          `JOIN ZOOM MEETING:\n` +
+          `Link will be sent to your email\n` +
+          `Meeting ID: N/A\n` +
+          `Password: N/A\n` +
+          `Backup: Dial +1-669-900-6833, enter meeting ID\n\n` +
+          `Test Zoom: https://zoom.us/test`
+        : `${sessionTypeText.charAt(0).toUpperCase() + sessionTypeText.slice(1)} tutoring session with ${tutor.name}${courseText}.\n\nDuration: ${selectedDuration} minutes`,
       location: sessionType === SessionType.VIRTUAL 
-        ? 'Zoom (check email for link)'
+        ? 'Virtual - Zoom Meeting'
         : 'USC Campus',
       startDate: startDateTime,
       endDate: endDateTime

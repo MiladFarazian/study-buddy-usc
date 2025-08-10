@@ -7,7 +7,7 @@ import { CalendarDays, CheckCircle, Apple } from "lucide-react";
 import { Tutor } from "@/types/tutor";
 import { generateGoogleCalendarUrl } from "@/lib/calendar/googleCalendarUtils";
 import { ICalEventData, downloadICSFile } from "@/lib/calendar/icsGenerator";
-
+import { SessionType } from "@/lib/scheduling/types/booking";
 interface CalendarIntegrationProps {
   tutor: Tutor;
   sessionDate: Date;
@@ -15,6 +15,11 @@ interface CalendarIntegrationProps {
   sessionDuration: number;
   courseId?: string | null;
   courseName?: string | null;
+  sessionType?: SessionType;
+  zoomJoinUrl?: string | null;
+  zoomMeetingId?: string | null;
+  zoomPassword?: string | null;
+  attendeeEmails?: string[];
   onClose: () => void;
 }
 
@@ -25,9 +30,16 @@ export function CalendarIntegration({
   sessionDuration,
   courseId,
   courseName,
+  sessionType = SessionType.IN_PERSON,
+  zoomJoinUrl,
+  zoomMeetingId,
+  zoomPassword,
+  attendeeEmails,
   onClose 
 }: CalendarIntegrationProps) {
   const courseSuffix = courseId ? ` for ${courseName || courseId}` : '';
+  const subject = courseName || courseId || 'General Tutoring';
+  const isVirtual = sessionType === SessionType.VIRTUAL;
   
   // Format the session date with the time
   const [hours, minutes] = sessionStartTime.split(':').map(Number);
@@ -37,25 +49,44 @@ export function CalendarIntegration({
   
   const endDateTime = addMinutes(startDateTime, sessionDuration);
   
-  // Generate a title that includes the course if available
-  const eventTitle = `Tutoring Session with ${tutor.name}${courseSuffix}`;
-  
+  // Title based on session type
+  const eventTitle = isVirtual
+    ? `Tutoring Session: ${subject} (Virtual)`
+    : `Tutoring Session with ${tutor.name}${courseSuffix}`;
+
+  // Description and location
+  const locationText = isVirtual ? (zoomJoinUrl || "Virtual - Zoom Meeting") : "USC Campus";
+  const descriptionText = isVirtual
+    ? `Tutoring Session Details:\n` +
+      `Course: ${subject}\n` +
+      `Tutor: ${tutor.name}\n` +
+      `Duration: ${sessionDuration} minutes\n\n` +
+      `JOIN ZOOM MEETING:\n` +
+      `${zoomJoinUrl || 'Link will be sent to your email'}\n` +
+      `Meeting ID: ${zoomMeetingId || 'N/A'}\n` +
+      `Password: ${zoomPassword || 'N/A'}\n` +
+      `Backup: Dial +1-669-900-6833, enter meeting ID\n\n` +
+      `Test Zoom: https://zoom.us/test`
+    : `Tutoring session with ${tutor.name}${courseId ? ` for course ${courseName || courseId}` : ''}`;
+
   const handleAddToGoogleCalendar = () => {
     try {
-      // Generate Google Calendar URL
+      // Generate Google Calendar URL with Zoom/location/attendees when applicable
       const url = generateGoogleCalendarUrl(
         tutor, 
         sessionDate, 
         sessionStartTime, 
         sessionDuration, 
         eventTitle, 
-        courseId
+        courseId,
+        {
+          description: descriptionText,
+          location: locationText,
+          attendees: attendeeEmails && attendeeEmails.length > 0 ? attendeeEmails : undefined,
+        }
       );
       
-      // Log the URL for debugging
       console.log("Google Calendar URL:", url);
-      
-      // Open in a new window
       window.open(url, '_blank');
     } catch (error) {
       console.error("Error adding to Google Calendar:", error);
@@ -67,8 +98,8 @@ export function CalendarIntegration({
       // Create event data for Apple Calendar
       const eventData: ICalEventData = {
         title: eventTitle,
-        description: `Tutoring session with ${tutor.name}${courseId ? ` for course ${courseId}` : ''}`,
-        location: "USC Campus",
+        description: descriptionText,
+        location: locationText,
         startDate: startDateTime,
         endDate: endDateTime,
       };
