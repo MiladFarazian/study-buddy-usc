@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
-import { sendNotificationEmail, getUserNotificationPreferences } from '@/lib/notification-utils';
+import { sendNotificationEmailToUserId, getUserNotificationPreferences } from '@/lib/notification-utils';
 import { SessionType } from '@/lib/scheduling/types/booking';
 
 // Simple initializer – edge function + Resend are configured via Supabase secrets
@@ -64,12 +64,13 @@ export async function sendBookingConfirmation(sessionId: string) {
 
     const typeTag = sessionType === 'virtual' ? '[Virtual]' : '[In-Person]';
 
-    // Tutor email – booking confirmation template
-    const tutorEmail = await getUserEmail(session.tutor.id);
+    // Tutor email – booking confirmation template (resolve email server-side)
     const tutorPrefs = await getUserNotificationPreferences(session.tutor.id);
-    if (tutorEmail && tutorPrefs.bookingNotifications !== false) {
-      await sendNotificationEmail({
-        recipientEmail: tutorEmail,
+    console.log('[emailService] Booking confirmation - tutor prefs:', tutorPrefs);
+    if (tutorPrefs.bookingNotifications !== false) {
+      console.log('[emailService] Sending booking confirmation to tutor by userId', { sessionId: session.id, tutorId: session.tutor.id });
+      await sendNotificationEmailToUserId({
+        recipientUserId: session.tutor.id,
         recipientName: tutorName || 'Tutor',
         subject: `${typeTag} New Session Booked with ${studentName || 'a student'}`,
         notificationType: 'session_booked',
@@ -90,12 +91,13 @@ export async function sendBookingConfirmation(sessionId: string) {
       });
     }
 
-    // Student email – booking confirmation
-    const studentEmail = await getUserEmail(session.student.id);
+    // Student email – booking confirmation (resolve email server-side)
     const studentPrefs = await getUserNotificationPreferences(session.student.id);
-    if (studentEmail && studentPrefs.sessionReminders !== false) {
-      await sendNotificationEmail({
-        recipientEmail: studentEmail,
+    console.log('[emailService] Booking confirmation - student prefs:', studentPrefs);
+    if (studentPrefs.sessionReminders !== false) {
+      console.log('[emailService] Sending booking confirmation to student by userId', { sessionId: session.id, studentId: session.student.id });
+      await sendNotificationEmailToUserId({
+        recipientUserId: session.student.id,
         recipientName: studentName || 'Student',
         subject: `${typeTag} Your Tutoring Session is Confirmed`,
         notificationType: 'session_booked',
@@ -144,12 +146,12 @@ export async function sendSessionReminder(sessionId: string) {
     const zoomPassword = session.zoom_password || undefined;
     const typeTag = sessionType === 'virtual' ? '[Virtual]' : '[In-Person]';
 
-    // Student reminder
-    const studentEmail = await getUserEmail(session.student.id);
+    // Student reminder (resolve email server-side)
     const studentPrefs = await getUserNotificationPreferences(session.student.id);
-    if (studentEmail && studentPrefs.sessionReminders) {
-      await sendNotificationEmail({
-        recipientEmail: studentEmail,
+    if (studentPrefs.sessionReminders) {
+      console.log('[emailService] Sending session reminder to student by userId', { sessionId, studentId: session.student.id });
+      await sendNotificationEmailToUserId({
+        recipientUserId: session.student.id,
         recipientName: studentName || 'Student',
         subject: `${typeTag} Reminder: Upcoming Tutoring Session`,
         notificationType: 'session_reminder',
@@ -157,12 +159,12 @@ export async function sendSessionReminder(sessionId: string) {
       });
     }
 
-    // Tutor reminder
-    const tutorEmail = await getUserEmail(session.tutor.id);
+    // Tutor reminder (resolve email server-side)
     const tutorPrefs = await getUserNotificationPreferences(session.tutor.id);
-    if (tutorEmail && tutorPrefs.sessionReminders) {
-      await sendNotificationEmail({
-        recipientEmail: tutorEmail,
+    if (tutorPrefs.sessionReminders) {
+      console.log('[emailService] Sending session reminder to tutor by userId', { sessionId, tutorId: session.tutor.id });
+      await sendNotificationEmailToUserId({
+        recipientUserId: session.tutor.id,
         recipientName: tutorName || 'Tutor',
         subject: `${typeTag} Reminder: Upcoming Tutoring Session`,
         notificationType: 'session_reminder',
@@ -194,12 +196,12 @@ export async function sendCancellationNotification(sessionId: string) {
     const studentName = `${session.student?.first_name || ''} ${session.student?.last_name || ''}`.trim();
     const courseName = session.course_id || 'General tutoring';
 
-    // Tutor
-    const tutorEmail = await getUserEmail(session.tutor.id);
+    // Tutor (resolve email server-side)
     const tutorPrefs = await getUserNotificationPreferences(session.tutor.id);
-    if (tutorEmail && tutorPrefs.sessionReminders) {
-      await sendNotificationEmail({
-        recipientEmail: tutorEmail,
+    if (tutorPrefs.sessionReminders) {
+      console.log('[emailService] Sending cancellation to tutor by userId', { sessionId, tutorId: session.tutor.id });
+      await sendNotificationEmailToUserId({
+        recipientUserId: session.tutor.id,
         recipientName: tutorName || 'Tutor',
         subject: `${typeTag} Session Cancelled`,
         notificationType: 'session_cancellation',
@@ -207,12 +209,12 @@ export async function sendCancellationNotification(sessionId: string) {
       });
     }
 
-    // Student
-    const studentEmail = await getUserEmail(session.student.id);
+    // Student (resolve email server-side)
     const studentPrefs = await getUserNotificationPreferences(session.student.id);
-    if (studentEmail && studentPrefs.sessionReminders) {
-      await sendNotificationEmail({
-        recipientEmail: studentEmail,
+    if (studentPrefs.sessionReminders) {
+      console.log('[emailService] Sending cancellation to student by userId', { sessionId, studentId: session.student.id });
+      await sendNotificationEmailToUserId({
+        recipientUserId: session.student.id,
         recipientName: studentName || 'Student',
         subject: `${typeTag} Session Cancelled`,
         notificationType: 'session_cancellation',
@@ -256,12 +258,12 @@ export async function sendRescheduleNotification(
     const zoomPassword = session.zoom_password || undefined;
     const typeTag = sessionType === 'virtual' ? '[Virtual]' : '[In-Person]';
 
-    // Tutor
-    const tutorEmail = await getUserEmail(session.tutor.id);
+    // Tutor (resolve email server-side)
     const tutorPrefs = await getUserNotificationPreferences(session.tutor.id);
-    if (tutorEmail && tutorPrefs.sessionReminders) {
-      await sendNotificationEmail({
-        recipientEmail: tutorEmail,
+    if (tutorPrefs.sessionReminders) {
+      console.log('[emailService] Sending reschedule to tutor by userId', { sessionId, tutorId: session.tutor.id });
+      await sendNotificationEmailToUserId({
+        recipientUserId: session.tutor.id,
         recipientName: tutorName || 'Tutor',
         subject: `${typeTag} Session Rescheduled`,
         notificationType: 'session_reschedule',
@@ -269,12 +271,12 @@ export async function sendRescheduleNotification(
       });
     }
 
-    // Student
-    const studentEmail = await getUserEmail(session.student.id);
+    // Student (resolve email server-side)
     const studentPrefs = await getUserNotificationPreferences(session.student.id);
-    if (studentEmail && studentPrefs.sessionReminders) {
-      await sendNotificationEmail({
-        recipientEmail: studentEmail,
+    if (studentPrefs.sessionReminders) {
+      console.log('[emailService] Sending reschedule to student by userId', { sessionId, studentId: session.student.id });
+      await sendNotificationEmailToUserId({
+        recipientUserId: session.student.id,
         recipientName: studentName || 'Student',
         subject: `${typeTag} Session Rescheduled`,
         notificationType: 'session_reschedule',

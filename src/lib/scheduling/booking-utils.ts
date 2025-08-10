@@ -168,7 +168,9 @@ export async function createSessionBooking(
 
     // Email confirmations to both tutor and student (non-blocking)
     try {
-      await sendBookingConfirmation(data.id);
+      console.log('[createSessionBooking] Triggering sendBookingConfirmation...', { sessionId: data.id });
+      const result = await sendBookingConfirmation(data.id);
+      console.log('[createSessionBooking] sendBookingConfirmation result:', result);
     } catch (e) {
       console.error('[createSessionBooking] sendBookingConfirmation error:', e);
     }

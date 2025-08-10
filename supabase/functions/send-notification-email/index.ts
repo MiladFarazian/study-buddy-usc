@@ -17,7 +17,8 @@ const corsHeaders = {
 };
 
 interface NotificationEmailRequest {
-  recipientEmail: string;
+  recipientEmail?: string;
+  recipientUserId?: string;
   recipientName: string;
   subject: string;
   notificationType: 'session_reminder' | 'new_message' | 'resource_update' | 'platform_update' | 'session_booked' | 'session_cancellation' | 'session_reschedule';
@@ -34,15 +35,29 @@ serve(async (req) => {
     // Parse the request body
     const {
       recipientEmail,
+      recipientUserId,
       recipientName,
       subject,
       notificationType,
       data
     }: NotificationEmailRequest = await req.json();
-    
-    if (!recipientEmail) {
+
+    let toEmail = recipientEmail?.trim() || '';
+    if (!toEmail && recipientUserId) {
+      console.log('[send-notification-email] Resolving recipient email by userId:', recipientUserId);
+      const { data: userData, error: userErr } = await supabase.auth.admin.getUserById(recipientUserId);
+      if (userErr) {
+        console.error('[send-notification-email] Failed to fetch user by id:', userErr);
+        throw new Error('Unable to resolve recipient email');
+      }
+      toEmail = userData?.user?.email || '';
+    }
+
+    if (!toEmail) {
       throw new Error('Recipient email is required');
     }
+
+    console.log('[send-notification-email] Sending email', { notificationType, toEmail, via: recipientEmail ? 'email' : 'userId' });
     
     // Generate HTML content based on notification type
     let htmlContent;
@@ -145,7 +160,7 @@ serve(async (req) => {
     // Send the email
     const emailResult = await resend.emails.send({
       from: "USC Study Buddy <notifications@studybuddyusc.com>",
-      to: [recipientEmail],
+      to: [toEmail],
       subject,
       html: htmlContent
     });

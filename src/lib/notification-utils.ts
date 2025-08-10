@@ -176,6 +176,41 @@ export async function sendNotificationEmail({
   }
 }
 
+// New helper: send notification resolving recipient email server-side by userId
+export async function sendNotificationEmailToUserId({
+  recipientUserId,
+  recipientName,
+  subject,
+  notificationType,
+  data
+}: {
+  recipientUserId: string;
+  recipientName: string;
+  subject: string;
+  notificationType: NotificationType;
+  data?: Record<string, any>;
+}): Promise<{success: boolean, error?: string}> {
+  try {
+    const { error } = await supabase.functions.invoke('send-notification-email', {
+      body: {
+        recipientUserId,
+        recipientName,
+        subject,
+        notificationType,
+        data
+      }
+    });
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error("Error sending notification email (by userId):", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error sending notification"
+    };
+  }
+}
+
 // Send session booking notification to tutor
 export async function sendSessionBookingNotification(params: SessionBookingNotificationParams): Promise<boolean> {
   try {
