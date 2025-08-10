@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { NotificationPreference } from "@/integrations/supabase/types-extension";
 import { SessionType } from "@/lib/scheduling/types/booking";
 
-export type NotificationType = 'session_reminder' | 'new_message' | 'resource_update' | 'platform_update' | 'session_booked';
+export type NotificationType = 'session_reminder' | 'new_message' | 'resource_update' | 'platform_update' | 'session_booked' | 'session_cancellation' | 'session_reschedule';
 
 export interface NotificationPreferences {
   sessionReminders: boolean;

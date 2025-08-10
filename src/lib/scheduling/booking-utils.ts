@@ -3,6 +3,7 @@ import { SessionDetails, SessionType } from "./types/booking";
 import { sendSessionBookingNotification } from "@/lib/notification-utils";
 import { format } from "date-fns";
 import { createZoomMeeting as createZoomMeetingAPI, getDurationFromSession, getUserTimezone, updateZoomMeeting as updateZoomMeetingAPI, deleteZoomMeeting as deleteZoomMeetingAPI } from "@/lib/zoomAPI";
+import { sendBookingConfirmation, sendRescheduleNotification, sendCancellationNotification } from "@/lib/emailService";
 
 /**
  * Zoom meeting creation handled by src/lib/zoomAPI.js
@@ -164,6 +165,13 @@ export async function createSessionBooking(
         // Don't block the booking process if notification fails
       }
     }
+
+    // Email confirmations to both tutor and student (non-blocking)
+    try {
+      await sendBookingConfirmation(data.id);
+    } catch (e) {
+      console.error('[createSessionBooking] sendBookingConfirmation error:', e);
+    }
     
     return {
       id: data.id,
@@ -265,6 +273,9 @@ export async function rescheduleSessionBooking(
       }
     }
 
+    const oldStartTime = session.start_time as string;
+    const oldEndTime = session.end_time as string;
+
     const { error: updateError } = await supabase
       .from('sessions')
       .update({
@@ -274,6 +285,13 @@ export async function rescheduleSessionBooking(
       })
       .eq('id', sessionId);
     if (updateError) throw updateError;
+
+    // Non-blocking email notification
+    try {
+      await sendRescheduleNotification(sessionId, { oldStartTime, oldEndTime });
+    } catch (e) {
+      console.error('[rescheduleSessionBooking] sendRescheduleNotification error:', e);
+    }
 
     return true;
   } catch (e) {
@@ -310,6 +328,13 @@ export async function cancelSessionBooking(sessionId: string): Promise<boolean> 
       })
       .eq('id', sessionId);
     if (updateError) throw updateError;
+
+    // Non-blocking email notification
+    try {
+      await sendCancellationNotification(sessionId);
+    } catch (e) {
+      console.error('[cancelSessionBooking] sendCancellationNotification error:', e);
+    }
 
     return true;
   } catch (e) {

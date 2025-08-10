@@ -20,7 +20,7 @@ interface NotificationEmailRequest {
   recipientEmail: string;
   recipientName: string;
   subject: string;
-  notificationType: 'session_reminder' | 'new_message' | 'resource_update' | 'platform_update' | 'session_booked';
+  notificationType: 'session_reminder' | 'new_message' | 'resource_update' | 'platform_update' | 'session_booked' | 'session_cancellation' | 'session_reschedule';
   data?: Record<string, any>;
 }
 
@@ -96,6 +96,32 @@ serve(async (req) => {
           recipientName,
           updateTitle: data?.updateTitle || 'Platform Update',
           updateDetails: data?.updateDetails || 'There have been updates to the Study Buddy platform.'
+        });
+        break;
+      
+      case 'session_cancellation':
+        htmlContent = generateSessionCancellationEmail({
+          recipientName,
+          sessionDate: data?.sessionDate || '',
+          startTime: data?.startTime || '',
+          endTime: data?.endTime || '',
+          courseName: data?.courseName || 'General tutoring',
+          location: data?.location || 'Not specified',
+          counterpartName: data?.counterpartName || ''
+        });
+        break;
+      
+      case 'session_reschedule':
+        htmlContent = generateSessionRescheduleEmail({
+          recipientName,
+          oldDate: data?.oldDate || '',
+          oldStartTime: data?.oldStartTime || '',
+          oldEndTime: data?.oldEndTime || '',
+          newDate: data?.newDate || '',
+          newStartTime: data?.newStartTime || '',
+          newEndTime: data?.newEndTime || '',
+          courseName: data?.courseName || 'General tutoring',
+          location: data?.location || 'Not specified'
         });
         break;
       
@@ -334,6 +360,101 @@ function generatePlatformUpdateEmail({
         </div>
         
         <p>Thank you for using USC Study Buddy!</p>
+      </div>
+      <div style="text-align: center; padding: 10px; color: #666; font-size: 12px;">
+        <p>&copy; 2025 USC Study Buddy. All rights reserved.</p>
+      </div>
+    </div>
+  `;
+}
+
+function generateSessionCancellationEmail({
+  recipientName,
+  sessionDate,
+  startTime,
+  endTime,
+  courseName,
+  location,
+  counterpartName
+}: {
+  recipientName: string,
+  sessionDate: string,
+  startTime: string,
+  endTime: string,
+  courseName: string,
+  location: string,
+  counterpartName?: string
+}): string {
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+      <div style="background-color: #990000; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0;">
+        <h1 style="margin: 0;">Session Cancelled</h1>
+      </div>
+      <div style="padding: 20px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 5px 5px;">
+        <p>Hello ${recipientName},</p>
+        <p>Your tutoring session has been cancelled.</p>
+        <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 15px 0;">
+          ${counterpartName ? `<p><strong>With:</strong> ${counterpartName}</p>` : ''}
+          <p><strong>Date:</strong> ${sessionDate}</p>
+          <p><strong>Time:</strong> ${startTime} to ${endTime}</p>
+          <p><strong>Course:</strong> ${courseName}</p>
+          <p><strong>Location:</strong> ${location}</p>
+        </div>
+        <p>If this was a mistake or you need to book again, you can reschedule anytime.</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="https://studybuddyusc.com/schedule" style="background-color: #990000; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+            Book Another Session
+          </a>
+        </div>
+      </div>
+      <div style="text-align: center; padding: 10px; color: #666; font-size: 12px;">
+        <p>&copy; 2025 USC Study Buddy. All rights reserved.</p>
+      </div>
+    </div>
+  `;
+}
+
+function generateSessionRescheduleEmail({
+  recipientName,
+  oldDate,
+  oldStartTime,
+  oldEndTime,
+  newDate,
+  newStartTime,
+  newEndTime,
+  courseName,
+  location
+}: {
+  recipientName: string,
+  oldDate: string,
+  oldStartTime: string,
+  oldEndTime: string,
+  newDate: string,
+  newStartTime: string,
+  newEndTime: string,
+  courseName: string,
+  location: string
+}): string {
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+      <div style="background-color: #990000; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0;">
+        <h1 style="margin: 0;">Session Rescheduled</h1>
+      </div>
+      <div style="padding: 20px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 5px 5px;">
+        <p>Hello ${recipientName},</p>
+        <p>Your tutoring session has been rescheduled.</p>
+        <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 15px 0;">
+          <p><strong>Previous:</strong> ${oldDate} from ${oldStartTime} to ${oldEndTime}</p>
+          <p><strong>New:</strong> ${newDate} from ${newStartTime} to ${newEndTime}</p>
+          <p><strong>Course:</strong> ${courseName}</p>
+          <p><strong>Location:</strong> ${location}</p>
+        </div>
+        <p>Please update your calendar accordingly.</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="https://studybuddyusc.com/schedule" style="background-color: #990000; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+            View Updated Session
+          </a>
+        </div>
       </div>
       <div style="text-align: center; padding: 10px; color: #666; font-size: 12px;">
         <p>&copy; 2025 USC Study Buddy. All rights reserved.</p>
