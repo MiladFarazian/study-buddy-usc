@@ -161,19 +161,19 @@ serve(async (req) => {
     const primaryFrom = Deno.env.get("RESEND_FROM") || "USC Study Buddy <notifications@studybuddyusc.com>";
     console.log("[send-notification-email] Attempting send", { toEmail, from: primaryFrom, notificationType });
 
-    const { data, error } = await resend.emails.send({
+    const { data: sendData, error: sendError } = await resend.emails.send({
       from: primaryFrom,
       to: [toEmail],
       subject,
       html: htmlContent,
     });
 
-    if (error) {
-      const msg = (error as any)?.error || (error as any)?.message || String(error);
-      console.error("[send-notification-email] Primary send failed", { from: primaryFrom, error });
+    if (sendError) {
+      const msg = (sendError as any)?.error || (sendError as any)?.message || String(sendError);
+      console.error("[send-notification-email] Primary send failed", { from: primaryFrom, error: sendError });
 
       // If domain not verified or validation error, retry with Resend dev domain
-      if (String(msg).toLowerCase().includes("domain is not verified") || (error as any)?.name === "validation_error") {
+      if (String(msg).toLowerCase().includes("domain is not verified") || (sendError as any)?.name === "validation_error") {
         const fallbackFrom = "Lovable Preview <onboarding@resend.dev>";
         console.log("[send-notification-email] Retrying with fallback from address", { fallbackFrom });
         const retry = await resend.emails.send({
@@ -199,11 +199,11 @@ serve(async (req) => {
       throw new Error(typeof msg === "string" ? msg : "Email send failed");
     }
 
-    console.log("[send-notification-email] Email sent", { id: data?.id, from: primaryFrom });
+    console.log("[send-notification-email] Email sent", { id: sendData?.id, from: primaryFrom });
 
     return new Response(JSON.stringify({ 
       success: true,
-      id: data?.id,
+      id: sendData?.id,
       from: primaryFrom,
     }), {
       status: 200,
