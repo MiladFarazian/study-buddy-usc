@@ -59,7 +59,11 @@ serve(async (req) => {
           startTime: data.bookingInfo.startTime,
           endTime: data.bookingInfo.endTime,
           courseName: data.bookingInfo.courseName,
-          location: data.bookingInfo.location || 'Not specified'
+          location: data.bookingInfo.location || 'Not specified',
+          sessionType: data.bookingInfo.sessionType || 'in_person',
+          zoomJoinUrl: data.bookingInfo.zoomJoinUrl || '',
+          zoomMeetingId: data.bookingInfo.zoomMeetingId || '',
+          zoomPassword: data.bookingInfo.zoomPassword || ''
         });
         break;
         
@@ -71,7 +75,11 @@ serve(async (req) => {
           startTime: data?.startTime || '',
           endTime: data?.endTime || '',
           courseName: data?.courseName || 'General tutoring',
-          location: data?.location || 'Not specified'
+          location: data?.location || 'Not specified',
+          sessionType: data?.sessionType || 'in_person',
+          zoomJoinUrl: data?.zoomJoinUrl || '',
+          zoomMeetingId: data?.zoomMeetingId || '',
+          zoomPassword: data?.zoomPassword || ''
         });
         break;
       
@@ -107,7 +115,8 @@ serve(async (req) => {
           endTime: data?.endTime || '',
           courseName: data?.courseName || 'General tutoring',
           location: data?.location || 'Not specified',
-          counterpartName: data?.counterpartName || ''
+          counterpartName: data?.counterpartName || '',
+          sessionType: data?.sessionType || 'in_person'
         });
         break;
       
@@ -121,7 +130,11 @@ serve(async (req) => {
           newStartTime: data?.newStartTime || '',
           newEndTime: data?.newEndTime || '',
           courseName: data?.courseName || 'General tutoring',
-          location: data?.location || 'Not specified'
+          location: data?.location || 'Not specified',
+          sessionType: data?.sessionType || 'in_person',
+          zoomJoinUrl: data?.zoomJoinUrl || '',
+          zoomMeetingId: data?.zoomMeetingId || '',
+          zoomPassword: data?.zoomPassword || ''
         });
         break;
       
@@ -173,7 +186,11 @@ function generateSessionBookedEmail({
   startTime,
   endTime,
   courseName,
-  location
+  location,
+  sessionType,
+  zoomJoinUrl,
+  zoomMeetingId,
+  zoomPassword
 }: {
   recipientName: string,
   studentName: string,
@@ -181,17 +198,39 @@ function generateSessionBookedEmail({
   startTime: string,
   endTime: string,
   courseName: string,
-  location: string
+  location: string,
+  sessionType?: 'virtual' | 'in_person' | string,
+  zoomJoinUrl?: string,
+  zoomMeetingId?: string,
+  zoomPassword?: string
 }): string {
+  const isVirtual = sessionType === 'virtual';
+  const zoomSection = isVirtual && zoomJoinUrl ? `
+    <div style="background-color: #fff7f7; border: 1px solid #ffd6d6; padding: 15px; border-radius: 5px; margin: 20px 0;">
+      <h3 style="margin: 0 0 10px 0; color: #990000;">Join Zoom Meeting</h3>
+      <p style="margin: 0 0 10px 0;">
+        <a href="${zoomJoinUrl}" style="background-color: #990000; color: white; padding: 10px 16px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+          Join Zoom Meeting
+        </a>
+      </p>
+      ${zoomMeetingId ? `<p style="margin: 6px 0;"><strong>Meeting ID:</strong> ${zoomMeetingId}</p>` : ''}
+      ${zoomPassword ? `<p style="margin: 6px 0;"><strong>Password:</strong> ${zoomPassword}</p>` : ''}
+      <p style="margin: 10px 0 0 0; font-size: 13px; color: #555;">
+        • Test your setup: <a href="https://zoom.us/test">https://zoom.us/test</a><br/>
+        • iOS app: <a href="https://apps.apple.com/app/zoom-one-platform-to-connect/id546505307">App Store</a> · Android app: <a href="https://play.google.com/store/apps/details?id=us.zoom.videomeetings">Google Play</a><br/>
+        • Dial-in (backup): +1 669-900-6833 (US). Enter Meeting ID and password when prompted.
+      </p>
+    </div>
+  ` : '';
+
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
       <div style="background-color: #990000; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0;">
-        <h1 style="margin: 0;">New Tutoring Session Booked</h1>
+        <h1 style="margin: 0;">New Tutoring Session Booked${isVirtual ? ' (Virtual)' : ''}</h1>
       </div>
       <div style="padding: 20px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 5px 5px;">
         <p>Hello ${recipientName},</p>
         <p>${studentName} has booked a tutoring session with you.</p>
-        
         <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 15px 0;">
           <p><strong>Student:</strong> ${studentName}</p>
           <p><strong>Date:</strong> ${date}</p>
@@ -199,15 +238,13 @@ function generateSessionBookedEmail({
           <p><strong>Course:</strong> ${courseName}</p>
           <p><strong>Location:</strong> ${location}</p>
         </div>
-        
+        ${zoomSection}
         <p>Please be prepared for your session. Log in to view more details or make changes if needed.</p>
-        
         <div style="text-align: center; margin: 30px 0;">
           <a href="https://studybuddyusc.com/schedule" style="background-color: #990000; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
             View Your Schedule
           </a>
         </div>
-        
         <p>Thank you for being a tutor with USC Study Buddy!</p>
       </div>
       <div style="text-align: center; padding: 10px; color: #666; font-size: 12px;">
@@ -224,7 +261,11 @@ function generateSessionReminderEmail({
   startTime,
   endTime,
   courseName,
-  location
+  location,
+  sessionType,
+  zoomJoinUrl,
+  zoomMeetingId,
+  zoomPassword
 }: {
   recipientName: string,
   sessionDate: string,
@@ -232,12 +273,35 @@ function generateSessionReminderEmail({
   startTime: string,
   endTime: string,
   courseName: string,
-  location: string
+  location: string,
+  sessionType?: 'virtual' | 'in_person' | string,
+  zoomJoinUrl?: string,
+  zoomMeetingId?: string,
+  zoomPassword?: string
 }): string {
+  const isVirtual = sessionType === 'virtual';
+  const zoomSection = isVirtual && zoomJoinUrl ? `
+    <div style="background-color: #fff7f7; border: 1px solid #ffd6d6; padding: 15px; border-radius: 5px; margin: 20px 0;">
+      <h3 style="margin: 0 0 10px 0; color: #990000;">Join Zoom Meeting</h3>
+      <p style="margin: 0 0 10px 0;">
+        <a href="${zoomJoinUrl}" style="background-color: #990000; color: white; padding: 10px 16px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+          Join Zoom Meeting
+        </a>
+      </p>
+      ${zoomMeetingId ? `<p style="margin: 6px 0;"><strong>Meeting ID:</strong> ${zoomMeetingId}</p>` : ''}
+      ${zoomPassword ? `<p style="margin: 6px 0;"><strong>Password:</strong> ${zoomPassword}</p>` : ''}
+      <p style="margin: 10px 0 0 0; font-size: 13px; color: #555;">
+        • Mobile: open the Zoom app and paste the Meeting ID if the button doesn't work.<br/>
+        • Test your setup: <a href="https://zoom.us/test">https://zoom.us/test</a><br/>
+        • Dial-in (backup): +1 669-900-6833 (US). Enter Meeting ID and password when prompted.
+      </p>
+    </div>
+  ` : '';
+
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
       <div style="background-color: #990000; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0;">
-        <h1 style="margin: 0;">Session Reminder</h1>
+        <h1 style="margin: 0;">Session Reminder${isVirtual ? ' (Virtual)' : ''}</h1>
       </div>
       <div style="padding: 20px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 5px 5px;">
         <p>Hello ${recipientName},</p>
@@ -250,6 +314,8 @@ function generateSessionReminderEmail({
           <p><strong>Course:</strong> ${courseName}</p>
           <p><strong>Location:</strong> ${location}</p>
         </div>
+        
+        ${zoomSection}
         
         <p>Please arrive on time and be prepared for your session.</p>
         
@@ -375,7 +441,8 @@ function generateSessionCancellationEmail({
   endTime,
   courseName,
   location,
-  counterpartName
+  counterpartName,
+  sessionType
 }: {
   recipientName: string,
   sessionDate: string,
@@ -383,12 +450,14 @@ function generateSessionCancellationEmail({
   endTime: string,
   courseName: string,
   location: string,
-  counterpartName?: string
+  counterpartName?: string,
+  sessionType?: 'virtual' | 'in_person' | string
 }): string {
+  const isVirtual = sessionType === 'virtual';
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
       <div style="background-color: #990000; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0;">
-        <h1 style="margin: 0;">Session Cancelled</h1>
+        <h1 style="margin: 0;">Session Cancelled${isVirtual ? ' (Virtual)' : ''}</h1>
       </div>
       <div style="padding: 20px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 5px 5px;">
         <p>Hello ${recipientName},</p>
@@ -400,6 +469,7 @@ function generateSessionCancellationEmail({
           <p><strong>Course:</strong> ${courseName}</p>
           <p><strong>Location:</strong> ${location}</p>
         </div>
+        ${isVirtual ? `<p style="margin: 10px 0; color: #555;">The Zoom meeting associated with this session has also been cancelled.</p>` : ''}
         <p>If this was a mistake or you need to book again, you can reschedule anytime.</p>
         <div style="text-align: center; margin: 30px 0;">
           <a href="https://studybuddyusc.com/schedule" style="background-color: #990000; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
@@ -423,7 +493,11 @@ function generateSessionRescheduleEmail({
   newStartTime,
   newEndTime,
   courseName,
-  location
+  location,
+  sessionType,
+  zoomJoinUrl,
+  zoomMeetingId,
+  zoomPassword
 }: {
   recipientName: string,
   oldDate: string,
@@ -433,12 +507,33 @@ function generateSessionRescheduleEmail({
   newStartTime: string,
   newEndTime: string,
   courseName: string,
-  location: string
+  location: string,
+  sessionType?: 'virtual' | 'in_person' | string,
+  zoomJoinUrl?: string,
+  zoomMeetingId?: string,
+  zoomPassword?: string
 }): string {
+  const isVirtual = sessionType === 'virtual';
+  const zoomSection = isVirtual && zoomJoinUrl ? `
+    <div style="background-color: #fff7f7; border: 1px solid #ffd6d6; padding: 15px; border-radius: 5px; margin: 20px 0;">
+      <h3 style="margin: 0 0 10px 0; color: #990000;">Updated Zoom Details</h3>
+      <p style="margin: 0 0 10px 0;">
+        <a href="${zoomJoinUrl}" style="background-color: #990000; color: white; padding: 10px 16px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+          Join Zoom Meeting
+        </a>
+      </p>
+      ${zoomMeetingId ? `<p style=\"margin: 6px 0;\"><strong>Meeting ID:</strong> ${zoomMeetingId}</p>` : ''}
+      ${zoomPassword ? `<p style=\"margin: 6px 0;\"><strong>Password:</strong> ${zoomPassword}</p>` : ''}
+      <p style="margin: 10px 0 0 0; font-size: 13px; color: #555;">
+        • Test your setup: <a href="https://zoom.us/test">https://zoom.us/test</a>
+      </p>
+    </div>
+  ` : '';
+
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
       <div style="background-color: #990000; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0;">
-        <h1 style="margin: 0;">Session Rescheduled</h1>
+        <h1 style="margin: 0;">Session Rescheduled${isVirtual ? ' (Virtual)' : ''}</h1>
       </div>
       <div style="padding: 20px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 5px 5px;">
         <p>Hello ${recipientName},</p>
@@ -449,6 +544,7 @@ function generateSessionRescheduleEmail({
           <p><strong>Course:</strong> ${courseName}</p>
           <p><strong>Location:</strong> ${location}</p>
         </div>
+        ${zoomSection}
         <p>Please update your calendar accordingly.</p>
         <div style="text-align: center; margin: 30px 0;">
           <a href="https://studybuddyusc.com/schedule" style="background-color: #990000; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">

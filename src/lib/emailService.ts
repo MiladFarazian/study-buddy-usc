@@ -55,9 +55,14 @@ export async function sendBookingConfirmation(sessionId: string) {
     const tutorName = `${session.tutor?.first_name || ''} ${session.tutor?.last_name || ''}`.trim();
     const studentName = `${session.student?.first_name || ''} ${session.student?.last_name || ''}`.trim();
     const courseName = session.course_id || 'General tutoring';
-    const location = session.session_type === 'virtual' || session.session_type === SessionType.VIRTUAL
-      ? 'Virtual (Zoom)'
-      : session.location || 'Not specified';
+
+    const sessionType = (session.session_type === 'virtual' || session.session_type === SessionType.VIRTUAL) ? 'virtual' : 'in_person';
+    const location = sessionType === 'virtual' ? 'Virtual (Zoom)' : session.location || 'Not specified';
+    const zoomJoinUrl = session.zoom_join_url || undefined;
+    const zoomMeetingId = session.zoom_meeting_id || undefined;
+    const zoomPassword = session.zoom_password || undefined;
+
+    const typeTag = sessionType === 'virtual' ? '[Virtual]' : '[In-Person]';
 
     // Tutor email – booking confirmation template
     const tutorEmail = await getUserEmail(session.tutor.id);
@@ -66,7 +71,7 @@ export async function sendBookingConfirmation(sessionId: string) {
       await sendNotificationEmail({
         recipientEmail: tutorEmail,
         recipientName: tutorName || 'Tutor',
-        subject: `New Session Booked with ${studentName || 'a student'}`,
+        subject: `${typeTag} New Session Booked with ${studentName || 'a student'}`,
         notificationType: 'session_booked',
         data: {
           bookingInfo: {
@@ -76,28 +81,37 @@ export async function sendBookingConfirmation(sessionId: string) {
             endTime,
             courseName,
             location,
+            sessionType,
+            zoomJoinUrl,
+            zoomMeetingId,
+            zoomPassword,
           },
         },
       });
     }
 
-    // Student email – confirmation using reminder template for now
+    // Student email – booking confirmation
     const studentEmail = await getUserEmail(session.student.id);
     const studentPrefs = await getUserNotificationPreferences(session.student.id);
     if (studentEmail && studentPrefs.sessionReminders !== false) {
       await sendNotificationEmail({
         recipientEmail: studentEmail,
         recipientName: studentName || 'Student',
-        subject: 'Your Tutoring Session is Confirmed',
-        notificationType: 'session_reminder',
+        subject: `${typeTag} Your Tutoring Session is Confirmed`,
+        notificationType: 'session_booked',
         data: {
-          sessionId,
-          sessionDate,
-          tutorName: tutorName || 'Your tutor',
-          courseName,
-          location,
-          startTime,
-          endTime,
+          bookingInfo: {
+            studentName: studentName || 'Student',
+            date: sessionDate,
+            startTime,
+            endTime,
+            courseName,
+            location,
+            sessionType,
+            zoomJoinUrl,
+            zoomMeetingId,
+            zoomPassword,
+          },
         },
       });
     }
@@ -122,9 +136,13 @@ export async function sendSessionReminder(sessionId: string) {
     const tutorName = `${session.tutor?.first_name || ''} ${session.tutor?.last_name || ''}`.trim();
     const studentName = `${session.student?.first_name || ''} ${session.student?.last_name || ''}`.trim();
     const courseName = session.course_id || 'General tutoring';
-    const location = session.session_type === 'virtual' || session.session_type === SessionType.VIRTUAL
-      ? 'Virtual (Zoom)'
-      : session.location || 'Not specified';
+
+    const sessionType = (session.session_type === 'virtual' || session.session_type === SessionType.VIRTUAL) ? 'virtual' : 'in_person';
+    const location = sessionType === 'virtual' ? 'Virtual (Zoom)' : session.location || 'Not specified';
+    const zoomJoinUrl = session.zoom_join_url || undefined;
+    const zoomMeetingId = session.zoom_meeting_id || undefined;
+    const zoomPassword = session.zoom_password || undefined;
+    const typeTag = sessionType === 'virtual' ? '[Virtual]' : '[In-Person]';
 
     // Student reminder
     const studentEmail = await getUserEmail(session.student.id);
@@ -133,9 +151,9 @@ export async function sendSessionReminder(sessionId: string) {
       await sendNotificationEmail({
         recipientEmail: studentEmail,
         recipientName: studentName || 'Student',
-        subject: 'Reminder: Upcoming Tutoring Session',
+        subject: `${typeTag} Reminder: Upcoming Tutoring Session`,
         notificationType: 'session_reminder',
-        data: { sessionId, sessionDate, tutorName, courseName, location, startTime, endTime },
+        data: { sessionId, sessionDate, tutorName, courseName, location, startTime, endTime, sessionType, zoomJoinUrl, zoomMeetingId, zoomPassword },
       });
     }
 
@@ -146,9 +164,9 @@ export async function sendSessionReminder(sessionId: string) {
       await sendNotificationEmail({
         recipientEmail: tutorEmail,
         recipientName: tutorName || 'Tutor',
-        subject: 'Reminder: Upcoming Tutoring Session',
+        subject: `${typeTag} Reminder: Upcoming Tutoring Session`,
         notificationType: 'session_reminder',
-        data: { sessionId, sessionDate, tutorName: tutorName, courseName, location, startTime, endTime },
+        data: { sessionId, sessionDate, tutorName: tutorName, courseName, location, startTime, endTime, sessionType, zoomJoinUrl, zoomMeetingId, zoomPassword },
       });
     }
 
@@ -169,12 +187,12 @@ export async function sendCancellationNotification(sessionId: string) {
     const startTime = fmtTime(start);
     const endTime = fmtTime(end);
 
+    const sessionType = (session.session_type === 'virtual' || session.session_type === SessionType.VIRTUAL) ? 'virtual' : 'in_person';
+    const location = sessionType === 'virtual' ? 'Virtual (Zoom)' : session.location || 'Not specified';
+    const typeTag = sessionType === 'virtual' ? '[Virtual]' : '[In-Person]';
     const tutorName = `${session.tutor?.first_name || ''} ${session.tutor?.last_name || ''}`.trim();
     const studentName = `${session.student?.first_name || ''} ${session.student?.last_name || ''}`.trim();
     const courseName = session.course_id || 'General tutoring';
-    const location = session.session_type === 'virtual' || session.session_type === SessionType.VIRTUAL
-      ? 'Virtual (Zoom)'
-      : session.location || 'Not specified';
 
     // Tutor
     const tutorEmail = await getUserEmail(session.tutor.id);
@@ -183,9 +201,9 @@ export async function sendCancellationNotification(sessionId: string) {
       await sendNotificationEmail({
         recipientEmail: tutorEmail,
         recipientName: tutorName || 'Tutor',
-        subject: 'Session Cancelled',
+        subject: `${typeTag} Session Cancelled`,
         notificationType: 'session_cancellation',
-        data: { sessionDate, startTime, endTime, courseName, location, counterpartName: studentName },
+        data: { sessionDate, startTime, endTime, courseName, location, counterpartName: studentName, sessionType },
       });
     }
 
@@ -196,9 +214,9 @@ export async function sendCancellationNotification(sessionId: string) {
       await sendNotificationEmail({
         recipientEmail: studentEmail,
         recipientName: studentName || 'Student',
-        subject: 'Session Cancelled',
+        subject: `${typeTag} Session Cancelled`,
         notificationType: 'session_cancellation',
-        data: { sessionDate, startTime, endTime, courseName, location, counterpartName: tutorName },
+        data: { sessionDate, startTime, endTime, courseName, location, counterpartName: tutorName, sessionType },
       });
     }
 
@@ -231,9 +249,12 @@ export async function sendRescheduleNotification(
     const tutorName = `${session.tutor?.first_name || ''} ${session.tutor?.last_name || ''}`.trim();
     const studentName = `${session.student?.first_name || ''} ${session.student?.last_name || ''}`.trim();
     const courseName = session.course_id || 'General tutoring';
-    const location = session.session_type === 'virtual' || session.session_type === SessionType.VIRTUAL
-      ? 'Virtual (Zoom)'
-      : session.location || 'Not specified';
+    const sessionType = (session.session_type === 'virtual' || session.session_type === SessionType.VIRTUAL) ? 'virtual' : 'in_person';
+    const location = sessionType === 'virtual' ? 'Virtual (Zoom)' : session.location || 'Not specified';
+    const zoomJoinUrl = session.zoom_join_url || undefined;
+    const zoomMeetingId = session.zoom_meeting_id || undefined;
+    const zoomPassword = session.zoom_password || undefined;
+    const typeTag = sessionType === 'virtual' ? '[Virtual]' : '[In-Person]';
 
     // Tutor
     const tutorEmail = await getUserEmail(session.tutor.id);
@@ -242,9 +263,9 @@ export async function sendRescheduleNotification(
       await sendNotificationEmail({
         recipientEmail: tutorEmail,
         recipientName: tutorName || 'Tutor',
-        subject: 'Session Rescheduled',
+        subject: `${typeTag} Session Rescheduled`,
         notificationType: 'session_reschedule',
-        data: { oldDate, oldStartTime, oldEndTime, newDate, newStartTime, newEndTime, courseName, location },
+        data: { oldDate, oldStartTime, oldEndTime, newDate, newStartTime, newEndTime, courseName, location, sessionType, zoomJoinUrl, zoomMeetingId, zoomPassword },
       });
     }
 
@@ -255,9 +276,9 @@ export async function sendRescheduleNotification(
       await sendNotificationEmail({
         recipientEmail: studentEmail,
         recipientName: studentName || 'Student',
-        subject: 'Session Rescheduled',
+        subject: `${typeTag} Session Rescheduled`,
         notificationType: 'session_reschedule',
-        data: { oldDate, oldStartTime, oldEndTime, newDate, newStartTime, newEndTime, courseName, location },
+        data: { oldDate, oldStartTime, oldEndTime, newDate, newStartTime, newEndTime, courseName, location, sessionType, zoomJoinUrl, zoomMeetingId, zoomPassword },
       });
     }
 
