@@ -11,6 +11,7 @@ import { sendSessionCancellationEmails } from "@/lib/scheduling/email-utils";
 import { getUserSessions } from "@/lib/scheduling/session-manager";
 import { supabase } from "@/integrations/supabase/client";
 import { LoadingDisplay } from "@/components/scheduling/calendar/LoadingDisplay";
+import { cancelSessionBooking } from "@/lib/scheduling/booking-utils";
 
 export const SessionManager = () => {
   const { user, isTutor } = useAuth();
@@ -95,16 +96,9 @@ export const SessionManager = () => {
   const handleCancelSession = async (sessionId: string) => {
     try {
       console.log("Cancelling session:", sessionId);
-      const { error } = await supabase
-        .from('sessions')
-        .update({ 
-          status: 'cancelled',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', sessionId);
-        
-      if (error) throw error;
-      
+      const ok = await cancelSessionBooking(sessionId);
+      if (!ok) throw new Error('Cancellation failed');
+
       setSessions(prev => 
         prev.map(session => 
           session.id === sessionId 
@@ -112,17 +106,17 @@ export const SessionManager = () => {
             : session
         )
       );
-      
+
       const emailResult = await sendSessionCancellationEmails(sessionId);
       if (!emailResult.success) {
         console.warn("Email notification failed:", emailResult.error);
       }
-      
+
       toast({
         title: "Session Cancelled",
         description: "Your session has been cancelled successfully.",
       });
-      
+
       // Reload sessions to ensure UI is in sync with the database
       loadSessions();
     } catch (error) {

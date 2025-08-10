@@ -1,42 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
-import { SessionCreationParams, SessionDetails, SessionType } from "./types/booking";
+import { SessionDetails, SessionType } from "./types/booking";
 import { sendSessionBookingNotification } from "@/lib/notification-utils";
 import { format } from "date-fns";
+import { createZoomMeeting as createZoomMeetingAPI, getDurationFromSession, getUserTimezone, updateZoomMeeting as updateZoomMeetingAPI, deleteZoomMeeting as deleteZoomMeetingAPI } from "@/lib/zoomAPI";
 
 /**
- * Create Zoom meeting for a virtual session
+ * Zoom meeting creation handled by src/lib/zoomAPI.js
+ * Using standardized response and helper utilities.
  */
-async function createZoomMeeting(
-  tutorId: string,
-  studentName: string,
-  courseName: string,
-  startTime: string,
-  endTime: string
-): Promise<{ id: string; join_url: string; host_url?: string; start_url?: string; password?: string } | null> {
-  try {
-    // Call Supabase Edge Function to create Zoom meeting
-    const { data, error } = await supabase.functions.invoke('create-zoom-meeting', {
-      body: {
-        tutor_id: tutorId,
-        student_name: studentName,
-        course_name: courseName,
-        start_time: startTime,
-        end_time: endTime
-      }
-    });
-    
-    if (error) {
-      console.error("Error creating Zoom meeting:", error);
-      return null;
-    }
-    
-    console.log("Zoom meeting created:", data);
-    return data;
-  } catch (err) {
-    console.error("Failed to create Zoom meeting:", err);
-    return null;
-  }
-}
 
 /**
  * Create a new session booking
@@ -86,21 +57,29 @@ export async function createSessionBooking(
         `${studentData.first_name || ''} ${studentData.last_name || ''}`.trim() : 
         "Student";
         
-      const zoomMeeting = await createZoomMeeting(
-        tutorId,
-        studentName,
-        courseName,
-        startTime,
-        endTime
-      );
+      const duration = getDurationFromSession(startTime, endTime);
+      const timezone = getUserTimezone();
+
+      const zoomResp = await createZoomMeetingAPI({
+        tutor_id: tutorId,
+        student_name: studentName,
+        course_name: courseName,
+        start_time: startTime,
+        end_time: endTime,
+        duration,
+        timezone,
+        auto_recording: "cloud",
+      } as any);
       
-      if (zoomMeeting) {
-        zoomMeetingId = zoomMeeting.id;
-        zoomJoinUrl = zoomMeeting.join_url;
-        // Edge function returns host_url; some SDKs may return start_url; support both
-        zoomStartUrl = zoomMeeting.host_url || zoomMeeting.start_url || null;
-        zoomPassword = zoomMeeting.password || null;
+      if (zoomResp?.error) {
+        console.error("[createSessionBooking] Zoom create error:", zoomResp.error);
+      } else if (zoomResp) {
+        zoomMeetingId = zoomResp.id || null;
+        zoomJoinUrl = zoomResp.join_url || null;
+        zoomStartUrl = zoomResp.start_url || null;
+        zoomPassword = zoomResp.password || null;
       }
+
     }
     
     // Create the session record - ensuring courseId is stored as a string value
@@ -255,4 +234,86 @@ export function createPaymentIntent(): Promise<any> {
  */
 export async function processPaymentForSession(): Promise<boolean> {
   return Promise.resolve(true);
+}
+
+// Session modification helpers leveraging standardized Zoom API
+export async function rescheduleSessionBooking(
+  sessionId: string,
+  newStartTime: string,
+  newEndTime: string
+): Promise<boolean> {
+  try {
+    const { data: session, error: fetchError } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('id', sessionId)
+      .single();
+    if (fetchError || !session) throw fetchError || new Error('Session not found');
+
+    const isVirtual = session.session_type === 'virtual' || session.session_type === SessionType.VIRTUAL;
+
+    if (isVirtual && session.zoom_meeting_id) {
+      const duration = getDurationFromSession(newStartTime, newEndTime);
+      const timezone = getUserTimezone();
+      const zoomResp = await updateZoomMeetingAPI(session.zoom_meeting_id, {
+        start_time: newStartTime,
+        duration,
+        timezone,
+      } as any);
+      if (zoomResp?.error) {
+        console.error('[rescheduleSessionBooking] Zoom update error:', zoomResp.error);
+      }
+    }
+
+    const { error: updateError } = await supabase
+      .from('sessions')
+      .update({
+        start_time: newStartTime,
+        end_time: newEndTime,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', sessionId);
+    if (updateError) throw updateError;
+
+    return true;
+  } catch (e) {
+    console.error('Failed to reschedule session:', e);
+    return false;
+  }
+}
+
+export async function cancelSessionBooking(sessionId: string): Promise<boolean> {
+  try {
+    const { data: session, error: fetchError } = await supabase
+      .from('sessions')
+      .select('id, session_type, zoom_meeting_id')
+      .eq('id', sessionId)
+      .single();
+    if (fetchError || !session) throw fetchError || new Error('Session not found');
+
+    if ((session.session_type === 'virtual' || session.session_type === SessionType.VIRTUAL) && session.zoom_meeting_id) {
+      const resp = await deleteZoomMeetingAPI(session.zoom_meeting_id);
+      if (resp?.error) {
+        console.error('[cancelSessionBooking] Zoom delete error:', resp.error);
+      }
+    }
+
+    const { error: updateError } = await supabase
+      .from('sessions')
+      .update({
+        status: 'cancelled',
+        zoom_meeting_id: null,
+        zoom_join_url: null,
+        zoom_start_url: null,
+        zoom_password: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', sessionId);
+    if (updateError) throw updateError;
+
+    return true;
+  } catch (e) {
+    console.error('Failed to cancel session:', e);
+    return false;
+  }
 }
