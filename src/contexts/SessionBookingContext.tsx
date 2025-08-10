@@ -9,7 +9,13 @@ interface SessionDetails {
   location: string;
   courseName?: string;
   sessionType: string;
+  // Optional Zoom fields for virtual sessions
+  zoomJoinUrl?: string;
+  zoomMeetingId?: string;
+  zoomPassword?: string;
+  zoomStartUrl?: string;
 }
+
 
 interface SessionBookingContextType {
   showConfirmation: (details: SessionDetails) => void;

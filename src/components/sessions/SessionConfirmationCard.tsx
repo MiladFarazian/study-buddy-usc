@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { format } from 'date-fns';
+import { ZoomMeetingActions } from "@/components/zoom/ZoomMeetingActions";
 
 interface SessionConfirmationCardProps {
   sessionId: string;
@@ -205,6 +206,10 @@ export function SessionConfirmationCard({ sessionId, onConfirmed }: SessionConfi
             <div className="font-medium">{otherPerson}</div>
           </div>
         </div>
+
+        {session.session_type === 'virtual' && (
+          <ZoomMeetingActions session={session} isTutor={!!isTutor} />
+        )}
         
         <div className="border rounded-md p-4 space-y-3">
           <div className="flex items-center justify-between">

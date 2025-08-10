@@ -6,6 +6,7 @@ import { CalendarDays, Clock, User, MapPin, GraduationCap, BookOpen, Calendar } 
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 import { SessionCalendarDialog } from "./SessionCalendarDialog";
+import { ZoomMeetingActions } from "@/components/zoom/ZoomMeetingActions";
 
 interface SessionItemProps {
   session: Session;
@@ -111,6 +112,9 @@ export const SessionItem = ({
                 <div className="flex flex-wrap gap-2 items-center">
                   {getBadge()}
                   {getRoleBadge()}
+                  {session.session_type === 'virtual' && (
+                    <Badge variant="outline">Virtual</Badge>
+                  )}
                 </div>
               </div>
               <div className="text-sm text-gray-500 space-y-2">
@@ -150,6 +154,12 @@ export const SessionItem = ({
             </div>
           </div>
         </div>
+
+        {variant === 'upcoming' && session.session_type === 'virtual' && (
+          <div className="pt-2">
+            <ZoomMeetingActions session={session} isTutor={isUserTutor} compact />
+          </div>
+        )}
 
         <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
           {variant === 'upcoming' && (
