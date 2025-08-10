@@ -24,12 +24,13 @@ const RequireProfileCompletion = ({ children }: RequireProfileCompletionProps) =
   // Don't redirect if:
   // 1. User is not logged in (PrivateRoute will handle this)
   // 2. User is on the profile page already
-  // 3. User is on the verify-email page
-  // 4. User is completing their profile
+  // 3. User is on the schedule page
+  // 4. User is on the verify-email page
   // 5. User is on the auth callback page
   if (
     !user || 
     location.pathname === "/profile" || 
+    location.pathname === "/schedule" ||
     location.pathname === "/verify-email" || 
     location.pathname.includes("/auth/callback")
   ) {

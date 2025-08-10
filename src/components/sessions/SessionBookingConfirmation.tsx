@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircleIcon, CalendarIcon, ClockIcon, MapPinIcon, UserIcon, XIcon } from 'lucide-react';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 interface SessionBookingConfirmationProps {
   isVisible: boolean;
@@ -25,6 +26,7 @@ export function SessionBookingConfirmation({
   onClose, 
   sessionDetails 
 }: SessionBookingConfirmationProps) {
+  const navigate = useNavigate();
   const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
@@ -161,8 +163,7 @@ export function SessionBookingConfirmation({
                   <Button 
                     variant="outline" 
                     onClick={() => {
-                      // Navigate to schedule
-                      window.location.href = '/schedule';
+                      navigate('/schedule', { state: { fromBooking: true } });
                     }}
                     className="flex-1"
                   >
