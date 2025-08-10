@@ -75,3 +75,6 @@ url = ""
 [functions]
 [functions.create-zoom-meeting]
 verify_jwt = true
+
+[functions.send-notification-email]
+verify_jwt = false

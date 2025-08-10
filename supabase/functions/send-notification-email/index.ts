@@ -157,19 +157,54 @@ serve(async (req) => {
         throw new Error(`Unsupported notification type: ${notificationType}`);
     }
 
-    // Send the email
-    const emailResult = await resend.emails.send({
-      from: "USC Study Buddy <notifications@studybuddyusc.com>",
+    // Send the email using configured from address with fallback
+    const primaryFrom = Deno.env.get("RESEND_FROM") || "USC Study Buddy <notifications@studybuddyusc.com>";
+    console.log("[send-notification-email] Attempting send", { toEmail, from: primaryFrom, notificationType });
+
+    const { data, error } = await resend.emails.send({
+      from: primaryFrom,
       to: [toEmail],
       subject,
-      html: htmlContent
+      html: htmlContent,
     });
 
-    console.log("Email sent:", emailResult);
+    if (error) {
+      const msg = (error as any)?.error || (error as any)?.message || String(error);
+      console.error("[send-notification-email] Primary send failed", { from: primaryFrom, error });
+
+      // If domain not verified or validation error, retry with Resend dev domain
+      if (String(msg).toLowerCase().includes("domain is not verified") || (error as any)?.name === "validation_error") {
+        const fallbackFrom = "Lovable Preview <onboarding@resend.dev>";
+        console.log("[send-notification-email] Retrying with fallback from address", { fallbackFrom });
+        const retry = await resend.emails.send({
+          from: fallbackFrom,
+          to: [toEmail],
+          subject,
+          html: htmlContent,
+        });
+        if (retry.error) {
+          console.error("[send-notification-email] Fallback send failed", { from: fallbackFrom, error: retry.error });
+          throw new Error(retry.error.error || retry.error.message || "Email send failed");
+        }
+        console.log("[send-notification-email] Email sent with fallback domain", { id: retry.data?.id, from: fallbackFrom });
+        return new Response(JSON.stringify({ success: true, id: retry.data?.id, from: fallbackFrom }), {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            ...corsHeaders,
+          },
+        });
+      }
+
+      throw new Error(typeof msg === "string" ? msg : "Email send failed");
+    }
+
+    console.log("[send-notification-email] Email sent", { id: data?.id, from: primaryFrom });
 
     return new Response(JSON.stringify({ 
       success: true,
-      id: emailResult.id
+      id: data?.id,
+      from: primaryFrom,
     }), {
       status: 200,
       headers: {

@@ -127,11 +127,7 @@ export async function createSessionBooking(
       courseId ? supabase.from('tutor_courses').select('course_title').eq('course_number', courseId).single() : null
     ]);
     
-    // Get the tutor's email
-    const { data: userData } = await supabase.auth.admin.getUserById(tutorId);
-    
-    if (tutorData?.data && userData?.user) {
-      const tutorEmail = userData.user.email;
+    if (tutorData?.data) {
       const tutorName = `${tutorData.data.first_name} ${tutorData.data.last_name}`;
       const studentName = studentData?.data ? 
         `${studentData.data.first_name} ${studentData.data.last_name}` : 
@@ -143,11 +139,11 @@ export async function createSessionBooking(
       const formattedEndTime = format(new Date(endTime), 'h:mm a');
       const courseName = courseData?.data?.course_title || courseId || "General tutoring";
       
-      // Send booking notification
+      // Create in-app notification and trigger email server-side (no admin calls in browser)
       try {
         await sendSessionBookingNotification({
           tutorId,
-          tutorEmail,
+          tutorEmail: undefined,
           tutorName,
           studentName,
           sessionId: data.id,
@@ -159,9 +155,9 @@ export async function createSessionBooking(
           sessionType,
           zoomJoinUrl
         });
-        console.log("[createSessionBooking] Booking notification sent to tutor");
+        console.log("[createSessionBooking] Booking notification created for tutor");
       } catch (notifError) {
-        console.error("Error sending booking notification:", notifError);
+        console.error("Error creating booking notification:", notifError);
         // Don't block the booking process if notification fails
       }
     }

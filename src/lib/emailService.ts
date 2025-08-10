@@ -27,12 +27,6 @@ async function fetchSession(sessionId: string) {
   return session as any;
 }
 
-// Helper to get user email via admin API (consistent with current project usage)
-async function getUserEmail(userId: string) {
-  const { data, error } = await supabase.auth.admin.getUserById(userId);
-  if (error) throw new Error(`Error fetching user by id: ${error.message}`);
-  return data?.user?.email || '';
-}
 
 function fmtDate(date: Date) {
   return format(date, 'EEEE, MMMM d, yyyy');
