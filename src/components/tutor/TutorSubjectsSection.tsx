@@ -15,7 +15,7 @@ export const TutorSubjectsSection = ({ subjects }: TutorSubjectsSectionProps) =>
           <Badge
             key={subject.code}
             variant="secondary"
-            className="text-sm py-1 px-3 hover:bg-secondary"
+            className="text-sm py-1 px-3"
           >
             {subject.code} - {subject.name}
           </Badge>
