@@ -10,6 +10,10 @@ const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 // Initialize Supabase client with service role for admin privileges
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+// Configurable sender and reply-to via Supabase secrets (with safe fallbacks)
+const FROM_ADDRESS = Deno.env.get("RESEND_FROM") || "USC Study Buddy <notifications@studybuddyusc.com>";
+const REPLY_TO = Deno.env.get("RESEND_REPLY_TO") || undefined;
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -158,7 +162,7 @@ serve(async (req) => {
     }
 
     // Send the email using configured from address with fallback
-    const primaryFrom = Deno.env.get("RESEND_FROM") || "USC Study Buddy <notifications@studybuddyusc.com>";
+    const primaryFrom = FROM_ADDRESS;
     console.log("[send-notification-email] Attempting send", { toEmail, from: primaryFrom, notificationType });
 
     const { data: sendData, error: sendError } = await resend.emails.send({
@@ -166,6 +170,7 @@ serve(async (req) => {
       to: [toEmail],
       subject,
       html: htmlContent,
+      reply_to: REPLY_TO,
     });
 
     if (sendError) {
@@ -181,6 +186,7 @@ serve(async (req) => {
           to: [toEmail],
           subject,
           html: htmlContent,
+          reply_to: REPLY_TO,
         });
         if (retry.error) {
           console.error("[send-notification-email] Fallback send failed", { from: fallbackFrom, error: retry.error });

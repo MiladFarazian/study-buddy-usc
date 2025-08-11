@@ -10,6 +10,10 @@ const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 // Initialize Supabase client with service role for admin privileges
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+// Configurable sender and reply-to via Supabase secrets (with safe fallbacks)
+const FROM_ADDRESS = Deno.env.get("RESEND_FROM") || "USC Study Buddy <notifications@studybuddyusc.com>";
+const REPLY_TO = Deno.env.get("RESEND_REPLY_TO") || undefined;
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -129,7 +133,7 @@ serve(async (req) => {
     if (sendToTutor) {
       try {
         const tutorEmailResponse = await resend.emails.send({
-          from: "USC Study Buddy <notifications@studybuddyusc.com>",
+          from: FROM_ADDRESS,
           to: [tutorEmail],
           subject: tutorSubject,
           html: generateEmailHtml({
@@ -143,7 +147,8 @@ serve(async (req) => {
             counterpartName: studentName,
             counterpartRole: 'student',
             emailType
-          })
+          }),
+          reply_to: REPLY_TO,
         });
 
         console.log("Tutor email sent successfully:", tutorEmailResponse);
@@ -161,7 +166,7 @@ serve(async (req) => {
     if (sendToStudent) {
       try {
         const studentEmailResponse = await resend.emails.send({
-          from: "USC Study Buddy <notifications@studybuddyusc.com>",
+          from: FROM_ADDRESS,
           to: [studentEmail],
           subject: studentSubject,
           html: generateEmailHtml({
@@ -175,7 +180,8 @@ serve(async (req) => {
             counterpartName: tutorName,
             counterpartRole: 'tutor',
             emailType
-          })
+          }),
+          reply_to: REPLY_TO,
         });
 
         console.log("Student email sent successfully:", studentEmailResponse);
