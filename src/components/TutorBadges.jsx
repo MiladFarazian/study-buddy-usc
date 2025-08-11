@@ -86,11 +86,10 @@ const BadgeCard = ({
       <TooltipTrigger asChild>
         <Card 
           className={`
-            relative transition-all duration-300 cursor-pointer
-            hover:scale-105 hover:shadow-lg
+            relative cursor-default
             ${isEarned ? 'shadow-md' : 'opacity-60'}
             ${rarityStyles.border}
-            ${isEarned ? rarityStyles.glow : ''}
+            ${isEarned ? rarityStyles.bg : ''}
           `}
         >
           <CardContent className="p-4 text-center">
@@ -137,13 +136,6 @@ const BadgeCard = ({
               {config.rarity}
             </div>
 
-            {/* Earned Badge Glow Effect */}
-            {isEarned && (
-              <div className={`
-                absolute inset-0 rounded-lg pointer-events-none
-                ${rarityStyles.innerGlow}
-              `} />
-            )}
           </CardContent>
         </Card>
       </TooltipTrigger>
@@ -292,26 +284,22 @@ const getRarityStyles = (rarity) => {
   const styles = {
     common: {
       border: 'border-2 border-muted',
-      glow: 'shadow-sm',
-      innerGlow: 'bg-gradient-to-br from-muted/20 to-transparent',
+      bg: 'bg-muted/40',
       tag: 'bg-muted text-muted-foreground'
     },
     rare: {
       border: 'border-2 border-blue-300 dark:border-blue-700',
-      glow: 'shadow-blue-200 dark:shadow-blue-900/50 shadow-lg',
-      innerGlow: 'bg-gradient-to-br from-blue-100/30 to-transparent dark:from-blue-900/30',
+      bg: 'bg-blue-50 dark:bg-blue-950/30',
       tag: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
     },
     epic: {
       border: 'border-2 border-purple-300 dark:border-purple-700',
-      glow: 'shadow-purple-200 dark:shadow-purple-900/50 shadow-lg',
-      innerGlow: 'bg-gradient-to-br from-purple-100/30 to-transparent dark:from-purple-900/30',
+      bg: 'bg-purple-50 dark:bg-purple-950/30',
       tag: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
     },
     legendary: {
-      border: 'border-4 border-amber-300 dark:border-amber-600 animate-pulse',
-      glow: 'shadow-amber-200 dark:shadow-amber-900/50 shadow-xl',
-      innerGlow: 'bg-gradient-to-br from-amber-100/40 to-transparent dark:from-amber-900/40',
+      border: 'border-4 border-amber-300 dark:border-amber-600',
+      bg: 'bg-amber-50 dark:bg-amber-950/30',
       tag: 'bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 dark:from-amber-900 dark:to-yellow-900 dark:text-amber-200'
     }
   };
