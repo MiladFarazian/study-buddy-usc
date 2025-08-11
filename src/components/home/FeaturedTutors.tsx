@@ -34,24 +34,26 @@ const FeaturedTutors = () => {
           </Link>
         </Button>
       </div>
-      {loading ? (
-        <div className="flex justify-center items-center py-8 md:py-12">
-          <Loader2 className="h-5 w-5 md:h-6 md:w-6 animate-spin text-usc-cardinal" />
-          <span className="ml-2 text-sm md:text-base">Loading featured tutors...</span>
-        </div>
-      ) : featuredTutors.length === 0 ? (
-        <div className="text-center py-8 md:py-12 bg-gray-50 rounded-lg">
-          <p className="text-gray-500">No featured tutors available at the moment.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 transition-all duration-300">
-          {featuredTutors.map((tutor) => (
-            <div key={tutor.id} className="w-full">
-              <TutorCard tutor={tutor} />
-            </div>
-          ))}
-        </div>
-      )}
+      <div className={isMobile ? "min-h-[22rem]" : "min-h-[18rem]"}>
+        {loading ? (
+          <div className="flex justify-center items-center py-8 md:py-12">
+            <Loader2 className="h-5 w-5 md:h-6 md:w-6 animate-spin text-usc-cardinal" />
+            <span className="ml-2 text-sm md:text-base">Loading featured tutors...</span>
+          </div>
+        ) : featuredTutors.length === 0 ? (
+          <div className="text-center py-8 md:py-12 bg-gray-50 rounded-lg">
+            <p className="text-gray-500">No featured tutors available at the moment.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 transition-all duration-300">
+            {featuredTutors.map((tutor) => (
+              <div key={tutor.id} className="w-full">
+                <TutorCard tutor={tutor} />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

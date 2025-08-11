@@ -35,49 +35,51 @@ const PopularCourses = () => {
         </Button>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center items-center py-6 md:py-12">
-          <Loader2 className={`${isMobile ? 'h-4 w-4' : 'h-6 w-6'} animate-spin text-usc-cardinal`} />
-          <span className={`ml-2 ${isMobile ? 'text-sm' : ''}`}>Loading popular courses...</span>
-        </div>
-      ) : courses.length === 0 ? (
-        <div className="text-center py-6 md:py-8 bg-gray-50 rounded-lg">
-          <p className="text-gray-500">No popular courses available at the moment.</p>
-        </div>
-      ) : (
-        <div className="relative">
-          {isMobile ? (
-            <div className="space-y-3">
-              {courses.slice(0, 3).map(course => (
-                <CourseCard key={course.id} course={course} />
-              ))}
-              {courses.length > 3 && (
-                <div className="text-center mt-4">
-                  <Button 
-                    asChild 
-                    variant="outline" 
-                    className="text-usc-cardinal border-usc-cardinal hover:bg-usc-cardinal hover:text-white"
-                  >
-                    <Link to="/courses">View More Courses</Link>
-                  </Button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <Carousel className="w-full">
-              <CarouselContent className="-ml-4">
-                {courses.map(course => (
-                  <CarouselItem key={course.id} className="pl-4 md:basis-1/2 lg:basis-1/3">
-                    <CourseCard course={course} />
-                  </CarouselItem>
+      <div className={isMobile ? "min-h-[28rem]" : "min-h-[18rem]"}>
+        {loading ? (
+          <div className="flex justify-center items-center py-6 md:py-12">
+            <Loader2 className={`${isMobile ? 'h-4 w-4' : 'h-6 w-6'} animate-spin text-usc-cardinal`} />
+            <span className={`ml-2 ${isMobile ? 'text-sm' : ''}`}>Loading popular courses...</span>
+          </div>
+        ) : courses.length === 0 ? (
+          <div className="text-center py-6 md:py-8 bg-gray-50 rounded-lg">
+            <p className="text-gray-500">No popular courses available at the moment.</p>
+          </div>
+        ) : (
+          <div className="relative">
+            {isMobile ? (
+              <div className="space-y-3">
+                {courses.slice(0, 3).map(course => (
+                  <CourseCard key={course.id} course={course} />
                 ))}
-              </CarouselContent>
-              <CarouselPrevious className="hidden md:flex -left-12 bg-white" />
-              <CarouselNext className="hidden md:flex -right-12 bg-white" />
-            </Carousel>
-          )}
-        </div>
-      )}
+                {courses.length > 3 && (
+                  <div className="text-center mt-4">
+                    <Button 
+                      asChild 
+                      variant="outline" 
+                      className="text-usc-cardinal border-usc-cardinal hover:bg-usc-cardinal hover:text-white"
+                    >
+                      <Link to="/courses">View More Courses</Link>
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Carousel className="w-full">
+                <CarouselContent className="-ml-4">
+                  {courses.map(course => (
+                    <CarouselItem key={course.id} className="pl-4 md:basis-1/2 lg:basis-1/3">
+                      <CourseCard course={course} />
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious className="hidden md:flex -left-12 bg-white" />
+                <CarouselNext className="hidden md:flex -right-12 bg-white" />
+              </Carousel>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

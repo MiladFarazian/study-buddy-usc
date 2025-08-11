@@ -24,7 +24,7 @@ const TutorCardMobile = ({ tutor, getInitials, highlightedCourses = [] }: TutorC
         <div className="flex flex-col gap-3">
           <div className="flex items-start gap-3">
             <Avatar className="h-14 w-14 border-2 border-white shadow-md flex-shrink-0">
-              <AvatarImage src={tutor.imageUrl} alt={tutor.name} />
+              <AvatarImage src={tutor.imageUrl} alt={tutor.name} width={56} height={56} loading="lazy" decoding="async" />
               <AvatarFallback className="bg-usc-cardinal text-white text-sm">
                 {getInitials(tutor.name)}
               </AvatarFallback>

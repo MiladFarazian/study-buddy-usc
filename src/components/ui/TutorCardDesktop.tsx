@@ -28,7 +28,7 @@ const TutorCardDesktop = ({
         <div className="flex flex-col gap-4 md:gap-6">
           <div className="flex items-start gap-3 md:gap-4">
             <Avatar className="h-16 w-16 md:h-20 md:w-20 border-2 border-white shadow-md flex-shrink-0">
-              <AvatarImage src={tutor.imageUrl} alt={tutor.name} />
+              <AvatarImage src={tutor.imageUrl} alt={tutor.name} width={80} height={80} loading="lazy" decoding="async" />
               <AvatarFallback className="bg-usc-cardinal text-white text-lg md:text-xl">
                 {getInitials(tutor.name)}
               </AvatarFallback>
