@@ -14,8 +14,8 @@ export const TutorSubjectsSection = ({ subjects }: TutorSubjectsSectionProps) =>
         {subjects.map((subject) => (
           <Badge
             key={subject.code}
-            variant="outline"
-            className="bg-red-50 hover:bg-red-100 text-usc-cardinal border-red-100 text-sm py-1 px-3"
+            variant="secondary"
+            className="text-sm py-1 px-3 hover:bg-secondary"
           >
             {subject.code} - {subject.name}
           </Badge>
