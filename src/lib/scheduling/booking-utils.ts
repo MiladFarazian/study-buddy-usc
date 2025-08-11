@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { SessionDetails, SessionType } from "./types/booking";
-import { sendSessionBookingNotification } from "@/lib/notification-utils";
+import { sendSessionBookingNotification, sendSessionBookedStudentNotification } from "@/lib/notification-utils";
 import { format } from "date-fns";
 import { createZoomMeeting as createZoomMeetingAPI, getDurationFromSession, getUserTimezone, updateZoomMeeting as updateZoomMeetingAPI, deleteZoomMeeting as deleteZoomMeetingAPI } from "@/lib/zoomAPI";
 import { sendBookingConfirmation, sendRescheduleNotification, sendCancellationNotification } from "@/lib/emailService";
@@ -159,6 +159,25 @@ export async function createSessionBooking(
       } catch (notifError) {
         console.error("Error creating booking notification:", notifError);
         // Don't block the booking process if notification fails
+      }
+
+      // Also create an in-app notification for the student
+      try {
+        await sendSessionBookedStudentNotification({
+          studentId,
+          tutorName,
+          sessionId: data.id,
+          sessionDate: formattedDate,
+          startTime: formattedStartTime,
+          endTime: formattedEndTime,
+          courseName,
+          location,
+          sessionType,
+          zoomJoinUrl
+        });
+        console.log("[createSessionBooking] Booking notification created for student");
+      } catch (notifError) {
+        console.error("Error creating student booking notification:", notifError);
       }
     }
 

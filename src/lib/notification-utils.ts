@@ -309,6 +309,73 @@ export async function sendSessionBookingNotification(params: SessionBookingNotif
   }
 }
 
+// Send session booking notification to student (in-app)
+export async function sendSessionBookedStudentNotification(params: {
+  studentId: string;
+  tutorName: string;
+  sessionId: string;
+  sessionDate: string;
+  startTime: string;
+  endTime: string;
+  courseName: string;
+  location?: string | null;
+  sessionType: SessionType;
+  zoomJoinUrl?: string | null;
+}): Promise<boolean> {
+  try {
+    // Check if the student has booking notifications enabled (defaults to true)
+    const { data: preferences } = await supabase
+      .from('notification_preferences')
+      .select('booking_notifications')
+      .eq('user_id', params.studentId)
+      .maybeSingle();
+
+    const bookingNotificationsEnabled = preferences?.booking_notifications !== false;
+    if (!bookingNotificationsEnabled) {
+      console.log(`Student ${params.studentId} has booking notifications disabled`);
+      return false;
+    }
+
+    // Prepare location text based on session type
+    let locationText = 'Not specified';
+    if (params.sessionType === SessionType.VIRTUAL) {
+      locationText = 'Virtual (Zoom)';
+    } else if (params.location) {
+      locationText = params.location;
+    }
+
+    const { error: notificationError } = await supabase
+      .from('notifications')
+      .insert({
+        user_id: params.studentId,
+        type: 'session_booked',
+        title: 'Your session is booked',
+        message: `Your session with ${params.tutorName} on ${params.sessionDate} from ${params.startTime} to ${params.endTime} for ${params.courseName} is confirmed.`,
+        metadata: {
+          session_id: params.sessionId,
+          session_date: params.sessionDate,
+          start_time: params.startTime,
+          end_time: params.endTime,
+          course_name: params.courseName,
+          tutor_name: params.tutorName,
+          location: locationText,
+          session_type: params.sessionType,
+          zoom_link: params.zoomJoinUrl || null,
+        },
+      });
+
+    if (notificationError) {
+      console.error('Error creating student booking notification:', notificationError);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Failed to create student booking notification:', error);
+    return false;
+  }
+}
+
 // Send session reminder notification
 export async function sendSessionReminder({
   userId,

@@ -566,6 +566,8 @@ export type Database = {
           location: string | null
           notes: string | null
           payment_status: string | null
+          reminder_1h_sent_at: string | null
+          reminder_24h_sent_at: string | null
           session_type: string | null
           start_time: string
           status: Database["public"]["Enums"]["session_status"] | null
@@ -593,6 +595,8 @@ export type Database = {
           location?: string | null
           notes?: string | null
           payment_status?: string | null
+          reminder_1h_sent_at?: string | null
+          reminder_24h_sent_at?: string | null
           session_type?: string | null
           start_time: string
           status?: Database["public"]["Enums"]["session_status"] | null
@@ -620,6 +624,8 @@ export type Database = {
           location?: string | null
           notes?: string | null
           payment_status?: string | null
+          reminder_1h_sent_at?: string | null
+          reminder_24h_sent_at?: string | null
           session_type?: string | null
           start_time?: string
           status?: Database["public"]["Enums"]["session_status"] | null
