@@ -93,11 +93,11 @@ export const SessionList = ({ sessions, loading, onCancelSession, onBookSession 
   
   const confirmCancelSession = () => {
     if (!selectedSessionId) return;
+    console.log('[UI] Confirming cancellation for session:', selectedSessionId);
     onCancelSession(selectedSessionId);
     setShowDialog(false);
     setSelectedSessionId(null);
   };
-
   return (
     <>
       <Tabs defaultValue="upcoming">
