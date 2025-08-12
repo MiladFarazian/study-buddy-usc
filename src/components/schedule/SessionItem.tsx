@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 import { SessionCalendarDialog } from "./SessionCalendarDialog";
 import { ZoomMeetingActions } from "@/components/zoom/ZoomMeetingActions";
+import { RescheduleDialog } from "./RescheduleDialog";
 
 interface SessionItemProps {
   session: Session;
@@ -29,7 +30,8 @@ export const SessionItem = ({
 }: SessionItemProps) => {
   const { user, isTutor } = useAuth();
   const [showCalendarDialog, setShowCalendarDialog] = useState(false);
-  
+  const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
+
   const isUserTutor = user?.id === session.tutor_id;
   const roleStyleClass = isUserTutor 
     ? "border-l-4 border-usc-cardinal" 
@@ -173,7 +175,7 @@ export const SessionItem = ({
                 <Calendar className="h-4 w-4" />
                 Add to Calendar
               </Button>
-              <Button variant="outline" size="sm">Reschedule</Button>
+              <Button variant="outline" size="sm" onClick={() => setShowRescheduleDialog(true)}>Reschedule</Button>
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -205,6 +207,12 @@ export const SessionItem = ({
         session={session}
         open={showCalendarDialog}
         onClose={() => setShowCalendarDialog(false)}
+      />
+
+      <RescheduleDialog
+        session={session}
+        open={showRescheduleDialog}
+        onClose={() => setShowRescheduleDialog(false)}
       />
     </div>
   );
