@@ -143,15 +143,14 @@ serve(async (req) => {
             .from('sessions')
             .update({
               payment_status: 'paid',
-              status: 'confirmed',
               updated_at: new Date().toISOString()
             })
             .eq('id', sessionId);
 
           if (sessionUpdateError) {
-            console.error('Error updating session status:', sessionUpdateError);
+            console.error('Error updating session payment_status:', sessionUpdateError);
           } else {
-            console.log(`Updated session ${sessionId} status to confirmed`);
+            console.log(`Updated session ${sessionId} payment_status to paid`);
           }
         }
         break;

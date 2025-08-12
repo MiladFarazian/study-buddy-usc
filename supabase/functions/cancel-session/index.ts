@@ -30,12 +30,14 @@ serve(async (req) => {
     // Fetch session details (service role bypasses RLS)
     const { data: session, error: fetchError } = await supabase
       .from('sessions')
-      .select('id, session_type, zoom_meeting_id')
+      .select('id, session_type, zoom_meeting_id, status')
       .eq('id', session_id)
       .maybeSingle();
 
     if (fetchError) throw fetchError;
     if (!session) return new Response(JSON.stringify({ success: false, error: 'Session not found' }), { status: 404, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+
+    console.log('[cancel-session] Cancelling session', session_id, 'current status:', session.status, 'type:', session.session_type, 'zoom:', !!session.zoom_meeting_id);
 
     // Try to delete Zoom meeting if present (best effort)
     if ((session.session_type === 'virtual' || session.session_type === 'VIRTUAL') && session.zoom_meeting_id) {
