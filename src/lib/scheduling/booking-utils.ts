@@ -319,34 +319,21 @@ export async function rescheduleSessionBooking(
 
 export async function cancelSessionBooking(sessionId: string): Promise<boolean> {
   try {
-    const { data: session, error: fetchError } = await supabase
-      .from('sessions')
-      .select('id, session_type, zoom_meeting_id')
-      .eq('id', sessionId)
-      .single();
-    if (fetchError || !session) throw fetchError || new Error('Session not found');
+    // Use privileged edge function to avoid client-side RLS conflicts
+    const resp = await supabase.functions.invoke('cancel-session', {
+      body: { session_id: sessionId }
+    });
 
-    if ((session.session_type === 'virtual' || session.session_type === SessionType.VIRTUAL) && session.zoom_meeting_id) {
-      const resp = await deleteZoomMeetingAPI(session.zoom_meeting_id);
-      if (resp?.error) {
-        console.error('[cancelSessionBooking] Zoom delete error:', resp.error);
-      }
+    if (resp.error) {
+      console.error('[cancelSessionBooking] Edge function error:', resp.error);
+      return false;
+    }
+    if (!resp.data?.success) {
+      console.error('[cancelSessionBooking] Cancellation failed:', resp.data);
+      return false;
     }
 
-    const { error: updateError } = await supabase
-      .from('sessions')
-      .update({
-        status: 'cancelled',
-        zoom_meeting_id: null,
-        zoom_join_url: null,
-        zoom_start_url: null,
-        zoom_password: null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', sessionId);
-    if (updateError) throw updateError;
-
-    // Non-blocking email notification
+    // Non-blocking email notification (server also clears Zoom)
     try {
       await sendCancellationNotification(sessionId);
     } catch (e) {
@@ -355,7 +342,7 @@ export async function cancelSessionBooking(sessionId: string): Promise<boolean> 
 
     return true;
   } catch (e) {
-    console.error('Failed to cancel session:', e);
+    console.error('Failed to cancel session via edge function:', e);
     return false;
   }
 }
