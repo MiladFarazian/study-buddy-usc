@@ -49,18 +49,6 @@ export const SessionManager = () => {
     }
   }, [user, loadSessions]);
   
-  // Add an effect to automatically refresh sessions periodically
-  useEffect(() => {
-    if (!user) return;
-    
-    // Refresh sessions every 15 seconds
-    const intervalId = setInterval(() => {
-      loadSessions();
-    }, 15000);
-    
-    return () => clearInterval(intervalId);
-  }, [user, loadSessions]);
-  
   // Subscribe to session changes using Supabase realtime
   useEffect(() => {
     if (!user) return;
@@ -74,12 +62,20 @@ export const SessionManager = () => {
           event: '*', 
           schema: 'public', 
           table: 'sessions',
-          filter: `student_id=eq.${user.id}` 
+          filter: `student_id=eq.${user.id},tutor_id=eq.${user.id}` 
         },
         (payload) => {
           console.log('Session change detected:', payload);
-          // Reload sessions when a change is detected
-          loadSessions();
+          // Update sessions state directly instead of full reload
+          if (payload.eventType === 'INSERT' && payload.new) {
+            setSessions(prev => [...prev, payload.new as Session]);
+          } else if (payload.eventType === 'UPDATE' && payload.new) {
+            setSessions(prev => prev.map(session => 
+              session.id === payload.new.id ? payload.new as Session : session
+            ));
+          } else if (payload.eventType === 'DELETE' && payload.old) {
+            setSessions(prev => prev.filter(session => session.id !== payload.old.id));
+          }
         }
       )
       .subscribe();
@@ -87,7 +83,7 @@ export const SessionManager = () => {
     return () => {
       supabase.removeChannel(subscription);
     };
-  }, [user, loadSessions]);
+  }, [user]);
   
   const handleBookNewSession = () => {
     navigate('/tutors');
@@ -117,8 +113,7 @@ export const SessionManager = () => {
         description: "Your session has been cancelled successfully.",
       });
 
-      // Reload sessions to ensure UI is in sync with the database
-      loadSessions();
+      // Session state already updated above, no need to reload
     } catch (error) {
       console.error("Error cancelling session:", error);
       toast({
