@@ -17,6 +17,8 @@ export interface Session {
   session_type?: SessionType;
   zoom_meeting_id?: string | null;
   zoom_join_url?: string | null;
+  zoom_start_url?: string | null;
+  zoom_password?: string | null;
   tutor?: {
     id: string;
     first_name: string | null;

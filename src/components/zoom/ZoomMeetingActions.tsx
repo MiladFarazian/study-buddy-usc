@@ -15,9 +15,9 @@ interface ZoomMeetingActionsProps {
 export const ZoomMeetingActions: React.FC<ZoomMeetingActionsProps> = ({ session, isTutor = false, compact = false }) => {
   const isVirtual = (session.session_type || "in_person") === "virtual";
   const joinUrl = session.zoom_join_url || undefined;
-  const startUrl = (session as any).zoom_start_url || undefined;
+  const startUrl = session.zoom_start_url || undefined;
   const meetingId = session.zoom_meeting_id || undefined;
-  const password = (session as any).zoom_password || undefined;
+  const password = session.zoom_password || undefined;
 
   const { canJoinNow } = useJoinWindow(session.start_time, session.end_time, 10);
   const countdown = useCountdown(session.start_time);
