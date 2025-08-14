@@ -89,7 +89,7 @@ export const ZoomMeetingActions: React.FC<ZoomMeetingActionsProps> = ({ session,
       {/* Primary actions */}
       <div className={`flex ${compact ? "flex-col sm:flex-row" : "flex-col sm:flex-row"} gap-2`}>
         {isTutor ? (
-          <Button asChild disabled={!canJoinNow || !startUrl} className="sm:flex-1">
+          <Button asChild disabled={!startUrl} className="sm:flex-1">
             <a href={startUrl || "#"} target="_blank" rel="noopener noreferrer">
               <PlayCircle className="h-4 w-4 mr-2" />
               {canJoinNow ? "Start Meeting" : "Start (available soon)"}
