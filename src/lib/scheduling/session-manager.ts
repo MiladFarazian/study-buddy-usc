@@ -57,7 +57,7 @@ export async function getTutorBookedSessions(
 
 /**
  * Fetch ALL sessions for a specific user (both as tutor AND student)
- * Optimized version with a single join query instead of multiple separate queries
+ * Optimized version with batched course lookups to prevent N+1 queries
  */
 export async function getUserSessions(
   userId: string,
@@ -66,7 +66,7 @@ export async function getUserSessions(
   try {
     console.log("Getting sessions for user:", userId);
     
-    // Make two queries - one for sessions where user is tutor, one where user is student
+    // Single optimized query with all joins
     const { data: sessions, error } = await supabase
       .from('sessions')
       .select(`
@@ -84,7 +84,7 @@ export async function getUserSessions(
           avatar_url
         )
       `)
-      .or(`tutor_id.eq.${userId},student_id.eq.${userId}`) // Get sessions where user is either tutor or student
+      .or(`tutor_id.eq.${userId},student_id.eq.${userId}`)
       .order('start_time', { ascending: true });
     
     if (error) {
@@ -99,47 +99,55 @@ export async function getUserSessions(
     
     console.log(`Found ${sessions.length} sessions for user ${userId}`);
     
-    // Process the sessions to include course information if needed
-    const processedSessions: Session[] = [];
+    // Extract unique course IDs for batch lookup
+    const courseIds = [...new Set(sessions
+      .map(session => session.course_id)
+      .filter(Boolean)
+    )];
     
-    for (const session of sessions) {
-      // Format the session with default course details
+    // Batch fetch all course details at once
+    let courseMap = new Map();
+    if (courseIds.length > 0) {
+      try {
+        const { data: courses } = await supabase
+          .from('courses-20251')
+          .select('Course number, Course title')
+          .in('Course number', courseIds);
+          
+        if (courses) {
+          courseMap = new Map(
+            courses.map(course => [
+              course["Course number"], 
+              course["Course title"] || ''
+            ])
+          );
+        }
+      } catch (courseError) {
+        console.warn("Error batch fetching course details:", courseError);
+      }
+    }
+    
+    // Process sessions with pre-fetched course data
+    const processedSessions: Session[] = sessions.map(session => {
       let courseDetails = null;
       
-      // If there's a course ID, use it directly since it's now a text field
       if (session.course_id) {
         courseDetails = {
           id: session.course_id,
           course_number: session.course_id,
-          course_title: '' 
+          course_title: courseMap.get(session.course_id) || ''
         };
-        
-        // Try to get the course title if available
-        try {
-          const { data: courseData } = await supabase
-            .from('courses-20251')
-            .select('Course number, Course title')
-            .eq('Course number', session.course_id)
-            .maybeSingle();
-            
-          if (courseData) {
-            courseDetails.course_title = courseData["Course title"] || '';
-          }
-        } catch (courseError) {
-          console.warn("Error fetching course details:", courseError);
-        }
       }
       
-      // Convert session_type string to SessionType enum
       const sessionType = session.session_type === 'virtual' ? 
         SessionType.VIRTUAL : SessionType.IN_PERSON;
       
-      processedSessions.push({
+      return {
         ...session,
         course: courseDetails,
         session_type: sessionType
-      });
-    }
+      };
+    });
     
     console.log("Processed sessions:", processedSessions);
     return processedSessions;
