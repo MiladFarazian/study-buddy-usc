@@ -8,6 +8,10 @@ import { useState } from "react";
 import { SessionCalendarDialog } from "./SessionCalendarDialog";
 import { ZoomMeetingActions } from "@/components/zoom/ZoomMeetingActions";
 import { RescheduleDialog } from "./RescheduleDialog";
+import { StudentReviewModal } from "@/components/reviews/StudentReviewModal";
+import { TutorReviewModal } from "@/components/reviews/TutorReviewModal";
+import { Tutor } from "@/types/tutor";
+import { Profile } from "@/integrations/supabase/types-extension";
 
 interface SessionItemProps {
   session: Session;
@@ -31,6 +35,8 @@ export const SessionItem = ({
   const { user, isTutor } = useAuth();
   const [showCalendarDialog, setShowCalendarDialog] = useState(false);
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
+  const [showStudentReviewModal, setShowStudentReviewModal] = useState(false);
+  const [showTutorReviewModal, setShowTutorReviewModal] = useState(false);
 
   const isUserTutor = user?.id === session.tutor_id;
   const roleStyleClass = isUserTutor 
@@ -187,8 +193,12 @@ export const SessionItem = ({
             </>
           )}
           {variant === 'past' && (
-            <Button variant="outline" size="sm">
-              {isUserTutor ? "View Session" : "Leave Review"}
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => isUserTutor ? setShowTutorReviewModal(true) : setShowStudentReviewModal(true)}
+            >
+              {isUserTutor ? "Review Student" : "Review Tutor"}
             </Button>
           )}
           {variant === 'cancelled' && (
@@ -214,6 +224,51 @@ export const SessionItem = ({
         open={showRescheduleDialog}
         onClose={() => setShowRescheduleDialog(false)}
       />
+
+      {/* Student Review Modal */}
+      {!isUserTutor && session.tutor && (
+        <StudentReviewModal
+          isOpen={showStudentReviewModal}
+          onClose={() => setShowStudentReviewModal(false)}
+          session={session}
+          tutor={{
+            id: session.tutor.id,
+            name: `${session.tutor.first_name || ''} ${session.tutor.last_name || ''}`.trim(),
+            firstName: session.tutor.first_name || '',
+            lastName: session.tutor.last_name || '',
+            field: '', // We don't have this in session data
+            rating: 0, // We don't have this in session data
+            hourlyRate: 0, // We don't have this in session data
+            subjects: [], // We don't have this in session data
+            imageUrl: session.tutor.avatar_url || '',
+            bio: '', // We don't have this in session data
+            graduationYear: '', // We don't have this in session data
+          } as Tutor}
+          onReviewSubmitted={() => {
+            setShowStudentReviewModal(false);
+            // Could add a refresh callback here if needed
+          }}
+        />
+      )}
+
+      {/* Tutor Review Modal */}
+      {isUserTutor && session.student && (
+        <TutorReviewModal
+          isOpen={showTutorReviewModal}
+          onClose={() => setShowTutorReviewModal(false)}
+          session={session}
+          student={{
+            id: session.student.id,
+            first_name: session.student.first_name,
+            last_name: session.student.last_name,
+            avatar_url: session.student.avatar_url,
+          } as Profile}
+          onSubmitComplete={() => {
+            setShowTutorReviewModal(false);
+            // Could add a refresh callback here if needed
+          }}
+        />
+      )}
     </div>
   );
 };
