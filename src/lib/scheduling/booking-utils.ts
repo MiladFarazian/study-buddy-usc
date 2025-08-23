@@ -24,6 +24,18 @@ export async function createSessionBooking(
   sessionType: SessionType = SessionType.IN_PERSON
 ): Promise<SessionDetails | null> {
   try {
+    // Validate that session is not in the past
+    const sessionStart = new Date(startTime);
+    const now = new Date();
+    
+    if (sessionStart <= now) {
+      console.error("[createSessionBooking] Cannot book session in the past:", {
+        sessionStart: sessionStart.toISOString(),
+        now: now.toISOString()
+      });
+      throw new Error("Cannot book sessions in the past");
+    }
+
     console.log("[createSessionBooking] Creating session with params:", {
       student_id: studentId,
       tutor_id: tutorId,

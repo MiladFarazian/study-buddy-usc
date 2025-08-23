@@ -62,23 +62,54 @@ export const SessionManager = () => {
           event: '*', 
           schema: 'public', 
           table: 'sessions',
-          filter: `student_id=eq.${user.id},tutor_id=eq.${user.id}` 
+          filter: `student_id=eq.${user.id}` 
         },
         (payload) => {
-          console.log('Session change detected:', payload);
-          // Update sessions state directly instead of full reload
-          if (payload.eventType === 'INSERT' && payload.new) {
-            setSessions(prev => [...prev, payload.new as Session]);
-          } else if (payload.eventType === 'UPDATE' && payload.new) {
-            setSessions(prev => prev.map(session => 
-              session.id === payload.new.id ? payload.new as Session : session
-            ));
-          } else if (payload.eventType === 'DELETE' && payload.old) {
-            setSessions(prev => prev.filter(session => session.id !== payload.old.id));
-          }
+          console.log('Session change detected (student):', payload);
+          handleRealtimeUpdate(payload);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'sessions',
+          filter: `tutor_id=eq.${user.id}` 
+        },
+        (payload) => {
+          console.log('Session change detected (tutor):', payload);
+          handleRealtimeUpdate(payload);
         }
       )
       .subscribe();
+
+    const handleRealtimeUpdate = async (payload: any) => {
+      if (payload.eventType === 'INSERT' && payload.new) {
+        // For new sessions, we need to fetch complete data with relations
+        try {
+          const userSessions = await getUserSessions(user.id, !!isTutor);
+          const newSession = userSessions.find(s => s.id === payload.new.id);
+          if (newSession) {
+            setSessions(prev => {
+              // Check if session already exists to avoid duplicates
+              const exists = prev.some(session => session.id === newSession.id);
+              return exists ? prev : [...prev, newSession];
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching new session data:', error);
+        }
+      } else if (payload.eventType === 'UPDATE' && payload.new) {
+        setSessions(prev => prev.map(session => 
+          session.id === payload.new.id 
+            ? { ...session, ...payload.new } 
+            : session
+        ));
+      } else if (payload.eventType === 'DELETE' && payload.old) {
+        setSessions(prev => prev.filter(session => session.id !== payload.old.id));
+      }
+    };
     
     return () => {
       supabase.removeChannel(subscription);

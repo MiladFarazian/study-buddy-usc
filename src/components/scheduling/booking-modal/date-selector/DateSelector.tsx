@@ -51,6 +51,14 @@ export function DateSelector({
 
   // Function to determine if a date has available slots
   const hasAvailableSlots = (day: Date): boolean => {
+    // Prevent booking sessions in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Start of today
+    
+    if (day < today) {
+      return false;
+    }
+    
     return availableDates.some(availableDate => isSameDay(availableDate, day));
   };
   
@@ -169,7 +177,17 @@ export function DateSelector({
             mode="single"
             selected={date}
             onSelect={(selectedDate) => selectedDate && onDateChange(selectedDate)}
-            disabled={day => !hasAvailableSlots(day)}
+            disabled={day => {
+              // Prevent selection of past dates
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              
+              if (day < today) {
+                return true;
+              }
+              
+              return !hasAvailableSlots(day);
+            }}
             initialFocus={true}
             className="mx-auto"
           />
