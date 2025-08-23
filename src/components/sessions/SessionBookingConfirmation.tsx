@@ -163,6 +163,7 @@ export function SessionBookingConfirmation({
                   <Button 
                     variant="outline" 
                     onClick={() => {
+                      handleClose();
                       navigate('/schedule', { state: { fromBooking: true } });
                     }}
                     className="flex-1"
