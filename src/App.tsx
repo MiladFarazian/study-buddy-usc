@@ -30,6 +30,7 @@ import AuthCallback from "./pages/AuthCallback";
 import BookingCalendly from "./pages/BookingCalendly";
 import Analytics from "./pages/Analytics";
 import BadgesDashboard from "./pages/TutorDashboard/BadgesDashboard";
+import StripeTestInterface from "./pages/StripeTestInterface";
 
 const router = createBrowserRouter([
   {
@@ -121,6 +122,10 @@ const router = createBrowserRouter([
       {
         path: "/badges",
         element: <PrivateRoute><RequireProfileCompletion><BadgesDashboard /></RequireProfileCompletion></PrivateRoute>
+      },
+      {
+        path: "/stripe-test",
+        element: <PrivateRoute><RequireProfileCompletion><StripeTestInterface /></RequireProfileCompletion></PrivateRoute>
       },
       {
         path: "*",
