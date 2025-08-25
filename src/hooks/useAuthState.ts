@@ -72,13 +72,13 @@ export const useAuthState = () => {
         last_name: profile.last_name,
         major: profile.major,
         role: profile.role,
-        isComplete: !!(profile.first_name && profile.last_name && profile.major)
+        isComplete: !!(profile.first_name && profile.last_name && profile.major && profile.graduation_year)
       });
     }
   }, [profile]);
 
   // Calculate profile completeness and role flags
-  const isProfileComplete = !!profile && !!profile.first_name && !!profile.last_name && !!profile.major;
+  const isProfileComplete = !!profile && !!profile.first_name && !!profile.last_name && !!profile.major && !!profile.graduation_year;
   const isStudent = profile?.role === 'student';
   const isTutor = profile?.role === 'tutor';
 

@@ -28,7 +28,7 @@ export const useAuthRedirect = (redirectPath: string, requireAuth: boolean = fal
         profile.first_name &&
         profile.last_name &&
         profile.major &&
-        profile.bio
+        profile.graduation_year
       ));
     };
 
