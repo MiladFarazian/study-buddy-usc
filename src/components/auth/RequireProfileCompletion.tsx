@@ -27,10 +27,12 @@ const RequireProfileCompletion = ({ children }: RequireProfileCompletionProps) =
   // 3. User is on the schedule page
   // 4. User is on the verify-email page
   // 5. User is on the auth callback page
+  // 6. User is on the stripe-test page (for debugging)
   if (
     !user || 
     location.pathname === "/profile" || 
     location.pathname === "/schedule" ||
+    location.pathname === "/stripe-test" ||
     location.pathname === "/verify-email" || 
     location.pathname.includes("/auth/callback")
   ) {
