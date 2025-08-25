@@ -39,7 +39,6 @@ const RequireProfileCompletion = ({ children }: RequireProfileCompletionProps) =
 
   // If profile is incomplete, redirect to the profile page
   if (!isProfileComplete) {
-    console.log("Profile incomplete, redirecting to profile page", profile);
     return <Navigate to="/profile" state={{ requireCompletion: true }} replace />;
   }
 

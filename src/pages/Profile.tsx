@@ -22,7 +22,8 @@ const Profile = () => {
   const [removingCourse, setRemovingCourse] = useState<string | null>(null);
   const location = useLocation();
 
-  const requireProfileCompletion = location.state?.requireCompletion || !isProfileComplete;
+  // Only show completion alert if profile is actually incomplete
+  const shouldShowCompletionAlert = !isProfileComplete;
 
   // Unified profile editor state (shared with Settings)
   const {
@@ -124,7 +125,7 @@ const Profile = () => {
     <div className="container py-8 pb-20">
       <ProfileHeader title="Your Profile" />
 
-      {requireProfileCompletion && (
+      {shouldShowCompletionAlert && (
         <Alert variant="default" className="mb-6 bg-amber-50 border-amber-200">
           <AlertTriangle className="h-5 w-5 text-amber-600" />
           <AlertTitle className="text-amber-800">Profile Completion Required</AlertTitle>
