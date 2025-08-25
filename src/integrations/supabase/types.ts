@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -658,22 +658,28 @@ export type Database = {
       }
       student_reviews: {
         Row: {
+          came_prepared: number | null
           comfortable_asking_questions:
             | Database["public"]["Enums"]["comfortable_asking_questions"]
             | null
           confidence_improvement: number | null
           created_at: string
           emotional_support: number | null
+          engagement_level: number | null
           felt_judged: boolean | null
           learning_anxiety_reduction: number | null
+          motivation_effort: number | null
           overall_wellbeing_impact: number | null
+          respectful: number | null
           review_id: string
           session_id: string
           stress_after: number | null
           stress_before: number | null
           student_id: string
+          student_showed_up: boolean | null
           subject_clarity: number | null
           teaching_quality: number | null
+          tutor_feedback: string | null
           tutor_id: string
           tutor_showed_up: boolean
           updated_at: string
@@ -681,22 +687,28 @@ export type Database = {
           written_feedback: string | null
         }
         Insert: {
+          came_prepared?: number | null
           comfortable_asking_questions?:
             | Database["public"]["Enums"]["comfortable_asking_questions"]
             | null
           confidence_improvement?: number | null
           created_at?: string
           emotional_support?: number | null
+          engagement_level?: number | null
           felt_judged?: boolean | null
           learning_anxiety_reduction?: number | null
+          motivation_effort?: number | null
           overall_wellbeing_impact?: number | null
+          respectful?: number | null
           review_id?: string
           session_id: string
           stress_after?: number | null
           stress_before?: number | null
           student_id: string
+          student_showed_up?: boolean | null
           subject_clarity?: number | null
           teaching_quality?: number | null
+          tutor_feedback?: string | null
           tutor_id: string
           tutor_showed_up: boolean
           updated_at?: string
@@ -704,22 +716,28 @@ export type Database = {
           written_feedback?: string | null
         }
         Update: {
+          came_prepared?: number | null
           comfortable_asking_questions?:
             | Database["public"]["Enums"]["comfortable_asking_questions"]
             | null
           confidence_improvement?: number | null
           created_at?: string
           emotional_support?: number | null
+          engagement_level?: number | null
           felt_judged?: boolean | null
           learning_anxiety_reduction?: number | null
+          motivation_effort?: number | null
           overall_wellbeing_impact?: number | null
+          respectful?: number | null
           review_id?: string
           session_id?: string
           stress_after?: number | null
           stress_before?: number | null
           student_id?: string
+          student_showed_up?: boolean | null
           subject_clarity?: number | null
           teaching_quality?: number | null
+          tutor_feedback?: string | null
           tutor_id?: string
           tutor_showed_up?: boolean
           updated_at?: string
@@ -946,7 +964,7 @@ export type Database = {
         Returns: undefined
       }
       check_column_exists: {
-        Args: { table_name: string; column_name: string }
+        Args: { column_name: string; table_name: string }
         Returns: boolean
       }
       execute_sql: {
@@ -956,8 +974,8 @@ export type Database = {
       list_term_tables: {
         Args: Record<PropertyKey, never>
         Returns: {
-          term_code: string
           table_name: string
+          term_code: string
         }[]
       }
       retroactive_badge_award: {

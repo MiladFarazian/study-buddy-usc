@@ -8,7 +8,7 @@ import { CheckCircle, Star, User, Calendar, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useAuthState } from "@/hooks/useAuthState";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface TutorReviewSubmissionStepProps {
   session: Session;
@@ -24,7 +24,7 @@ export function TutorReviewSubmissionStep({
   onComplete
 }: TutorReviewSubmissionStepProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user } = useAuthState();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   const handleSubmit = async () => {
@@ -40,6 +40,13 @@ export function TutorReviewSubmissionStep({
     setIsSubmitting(true);
 
     try {
+      console.log("Submitting tutor review with data:", {
+        session_id: session.id,
+        student_id: session.student_id,
+        tutor_id: session.tutor_id,
+        reviewData
+      });
+
       // Insert tutor review into student_reviews table (from tutor perspective)
       const reviewRecord = {
         session_id: session.id,
@@ -58,7 +65,12 @@ export function TutorReviewSubmissionStep({
         .from("student_reviews")
         .insert(reviewRecord);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Database error inserting tutor review:", error);
+        throw new Error(`Database error: ${error.message}`);
+      }
+
+      console.log("Tutor review submitted successfully");
 
       toast({
         title: "Review submitted successfully",
@@ -69,10 +81,23 @@ export function TutorReviewSubmissionStep({
 
       onComplete();
     } catch (error) {
-      console.error("Error submitting review:", error);
+      console.error("Error submitting tutor review:", error);
+      
+      let errorMessage = "Failed to submit your review. Please try again.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes("violates row-level security")) {
+          errorMessage = "You don't have permission to submit this review. Please make sure you're the tutor for this session.";
+        } else if (error.message.includes("duplicate key")) {
+          errorMessage = "A review has already been submitted for this session.";
+        } else if (error.message.includes("foreign key")) {
+          errorMessage = "Invalid session or user information. Please refresh and try again.";
+        }
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to submit your review. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
