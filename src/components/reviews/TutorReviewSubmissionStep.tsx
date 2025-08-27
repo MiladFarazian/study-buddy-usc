@@ -28,7 +28,10 @@ export function TutorReviewSubmissionStep({
   const { toast } = useToast();
 
   const handleSubmit = async () => {
+    console.log("Submit button clicked, user:", user);
+    
     if (!user) {
+      console.log("No user found, showing authentication error");
       toast({
         title: "Authentication required",
         description: "Please sign in to submit your review",
