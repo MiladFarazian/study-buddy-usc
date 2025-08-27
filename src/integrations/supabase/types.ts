@@ -748,7 +748,7 @@ export type Database = {
           {
             foreignKeyName: "student_reviews_session_id_fkey"
             columns: ["session_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "sessions"
             referencedColumns: ["id"]
           },

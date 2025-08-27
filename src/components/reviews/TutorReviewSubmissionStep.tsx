@@ -67,6 +67,12 @@ export function TutorReviewSubmissionStep({
 
       if (error) {
         console.error("Database error inserting tutor review:", error);
+        
+        // Handle specific database errors
+        if (error.code === '23505' && error.message.includes('unique_reviewer_session')) {
+          throw new Error("You have already submitted a review for this session.");
+        }
+        
         throw new Error(`Database error: ${error.message}`);
       }
 
