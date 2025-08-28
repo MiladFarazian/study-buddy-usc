@@ -3,6 +3,8 @@ import { useEffect } from "react";
 import { RouterProvider, createBrowserRouter, Outlet } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { SessionBookingProvider } from "./contexts/SessionBookingContext";
+import { ReviewProvider } from "./contexts/ReviewContext";
+import { GlobalReviewModal } from "./components/reviews/GlobalReviewModal";
 import { Toaster } from "./components/ui/toaster";
 import { ReviewRequirement } from "./components/reviews";
 import Layout from "./components/layout/Layout";
@@ -143,11 +145,14 @@ function App() {
   return (
     <>
       <AuthProvider>
-        <SessionBookingProvider>
-          <RouterProvider router={router} />
-          <ReviewRequirement />
-          <Toaster />
-        </SessionBookingProvider>
+        <ReviewProvider>
+          <SessionBookingProvider>
+            <RouterProvider router={router} />
+            <ReviewRequirement />
+            <GlobalReviewModal />
+            <Toaster />
+          </SessionBookingProvider>
+        </ReviewProvider>
       </AuthProvider>
     </>
   );

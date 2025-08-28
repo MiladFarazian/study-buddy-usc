@@ -8,8 +8,7 @@ import { useState } from "react";
 import { SessionCalendarDialog } from "./SessionCalendarDialog";
 import { ZoomMeetingActions } from "@/components/zoom/ZoomMeetingActions";
 import { RescheduleDialog } from "./RescheduleDialog";
-import { StudentReviewModal } from "@/components/reviews/StudentReviewModal";
-import { TutorReviewModal } from "@/components/reviews/TutorReviewModal";
+import { useReview } from "@/contexts/ReviewContext";
 import { Tutor } from "@/types/tutor";
 import { Profile } from "@/integrations/supabase/types-extension";
 
@@ -33,10 +32,9 @@ export const SessionItem = ({
   onBookSession
 }: SessionItemProps) => {
   const { user, isTutor } = useAuth();
+  const { startTutorReview, startStudentReview } = useReview();
   const [showCalendarDialog, setShowCalendarDialog] = useState(false);
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
-  const [showStudentReviewModal, setShowStudentReviewModal] = useState(false);
-  const [showTutorReviewModal, setShowTutorReviewModal] = useState(false);
 
   const isUserTutor = user?.id === session.tutor_id;
   const roleStyleClass = isUserTutor 
@@ -196,7 +194,45 @@ export const SessionItem = ({
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => isUserTutor ? setShowTutorReviewModal(true) : setShowStudentReviewModal(true)}
+              onClick={() => {
+                if (isUserTutor && session.student) {
+                  const studentProfile: Profile = {
+                    id: session.student.id,
+                    first_name: session.student.first_name || '',
+                    last_name: session.student.last_name || '',
+                    avatar_url: session.student.avatar_url || '',
+                    approved_tutor: false,
+                    availability: null,
+                    average_rating: null,
+                    bio: null,
+                    created_at: new Date().toISOString(),
+                    graduation_year: null,
+                    hourly_rate: null,
+                    major: null,
+                    role: 'student' as const,
+                    stripe_connect_id: null,
+                    stripe_connect_onboarding_complete: false,
+                    subjects: null,
+                    updated_at: new Date().toISOString()
+                  };
+                  startTutorReview(session, studentProfile);
+                } else if (!isUserTutor && session.tutor) {
+                  const tutorData: Tutor = {
+                    id: session.tutor.id,
+                    name: `${session.tutor.first_name || ''} ${session.tutor.last_name || ''}`.trim(),
+                    firstName: session.tutor.first_name || '',
+                    lastName: session.tutor.last_name || '',
+                    field: '',
+                    rating: 0,
+                    hourlyRate: 0,
+                    subjects: [],
+                    imageUrl: session.tutor.avatar_url || '',
+                    bio: '',
+                    graduationYear: '',
+                  };
+                  startStudentReview(session, tutorData);
+                }
+              }}
             >
               {isUserTutor ? "Review Student" : "Review Tutor"}
             </Button>
@@ -224,51 +260,6 @@ export const SessionItem = ({
         open={showRescheduleDialog}
         onClose={() => setShowRescheduleDialog(false)}
       />
-
-      {/* Student Review Modal */}
-      {!isUserTutor && session.tutor && (
-        <StudentReviewModal
-          isOpen={showStudentReviewModal}
-          onClose={() => setShowStudentReviewModal(false)}
-          session={session}
-          tutor={{
-            id: session.tutor.id,
-            name: `${session.tutor.first_name || ''} ${session.tutor.last_name || ''}`.trim(),
-            firstName: session.tutor.first_name || '',
-            lastName: session.tutor.last_name || '',
-            field: '', // We don't have this in session data
-            rating: 0, // We don't have this in session data
-            hourlyRate: 0, // We don't have this in session data
-            subjects: [], // We don't have this in session data
-            imageUrl: session.tutor.avatar_url || '',
-            bio: '', // We don't have this in session data
-            graduationYear: '', // We don't have this in session data
-          } as Tutor}
-          onReviewSubmitted={() => {
-            setShowStudentReviewModal(false);
-            // Could add a refresh callback here if needed
-          }}
-        />
-      )}
-
-      {/* Tutor Review Modal */}
-      {isUserTutor && session.student && (
-        <TutorReviewModal
-          isOpen={showTutorReviewModal}
-          onClose={() => setShowTutorReviewModal(false)}
-          session={session}
-          student={{
-            id: session.student.id,
-            first_name: session.student.first_name,
-            last_name: session.student.last_name,
-            avatar_url: session.student.avatar_url,
-          } as Profile}
-          onSubmitComplete={() => {
-            setShowTutorReviewModal(false);
-            // Could add a refresh callback here if needed
-          }}
-        />
-      )}
     </div>
   );
 };

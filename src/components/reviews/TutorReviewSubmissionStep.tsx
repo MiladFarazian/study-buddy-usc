@@ -24,11 +24,21 @@ export function TutorReviewSubmissionStep({
   onComplete
 }: TutorReviewSubmissionStepProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { toast } = useToast();
 
   const handleSubmit = async () => {
-    console.log("Submit button clicked, user:", user);
+    console.log("Submit button clicked, user:", user, "loading:", loading);
+    
+    // Wait for auth to finish loading
+    if (loading) {
+      console.log("Auth still loading, waiting...");
+      toast({
+        title: "Please wait",
+        description: "Loading authentication...",
+      });
+      return;
+    }
     
     if (!user) {
       console.log("No user found, showing authentication error");

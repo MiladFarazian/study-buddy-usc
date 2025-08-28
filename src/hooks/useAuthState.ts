@@ -12,28 +12,17 @@ export const useAuthState = () => {
   const { profile, updateProfile } = useAuthProfile(user?.id);
 
   useEffect(() => {
+    let cleanup: (() => void) | undefined;
+    
     const initializeAuth = async () => {
       console.log("Initializing auth state...");
       
-      // First check for existing session
-      try {
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        console.log("Current session:", currentSession ? "Found" : "None");
-        
-        if (currentSession) {
-          setSession(currentSession);
-          setUser(currentSession.user);
-        }
-      } catch (error) {
-        console.error("Error fetching session:", error);
-      }
-      
-      // Set up the auth state listener
+      // Set up the auth state listener FIRST
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (event, newSession) => {
           console.log("Auth state changed:", event, newSession ? "with session" : "no session");
           
-          // Only update state, don't do any complex operations here
+          // Update state
           setSession(newSession);
           setUser(newSession?.user ?? null);
           
@@ -43,25 +32,51 @@ export const useAuthState = () => {
           } else if (event === 'SIGNED_IN' && newSession) {
             console.log("User signed in");
           }
+          
+          // Set loading to false only after we've processed the auth state
+          setLoading(false);
         }
       );
       
-      // Set loading to false after initial setup
-      setLoading(false);
-
-      return () => subscription.unsubscribe();
+      cleanup = () => subscription.unsubscribe();
+      
+      // Then check for existing session
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        console.log("Current session:", currentSession ? "Found" : "None");
+        
+        if (currentSession) {
+          setSession(currentSession);
+          setUser(currentSession.user);
+        }
+        
+        // If no session found, we're done loading
+        if (!currentSession) {
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error("Error fetching session:", error);
+        setLoading(false);
+      }
     };
 
     initializeAuth();
+    
+    return () => {
+      if (cleanup) cleanup();
+    };
   }, []);
 
-  // Update loading state based on profile data
+  // Update loading state based on profile data - only if we have a user but no profile yet
   useEffect(() => {
     if (user && profile === null) {
-      // Still loading profile data
-      return;
+      // Still loading profile data, keep loading true
+      setLoading(true);
+    } else if (user && profile) {
+      // We have both user and profile, loading is done
+      setLoading(false);
     }
-    setLoading(false);
+    // If no user, loading state is handled by auth initialization
   }, [user, profile]);
 
   // Log profile information for debugging
