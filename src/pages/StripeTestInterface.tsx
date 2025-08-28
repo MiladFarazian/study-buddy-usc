@@ -41,6 +41,16 @@ interface PendingTransfer {
   transfer_id: string;
 }
 
+interface StripeDiagnostics {
+  server_account_id: string;
+  server_secret_mode: 'test' | 'live';
+  server_publishable_key_masked: string;
+  expected_publishable_key_last4: string;
+  frontend_publishable_key_masked?: string;
+  keysMatch?: boolean;
+  frontendLast4?: string;
+}
+
 export default function StripeTestInterface() {
   const { user, profile } = useAuth();
   const [tutors, setTutors] = useState<Tutor[]>([]);
@@ -53,6 +63,11 @@ export default function StripeTestInterface() {
   const [bookingAmount, setBookingAmount] = useState<string>('50');
   const [stripeEnvironment, setStripeEnvironment] = useState<string>('loading...');
   const [secretsStatus, setSecretsStatus] = useState<any>({});
+  
+  // Diagnostics state
+  const [diagnostics, setDiagnostics] = useState<StripeDiagnostics | null>(null);
+  const [diagnosticsLoading, setDiagnosticsLoading] = useState(false);
+  const [diagnosticsError, setDiagnosticsError] = useState<string | null>(null);
 
   useEffect(() => {
     loadInitialData();
@@ -274,12 +289,108 @@ export default function StripeTestInterface() {
     }
   };
 
+  const runDiagnostics = async () => {
+    setDiagnosticsLoading(true);
+    setDiagnosticsError(null);
+    
+    try {
+      // Get frontend publishable key
+      const frontendResponse = await supabase.functions.invoke('get-stripe-config');
+      const frontendKey = frontendResponse.data?.publishableKey;
+      
+      // Get server diagnostics
+      const diagnosticsResponse = await supabase.functions.invoke('stripe-diagnostics');
+      
+      if (diagnosticsResponse.error) {
+        throw new Error(diagnosticsResponse.error.message || 'Diagnostics failed');
+      }
+      
+      const diagnosticsData = diagnosticsResponse.data;
+      
+      // Check if keys match
+      const frontendLast4 = frontendKey?.slice(-4);
+      const serverLast4 = diagnosticsData.expected_publishable_key_last4;
+      const keysMatch = frontendLast4 === serverLast4;
+      
+      setDiagnostics({
+        ...diagnosticsData,
+        keysMatch,
+        frontendLast4,
+      } as StripeDiagnostics);
+    } catch (error: any) {
+      console.error('Diagnostics error:', error);
+      setDiagnosticsError(error.message || 'Failed to run diagnostics');
+    } finally {
+      setDiagnosticsLoading(false);
+    }
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="text-center">
         <h1 className="text-3xl font-bold">Stripe Payment System Test Interface</h1>
         <p className="text-muted-foreground mt-2">Test your complete tutoring marketplace payment flow</p>
       </div>
+
+      {/* Stripe Environment Check - Dev Only */}
+      {process.env.NODE_ENV !== 'production' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>🔍 Stripe Environment Check</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-2">
+              <Button 
+                onClick={runDiagnostics} 
+                disabled={diagnosticsLoading}
+                size="sm"
+              >
+                {diagnosticsLoading ? 'Checking...' : 'Run Diagnostics'}
+              </Button>
+            </div>
+            
+            {diagnosticsError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded">
+                <p className="text-red-700 text-sm">{diagnosticsError}</p>
+              </div>
+            )}
+            
+            {diagnostics && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold">Keys Match:</span>
+                  {diagnostics.keysMatch ? (
+                    <Badge className="bg-green-100 text-green-800">✅ Yes</Badge>
+                  ) : (
+                    <Badge variant="destructive">❌ No</Badge>
+                  )}
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p><strong>Server Account:</strong> {diagnostics.server_account_id}</p>
+                    <p><strong>Server Mode:</strong> {diagnostics.server_secret_mode}</p>
+                    <p><strong>Server PK:</strong> {diagnostics.server_publishable_key_masked}</p>
+                  </div>
+                  <div>
+                    <p><strong>Frontend PK Last4:</strong> ...{diagnostics.frontendLast4}</p>
+                    <p><strong>Server PK Last4:</strong> ...{diagnostics.expected_publishable_key_last4}</p>
+                  </div>
+                </div>
+                
+                {!diagnostics.keysMatch && (
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded">
+                    <p className="text-yellow-800 text-sm">
+                      ⚠️ Frontend and server are using different Stripe accounts/sandboxes. 
+                      Payments will fail. Use the same Stripe account keys for both.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Debug Information Panel */}
       <Card>

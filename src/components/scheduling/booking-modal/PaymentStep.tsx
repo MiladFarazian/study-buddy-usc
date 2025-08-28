@@ -142,6 +142,38 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
       setIsProcessing(true);
       setPaymentError(null);
 
+      // Dev-only: Check Stripe key compatibility
+      if (process.env.NODE_ENV !== 'production') {
+        try {
+          console.debug('Running Stripe diagnostics check...');
+          const diagnosticsResponse = await supabase.functions.invoke('stripe-diagnostics');
+          
+          if (diagnosticsResponse.data && !diagnosticsResponse.error) {
+            const diagnostics = diagnosticsResponse.data;
+            console.debug('Stripe diagnostics:', diagnostics);
+            
+            // Get frontend publishable key (from same source as Stripe initialization)
+            const frontendKeyResponse = await supabase.functions.invoke('get-stripe-config');
+            if (frontendKeyResponse.data && !frontendKeyResponse.error) {
+              const frontendKey = frontendKeyResponse.data.publishableKey;
+              const frontendLast4 = frontendKey?.slice(-4);
+              const serverLast4 = diagnostics.expected_publishable_key_last4;
+              
+              if (frontendLast4 !== serverLast4) {
+                setPaymentError(
+                  `Stripe keys mismatch: frontend pk (...${frontendLast4}) ≠ server pk (...${serverLast4}). Use the same Stripe account/sandbox for both client and server.`
+                );
+                setIsProcessing(false);
+                return;
+              }
+            }
+          }
+        } catch (diagError) {
+          console.debug('Diagnostics check failed, continuing with payment:', diagError);
+          // Continue with payment if diagnostics fail
+        }
+      }
+
       console.log('Starting payment confirmation...');
       const { error: paymentError } = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
