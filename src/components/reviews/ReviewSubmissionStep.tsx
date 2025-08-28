@@ -107,7 +107,10 @@ export function ReviewSubmissionStep({
       }
 
       console.log("✅ Review submitted successfully, calling onSubmitted callback");
-      toast.success("Review submitted successfully!");
+      toast.success("Review submitted successfully!", {
+        position: "bottom-right",
+        duration: 4000,
+      });
       onSubmitted();
     } catch (error) {
       console.error("Error submitting review:", error);
