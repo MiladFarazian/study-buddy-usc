@@ -10,6 +10,17 @@ import { format } from 'date-fns';
 import { useStripeInitialization } from '@/components/scheduling/payment/hooks/useStripeInitialization';
 import { useStripeElements } from '@/components/scheduling/payment/hooks/useStripeElements';
 
+type CreatePIResponse = {
+  id?: string;
+  clientSecret?: string;
+  client_secret?: string;
+  payment_transaction_id?: string;
+  environment?: 'test'|'live';
+  two_stage_payment?: boolean;
+  error?: string;
+  [k: string]: any;
+};
+
 interface PaymentStepProps {
   onBack: () => void;
   onContinue: (sessionId: string, paymentSuccess: boolean) => void;
@@ -95,11 +106,22 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
         }
       );
 
-      if (paymentError || !paymentResponse?.clientSecret) {
+      if (paymentError) {
         throw new Error(paymentResponse?.error || 'Failed to create payment intent');
       }
 
-      setClientSecret(paymentResponse.clientSecret);
+      const data = paymentResponse as CreatePIResponse;
+      if (process.env.NODE_ENV !== 'production') console.log('PI resp', data);
+      
+      const clientSecret =
+        data.clientSecret ?? data.client_secret ?? data.payment_intent_client_secret ?? null;
+      if (!clientSecret) {
+        console.error('create-payment-intent response:', data);
+        setPaymentError('Could not get client secret from payment intent.');
+        return;
+      }
+
+      setClientSecret(clientSecret);
       
     } catch (error) {
       console.error('Error creating session and payment intent:', error);
