@@ -31,6 +31,22 @@ serve(async (req) => {
     const environment = isProduction() ? 'production' : 'test';
     console.log(`Using Stripe ${environment} mode`);
     
+    // Debug: Check all available Stripe secrets
+    const allSecrets = {
+      STRIPE_SECRET_KEY: Deno.env.get('STRIPE_SECRET_KEY'),
+      STRIPE_PUBLISHABLE_KEY: Deno.env.get('STRIPE_PUBLISHABLE_KEY'),
+      STRIPE_CONNECT_SECRET_KEY: Deno.env.get('STRIPE_CONNECT_SECRET_KEY'),
+      STRIPE_WEBHOOK_SECRET: Deno.env.get('STRIPE_WEBHOOK_SECRET'),
+      STRIPE_LIVE_PUBLISHABLE_KEY: Deno.env.get('STRIPE_LIVE_PUBLISHABLE_KEY'),
+      STRIPE_CONNECT_LIVE_SECRET_KEY: Deno.env.get('STRIPE_CONNECT_LIVE_SECRET_KEY'),
+      STRIPE_LIVE_WEBHOOK_SECRET: Deno.env.get('STRIPE_LIVE_WEBHOOK_SECRET')
+    };
+    
+    console.log('Available Stripe secrets check:');
+    Object.entries(allSecrets).forEach(([key, value]) => {
+      console.log(`${key}: ${value ? 'FOUND' : 'MISSING'}`);
+    });
+    
     // Get the appropriate Stripe publishable key from environment variables
     const publishableKey = isProduction() 
       ? Deno.env.get('STRIPE_LIVE_PUBLISHABLE_KEY') 
@@ -42,7 +58,8 @@ serve(async (req) => {
         JSON.stringify({ 
           error: 'Stripe publishable key not configured',
           code: 'stripe_config_missing',
-          environment
+          environment,
+          debug: allSecrets
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -51,11 +68,16 @@ serve(async (req) => {
       );
     }
 
-    // Return the publishable key and environment info
+    // Return the publishable key, environment info, and debug data about all secrets
     return new Response(
       JSON.stringify({ 
         publishableKey,
-        environment 
+        environment,
+        debug: {
+          secretsStatus: Object.fromEntries(
+            Object.entries(allSecrets).map(([key, value]) => [key, value ? 'configured' : 'missing'])
+          )
+        }
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

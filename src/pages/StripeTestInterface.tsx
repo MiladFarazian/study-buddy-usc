@@ -118,15 +118,30 @@ export default function StripeTestInterface() {
       const { data, error } = await supabase.functions.invoke('get-stripe-config');
       if (error) throw error;
       
+      console.log('Stripe config response:', data);
       setStripeEnvironment(data?.environment || 'unknown');
-      setSecretsStatus({
-        hasStripeSecret: !!data?.hasStripeSecret,
-        hasConnectSecret: !!data?.hasConnectSecret,
-        hasWebhookSecret: !!data?.hasWebhookSecret
-      });
+      
+      // Use the new debug format from the function
+      if (data?.debug?.secretsStatus) {
+        setSecretsStatus(data.debug.secretsStatus);
+      } else {
+        // Fallback for old format
+        setSecretsStatus({
+          STRIPE_SECRET_KEY: 'unknown',
+          STRIPE_PUBLISHABLE_KEY: 'unknown',
+          STRIPE_CONNECT_SECRET_KEY: 'unknown',
+          STRIPE_WEBHOOK_SECRET: 'unknown'
+        });
+      }
     } catch (error) {
       console.error('Error checking Stripe environment:', error);
       setStripeEnvironment('error');
+      setSecretsStatus({
+        STRIPE_SECRET_KEY: 'error',
+        STRIPE_PUBLISHABLE_KEY: 'error',
+        STRIPE_CONNECT_SECRET_KEY: 'error',
+        STRIPE_WEBHOOK_SECRET: 'error'
+      });
     }
   };
 
@@ -279,24 +294,20 @@ export default function StripeTestInterface() {
                 {stripeEnvironment}
               </Badge>
             </div>
-            <div>
-              <Label>Stripe Secret</Label>
-              <Badge variant={secretsStatus.hasStripeSecret ? 'default' : 'destructive'}>
-                {secretsStatus.hasStripeSecret ? 'Available' : 'Missing'}
-              </Badge>
-            </div>
-            <div>
-              <Label>Connect Secret</Label>
-              <Badge variant={secretsStatus.hasConnectSecret ? 'default' : 'destructive'}>
-                {secretsStatus.hasConnectSecret ? 'Available' : 'Missing'}
-              </Badge>
-            </div>
-            <div>
-              <Label>Webhook Secret</Label>
-              <Badge variant={secretsStatus.hasWebhookSecret ? 'default' : 'destructive'}>
-                {secretsStatus.hasWebhookSecret ? 'Available' : 'Missing'}
-              </Badge>
-            </div>
+            {Object.entries(secretsStatus).map(([key, status]) => (
+              <div key={key}>
+                <Label className="text-xs">{key.replace('STRIPE_', '').replace('_', ' ')}</Label>
+                <Badge variant={status === 'configured' ? 'default' : 'destructive'}>
+                  {status === 'configured' ? 'Available' : status === 'missing' ? 'Missing' : 'Error'}
+                </Badge>
+              </div>
+            ))}
+          </div>
+          
+          {/* Show raw debug data */}
+          <div className="mt-4 p-4 bg-muted/50 rounded-lg text-xs">
+            <Label>Debug Data:</Label>
+            <pre className="mt-2 overflow-x-auto">{JSON.stringify(secretsStatus, null, 2)}</pre>
           </div>
         </CardContent>
       </Card>
