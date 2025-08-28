@@ -35,15 +35,24 @@ export function ReviewSubmissionStep({
   onSubmitted
 }: ReviewSubmissionStepProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
   const handleSubmitReview = async () => {
+    console.log("🔍 Starting review submission", { user: !!user, loading, userId: user?.id });
+    
+    if (loading) {
+      toast("Please wait while we verify your authentication...");
+      return;
+    }
+    
     if (!user) {
+      console.error("❌ Authentication failed", { user, loading });
       toast.error("You must be logged in to submit a review");
       return;
     }
 
     setIsSubmitting(true);
+    console.log("✅ Authentication verified, submitting review...");
 
     try {
       // Insert the detailed review into student_reviews table
@@ -97,6 +106,7 @@ export function ReviewSubmissionStep({
         }
       }
 
+      console.log("✅ Review submitted successfully, calling onSubmitted callback");
       toast.success("Review submitted successfully!");
       onSubmitted();
     } catch (error) {
@@ -324,11 +334,13 @@ export function ReviewSubmissionStep({
         </Button>
         <Button 
           onClick={handleSubmitReview} 
-          disabled={isSubmitting}
+          disabled={isSubmitting || loading}
           className="flex-1"
         >
           {isSubmitting ? (
             "Submitting..."
+          ) : loading ? (
+            "Loading..."
           ) : (
             <>
               <Send className="h-4 w-4 mr-2" />
