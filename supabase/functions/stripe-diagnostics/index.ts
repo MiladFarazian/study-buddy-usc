@@ -1,6 +1,29 @@
 import { serve } from "https://deno.land/std@0.177.1/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
-import { determineEnvironment } from "../create-payment-intent/environment.ts";
+
+type StripeEnv = {
+  mode: 'test' | 'live';
+  secretKey: string;
+  publishableKey: string;
+};
+
+function resolveStripeEnv(req: Request): StripeEnv {
+  const headerMode = req.headers.get('x-stripe-mode'); // 'test' | 'live' (optional)
+  const envFlag = (Deno.env.get('USE_PRODUCTION_STRIPE') || '').toLowerCase() === 'true';
+  const mode: 'test' | 'live' = headerMode === 'live' || headerMode === 'test'
+    ? (headerMode as 'test' | 'live')
+    : (envFlag ? 'live' : 'test');
+
+  const secretKey = mode === 'live'
+    ? (Deno.env.get('STRIPE_CONNECT_LIVE_SECRET_KEY') ?? Deno.env.get('STRIPE_LIVE_SECRET_KEY') ?? '')
+    : (Deno.env.get('STRIPE_CONNECT_SECRET_KEY') ?? Deno.env.get('STRIPE_SECRET_KEY') ?? '');
+
+  const publishableKey = mode === 'live'
+    ? (Deno.env.get('STRIPE_LIVE_PUBLISHABLE_KEY') ?? '')
+    : (Deno.env.get('STRIPE_PUBLISHABLE_KEY') ?? '');
+
+  return { mode, secretKey, publishableKey };
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -24,8 +47,8 @@ serve(async (req) => {
   try {
     console.log('Stripe diagnostics request received');
     
-    // Use same environment detection logic as create-payment-intent
-    const { isProduction, stripeSecretKey } = await determineEnvironment(req, {});
+    // Use new inline environment resolver
+    const { mode, secretKey: stripeSecretKey, publishableKey: serverPk } = resolveStripeEnv(req);
     
     if (!stripeSecretKey) {
       console.error('No Stripe secret key found');
@@ -42,10 +65,8 @@ serve(async (req) => {
     const account = await stripe.accounts.retrieve();
     console.log(`Retrieved Stripe account: ${account.id}`);
     
-    // Get publishable key (same logic as get-stripe-config)
-    const publishableKey = isProduction 
-      ? Deno.env.get('STRIPE_LIVE_PUBLISHABLE_KEY')
-      : Deno.env.get('STRIPE_PUBLISHABLE_KEY');
+    // Get publishable key from resolver
+    const publishableKey = serverPk;
       
     if (!publishableKey) {
       console.error('No publishable key found');
@@ -73,7 +94,7 @@ serve(async (req) => {
 
     const response = {
       server_account_id: account.id,
-      server_secret_mode: isProduction ? 'live' as const : 'test' as const,
+      server_secret_mode: mode,
       server_publishable_key_masked: maskedPublishableKey,
       expected_publishable_key_last4: last4,
       ...(frontendKeyMasked && { frontend_publishable_key_masked: frontendKeyMasked })
