@@ -71,10 +71,10 @@ export function AcademicMetricsStep({
             <div className="space-y-3">
               <Slider
                 value={reviewData.teachingQuality ? [reviewData.teachingQuality] : [3]}
-                onValueChange={(value) => onUpdate({ teachingQuality: value[0] })}
+                onValueChange={(value) => onUpdate({ teachingQuality: Math.round(value[0]) })}
                 max={5}
                 min={1}
-                step={1}
+                step={0.1}
                 className="w-full"
               />
               <div className="flex justify-between text-xs text-muted-foreground">
@@ -99,10 +99,10 @@ export function AcademicMetricsStep({
             <div className="space-y-3">
               <Slider
                 value={reviewData.subjectClarity ? [reviewData.subjectClarity] : [3]}
-                onValueChange={(value) => onUpdate({ subjectClarity: value[0] })}
+                onValueChange={(value) => onUpdate({ subjectClarity: Math.round(value[0]) })}
                 max={5}
                 min={1}
-                step={1}
+                step={0.1}
                 className="w-full"
               />
               <div className="flex justify-between text-xs text-muted-foreground">

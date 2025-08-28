@@ -80,10 +80,10 @@ export function MentalHealthStep({
               <div className="space-y-3">
                 <Slider
                   value={reviewData.stressBefore ? [reviewData.stressBefore] : [5]}
-                  onValueChange={(value) => onUpdate({ stressBefore: value[0] })}
+                  onValueChange={(value) => onUpdate({ stressBefore: Math.round(value[0]) })}
                   max={10}
                   min={1}
-                  step={1}
+                  step={0.1}
                   className="w-full"
                 />
                 <div className="flex justify-between text-xs text-muted-foreground">
@@ -103,10 +103,10 @@ export function MentalHealthStep({
               <div className="space-y-3">
                 <Slider
                   value={reviewData.stressAfter ? [reviewData.stressAfter] : [5]}
-                  onValueChange={(value) => onUpdate({ stressAfter: value[0] })}
+                  onValueChange={(value) => onUpdate({ stressAfter: Math.round(value[0]) })}
                   max={10}
                   min={1}
-                  step={1}
+                  step={0.1}
                   className="w-full"
                 />
                 <div className="flex justify-between text-xs text-muted-foreground">
@@ -140,10 +140,10 @@ export function MentalHealthStep({
             <div className="space-y-3">
               <Slider
                 value={reviewData.confidenceImprovement ? [reviewData.confidenceImprovement] : [3]}
-                onValueChange={(value) => onUpdate({ confidenceImprovement: value[0] })}
+                onValueChange={(value) => onUpdate({ confidenceImprovement: Math.round(value[0]) })}
                 max={5}
                 min={1}
-                step={1}
+                step={0.1}
                 className="w-full"
               />
               <div className="flex justify-between text-xs text-muted-foreground">
@@ -165,10 +165,10 @@ export function MentalHealthStep({
             <div className="space-y-3">
               <Slider
                 value={reviewData.emotionalSupport ? [reviewData.emotionalSupport] : [3]}
-                onValueChange={(value) => onUpdate({ emotionalSupport: value[0] })}
+                onValueChange={(value) => onUpdate({ emotionalSupport: Math.round(value[0]) })}
                 max={5}
                 min={1}
-                step={1}
+                step={0.1}
                 className="w-full"
               />
               <div className="flex justify-between text-xs text-muted-foreground">
@@ -190,10 +190,10 @@ export function MentalHealthStep({
             <div className="space-y-3">
               <Slider
                 value={reviewData.learningAnxietyReduction ? [reviewData.learningAnxietyReduction] : [3]}
-                onValueChange={(value) => onUpdate({ learningAnxietyReduction: value[0] })}
+                onValueChange={(value) => onUpdate({ learningAnxietyReduction: Math.round(value[0]) })}
                 max={5}
                 min={1}
-                step={1}
+                step={0.1}
                 className="w-full"
               />
               <div className="flex justify-between text-xs text-muted-foreground">
@@ -215,10 +215,10 @@ export function MentalHealthStep({
             <div className="space-y-3">
               <Slider
                 value={reviewData.overallWellbeingImpact ? [reviewData.overallWellbeingImpact] : [3]}
-                onValueChange={(value) => onUpdate({ overallWellbeingImpact: value[0] })}
+                onValueChange={(value) => onUpdate({ overallWellbeingImpact: Math.round(value[0]) })}
                 max={5}
                 min={1}
-                step={1}
+                step={0.1}
                 className="w-full"
               />
               <div className="flex justify-between text-xs text-muted-foreground">
