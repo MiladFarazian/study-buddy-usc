@@ -17,7 +17,8 @@ export enum BookingStep {
   SELECT_COURSE = 2,
   SELECT_SESSION_TYPE = 3,
   FILL_FORM = 4,
-  CONFIRMATION = 5,
+  PAYMENT = 5,
+  CONFIRMATION = 6,
 }
 
 // Define the scheduling state

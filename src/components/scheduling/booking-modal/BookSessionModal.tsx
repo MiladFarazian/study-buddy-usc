@@ -48,6 +48,7 @@ function BookSessionModalContent({
     handleContinue,
     handleBack,
     handleBookingComplete,
+    handlePaymentComplete,
     getStepTitle
   } = useBookSessionModal(tutor, isOpen, onClose, initialDate, initialTime);
 
@@ -82,6 +83,7 @@ function BookSessionModalContent({
             onBack={handleBack}
             onContinue={handleContinue}
             onComplete={handleBookingComplete}
+            onPaymentComplete={handlePaymentComplete}
             sessionTimeRange={state.selectedTimeSlot ? {
               start: state.selectedTimeSlot.start,
               end: state.selectedTimeSlot.end

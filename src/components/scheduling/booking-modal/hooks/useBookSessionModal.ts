@@ -163,6 +163,8 @@ export function useBookSessionModal(
         return "Select Session Type";
       case BookingStep.FILL_FORM:
         return "Student Information";
+      case BookingStep.PAYMENT:
+        return "Payment";
       case BookingStep.CONFIRMATION:
         return "Confirm Booking";
       default:
@@ -170,35 +172,25 @@ export function useBookSessionModal(
     }
   };
   
-  // Handle booking completion
+  // Handle payment completion
+  const handlePaymentComplete = useCallback((sessionId: string, paymentSuccess: boolean) => {
+    if (paymentSuccess) {
+      // Move to confirmation step
+      setState(prev => ({ ...prev, bookingStep: BookingStep.CONFIRMATION }));
+      dispatch({ type: 'SET_STEP', payload: BookingStep.CONFIRMATION });
+    } else {
+      toast.error("Payment failed. Please try again.");
+    }
+  }, [dispatch]);
+
+  // Handle booking completion (after confirmation)
   const handleBookingComplete = useCallback(async () => {
-    console.log("[handleBookingComplete] Starting booking process...");
-    
-    if (!state.selectedTimeSlot) {
-      console.error("[handleBookingComplete] No time slot selected");
-      toast.error("No time slot selected. Please try again.");
-      return;
-    }
-    
-    // Get the authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError) {
-      console.error("[handleBookingComplete] Auth error:", authError);
-      toast.error("Authentication error. Please try logging in again.");
-      return;
-    }
-    
-    if (!user) {
-      console.error("[handleBookingComplete] User not logged in");
-      toast.error("You must be logged in to book a session");
-      return;
-    }
+    console.log("[handleBookingComplete] Finalizing booking...");
     
     try {
-      // Calculate start and end times based on the selected slot and duration
+      // Calculate start and end times for display
       const startTime = new Date(selectedDate);
-      const [startHour, startMinute] = state.selectedTimeSlot.start.split(':').map(Number);
+      const [startHour, startMinute] = state.selectedTimeSlot!.start.split(':').map(Number);
       startTime.setHours(startHour, startMinute, 0, 0);
       
       const endTime = new Date(startTime);
@@ -208,63 +200,24 @@ export function useBookSessionModal(
       const sessionTypeValue = contextState.sessionType;
       const locationValue = contextState.location;
       
-      console.log("[handleBookingComplete] Session details:", {
-        userId: user.id,
-        tutorId: tutor.id,
-        courseId: state.selectedCourseId,
-        startTime: startTime.toISOString(),
-        endTime: endTime.toISOString(),
-        location: locationValue,
-        sessionType: sessionTypeValue,
-        duration: state.selectedDuration
+      // Show animated confirmation
+      showConfirmation({
+        tutorName: `${tutor.firstName || tutor.name} ${tutor.lastName || ''}`.trim() || tutor.name,
+        date: startTime.toISOString(),
+        startTime: format(startTime, 'h:mm a'),
+        endTime: format(endTime, 'h:mm a'),
+        location: locationValue || 'Location TBD',
+        courseName: state.selectedCourseId || undefined,
+        sessionType: sessionTypeValue || 'In Person'
       });
       
-      // Actually create the session in the database
-      console.log("[handleBookingComplete] Calling createSessionBooking...");
-      const sessionDetails = await createSessionBooking(
-        user.id,
-        tutor.id,
-        state.selectedCourseId,
-        startTime.toISOString(),
-        endTime.toISOString(),
-        locationValue,
-        null,  // notes
-        sessionTypeValue
-      );
-      
-      console.log("[handleBookingComplete] createSessionBooking result:", sessionDetails);
-      
-      if (sessionDetails) {
-        console.log("[handleBookingComplete] Session created successfully:", sessionDetails);
-        
-        // Show animated confirmation
-        showConfirmation({
-          tutorName: `${tutor.firstName || tutor.name} ${tutor.lastName || ''}`.trim() || tutor.name,
-          date: startTime.toISOString(),
-          startTime: format(startTime, 'h:mm a'),
-          endTime: format(endTime, 'h:mm a'),
-          location: locationValue || 'Location TBD',
-          courseName: state.selectedCourseId || undefined,
-          sessionType: sessionTypeValue || 'In Person'
-        });
-        
-        toast.success("Your session has been booked!");
-        onClose();
-      } else {
-        console.error("[handleBookingComplete] createSessionBooking returned null");
-        toast.error("Failed to book session. Please try again.");
-        return;
-      }
+      toast.success("Your session has been booked and payment processed!");
+      onClose();
     } catch (error) {
-      console.error("[handleBookingComplete] Error creating session:", error);
-      if (error instanceof Error) {
-        toast.error(`Booking failed: ${error.message}`);
-      } else {
-        toast.error("An unexpected error occurred while booking your session");
-      }
-      return;
+      console.error("[handleBookingComplete] Error finalizing booking:", error);
+      toast.error("Booking confirmation failed");
     }
-  }, [onClose, tutor, selectedDate, state, contextState]);
+  }, [onClose, tutor, selectedDate, state, contextState, showConfirmation]);
 
   return {
     selectedDate,
@@ -282,6 +235,7 @@ export function useBookSessionModal(
     handleContinue,
     handleBack,
     handleBookingComplete,
+    handlePaymentComplete,
     getStepTitle
   };
 }

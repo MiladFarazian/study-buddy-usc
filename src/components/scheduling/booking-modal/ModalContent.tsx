@@ -8,6 +8,7 @@ import { SessionDurationSelector } from "./duration/SessionDurationSelector";
 import { CourseSelector } from "./course/CourseSelector";
 import { SessionTypeSelector } from "./session-type/SessionTypeSelector";
 import { StudentInfoForm } from "./student-info/StudentInfoForm";
+import { PaymentStep } from "./PaymentStep";
 import { ConfirmationStep } from "./ConfirmationStep";
 import { BookingSlot } from "@/lib/scheduling/types";
 import { Tutor } from "@/types/tutor";
@@ -26,6 +27,7 @@ interface ModalContentProps {
   onBack: () => void;
   onContinue: () => void;
   onComplete: () => void;
+  onPaymentComplete: (sessionId: string, paymentSuccess: boolean) => void;
   sessionTimeRange?: { start: string; end: string };
   selectedDuration: number;
   onDurationChange: (duration: number) => void;
@@ -49,6 +51,7 @@ export function ModalContent({
   onBack,
   onContinue,
   onComplete,
+  onPaymentComplete,
   sessionTimeRange,
   selectedDuration,
   onDurationChange,
@@ -134,6 +137,15 @@ export function ModalContent({
         <StudentInfoForm 
           onBack={onBack}
           onContinue={onContinue}
+        />
+      );
+      
+    case BookingStep.PAYMENT:
+      return (
+        <PaymentStep 
+          onBack={onBack}
+          onContinue={onPaymentComplete}
+          calculatedCost={calculatedCost}
         />
       );
       
