@@ -91,6 +91,22 @@ const Register = () => {
               <Link to="/login" className="text-usc-cardinal hover:underline">
                 Sign in
               </Link>
+              {/* Dev login link - only show in test environment */}
+              {(() => {
+                try {
+                  const { getStripeEnvironment } = require('@/lib/stripe-utils');
+                  return getStripeEnvironment() === 'test' ? (
+                    <span>
+                      {" • "}
+                      <Link to="/dev-login" className="text-usc-cardinal hover:underline">
+                        Dev Login (Testing)
+                      </Link>
+                    </span>
+                  ) : null;
+                } catch {
+                  return null;
+                }
+              })()}
             </p>
             <p className="text-xs text-gray-500">
               By signing up, you agree to our Terms of Service and Privacy Policy

@@ -1,4 +1,3 @@
-
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -53,6 +52,100 @@ export const useAuthMethods = () => {
     }
   };
 
+  const devSignUp = async (email: string, password: string) => {
+    try {
+      console.log("Dev signup with email:", email);
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error("Dev signup error:", error.message);
+        toast({
+          title: "Sign Up Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        return { error };
+      }
+
+      // If signup successful, create/update profile
+      if (data.user) {
+        try {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .upsert({
+              id: data.user.id,
+              role: 'student',
+              first_name: 'Test',
+              last_name: 'Student',
+              major: 'Computer Science',
+              graduation_year: '2025',
+            });
+
+          if (profileError) {
+            console.warn("Profile creation warning:", profileError.message);
+          }
+        } catch (profileError) {
+          console.warn("Profile creation error:", profileError);
+        }
+      }
+
+      toast({
+        title: "Account Created",
+        description: "Test student account created successfully",
+      });
+      
+      return { success: true };
+    } catch (error: any) {
+      console.error('Dev signup error:', error);
+      toast({
+        title: "Sign Up Failed",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+      return { error };
+    }
+  };
+
+  const devSignIn = async (email: string, password: string) => {
+    try {
+      console.log("Dev signin with email:", email);
+      
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error("Dev signin error:", error.message);
+        toast({
+          title: "Sign In Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        return { error };
+      }
+      
+      toast({
+        title: "Signed In",
+        description: "Successfully signed in to test account",
+      });
+      
+      return { success: true };
+    } catch (error: any) {
+      console.error('Dev signin error:', error);
+      toast({
+        title: "Sign In Failed",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+      return { error };
+    }
+  };
+
   const signOut = async () => {
     try {
       console.log("Signing out user");
@@ -89,5 +182,5 @@ export const useAuthMethods = () => {
     }
   };
 
-  return { signIn, signOut };
+  return { signIn, signOut, devSignUp, devSignIn };
 };

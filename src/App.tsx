@@ -10,6 +10,7 @@ import { ReviewRequirement } from "./components/reviews";
 import Layout from "./components/layout/Layout";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import DevLogin from "./pages/DevLogin";
 import Index from "./pages/Index";
 import Profile from "./pages/Profile";
 import EmailVerification from "./pages/EmailVerification";
@@ -52,6 +53,10 @@ const router = createBrowserRouter([
       {
         path: "/register",
         element: <Register />
+      },
+      {
+        path: "/dev-login",
+        element: <DevLogin />
       },
       {
         path: "/auth-callback",
