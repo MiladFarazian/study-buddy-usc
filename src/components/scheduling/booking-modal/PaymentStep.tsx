@@ -142,6 +142,7 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
       setIsProcessing(true);
       setPaymentError(null);
 
+      console.log('Starting payment confirmation...');
       const { error: paymentError } = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
           card: cardElement,
@@ -153,6 +154,7 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
       });
 
       if (paymentError) {
+        console.error('Stripe payment error:', paymentError);
         setPaymentError(paymentError.message || 'Payment failed');
         toast.error(paymentError.message || 'Payment failed');
         return;
