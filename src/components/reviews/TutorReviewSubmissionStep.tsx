@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Session } from "@/types/session";
 import { Profile } from "@/integrations/supabase/types-extension";
 import { TutorReviewData } from "./TutorReviewModal";
-import { CheckCircle, Star, User, Calendar, Clock } from "lucide-react";
+import { CheckCircle, Star, User, Calendar, Clock, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -28,40 +28,46 @@ export function TutorReviewSubmissionStep({
   const { toast } = useToast();
 
   const handleSubmit = async () => {
-    console.log("Submit button clicked, user:", user, "loading:", loading);
+    console.log('🔄 Submit button clicked!');
+    console.log('🔄 Current state:', { 
+      isSubmitting, 
+      user: !!user, 
+      userId: user?.id || 'none',
+      loading, 
+      sessionId: session.id,
+      studentId: student.id
+    });
     
-    // Wait for auth to finish loading
+    if (isSubmitting) {
+      console.log('🔄 Already submitting, returning early');
+      return;
+    }
+    
     if (loading) {
-      console.log("Auth still loading, waiting...");
+      console.log('🔄 Auth still loading, showing message');
       toast({
         title: "Please wait",
-        description: "Loading authentication...",
+        description: "Authentication is still loading. Please try again in a moment.",
+        variant: "default",
       });
       return;
     }
     
     if (!user) {
-      console.log("No user found, showing authentication error");
+      console.error('🔄 No user found after loading complete');
       toast({
-        title: "Authentication required",
-        description: "Please sign in to submit your review",
+        title: "Authentication Error",
+        description: "You must be logged in to submit a review. Please refresh and try again.",
         variant: "destructive",
       });
       return;
     }
 
+    console.log('🔄 Starting submission...');
     setIsSubmitting(true);
 
     try {
-      console.log("Submitting tutor review with data:", {
-        session_id: session.id,
-        student_id: session.student_id,
-        tutor_id: session.tutor_id,
-        reviewData
-      });
-
-      // Insert tutor review into student_reviews table (from tutor perspective)
-      const reviewRecord = {
+      const submissionData = {
         session_id: session.id,
         student_id: session.student_id,
         tutor_id: session.tutor_id,
@@ -74,23 +80,36 @@ export function TutorReviewSubmissionStep({
         tutor_feedback: reviewData.feedback
       };
 
-      const { error } = await supabase
-        .from("student_reviews")
-        .insert(reviewRecord);
+      console.log('🔄 Submitting review with data:', submissionData);
+
+      const { data, error } = await supabase
+        .from('student_reviews')
+        .insert(submissionData)
+        .select();
 
       if (error) {
-        console.error("Database error inserting tutor review:", error);
+        console.error('🔄 Database error:', error);
         
-        // Handle specific database errors
+        let errorMessage = `Failed to submit review: ${error.message}`;
+        
         if (error.code === '23505' && error.message.includes('unique_reviewer_session')) {
-          throw new Error("You have already submitted a review for this session.");
+          errorMessage = "You have already submitted a review for this session.";
+        } else if (error.message.includes("violates row-level security")) {
+          errorMessage = "You don't have permission to submit this review. Please make sure you're the tutor for this session.";
+        } else if (error.message.includes("foreign key")) {
+          errorMessage = "Invalid session or user information. Please refresh and try again.";
         }
         
-        throw new Error(`Database error: ${error.message}`);
+        toast({
+          title: "Submission Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        return;
       }
 
-      console.log("Tutor review submitted successfully");
-
+      console.log('🔄 Review submitted successfully:', data);
+      
       toast({
         title: "Review submitted successfully",
         description: reviewData.student_showed_up 
@@ -98,28 +117,18 @@ export function TutorReviewSubmissionStep({
           : "No-show has been recorded for payment processing.",
       });
 
+      console.log('🔄 Calling onComplete callback...');
       onComplete();
-    } catch (error) {
-      console.error("Error submitting tutor review:", error);
       
-      let errorMessage = "Failed to submit your review. Please try again.";
-      
-      if (error instanceof Error) {
-        if (error.message.includes("violates row-level security")) {
-          errorMessage = "You don't have permission to submit this review. Please make sure you're the tutor for this session.";
-        } else if (error.message.includes("duplicate key")) {
-          errorMessage = "A review has already been submitted for this session.";
-        } else if (error.message.includes("foreign key")) {
-          errorMessage = "Invalid session or user information. Please refresh and try again.";
-        }
-      }
-      
+    } catch (error: any) {
+      console.error('🔄 Unexpected error:', error);
       toast({
-        title: "Error",
-        description: errorMessage,
+        title: "Unexpected Error",
+        description: `An unexpected error occurred: ${error?.message || 'Unknown error'}`,
         variant: "destructive",
       });
     } finally {
+      console.log('🔄 Setting isSubmitting to false');
       setIsSubmitting(false);
     }
   };
@@ -245,13 +254,19 @@ export function TutorReviewSubmissionStep({
       {/* Submit button */}
       <div className="flex justify-end pt-4">
         <Button 
-          onClick={handleSubmit} 
+          onClick={() => {
+            console.log('🔘 Submit button physically clicked!');
+            handleSubmit();
+          }} 
           disabled={isSubmitting}
           size="lg"
           className="min-w-[120px]"
         >
           {isSubmitting ? (
-            "Submitting..."
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Submitting...
+            </>
           ) : (
             <>
               <CheckCircle className="h-4 w-4 mr-2" />

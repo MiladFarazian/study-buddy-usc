@@ -66,10 +66,12 @@ export function ReviewProvider({ children }: { children: ReactNode }) {
   };
 
   const completeReview = () => {
+    console.log('🎯 Completing review, clearing active review state');
     setActiveReview(null);
   };
 
   const cancelReview = () => {
+    console.log('🎯 Cancelling review, clearing active review state');
     setActiveReview(null);
   };
 
