@@ -40,8 +40,14 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasStripeIframe, setHasStripeIframe] = useState(false);
+  
+  // Enhanced debugging state
   const [requestMade, setRequestMade] = useState(false);
   const [responseReceived, setResponseReceived] = useState(false);
+  const [requestUrl, setRequestUrl] = useState<string | null>(null);
+  const [requestTimeout, setRequestTimeout] = useState(false);
+  const [responseStatus, setResponseStatus] = useState<number | null>(null);
+  const [errorType, setErrorType] = useState<string | null>(null);
 
   // Refs for stable Elements instances
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -218,6 +224,13 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
       console.log('[pay] Session created:', sessionData.id);
       setSessionId(sessionData.id);
 
+      // Reset debugging state
+      setRequestMade(false);
+      setResponseReceived(false);
+      setRequestTimeout(false);
+      setResponseStatus(null);
+      setErrorType(null);
+      
       // Prepare request body
       const requestBody = {
         sessionId: sessionData.id,
@@ -226,49 +239,107 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
         studentId: user.id,
         description: `Tutoring session with ${tutor.firstName || tutor.name}`
       };
-      console.log('Sending payment intent request:', requestBody);
+
+      // Manual fetch with comprehensive debugging
+      const url = `https://fzcyzjruixuriqzryppz.supabase.co/functions/v1/create-payment-intent`;
+      setRequestUrl(url);
       
-      // Create PaymentIntent
-      setRequestMade(true);
-      const { data: paymentResponse, error: paymentError } = await supabase.functions.invoke(
-        'create-payment-intent',
-        {
-          body: requestBody
+      console.log('[DEBUG 1]', new Date().toISOString(), 'Starting request to:', url);
+      console.log('[DEBUG 2]', new Date().toISOString(), 'Request body:', requestBody);
+      
+      // Setup timeout controller
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        console.log('[DEBUG TIMEOUT]', new Date().toISOString(), 'Request timeout after 10 seconds');
+        setRequestTimeout(true);
+        setErrorType('timeout');
+        controller.abort();
+      }, 10000);
+
+      try {
+        setRequestMade(true);
+        
+        // Get current session for auth header
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`,
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6Y3l6anJ1aXh1cmlxenJ5cHB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE5ODA5NTcsImV4cCI6MjA1NzU1Njk1N30.roxqC5QR4cIYpdLzwr20p_3ZVElpR9CUCJTOg_AuBhc'
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+        setResponseReceived(true);
+        setResponseStatus(response.status);
+        
+        console.log('[DEBUG 3]', new Date().toISOString(), 'Got response, status:', response.status);
+        console.log('[DEBUG 4]', new Date().toISOString(), 'Response headers:', [...response.headers.entries()]);
+        
+        const responseText = await response.text();
+        console.log('[DEBUG 5]', new Date().toISOString(), 'Raw response text:', responseText);
+        
+        if (!response.ok) {
+          setErrorType('server');
+          console.log('[DEBUG ERROR]', new Date().toISOString(), 'Server error response:', responseText);
+          throw new Error(`HTTP ${response.status}: ${responseText}`);
         }
-      );
-      setResponseReceived(true);
 
-      console.log('Request made to create-payment-intent');
-      console.log('Response received:', !!paymentResponse);
-      console.log('Error occurred:', !!paymentError);
+        // Try to parse as JSON
+        const data = JSON.parse(responseText);
+        console.log('[DEBUG 6]', new Date().toISOString(), 'Parsed JSON:', data);
+        console.log('Available response fields:', Object.keys(data || {}));
+        
+        // Try multiple possible field names for robust client_secret extraction
+        const clientSecret = data?.client_secret || 
+                            data?.clientSecret || 
+                            data?.['client-secret'] || 
+                            data?.secret ||
+                            data?.pi_client_secret;
+        
+        if (!clientSecret) {
+          setErrorType('parse');
+          console.error('No client_secret found. Available fields:', Object.keys(data || {}));
+          setError(`No client_secret in server response. Got fields: ${Object.keys(data || {}).join(', ')}`);
+          return;
+        }
 
-      if (paymentError) {
-        console.error('Server error response:', paymentError);
-        throw new Error(paymentResponse?.error || 'Failed to create payment intent');
+        console.log('Found client_secret ending in:', clientSecret.slice(-6));
+        console.log('[pay] PaymentIntent created:', data?.id, 'secret last6:', clientSecret.slice(-6));
+
+        setPiSecret(clientSecret);
+        console.log('[pay] PI setup complete');
+        
+      } catch (error) {
+        clearTimeout(timeoutId);
+        setResponseReceived(true);
+        
+        if (error instanceof Error) {
+          if (error.name === 'AbortError') {
+            setErrorType('timeout');
+            console.log('[DEBUG ERROR]', new Date().toISOString(), 'Request was aborted (timeout)');
+          } else if (error.message.includes('Failed to fetch')) {
+            setErrorType('network');
+            console.log('[DEBUG ERROR]', new Date().toISOString(), 'Network error:', error.message);
+          } else if (error.message.includes('JSON')) {
+            setErrorType('parse');
+            console.log('[DEBUG ERROR]', new Date().toISOString(), 'JSON parse error:', error.message);
+          } else {
+            setErrorType('unknown');
+            console.log('[DEBUG ERROR]', new Date().toISOString(), 'Unknown error:', error.message);
+          }
+        }
+        
+        console.log('[DEBUG ERROR]', new Date().toISOString(), 'Error type:', error instanceof Error ? error.name : 'Unknown');
+        console.log('[DEBUG ERROR]', new Date().toISOString(), 'Error message:', error instanceof Error ? error.message : String(error));
+        console.log('[DEBUG ERROR]', new Date().toISOString(), 'Full error:', error);
+        
+        setError(error instanceof Error ? error.message : 'Failed to setup payment');
       }
-
-      const data = paymentResponse as CreatePIResponse;
-      console.log('Server response data:', data);
-      console.log('Available response fields:', Object.keys(data || {}));
-      
-      // Try multiple possible field names for robust client_secret extraction
-      const clientSecret = data?.client_secret || 
-                          data?.clientSecret || 
-                          data?.['client-secret'] || 
-                          data?.secret ||
-                          data?.pi_client_secret;
-      
-      if (!clientSecret) {
-        console.error('No client_secret found. Available fields:', Object.keys(data || {}));
-        setError(`No client_secret in server response. Got fields: ${Object.keys(data || {}).join(', ')}`);
-        return;
-      }
-
-      console.log('Found client_secret ending in:', clientSecret.slice(-6));
-      console.log('[pay] PaymentIntent created:', data?.id, 'secret last6:', clientSecret.slice(-6));
-
-      setPiSecret(clientSecret);
-      console.log('[pay] PI setup complete');
       
     } catch (error) {
       console.error('[pay] Error creating PaymentIntent:', error);
@@ -408,6 +479,10 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
             <div>CS found: {piSecret ? 'YES' : 'NO'}</div>
             <div>Request made: {requestMade ? 'YES' : 'NO'}</div>
             <div>Response received: {responseReceived ? 'YES' : 'NO'}</div>
+            <div>Request URL: {requestUrl || 'NONE'}</div>
+            <div>Request timeout: {requestTimeout ? 'YES' : 'NO'}</div>
+            <div>Response status: {responseStatus || 'NONE'}</div>
+            <div>Error type: {errorType || 'none'}</div>
             <div>Mounted: {ready ? 'YES' : 'NO'}</div>
             <div>Stripe iframe: {hasStripeIframe ? 'YES' : 'NO'}</div>
             <div>Loading: {mounting ? 'YES' : 'NO'}</div>
