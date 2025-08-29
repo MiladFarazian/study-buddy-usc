@@ -10,6 +10,9 @@ import { format } from 'date-fns';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
+// Initialize Stripe outside component for better performance
+const stripePromise = loadStripe(process.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
+
 type CreatePIResponse = {
   id: string;
   clientSecret?: string;
@@ -68,7 +71,16 @@ function PaymentForm({ onSuccess, sessionId, calculatedCost }: { onSuccess: () =
         </div>
       )}
       
-      <div id="payment-element-container" className="p-4 border rounded-lg" style={{ minHeight: 120 }}>
+      <div 
+        className="payment-element-container" 
+        style={{ 
+          minHeight: '120px', 
+          padding: '16px',
+          border: '1px solid #e5e7eb',
+          borderRadius: '8px',
+          backgroundColor: '#ffffff'
+        }}
+      >
         <PaymentElement 
           id="payment-element"
           onChange={(e) => setIsComplete(e.complete)}
@@ -105,33 +117,14 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
 
-  // Memoize Stripe promise based on publishable key
-  const stripePromise = useMemo(() => {
-    if (!publishableKey) return null;
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('pk last6:', publishableKey?.slice(-6), 'cs head6:', clientSecret?.slice(0,6));
-    }
-    return loadStripe(publishableKey);
-  }, [publishableKey]);
-
-  // Memoize Elements options based on client secret
-  const elementsOptions = useMemo(() => {
-    if (!clientSecret) return null;
-    return {
-      clientSecret,
-      appearance: {
-        theme: 'stripe' as const,
-        variables: {
-          colorPrimary: '#990000',
-          colorBackground: '#ffffff',
-          colorText: '#1a1a1a',
-          colorDanger: '#ff5555',
-          fontFamily: 'system-ui, sans-serif',
-          borderRadius: '8px',
-        },
-      },
-    };
-  }, [clientSecret]);
+  // Debug logging for render state
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[PaymentStep] Render state:', {
+      hasPublishableKey: !!publishableKey,
+      hasClientSecret: !!clientSecret,
+      clientSecretPrefix: clientSecret?.substring(0, 8)
+    });
+  }
 
   // Load publishable key on mount
   useEffect(() => {
@@ -329,11 +322,17 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
             </div>
           )}
           
-          {clientSecret && stripePromise && (
+          {publishableKey && clientSecret && (
             <Elements 
-              key={clientSecret} 
+              key={clientSecret}
               stripe={stripePromise} 
-              options={elementsOptions}
+              options={{ 
+                clientSecret,
+                appearance: { 
+                  theme: 'stripe',
+                  labels: 'floating'
+                }
+              }}
             >
               <PaymentForm 
                 onSuccess={handlePaymentSuccess}
