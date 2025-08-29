@@ -11,15 +11,11 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
 type CreatePIResponse = {
-  id?: string;
+  id: string;
   clientSecret?: string;
   client_secret?: string;
-  paymentIntent?: {
-    client_secret?: string;
-  };
+  amount: number;
   payment_transaction_id?: string;
-  environment?: 'test'|'live';
-  two_stage_payment?: boolean;
   error?: string;
   [k: string]: any;
 };
@@ -72,8 +68,9 @@ function PaymentForm({ onSuccess, sessionId, calculatedCost }: { onSuccess: () =
         </div>
       )}
       
-      <div className="p-4 border rounded-lg">
+      <div id="payment-element-container" className="p-4 border rounded-lg" style={{ minHeight: 120 }}>
         <PaymentElement 
+          id="payment-element"
           onChange={(e) => setIsComplete(e.complete)}
           options={{
             layout: 'tabs'
@@ -232,10 +229,12 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
       }
 
       const data = paymentResponse as CreatePIResponse;
-      if (process.env.NODE_ENV !== 'production') console.log('PI resp', data);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[PI]', { clientSecret: data?.client_secret?.slice(0,6) + '...', amount: data?.amount, res: data });
+      }
       
       // Read client secret defensively
-      const clientSecret = data?.client_secret ?? data?.clientSecret ?? data?.paymentIntent?.client_secret ?? null;
+      const clientSecret = data?.client_secret ?? data?.clientSecret ?? null;
       
       if (!clientSecret) {
         console.error('create-payment-intent response:', data);
@@ -331,7 +330,11 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
           )}
           
           {clientSecret && stripePromise && (
-            <Elements stripe={stripePromise} options={elementsOptions}>
+            <Elements 
+              key={clientSecret} 
+              stripe={stripePromise} 
+              options={elementsOptions}
+            >
               <PaymentForm 
                 onSuccess={handlePaymentSuccess}
                 sessionId={sessionId!}
