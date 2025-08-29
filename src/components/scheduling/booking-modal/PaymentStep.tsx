@@ -117,14 +117,18 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
 
-  // Debug logging for render state
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('[PaymentStep] Render state:', {
+  // Comprehensive debug logging
+  useEffect(() => {
+    console.log('[PaymentStep] Component state:', {
       hasPublishableKey: !!publishableKey,
+      publishableKeyPrefix: publishableKey?.substring(0, 12),
       hasClientSecret: !!clientSecret,
-      clientSecretPrefix: clientSecret?.substring(0, 8)
+      clientSecretPrefix: clientSecret?.substring(0, 12),
+      isProcessing,
+      paymentError,
+      stripePromiseResolved: !!stripePromise
     });
-  }
+  }, [publishableKey, clientSecret, isProcessing, paymentError]);
 
   // Load publishable key on mount
   useEffect(() => {
@@ -316,30 +320,60 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
           <CardTitle>Payment Information</CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Debug Info */}
+          <div className="payment-debug" style={{ 
+            border: '2px solid red', 
+            padding: '10px', 
+            margin: '10px 0',
+            backgroundColor: '#f0f0f0' 
+          }}>
+            <h4>Debug Info:</h4>
+            <p>Publishable Key: {publishableKey ? `${publishableKey.substring(0,12)}...` : 'MISSING'}</p>
+            <p>Client Secret: {clientSecret ? `${clientSecret.substring(0,12)}...` : 'MISSING'}</p>
+            <p>Loading: {isProcessing ? 'YES' : 'NO'}</p>
+            <p>Error: {paymentError || 'NONE'}</p>
+          </div>
+
           {paymentError && (
             <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
               <p className="text-destructive text-sm">{paymentError}</p>
             </div>
           )}
+
+          {/* Show different states based on what's missing */}
+          {!publishableKey && (
+            <div>Waiting for Stripe configuration...</div>
+          )}
+
+          {!clientSecret && publishableKey && (
+            <div>Creating payment intent...</div>
+          )}
+
+          {isProcessing && (
+            <div>Loading payment form...</div>
+          )}
+
+          {paymentError && (
+            <div style={{color: 'red'}}>Error: {paymentError}</div>
+          )}
           
-          {publishableKey && clientSecret && (
-            <Elements 
-              key={clientSecret}
-              stripe={stripePromise} 
-              options={{ 
-                clientSecret,
-                appearance: { 
-                  theme: 'stripe',
-                  labels: 'floating'
-                }
-              }}
-            >
-              <PaymentForm 
-                onSuccess={handlePaymentSuccess}
-                sessionId={sessionId!}
-                calculatedCost={calculatedCost}
-              />
-            </Elements>
+          {/* Force Elements to render with explicit conditions */}
+          {publishableKey && clientSecret && !isProcessing && !paymentError && (
+            <div style={{ 
+              border: '1px solid blue', 
+              minHeight: '150px', 
+              padding: '20px',
+              backgroundColor: 'white'
+            }}>
+              <Elements 
+                key={`${clientSecret}-${publishableKey}`}
+                stripe={loadStripe(publishableKey)}
+                options={{ clientSecret }}
+              >
+                <PaymentElement />
+                <div>Elements container loaded</div>
+              </Elements>
+            </div>
           )}
         </CardContent>
       </Card>
