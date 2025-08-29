@@ -7,13 +7,15 @@ import { useAuthState } from '@/hooks/useAuthState';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { useStripeInitialization } from '@/components/scheduling/payment/hooks/useStripeInitialization';
-import { useStripeElements } from '@/components/scheduling/payment/hooks/useStripeElements';
+import { loadStripe, StripeCardNumberElement } from '@stripe/stripe-js';
 
 type CreatePIResponse = {
   id?: string;
   clientSecret?: string;
   client_secret?: string;
+  paymentIntent?: {
+    client_secret?: string;
+  };
   payment_transaction_id?: string;
   environment?: 'test'|'live';
   two_stage_payment?: boolean;
@@ -31,15 +33,60 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
   const { state, tutor } = useScheduling();
   const { user } = useAuthState();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isPaying, setIsPaying] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [publishableKey, setPublishableKey] = useState<string | null>(null);
+  const [cardComplete, setCardComplete] = useState(false);
+  const [cardError, setCardError] = useState<string | null>(null);
+  const [cardElementRef, setCardElementRef] = useState<any>(null);
 
-  // Initialize Stripe
-  const { stripe, stripeLoaded, loading: stripeLoading } = useStripeInitialization();
-  
-  // Handle Stripe Elements - memoized to prevent recreation
-  const { elements, cardElement, cardError, cardComplete } = useStripeElements(stripe, clientSecret, stripeLoaded);
+  // Memoize Stripe promise based on publishable key
+  const stripePromise = useMemo(() => {
+    if (!publishableKey) return null;
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[stripe] pk last6:', publishableKey?.slice(-6));
+    }
+    return loadStripe(publishableKey);
+  }, [publishableKey]);
+
+  // Memoize Elements instance based on client secret
+  const elementsOptions = useMemo(() => {
+    if (!clientSecret) return null;
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[stripe] cs last6:', clientSecret?.slice(-6));
+    }
+    return {
+      clientSecret,
+      appearance: {
+        theme: 'stripe' as const,
+        variables: {
+          colorPrimary: '#990000',
+          colorBackground: '#ffffff',
+          colorText: '#1a1a1a',
+          colorDanger: '#ff5555',
+          fontFamily: 'system-ui, sans-serif',
+          borderRadius: '8px',
+        },
+      },
+    };
+  }, [clientSecret]);
+
+  // Load publishable key on mount
+  useEffect(() => {
+    const loadStripeConfig = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('get-stripe-config');
+        if (error) throw error;
+        setPublishableKey(data.publishableKey);
+      } catch (error) {
+        console.error('Failed to load Stripe config:', error);
+        setPaymentError('Failed to initialize payment system');
+      }
+    };
+    loadStripeConfig();
+  }, []);
 
   // Memoize payment setup dependencies to prevent unnecessary calls
   const paymentDeps = useMemo(() => ({
@@ -101,7 +148,7 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
 
       setSessionId(sessionData.id);
 
-      // Create payment intent - send amount as received (backend will handle cents conversion)
+      // Create payment intent - keep amount in cents (already converted by backend)
       const amount = calculatedCost;
       
       const { data: paymentResponse, error: paymentError } = await supabase.functions.invoke(
@@ -124,8 +171,10 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
       const data = paymentResponse as CreatePIResponse;
       if (process.env.NODE_ENV !== 'production') console.log('PI resp', data);
       
+      // Read client secret defensively
       const clientSecret =
-        data.clientSecret ?? data.client_secret ?? data.payment_intent_client_secret ?? null;
+        data?.client_secret ?? data?.clientSecret ?? data?.paymentIntent?.client_secret ?? null;
+      
       if (!clientSecret) {
         console.error('create-payment-intent response:', data);
         setPaymentError('Could not get client secret from payment intent.');
@@ -144,76 +193,104 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
   };
 
   const handlePayment = useCallback(async () => {
-    if (!stripe || !elements || !clientSecret) {
-      toast.error('Payment system not ready');
+    // Guard: check all required elements
+    if (!publishableKey || !clientSecret) {
+      setPaymentError('Payment system not ready - missing configuration');
       return;
     }
 
+    // Prevent double-submit
+    if (isPaying) return;
+
     try {
+      setIsPaying(true);
       setIsProcessing(true);
       setPaymentError(null);
 
-      // Dev-only: Check Stripe key compatibility
-      if (process.env.NODE_ENV !== 'production') {
-        try {
-          console.debug('Running Stripe diagnostics check...');
-          const diagnosticsResponse = await supabase.functions.invoke('stripe-diagnostics');
-          
-          if (diagnosticsResponse.data && !diagnosticsResponse.error) {
-            const diagnostics = diagnosticsResponse.data;
-            console.debug('Stripe diagnostics:', diagnostics);
-            
-            // Get frontend publishable key (from same source as Stripe initialization)
-            const frontendKeyResponse = await supabase.functions.invoke('get-stripe-config');
-            if (frontendKeyResponse.data && !frontendKeyResponse.error) {
-              const frontendKey = frontendKeyResponse.data.publishableKey;
-              const frontendLast4 = frontendKey?.slice(-4);
-              const serverLast4 = diagnostics.expected_publishable_key_last4;
-              
-              if (frontendLast4 !== serverLast4) {
-                setPaymentError(
-                  `Stripe keys mismatch: frontend pk (...${frontendLast4}) ≠ server pk (...${serverLast4}). Use the same Stripe account/sandbox for both client and server.`
-                );
-                setIsProcessing(false);
-                return;
-              }
-            }
-          }
-        } catch (diagError) {
-          console.debug('Diagnostics check failed, continuing with payment:', diagError);
-          // Continue with payment if diagnostics fail
-        }
-      }
-
-      console.log('Starting payment confirmation...');
-      const { error: paymentError } = await stripe.confirmPayment({
-        elements,
-        redirect: 'if_required',
-        confirmParams: {
-          return_url: window.location.href
-        }
-      });
-
-      if (paymentError) {
-        console.error('Stripe payment error:', paymentError);
-        setPaymentError(paymentError.message || 'Payment failed');
-        toast.error(paymentError.message || 'Payment failed');
+      const stripe = await stripePromise;
+      if (!stripe) {
+        setPaymentError('Failed to load Stripe');
         return;
       }
 
-      // Payment successful
-      toast.success('Payment successful!');
-      onContinue(sessionId!, true);
+      // Get the card element
+      if (!cardElementRef) {
+        setPaymentError('Payment form not ready');
+        return;
+      }
+
+      // Confirm payment with card element
+      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: cardElementRef,
+        },
+      });
+
+      if (error) {
+        console.error('Stripe payment error:', error);
+        setPaymentError(error.message || 'Payment failed');
+        return;
+      }
+
+      // Handle different payment statuses
+      if (paymentIntent?.status === 'succeeded') {
+        toast.success('Payment successful!');
+        onContinue(sessionId!, true);
+      } else if (paymentIntent?.status === 'requires_payment_method') {
+        setPaymentError('Your card was declined. Please try another payment method.');
+      } else {
+        setPaymentError('Payment could not be processed. Please try again.');
+      }
       
     } catch (error) {
       console.error('Payment error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Payment processing failed';
       setPaymentError(errorMessage);
-      toast.error(errorMessage);
     } finally {
+      setIsPaying(false);
       setIsProcessing(false);
     }
-  }, [stripe, elements, clientSecret, sessionId, onContinue]);
+  }, [stripePromise, clientSecret, sessionId, onContinue, isPaying, publishableKey, cardElementRef]);
+
+  // Mount Stripe Elements when ready
+  useEffect(() => {
+    if (!stripePromise || !elementsOptions) return;
+
+    const mountElements = async () => {
+      const stripe = await stripePromise;
+      if (!stripe) return;
+
+      const elements = stripe.elements(elementsOptions);
+      const cardElement = elements.create('cardNumber', {
+        style: {
+          base: {
+            fontSize: '16px',
+            fontFamily: 'system-ui, sans-serif',
+            '::placeholder': {
+              color: '#aab7c4',
+            },
+          },
+          invalid: {
+            color: '#ff5555',
+          },
+        },
+      });
+
+      const cardContainer = document.getElementById('card-element');
+      if (cardContainer) {
+        cardContainer.innerHTML = '';
+        cardElement.mount('#card-element');
+        setCardElementRef(cardElement);
+
+        cardElement.on('change', (event: any) => {
+          setCardError(event.error ? event.error.message : '');
+          setCardComplete(event.complete);
+        });
+      }
+    };
+
+    mountElements();
+  }, [stripePromise, elementsOptions]);
 
   const formatDateTime = () => {
     if (!state.selectedDate || !state.selectedTimeSlot) return '';
@@ -228,11 +305,11 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
     return `${format(date, 'EEEE, MMMM d, yyyy')} at ${format(date, 'h:mm a')} - ${format(endDate, 'h:mm a')}`;
   };
 
-  if (stripeLoading || isProcessing) {
+  if (!publishableKey || isProcessing) {
     return (
       <div className="flex justify-center items-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal mr-2" />
-        <p>{stripeLoading ? 'Setting up payment...' : 'Processing...'}</p>
+        <p>{!publishableKey ? 'Setting up payment...' : 'Processing...'}</p>
       </div>
     );
   }
@@ -290,7 +367,7 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
           <div className="space-y-4">
             <div className="p-4 border rounded-lg">
               <div id="card-element" className="min-h-[40px]">
-                {/* Stripe Elements will mount here */}
+                {/* Stripe Card Element will mount here */}
               </div>
             </div>
             
@@ -303,15 +380,15 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
 
       {/* Actions */}
       <div className="flex justify-between">
-        <Button variant="outline" onClick={onBack} disabled={isProcessing}>
+        <Button variant="outline" onClick={onBack} disabled={isPaying}>
           Back
         </Button>
         <Button 
           onClick={handlePayment}
-          disabled={isProcessing || !stripeLoaded || !clientSecret || !cardComplete}
+          disabled={isPaying || !clientSecret || !cardComplete}
           className="bg-usc-cardinal hover:bg-usc-cardinal-dark"
         >
-          {isProcessing ? (
+          {isPaying ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
               Processing...
