@@ -9,34 +9,79 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import './payment-element.css';
 
 // Initialize Stripe outside component for better performance
-const stripePromise = loadStripe(process.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
+const stripePromise = loadStripe(
+  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || (window as any).__STRIPE_PK__
+);
 
-// PaymentElement wrapper with error boundary
-const PaymentElementWrapper = () => {
-  const [elementError, setElementError] = useState<string | null>(null);
-  
-  try {
-    return (
-      <div>
-        <PaymentElement 
-          onReady={() => console.log('[PaymentElement] Ready')}
-          onChange={(event) => {
-            console.log('[PaymentElement] Change:', event.complete);
-          }}
-          options={{
-            layout: 'tabs',
-            paymentMethodOrder: ['card']
-          }}
-        />
-        {elementError && <div style={{color: 'red'}}>Element Error: {elementError}</div>}
+// PaymentForm component that handles the actual payment submission
+function PaymentForm({ clientSecret, onSuccess }: { clientSecret: string; onSuccess: () => void }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [submitting, setSubmitting] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Sanity check: log whether the PaymentElement exists after mount
+    if (elements) {
+      const el = elements.getElement('payment');
+      console.log('[sb] payment element present?', !!el);
+    }
+  }, [elements]);
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements || !clientSecret) {
+      setMsg('Card entry is not ready yet.');
+      return;
+    }
+
+    setSubmitting(true);
+    setMsg(null);
+
+    const { error, paymentIntent } = await stripe.confirmPayment({
+      elements,
+      clientSecret,
+      redirect: 'if_required',
+    });
+
+    setSubmitting(false);
+
+    if (error) {
+      setMsg(error.message || 'Payment failed');
+    } else if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'requires_capture') {
+      toast.success('Payment successful!');
+      onSuccess();
+    } else {
+      setMsg('Payment not completed.');
+    }
+  };
+
+  return (
+    <form onSubmit={onSubmit} className="space-y-4">
+      <div id="payment-element-box" style={{ minHeight: '72px' }}>
+        <PaymentElement id="payment-element" />
       </div>
-    );
-  } catch (error) {
-    return <div style={{color: 'red'}}>PaymentElement failed to mount: {(error as Error).message}</div>;
-  }
-};
+      {msg && <div className="text-destructive text-sm mt-2">{msg}</div>}
+      <Button
+        type="submit"
+        disabled={submitting || !stripe || !elements}
+        className="w-full bg-usc-cardinal hover:bg-usc-cardinal-dark"
+      >
+        {submitting ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            Processing...
+          </>
+        ) : (
+          'Pay'
+        )}
+      </Button>
+    </form>
+  );
+}
 
 type CreatePIResponse = {
   id: string;
@@ -54,84 +99,6 @@ interface PaymentStepProps {
   calculatedCost?: number;
 }
 
-// Payment form component that uses Stripe Elements
-function PaymentForm({ onSuccess, sessionId, calculatedCost }: { onSuccess: () => void; sessionId: string; calculatedCost: number }) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isComplete, setIsComplete] = useState(false);
-
-  const handlePay = async () => {
-    if (!stripe || !elements) return;
-    
-    setIsSubmitting(true);
-    setError(null);
-    
-    const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
-      elements,
-      redirect: 'if_required'
-    });
-    
-    setIsSubmitting(false);
-    
-    if (confirmError) {
-      setError(confirmError.message ?? 'Payment failed');
-      return;
-    }
-    
-    if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'requires_capture') {
-      toast.success('Payment successful!');
-      onSuccess();
-    } else {
-      setError(`Unexpected status: ${paymentIntent?.status ?? 'unknown'}`);
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      {error && (
-        <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
-          <p className="text-destructive text-sm">{error}</p>
-        </div>
-      )}
-      
-      <div 
-        className="payment-element-container" 
-        style={{ 
-          minHeight: '120px', 
-          padding: '16px',
-          border: '1px solid #e5e7eb',
-          borderRadius: '8px',
-          backgroundColor: '#ffffff'
-        }}
-      >
-        <PaymentElement 
-          id="payment-element"
-          onChange={(e) => setIsComplete(e.complete)}
-          options={{
-            layout: 'tabs'
-          }}
-        />
-      </div>
-      
-      <Button 
-        onClick={handlePay}
-        disabled={isSubmitting || !stripe || !elements || !isComplete}
-        className="w-full bg-usc-cardinal hover:bg-usc-cardinal-dark"
-      >
-        {isSubmitting ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            Processing...
-          </>
-        ) : (
-          `Pay $${calculatedCost.toFixed(2)}`
-        )}
-      </Button>
-    </div>
-  );
-}
 
 export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentStepProps) {
   const { state, tutor } = useScheduling();
@@ -263,9 +230,7 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
       }
 
       const data = paymentResponse as CreatePIResponse;
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('[PI]', { clientSecret: data?.client_secret?.slice(0,6) + '...', amount: data?.amount, res: data });
-      }
+      console.log('[sb] PI', data?.id, 'secret tail', data?.client_secret?.slice(-6));
       
       // Read client secret defensively
       const clientSecret = data?.client_secret ?? data?.clientSecret ?? null;
@@ -312,6 +277,8 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
       </div>
     );
   }
+
+  console.log('[sb] render, has clientSecret?', !!clientSecret);
 
   return (
     <div className="space-y-6">
@@ -394,31 +361,21 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
             <div style={{color: 'red'}}>Error: {paymentError}</div>
           )}
           
-          {/* Force Elements to render with explicit conditions */}
-          {publishableKey && clientSecret && !isProcessing && !paymentError && (
-            <div style={{ 
-              border: '1px solid blue', 
-              minHeight: '150px', 
-              padding: '20px',
-              backgroundColor: 'white'
-            }}>
-              <Elements 
-                key={`${clientSecret}-${publishableKey}`}
-                stripe={loadStripe(publishableKey)}
-                options={{ 
-                  clientSecret,
-                  appearance: {
-                    theme: 'stripe',
-                    variables: {
-                      colorPrimary: '#0070f3'
-                    }
-                  }
-                }}
-              >
-                <PaymentElementWrapper />
-                <div>Elements container loaded</div>
-              </Elements>
-            </div>
+          {/* Render PaymentElement only after we have a clientSecret */}
+          {clientSecret && (
+            <Elements
+              stripe={stripePromise}
+              options={{ 
+                clientSecret, 
+                appearance: { 
+                  labels: 'floating',
+                  theme: 'stripe'
+                } 
+              }}
+              key={clientSecret} // ensures a clean mount when the secret changes
+            >
+              <PaymentForm clientSecret={clientSecret} onSuccess={handlePaymentSuccess} />
+            </Elements>
           )}
         </CardContent>
       </Card>

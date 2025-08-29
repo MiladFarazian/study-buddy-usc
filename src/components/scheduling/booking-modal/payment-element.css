@@ -1,0 +1,16 @@
+#payment-element-box {
+  min-height: 72px;
+}
+
+/* Ensure payment element is visible */
+.StripeElement {
+  min-height: 40px;
+}
+
+/* Stripe element container */
+#payment-element {
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: white;
+}
