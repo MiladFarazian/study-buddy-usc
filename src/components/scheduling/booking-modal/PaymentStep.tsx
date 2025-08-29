@@ -11,11 +11,6 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import './payment-element.css';
 
-// Initialize Stripe outside component for better performance
-const stripePromise = loadStripe(
-  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || (window as any).__STRIPE_PK__
-);
-
 // PaymentForm component that handles the actual payment submission
 function PaymentForm({ clientSecret, onSuccess }: { clientSecret: string; onSuccess: () => void }) {
   const stripe = useStripe();
@@ -61,7 +56,7 @@ function PaymentForm({ clientSecret, onSuccess }: { clientSecret: string; onSucc
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <div id="payment-element-box" style={{ minHeight: '72px' }}>
+      <div id="payment-element-box" style={{ minHeight: '80px', overflow: 'visible' }}>
         <PaymentElement id="payment-element" />
       </div>
       {msg && <div className="text-destructive text-sm mt-2">{msg}</div>}
@@ -109,6 +104,12 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
 
+  // Memoize Stripe promise using the actual publishable key
+  const stripePromise = useMemo(() => {
+    if (!publishableKey) return null;
+    return loadStripe(publishableKey);
+  }, [publishableKey]);
+
   // Comprehensive debug logging
   useEffect(() => {
     console.log('[PaymentStep] Component state:', {
@@ -120,7 +121,7 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
       paymentError,
       stripePromiseResolved: !!stripePromise
     });
-  }, [publishableKey, clientSecret, isProcessing, paymentError]);
+  }, [publishableKey, clientSecret, isProcessing, paymentError, stripePromise]);
 
   // Load publishable key on mount
   useEffect(() => {
@@ -137,17 +138,6 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
     loadStripeConfig();
   }, []);
 
-  // Add Stripe initialization check
-  useEffect(() => {
-    if (publishableKey) {
-      loadStripe(publishableKey).then(stripe => {
-        console.log('[Stripe] Initialized:', !!stripe);
-        if (!stripe) {
-          setPaymentError('Failed to initialize Stripe');
-        }
-      });
-    }
-  }, [publishableKey]);
 
   // Memoize payment setup dependencies to prevent unnecessary calls
   const paymentDeps = useMemo(() => ({
@@ -329,7 +319,8 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
             border: '2px solid red', 
             padding: '10px', 
             margin: '10px 0',
-            backgroundColor: '#f0f0f0' 
+            backgroundColor: '#f0f0f0',
+            pointerEvents: 'none'
           }}>
             <h4>Debug Info:</h4>
             <p>Publishable Key: {publishableKey ? `${publishableKey.substring(0,12)}...` : 'MISSING'}</p>
@@ -344,6 +335,23 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
             </div>
           )}
 
+          {/* Render PaymentElement only when both keys exist */}
+          {publishableKey && clientSecret && stripePromise && (
+            <Elements
+              stripe={stripePromise}
+              options={{ 
+                clientSecret, 
+                appearance: { 
+                  theme: 'stripe',
+                  labels: 'floating'
+                } 
+              }}
+              key={clientSecret} // force clean remount per new PI
+            >
+              <PaymentForm clientSecret={clientSecret} onSuccess={handlePaymentSuccess} />
+            </Elements>
+          )}
+
           {/* Show different states based on what's missing */}
           {!publishableKey && (
             <div>Waiting for Stripe configuration...</div>
@@ -355,27 +363,6 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
 
           {isProcessing && (
             <div>Loading payment form...</div>
-          )}
-
-          {paymentError && (
-            <div style={{color: 'red'}}>Error: {paymentError}</div>
-          )}
-          
-          {/* Render PaymentElement only after we have a clientSecret */}
-          {clientSecret && (
-            <Elements
-              stripe={stripePromise}
-              options={{ 
-                clientSecret, 
-                appearance: { 
-                  labels: 'floating',
-                  theme: 'stripe'
-                } 
-              }}
-              key={clientSecret} // ensures a clean mount when the secret changes
-            >
-              <PaymentForm clientSecret={clientSecret} onSuccess={handlePaymentSuccess} />
-            </Elements>
           )}
         </CardContent>
       </Card>
