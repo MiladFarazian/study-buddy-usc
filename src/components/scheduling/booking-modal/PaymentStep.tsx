@@ -11,61 +11,75 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import './payment-element.css';
 
+// Module-level Stripe promise - will be set once we get the publishable key
+let stripePromise: Promise<any> | null = null;
+
 // PaymentForm component that handles the actual payment submission
 function PaymentForm({ clientSecret, onSuccess }: { clientSecret: string; onSuccess: () => void }) {
   const stripe = useStripe();
   const elements = useElements();
-  const [submitting, setSubmitting] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+  const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  // Dev logging: check if PaymentElement is ready
   useEffect(() => {
-    // Sanity check: log whether the PaymentElement exists after mount
     if (elements) {
-      const el = elements.getElement('payment');
-      console.log('[sb] payment element present?', !!el);
+      const paymentElement = elements.getElement('payment');
+      console.log('[sb] PaymentElement ready?', !!paymentElement);
     }
   }, [elements]);
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!stripe || !elements || !clientSecret) {
-      setMsg('Card entry is not ready yet.');
+  const handleConfirm = async () => {
+    if (!stripe || !elements) {
+      setError('Payment form not ready.');
       return;
     }
 
-    setSubmitting(true);
-    setMsg(null);
+    setProcessing(true);
+    setError(null);
 
-    const { error, paymentIntent } = await stripe.confirmPayment({
-      elements,
-      clientSecret,
-      redirect: 'if_required',
-    });
+    try {
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        redirect: 'if_required',
+      });
 
-    setSubmitting(false);
+      if (error) {
+        setError(error.message ?? 'Payment failed');
+        return;
+      }
 
-    if (error) {
-      setMsg(error.message || 'Payment failed');
-    } else if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'requires_capture') {
-      toast.success('Payment successful!');
-      onSuccess();
-    } else {
-      setMsg('Payment not completed.');
+      if (paymentIntent?.status === 'succeeded') {
+        console.log('[sb] Payment succeeded:', paymentIntent.id);
+        toast.success('Payment successful!');
+        onSuccess();
+      } else {
+        setError(`Unexpected status: ${paymentIntent?.status ?? 'unknown'}`);
+      }
+    } catch (err) {
+      console.error('[sb] Payment confirmation error:', err);
+      setError('Payment failed. Please try again.');
+    } finally {
+      setProcessing(false);
     }
   };
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
+    <div className="space-y-4">
       <div id="payment-element-box" style={{ minHeight: '80px', overflow: 'visible' }}>
         <PaymentElement id="payment-element" />
       </div>
-      {msg && <div className="text-destructive text-sm mt-2">{msg}</div>}
+      
+      {error && (
+        <div className="text-destructive text-sm mt-2">{error}</div>
+      )}
+      
       <Button
-        type="submit"
-        disabled={submitting || !stripe || !elements}
+        onClick={handleConfirm}
+        disabled={!clientSecret || !stripe || !elements || processing}
         className="w-full bg-usc-cardinal hover:bg-usc-cardinal-dark"
       >
-        {submitting ? (
+        {processing ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin mr-2" />
             Processing...
@@ -74,7 +88,7 @@ function PaymentForm({ clientSecret, onSuccess }: { clientSecret: string; onSucc
           'Pay'
         )}
       </Button>
-    </form>
+    </div>
   );
 }
 
@@ -104,24 +118,23 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
 
-  // Memoize Stripe promise using the actual publishable key
-  const stripePromise = useMemo(() => {
-    if (!publishableKey) return null;
-    return loadStripe(publishableKey);
+  // Initialize Stripe promise when we get the publishable key
+  useEffect(() => {
+    if (publishableKey && !stripePromise) {
+      console.log('[sb] Initializing Stripe with key:', publishableKey.substring(0, 12) + '...');
+      stripePromise = loadStripe(publishableKey);
+    }
   }, [publishableKey]);
 
-  // Comprehensive debug logging
+  // Defensive logging for debugging
   useEffect(() => {
-    console.log('[PaymentStep] Component state:', {
-      hasPublishableKey: !!publishableKey,
-      publishableKeyPrefix: publishableKey?.substring(0, 12),
-      hasClientSecret: !!clientSecret,
-      clientSecretPrefix: clientSecret?.substring(0, 12),
-      isProcessing,
-      paymentError,
-      stripePromiseResolved: !!stripePromise
+    console.log('[sb] PaymentStep state:', {
+      publishableKeyTail: publishableKey?.slice(-6),
+      clientSecretTail: clientSecret?.slice(-6),
+      hasStripePromise: !!stripePromise,
+      isProcessing
     });
-  }, [publishableKey, clientSecret, isProcessing, paymentError, stripePromise]);
+  }, [publishableKey, clientSecret, isProcessing]);
 
   // Load publishable key on mount
   useEffect(() => {
@@ -268,7 +281,7 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
     );
   }
 
-  console.log('[sb] render, has clientSecret?', !!clientSecret);
+  console.log('[sb] render, has clientSecret?', !!clientSecret, 'stripePromise?', !!stripePromise);
 
   return (
     <div className="space-y-6">
