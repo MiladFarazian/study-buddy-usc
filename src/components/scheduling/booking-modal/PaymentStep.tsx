@@ -7,12 +7,9 @@ import { useAuthState } from '@/hooks/useAuthState';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { loadStripe } from '@stripe/stripe-js';
 import type * as stripeJs from '@stripe/stripe-js';
+import { getStripe } from '@/lib/stripeClient';
 import './payment-element.css';
-
-// Module-level Stripe promise
-let stripePromise: Promise<stripeJs.Stripe | null> | null = null;
 
 type CreatePIResponse = {
   id: string;
@@ -33,111 +30,156 @@ interface PaymentStepProps {
 export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentStepProps) {
   const { state, tutor } = useScheduling();
   const { user } = useAuthState();
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [paymentError, setPaymentError] = useState<string | null>(null);
+  
+  // State management
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
+  const [piSecret, setPiSecret] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [mounting, setMounting] = useState(false);
+  const [ready, setReady] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isReady, setIsReady] = useState(false);
+  const [hasStripeIframe, setHasStripeIframe] = useState(false);
 
+  // Refs for stable Elements instances
   const containerRef = useRef<HTMLDivElement | null>(null);
   const elementsRef = useRef<stripeJs.StripeElements | null>(null);
   const paymentElementRef = useRef<stripeJs.StripePaymentElement | null>(null);
-
-  // Initialize Stripe promise when we get the publishable key
-  useEffect(() => {
-    if (publishableKey && !stripePromise) {
-      console.log('[pay] Initializing Stripe with key:', publishableKey.substring(0, 12) + '...');
-      stripePromise = loadStripe(publishableKey);
-    }
-  }, [publishableKey]);
+  const moRef = useRef<MutationObserver | null>(null);
 
   // Load publishable key on mount
   useEffect(() => {
     const loadStripeConfig = async () => {
+      console.log('[pay] Fetching Stripe config...');
       try {
         const { data, error } = await supabase.functions.invoke('get-stripe-config');
         if (error) throw error;
+        console.log('[pay] Got publishable key ending:', data.publishableKey?.slice(-6));
         setPublishableKey(data.publishableKey);
       } catch (error) {
-        console.error('Failed to load Stripe config:', error);
-        setPaymentError('Failed to initialize payment system');
+        console.error('[pay] Failed to load Stripe config:', error);
+        setError('Failed to initialize payment system');
       }
     };
     loadStripeConfig();
   }, []);
 
-  // Memoize payment setup dependencies to prevent unnecessary calls
-  const paymentDeps = useMemo(() => ({
-    userId: user?.id,
-    tutorId: tutor?.id,
-    selectedDate: state.selectedDate,
-    selectedTimeSlot: state.selectedTimeSlot,
-    calculatedCost
-  }), [user?.id, tutor?.id, state.selectedDate, state.selectedTimeSlot, calculatedCost]);
-
-  // Create session and payment intent when component mounts or dependencies change
+  // Create PaymentIntent when publishable key is ready
   useEffect(() => {
-    if (!paymentDeps.userId || !paymentDeps.tutorId || !paymentDeps.selectedDate || !paymentDeps.selectedTimeSlot) return;
-    // Only create if we don't already have a clientSecret to prevent duplicate calls
-    if (clientSecret) return;
+    if (!publishableKey || !user || !tutor || !state.selectedDate || !state.selectedTimeSlot) return;
+    if (piSecret) return; // Already created
 
-    createSessionAndPaymentIntent();
-  }, [paymentDeps, clientSecret]);
+    createPaymentIntent();
+  }, [publishableKey, user?.id, tutor?.id, state.selectedDate, state.selectedTimeSlot]);
 
-  // Mount PaymentElement when clientSecret is available
+  // Mount PaymentElement when publishableKey and piSecret are available
   useEffect(() => {
-    let cancelled = false;
+    if (!publishableKey || !piSecret || !containerRef.current) return;
     
+    let cancelled = false;
+    setMounting(true);
+    setReady(false);
+    setError(null);
+
     async function mountElement() {
-      setIsReady(false);
-      const stripe = await stripePromise;
-      if (!stripe || !clientSecret || !containerRef.current) return;
-      
-      console.log('[pay] build elements with cs last6:', clientSecret.slice(-6));
+      try {
+        console.log('[pay] Elements init with PI secret last6:', piSecret.slice(-6));
+        const stripe = await getStripe(publishableKey);
+        if (!stripe || cancelled) return;
 
-      // Create Elements WITH clientSecret (critical)
-      const elements = stripe.elements({ clientSecret });
-      elementsRef.current = elements;
+        // Create Elements WITH clientSecret (critical for PaymentIntent)
+        const elements = stripe.elements({ clientSecret: piSecret });
+        elementsRef.current = elements;
 
-      // Create & mount Payment Element
-      const pe = elements.create('payment', { layout: 'tabs' });
-      paymentElementRef.current = pe;
-      
-      pe.on('ready', () => {
-        if (!cancelled) {
-          setIsReady(true);
-          console.log('[pay] PaymentElement ready; iframe count:', document.querySelectorAll('#payment-element iframe').length);
+        // Create & mount Payment Element
+        const paymentElement = elements.create('payment', { layout: 'tabs' });
+        paymentElementRef.current = paymentElement;
+
+        // Setup event listeners
+        paymentElement.on('ready', () => {
+          if (!cancelled) {
+            console.log('[pay] PaymentElement ready');
+            setReady(true);
+            setMounting(false);
+            
+            // Check for iframe after a short delay
+            setTimeout(() => {
+              const iframes = Array.from(document.querySelectorAll('iframe'));
+              const hasStripeIframe = iframes.some(f => f.src.includes('stripe.com'));
+              console.log('[diag] iframe count', iframes.length);
+              console.log('[diag] has stripe iframe', hasStripeIframe);
+              setHasStripeIframe(hasStripeIframe);
+            }, 120);
+          }
+        });
+
+        paymentElement.on('loaderror', (event) => {
+          if (!cancelled) {
+            console.error('[pay] PaymentElement load error:', event);
+            setError(event.error?.message || 'Failed to load payment form');
+            setMounting(false);
+          }
+        });
+
+        paymentElement.mount(containerRef.current!);
+        console.log('[pay] PaymentElement mounted');
+
+        // Setup MutationObserver to watch for iframe changes
+        if (moRef.current) {
+          moRef.current.disconnect();
         }
-      });
-      
-      pe.mount(containerRef.current);
+        
+        const observer = new MutationObserver(() => {
+          const hasIframe = !!document.querySelector('#payment-element iframe[src*="stripe.com"]');
+          if (hasIframe !== hasStripeIframe) {
+            console.log('[pay] Iframe status changed:', hasIframe);
+            setHasStripeIframe(hasIframe);
+          }
+        });
+        
+        observer.observe(containerRef.current!, {
+          childList: true,
+          subtree: true
+        });
+        
+        moRef.current = observer;
+
+      } catch (error) {
+        if (!cancelled) {
+          console.error('[pay] Error mounting PaymentElement:', error);
+          setError('Failed to initialize payment form');
+          setMounting(false);
+        }
+      }
     }
 
-    if (clientSecret) {
-      mountElement();
-    }
+    mountElement();
 
     return () => {
       cancelled = true;
-      try { 
-        paymentElementRef.current?.unmount(); 
-      } catch {}
+      if (moRef.current) {
+        moRef.current.disconnect();
+        moRef.current = null;
+      }
+      try {
+        paymentElementRef.current?.unmount();
+      } catch (e) {
+        console.log('[pay] Unmount error (non-fatal):', e);
+      }
       paymentElementRef.current = null;
+      elementsRef.current = null;
     };
-  }, [clientSecret]);
+  }, [publishableKey, piSecret]);
 
-  const createSessionAndPaymentIntent = async () => {
+  const createPaymentIntent = async () => {
     if (!user || !tutor || !state.selectedDate || !state.selectedTimeSlot) {
-      toast.error('Missing required information');
+      console.log('[pay] Missing required data for PI creation');
       return;
     }
 
     try {
-      setIsProcessing(true);
-      setPaymentError(null);
+      console.log('[pay] Creating session and PaymentIntent...');
+      setError(null);
 
       // Calculate start and end times
       const startTime = new Date(state.selectedDate);
@@ -169,17 +211,16 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
         throw new Error('Failed to create session');
       }
 
+      console.log('[pay] Session created:', sessionData.id);
       setSessionId(sessionData.id);
 
-      // Create payment intent - keep amount in cents (already converted by backend)
-      const amount = calculatedCost;
-      
+      // Create PaymentIntent
       const { data: paymentResponse, error: paymentError } = await supabase.functions.invoke(
         'create-payment-intent',
         {
           body: {
             sessionId: sessionData.id,
-            amount: amount,
+            amount: calculatedCost,
             tutorId: tutor.id,
             studentId: user.id,
             description: `Tutoring session with ${tutor.firstName || tutor.name}`
@@ -192,34 +233,39 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
       }
 
       const data = paymentResponse as CreatePIResponse;
-      console.log('[sb] PI', data?.id, 'secret tail', data?.client_secret?.slice(-6));
+      console.log('[pay] PaymentIntent created:', data?.id, 'secret last6:', data?.client_secret?.slice(-6));
       
       // Read client secret defensively
       const clientSecret = data?.client_secret ?? data?.clientSecret ?? null;
       
       if (!clientSecret) {
-        console.error('create-payment-intent response:', data);
-        setPaymentError('Could not get client secret from payment intent.');
+        console.error('[pay] Missing client_secret in response:', data);
+        setError('Could not get client secret from payment intent');
         return;
       }
 
-      setClientSecret(clientSecret);
+      setPiSecret(clientSecret);
+      console.log('[pay] PI setup complete');
       
     } catch (error) {
-      console.error('Error creating session and payment intent:', error);
-      setPaymentError(error instanceof Error ? error.message : 'Failed to setup payment');
-      toast.error('Failed to setup payment. Please try again.');
-    } finally {
-      setIsProcessing(false);
+      console.error('[pay] Error creating PaymentIntent:', error);
+      setError(error instanceof Error ? error.message : 'Failed to setup payment');
     }
   };
 
   const onPay = async () => {
-    const stripe = await stripePromise;
+    if (!publishableKey) {
+      setError('Stripe not initialized');
+      return;
+    }
+
+    console.log('[pay] Starting payment confirmation...');
+    const stripe = await getStripe(publishableKey);
     const elements = elementsRef.current;
+    
     if (!stripe || !elements) {
-      console.error('[pay] missing stripe/elements at confirm');
-      setError('Payment form not ready.');
+      console.error('[pay] Missing stripe/elements at confirm');
+      setError('Payment form not ready');
       return;
     }
     
@@ -227,24 +273,39 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
     setError(null);
     
     try {
+      console.log('[pay] Calling confirmPayment...');
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         redirect: 'if_required',
       });
       
-      console.log('[pay] confirm result:', { error: error?.message, status: paymentIntent?.status, id: paymentIntent?.id });
+      console.log('[pay] Confirm result:', { 
+        error: error?.message, 
+        status: paymentIntent?.status, 
+        id: paymentIntent?.id 
+      });
       
       if (error) {
+        console.error('[pay] Payment error:', error);
         setError(error.message ?? 'Payment failed');
         return;
       }
       
       if (paymentIntent?.status === 'succeeded') {
+        console.log('[pay] Payment succeeded!');
         toast.success('Payment successful!');
         onContinue(sessionId!, true);
+      } else if (paymentIntent?.status === 'processing') {
+        console.log('[pay] Payment processing...');
+        toast.success('Payment is being processed');
+        onContinue(sessionId!, true);
       } else {
+        console.log('[pay] Unexpected payment status:', paymentIntent?.status);
         setError('Payment not completed');
       }
+    } catch (err) {
+      console.error('[pay] Exception during confirmation:', err);
+      setError('Payment confirmation failed');
     } finally {
       setProcessing(false);
     }
@@ -263,11 +324,11 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
     return `${format(date, 'EEEE, MMMM d, yyyy')} at ${format(date, 'h:mm a')} - ${format(endDate, 'h:mm a')}`;
   };
 
-  if (!publishableKey || isProcessing) {
+  if (!publishableKey) {
     return (
       <div className="flex justify-center items-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal mr-2" />
-        <p>{!publishableKey ? 'Setting up payment...' : 'Processing...'}</p>
+        <p>Setting up payment...</p>
       </div>
     );
   }
@@ -316,22 +377,15 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
           <CardTitle>Payment Information</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Dev-only debug panel */}
-          {process.env.NODE_ENV !== 'production' && (
-            <pre style={{ fontSize: 12, background:'#f8f8f8', padding:8, marginBottom: 16 }}>
-              Debug:
-              pk: {publishableKey?.slice(-6)}
-              cs: {clientSecret?.slice(-6)}
-              ready: {String(isReady)}
-              iframe: {String(!!document.querySelector('#payment-element iframe'))}
-            </pre>
-          )}
-
-          {paymentError && (
-            <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
-              <p className="text-destructive text-sm">{paymentError}</p>
-            </div>
-          )}
+          {/* Comprehensive diagnostics panel */}
+          <div style={{ fontSize: 12, background:'#f8f8f8', padding: 8, marginBottom: 16, fontFamily: 'monospace' }}>
+            <div>PK last6: {publishableKey?.slice(-6) || 'NONE'}</div>
+            <div>PI secret last6: {piSecret?.slice(-6) || 'NONE'}</div>
+            <div>Mounted: {ready ? 'YES' : 'NO'}</div>
+            <div>Stripe iframe: {hasStripeIframe ? 'YES' : 'NO'}</div>
+            <div>Loading: {mounting ? 'YES' : 'NO'}</div>
+            <div>Error: {error || 'NONE'}</div>
+          </div>
 
           {error && (
             <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
@@ -339,26 +393,36 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
             </div>
           )}
 
-          {/* Stable mount target that stays in the DOM */}
-          <div id="payment-element" ref={containerRef} style={{ minHeight: 84, display: 'block' }} />
+          {/* Payment Element Container */}
+          <div id="payment-element" ref={containerRef} style={{ minHeight: 84, display: 'block' }}>
+            {mounting && !ready && (
+              <div className="flex items-center justify-center h-20 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Loading...
+              </div>
+            )}
+          </div>
 
-          {!clientSecret && publishableKey && (
-            <div className="text-center py-4">Creating payment intent...</div>
+          {!piSecret && publishableKey && !error && (
+            <div className="text-center py-4 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin mr-2 inline" />
+              Creating payment intent...
+            </div>
           )}
 
           {/* Pay Button */}
           <Button
             onClick={onPay}
-            disabled={!isReady || processing}
+            disabled={!ready || processing || mounting || !piSecret}
             className="w-full bg-usc-cardinal hover:bg-usc-cardinal-dark mt-4"
           >
             {processing ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Processing...
+                Processing Payment...
               </>
             ) : (
-              'Pay'
+              `Pay $${calculatedCost.toFixed(2)}`
             )}
           </Button>
         </CardContent>
