@@ -229,20 +229,29 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
       );
 
       if (paymentError) {
+        console.error('Server error response:', paymentError);
         throw new Error(paymentResponse?.error || 'Failed to create payment intent');
       }
 
       const data = paymentResponse as CreatePIResponse;
-      console.log('[pay] PaymentIntent created:', data?.id, 'secret last6:', data?.client_secret?.slice(-6));
+      console.log('Server response data:', data);
+      console.log('Available response fields:', Object.keys(data || {}));
       
-      // Read client secret defensively
-      const clientSecret = data?.client_secret ?? data?.clientSecret ?? null;
+      // Try multiple possible field names for robust client_secret extraction
+      const clientSecret = data?.client_secret || 
+                          data?.clientSecret || 
+                          data?.['client-secret'] || 
+                          data?.secret ||
+                          data?.pi_client_secret;
       
       if (!clientSecret) {
-        console.error('[pay] Missing client_secret in response:', data);
-        setError('Could not get client secret from payment intent');
+        console.error('No client_secret found. Available fields:', Object.keys(data || {}));
+        setError(`No client_secret in server response. Got fields: ${Object.keys(data || {}).join(', ')}`);
         return;
       }
+
+      console.log('Found client_secret ending in:', clientSecret.slice(-6));
+      console.log('[pay] PaymentIntent created:', data?.id, 'secret last6:', clientSecret.slice(-6));
 
       setPiSecret(clientSecret);
       console.log('[pay] PI setup complete');
@@ -381,6 +390,7 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
           <div style={{ fontSize: 12, background:'#f8f8f8', padding: 8, marginBottom: 16, fontFamily: 'monospace' }}>
             <div>PK last6: {publishableKey?.slice(-6) || 'NONE'}</div>
             <div>PI secret last6: {piSecret?.slice(-6) || 'NONE'}</div>
+            <div>CS found: {piSecret ? 'YES' : 'NO'}</div>
             <div>Mounted: {ready ? 'YES' : 'NO'}</div>
             <div>Stripe iframe: {hasStripeIframe ? 'YES' : 'NO'}</div>
             <div>Loading: {mounting ? 'YES' : 'NO'}</div>
