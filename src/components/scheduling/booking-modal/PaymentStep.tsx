@@ -13,6 +13,31 @@ import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-
 // Initialize Stripe outside component for better performance
 const stripePromise = loadStripe(process.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
 
+// PaymentElement wrapper with error boundary
+const PaymentElementWrapper = () => {
+  const [elementError, setElementError] = useState<string | null>(null);
+  
+  try {
+    return (
+      <div>
+        <PaymentElement 
+          onReady={() => console.log('[PaymentElement] Ready')}
+          onChange={(event) => {
+            console.log('[PaymentElement] Change:', event.complete);
+          }}
+          options={{
+            layout: 'tabs',
+            paymentMethodOrder: ['card']
+          }}
+        />
+        {elementError && <div style={{color: 'red'}}>Element Error: {elementError}</div>}
+      </div>
+    );
+  } catch (error) {
+    return <div style={{color: 'red'}}>PaymentElement failed to mount: {(error as Error).message}</div>;
+  }
+};
+
 type CreatePIResponse = {
   id: string;
   clientSecret?: string;
@@ -144,6 +169,18 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
     };
     loadStripeConfig();
   }, []);
+
+  // Add Stripe initialization check
+  useEffect(() => {
+    if (publishableKey) {
+      loadStripe(publishableKey).then(stripe => {
+        console.log('[Stripe] Initialized:', !!stripe);
+        if (!stripe) {
+          setPaymentError('Failed to initialize Stripe');
+        }
+      });
+    }
+  }, [publishableKey]);
 
   // Memoize payment setup dependencies to prevent unnecessary calls
   const paymentDeps = useMemo(() => ({
@@ -368,9 +405,17 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
               <Elements 
                 key={`${clientSecret}-${publishableKey}`}
                 stripe={loadStripe(publishableKey)}
-                options={{ clientSecret }}
+                options={{ 
+                  clientSecret,
+                  appearance: {
+                    theme: 'stripe',
+                    variables: {
+                      colorPrimary: '#0070f3'
+                    }
+                  }
+                }}
               >
-                <PaymentElement />
+                <PaymentElementWrapper />
                 <div>Elements container loaded</div>
               </Elements>
             </div>
