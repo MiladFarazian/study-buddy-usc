@@ -40,6 +40,8 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasStripeIframe, setHasStripeIframe] = useState(false);
+  const [requestMade, setRequestMade] = useState(false);
+  const [responseReceived, setResponseReceived] = useState(false);
 
   // Refs for stable Elements instances
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -180,6 +182,8 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
     try {
       console.log('[pay] Creating session and PaymentIntent...');
       setError(null);
+      setRequestMade(false);
+      setResponseReceived(false);
 
       // Calculate start and end times
       const startTime = new Date(state.selectedDate);
@@ -214,19 +218,29 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
       console.log('[pay] Session created:', sessionData.id);
       setSessionId(sessionData.id);
 
+      // Prepare request body
+      const requestBody = {
+        sessionId: sessionData.id,
+        amount: calculatedCost,
+        tutorId: tutor.id,
+        studentId: user.id,
+        description: `Tutoring session with ${tutor.firstName || tutor.name}`
+      };
+      console.log('Sending payment intent request:', requestBody);
+      
       // Create PaymentIntent
+      setRequestMade(true);
       const { data: paymentResponse, error: paymentError } = await supabase.functions.invoke(
         'create-payment-intent',
         {
-          body: {
-            sessionId: sessionData.id,
-            amount: calculatedCost,
-            tutorId: tutor.id,
-            studentId: user.id,
-            description: `Tutoring session with ${tutor.firstName || tutor.name}`
-          }
+          body: requestBody
         }
       );
+      setResponseReceived(true);
+
+      console.log('Request made to create-payment-intent');
+      console.log('Response received:', !!paymentResponse);
+      console.log('Error occurred:', !!paymentError);
 
       if (paymentError) {
         console.error('Server error response:', paymentError);
@@ -259,6 +273,7 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
     } catch (error) {
       console.error('[pay] Error creating PaymentIntent:', error);
       setError(error instanceof Error ? error.message : 'Failed to setup payment');
+      setResponseReceived(true);
     }
   };
 
@@ -391,6 +406,8 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
             <div>PK last6: {publishableKey?.slice(-6) || 'NONE'}</div>
             <div>PI secret last6: {piSecret?.slice(-6) || 'NONE'}</div>
             <div>CS found: {piSecret ? 'YES' : 'NO'}</div>
+            <div>Request made: {requestMade ? 'YES' : 'NO'}</div>
+            <div>Response received: {responseReceived ? 'YES' : 'NO'}</div>
             <div>Mounted: {ready ? 'YES' : 'NO'}</div>
             <div>Stripe iframe: {hasStripeIframe ? 'YES' : 'NO'}</div>
             <div>Loading: {mounting ? 'YES' : 'NO'}</div>
