@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, CreditCard } from 'lucide-react';
@@ -38,15 +38,26 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
   // Initialize Stripe
   const { stripe, stripeLoaded, loading: stripeLoading } = useStripeInitialization();
   
-  // Handle Stripe Elements
-  const { cardElement, cardError } = useStripeElements(stripe, clientSecret, stripeLoaded);
+  // Handle Stripe Elements - memoized to prevent recreation
+  const { elements, cardElement, cardError, cardComplete } = useStripeElements(stripe, clientSecret, stripeLoaded);
 
-  // Create session and payment intent when component mounts
+  // Memoize payment setup dependencies to prevent unnecessary calls
+  const paymentDeps = useMemo(() => ({
+    userId: user?.id,
+    tutorId: tutor?.id,
+    selectedDate: state.selectedDate,
+    selectedTimeSlot: state.selectedTimeSlot,
+    calculatedCost
+  }), [user?.id, tutor?.id, state.selectedDate, state.selectedTimeSlot, calculatedCost]);
+
+  // Create session and payment intent when component mounts or dependencies change
   useEffect(() => {
-    if (!user || !tutor || !state.selectedDate || !state.selectedTimeSlot) return;
+    if (!paymentDeps.userId || !paymentDeps.tutorId || !paymentDeps.selectedDate || !paymentDeps.selectedTimeSlot) return;
+    // Only create if we don't already have a clientSecret to prevent duplicate calls
+    if (clientSecret) return;
 
     createSessionAndPaymentIntent();
-  }, [user, tutor, state.selectedDate, state.selectedTimeSlot]);
+  }, [paymentDeps, clientSecret]);
 
   const createSessionAndPaymentIntent = async () => {
     if (!user || !tutor || !state.selectedDate || !state.selectedTimeSlot) {
@@ -90,8 +101,8 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
 
       setSessionId(sessionData.id);
 
-      // Create payment intent
-      const amount = Math.round(calculatedCost * 100); // Convert to cents
+      // Create payment intent - send amount as received (backend will handle cents conversion)
+      const amount = calculatedCost;
       
       const { data: paymentResponse, error: paymentError } = await supabase.functions.invoke(
         'create-payment-intent',
@@ -132,8 +143,8 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
     }
   };
 
-  const handlePayment = async () => {
-    if (!stripe || !cardElement || !clientSecret) {
+  const handlePayment = useCallback(async () => {
+    if (!stripe || !elements || !clientSecret) {
       toast.error('Payment system not ready');
       return;
     }
@@ -175,14 +186,12 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
       }
 
       console.log('Starting payment confirmation...');
-      const { error: paymentError } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: cardElement,
-          billing_details: {
-            name: state.studentName,
-            email: state.studentEmail,
-          },
-        },
+      const { error: paymentError } = await stripe.confirmPayment({
+        elements,
+        redirect: 'if_required',
+        confirmParams: {
+          return_url: window.location.href
+        }
       });
 
       if (paymentError) {
@@ -198,12 +207,13 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
       
     } catch (error) {
       console.error('Payment error:', error);
-      setPaymentError('Payment processing failed');
-      toast.error('Payment processing failed');
+      const errorMessage = error instanceof Error ? error.message : 'Payment processing failed';
+      setPaymentError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsProcessing(false);
     }
-  };
+  }, [stripe, elements, clientSecret, sessionId, onContinue]);
 
   const formatDateTime = () => {
     if (!state.selectedDate || !state.selectedTimeSlot) return '';
@@ -298,7 +308,7 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
         </Button>
         <Button 
           onClick={handlePayment}
-          disabled={isProcessing || !stripeLoaded || !clientSecret}
+          disabled={isProcessing || !stripeLoaded || !clientSecret || !cardComplete}
           className="bg-usc-cardinal hover:bg-usc-cardinal-dark"
         >
           {isProcessing ? (

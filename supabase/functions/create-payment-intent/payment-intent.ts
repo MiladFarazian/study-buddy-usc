@@ -193,17 +193,19 @@ export async function createPaymentIntent(
     maxNetworkRetries: 2, // Add automatic retries for network issues
   });
 
-  // Ensure amount is a number and convert to cents (Stripe uses smallest currency unit)
-  const amountInCents = Math.round(parseFloat(amount.toString()) * 100);
+  // Guard against double cents conversion
+  const raw = Number(amount);
+  const amountCents = raw >= 1000 ? raw : Math.round(raw * 100);
+  console.log('amount_in_request', raw, 'amount_cents_to_stripe', amountCents);
   
-  if (isNaN(amountInCents) || amountInCents <= 0) {
+  if (isNaN(amountCents) || amountCents <= 0) {
     throw new Error('Invalid amount value');
   }
   
-  console.log('Creating new payment intent with amount in cents:', amountInCents);
+  console.log('Creating new payment intent with amount in cents:', amountCents);
   
   // Calculate platform fee (10% of the amount)
-  const platformFeeAmount = Math.round(amountInCents * 0.1);
+  const platformFeeAmount = Math.round(amountCents * 0.1);
   
   // Get transfer group ID based on session for tracking
   const transferGroup = `session_${sessionId}`;
@@ -217,7 +219,7 @@ export async function createPaymentIntent(
     console.log("Creating standard Connect payment with direct transfer");
     // Create a standard Connect payment intent with immediate transfer
     paymentIntent = await stripe.paymentIntents.create({
-      amount: amountInCents,
+      amount: amountCents,
       currency: 'usd',
       capture_method: 'automatic',
       metadata: {
@@ -244,7 +246,7 @@ export async function createPaymentIntent(
     // Create a regular payment intent to the platform account
     // Either because of forceTwoStage=true or because the tutor doesn't have Connect set up
     paymentIntent = await stripe.paymentIntents.create({
-      amount: amountInCents,
+      amount: amountCents,
       currency: 'usd',
       capture_method: 'automatic',
       metadata: {
@@ -282,7 +284,7 @@ export async function createPaymentIntent(
   // If this is a two-stage payment, create a pending_transfers record
   if (isTwoStagePayment) {
     // Calculate tutor amount (total minus platform fee)
-    const tutorAmount = amountInCents - platformFeeAmount;
+    const tutorAmount = amountCents - platformFeeAmount;
     
     await createPendingTransfer(
       supabaseAdmin,
