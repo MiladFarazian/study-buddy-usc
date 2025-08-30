@@ -1,104 +1,71 @@
-import React, { useState, useEffect } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, CreditCard } from 'lucide-react';
+import { Loader2, CreditCard, ExternalLink } from 'lucide-react';
 import { Tutor } from '@/types/tutor';
+import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
 
-// Stripe test publishable key
-const stripePromise = loadStripe('pk_test_51QO7kcP0YxO7kcGjfEQTyLsOhKFgF7XvqWk1JQ2Ua1U3zNsJKOmAXwL7GdY8vg4oM6Kz3r9KcF8vqVdL3QJEZ7ze00SJ8aFoPs');
-
-interface PaymentFormProps {
-  amount: number;
-  onPaymentComplete: () => void;
+interface PaymentStepProps {
+  onBack?: () => void;
+  onContinue?: (sessionId: string, paymentSuccess: boolean) => void;
+  calculatedCost?: number;
+  tutor: Tutor;
+  selectedSlot?: {
+    startTime: Date;
+    endTime: Date;
+  };
+  studentName?: string;
 }
 
-function PaymentForm({ amount, onPaymentComplete }: PaymentFormProps) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [message, setMessage] = useState('');
+export function PaymentStep({ 
+  onBack, 
+  onContinue, 
+  calculatedCost, 
+  tutor, 
+  selectedSlot,
+  studentName 
+}: PaymentStepProps) {
   const [processing, setProcessing] = useState(false);
+  const [message, setMessage] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!stripe || !elements || processing) return;
-
-    const cardElement = elements.getElement(CardElement);
-    if (!cardElement) return;
-
+  const handlePaymentClick = async () => {
     setProcessing(true);
-    setMessage('Creating payment...');
-    
+    setMessage('Creating checkout session...');
+
     try {
-      // First, create a payment method
-      const { error: paymentMethodError, paymentMethod } = await stripe.createPaymentMethod({
-        type: 'card',
-        card: cardElement,
-        billing_details: {
-          name: 'Test User',
+      const sessionId = `session_${Date.now()}_${tutor.id}`;
+      const amount = calculatedCost ? Math.round(calculatedCost * 100) : 3300; // Convert to cents
+      
+      // Format date and time for display
+      const sessionDate = selectedSlot ? format(selectedSlot.startTime, 'MMMM d, yyyy') : 'TBD';
+      const sessionTime = selectedSlot ? format(selectedSlot.startTime, 'h:mm a') : 'TBD';
+
+      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+        body: {
+          sessionId,
+          amount,
+          tutorName: tutor.name,
+          studentName: studentName || 'Student',
+          sessionDate,
+          sessionTime,
         },
       });
 
-      if (paymentMethodError) {
-        setMessage(paymentMethodError.message || 'Payment failed');
-        setProcessing(false);
-        return;
+      if (error) {
+        throw error;
       }
 
-      console.log('Payment method created:', paymentMethod.id);
-      setMessage('Processing payment...');
-
-      // For test purposes, create a mock Payment Intent client secret
-      // In a real app, this would come from your backend
-      const mockClientSecret = `pi_test_${Date.now()}_secret_test`;
-
-      // Try to confirm the payment with the mock client secret
-      // This will create a proper test transaction in Stripe
-      const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(mockClientSecret, {
-        payment_method: paymentMethod.id,
-      });
-
-      if (confirmError) {
-        console.error('Payment confirmation error:', confirmError);
-        
-        // Handle the specific error about invalid client secret
-        if (confirmError.message?.includes('Invalid client secret')) {
-          // For test mode, simulate successful payment since we can't create real Payment Intents from frontend
-          console.log('Test mode: Simulating successful payment with payment method:', paymentMethod.id);
-          setMessage('Payment succeeded! (Test Mode)');
-          setProcessing(false);
-          onPaymentComplete();
-          return;
-        }
-        
-        // Handle other error codes
-        if (confirmError.code === 'card_declined') {
-          setMessage('Your card was declined. Please try a different card.');
-        } else if (confirmError.code === 'expired_card') {
-          setMessage('Your card has expired. Please try a different card.');
-        } else if (confirmError.code === 'processing_error') {
-          setMessage('An error occurred while processing your card. Please try again.');
-        } else {
-          setMessage(confirmError.message || 'Payment failed. Please try again.');
-        }
-        setProcessing(false);
-        return;
-      }
-
-      // Payment succeeded
-      if (paymentIntent && paymentIntent.status === 'succeeded') {
-        console.log('Payment successful:', paymentIntent.id);
-        setMessage('Payment succeeded!');
-        setProcessing(false);
-        onPaymentComplete();
+      if (data?.url) {
+        // Redirect to Stripe Checkout
+        window.open(data.url, '_blank');
+        setMessage('Redirecting to Stripe checkout...');
       } else {
-        setMessage('Payment was not completed. Please try again.');
-        setProcessing(false);
+        throw new Error('No checkout URL received');
       }
-      
+
     } catch (err: any) {
-      console.error('Payment error:', err);
-      setMessage(err.message || 'Payment processing failed');
+      console.error('Error creating checkout session:', err);
+      setMessage(err.message || 'Failed to create checkout session');
       setProcessing(false);
     }
   };
@@ -108,87 +75,62 @@ function PaymentForm({ amount, onPaymentComplete }: PaymentFormProps) {
       <div className="text-center">
         <div className="flex items-center justify-center gap-2 mb-4">
           <CreditCard className="h-6 w-6 text-primary" />
-          <h3 className="text-lg font-semibold">Payment Details</h3>
+          <h3 className="text-lg font-semibold">Complete Payment</h3>
         </div>
-        <p className="text-muted-foreground">
-          Total: ${(amount / 100).toFixed(2)}
+        <p className="text-muted-foreground mb-4">
+          You'll be redirected to Stripe's secure checkout page
         </p>
-      </div>
-      
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="border rounded-lg p-4">
-          <label className="block text-sm font-medium mb-2">Card Information</label>
-          <CardElement
-            options={{
-              style: {
-                base: {
-                  fontSize: '16px',
-                  color: '#424770',
-                  '::placeholder': {
-                    color: '#aab7c4',
-                  },
-                },
-                invalid: {
-                  color: '#9e2146',
-                },
-              },
-            }}
-          />
-        </div>
-        
-        <Button 
-          type="submit"
-          disabled={!stripe || processing}
-          className="w-full"
-        >
-          {processing ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              Processing...
-            </>
-          ) : (
-            `Pay $${(amount / 100).toFixed(2)}`
-          )}
-        </Button>
-        
-        {message && (
-          <div className={`text-sm text-center ${
-            message.includes('succeeded') ? 'text-green-600' : 'text-destructive'
-          }`}>
-            {message}
+        <div className="bg-muted/50 rounded-lg p-4 mb-6">
+          <div className="text-2xl font-bold text-primary mb-2">
+            ${(calculatedCost || 33).toFixed(2)}
           </div>
+          <div className="text-sm text-muted-foreground">
+            Tutoring session with {tutor.name}
+          </div>
+          {selectedSlot && (
+            <div className="text-sm text-muted-foreground mt-1">
+              {format(selectedSlot.startTime, 'MMMM d, yyyy')} at {format(selectedSlot.startTime, 'h:mm a')}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <Button 
+        onClick={handlePaymentClick}
+        disabled={processing}
+        className="w-full"
+        size="lg"
+      >
+        {processing ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            Creating checkout...
+          </>
+        ) : (
+          <>
+            <ExternalLink className="h-4 w-4 mr-2" />
+            Pay ${(calculatedCost || 33).toFixed(2)} with Stripe
+          </>
         )}
-      </form>
-    </div>
-  );
-}
+      </Button>
 
-interface PaymentStepProps {
-  onBack?: () => void;
-  onContinue?: (sessionId: string, paymentSuccess: boolean) => void;
-  calculatedCost?: number;
-  tutor: Tutor;
-}
-
-export function PaymentStep({ onBack, onContinue, calculatedCost, tutor }: PaymentStepProps) {
-  const handlePaymentComplete = () => {
-    const sessionId = `session_${Date.now()}_${tutor.id}`;
-    onContinue?.(sessionId, true);
-  };
-
-  return (
-    <div className="space-y-6">
-      <Elements stripe={stripePromise}>
-        <PaymentForm 
-          amount={calculatedCost ? Math.round(calculatedCost * 100) : 3300}
-          onPaymentComplete={handlePaymentComplete}
-        />
-      </Elements>
+      {message && (
+        <div className={`text-sm text-center p-3 rounded-lg ${
+          message.includes('Redirecting') ? 'bg-blue-50 text-blue-700' : 'bg-red-50 text-red-700'
+        }`}>
+          {message}
+        </div>
+      )}
       
       <div className="flex justify-between pt-4 border-t">
-        <Button variant="outline" onClick={onBack}>
+        <Button variant="outline" onClick={onBack} disabled={processing}>
           Back
         </Button>
+      </div>
+
+      <div className="text-xs text-muted-foreground text-center">
+        <p>Your payment is processed securely by Stripe.</p>
+        <p>You'll receive an email receipt after successful payment.</p>
       </div>
     </div>
   );
