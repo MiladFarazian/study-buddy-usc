@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CreditCard } from 'lucide-react';
@@ -7,10 +9,69 @@ import { useAuthState } from '@/hooks/useAuthState';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 
+const stripePromise = loadStripe('pk_test_51Pp3rQCnpJUIJrEVdyHNiNhgCwQfLvYHe4A1MlPSG6Cp06fEKJgLa2CUCcOXgIUKl6nHVv5Q2b4VInQmWBpDmkfX00YlULdGrV');
+
 interface PaymentStepProps {
   onBack: () => void;
   onContinue: (sessionId: string, paymentSuccess: boolean) => void;
   calculatedCost?: number;
+}
+
+interface PaymentFormProps {
+  clientSecret: string;
+  sessionId: string;
+  onSuccess: () => void;
+  onError: (error: string) => void;
+}
+
+function PaymentForm({ clientSecret, sessionId, onSuccess, onError }: PaymentFormProps) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [processing, setProcessing] = useState(false);
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    
+    if (!stripe || !elements) return;
+    
+    setProcessing(true);
+    
+    try {
+      const { error: confirmError } = await stripe.confirmPayment({
+        elements,
+        redirect: 'if_required'
+      });
+      
+      if (confirmError) {
+        onError(confirmError.message || 'Payment failed');
+      } else {
+        // Update session payment status
+        await supabase
+          .from('sessions')
+          .update({ payment_status: 'paid' })
+          .eq('id', sessionId);
+        
+        onSuccess();
+      }
+    } catch (err: any) {
+      onError(err.message || 'Payment processing failed');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <PaymentElement />
+      <Button
+        type="submit"
+        disabled={!stripe || !elements || processing}
+        className="w-full bg-primary hover:bg-primary/90"
+      >
+        {processing ? 'Processing Payment...' : 'Complete Payment'}
+      </Button>
+    </form>
+  );
 }
 
 export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentStepProps) {
@@ -20,13 +81,9 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState({
-    response_received: false,
-    client_secret_present: false,
-    error_present: false
-  });
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
 
-  const handlePayment = async () => {
+  const createSessionAndPaymentIntent = async () => {
     if (!user || !tutor || !state.selectedDate || !state.selectedTimeSlot) {
       setError('Missing required data');
       return;
@@ -36,8 +93,6 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
     setError('');
     
     try {
-      console.log('Creating session first...');
-      
       // Calculate start and end times
       const startTime = new Date(state.selectedDate);
       const [startHour, startMinute] = state.selectedTimeSlot.start.split(':').map(Number);
@@ -68,11 +123,9 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
         throw new Error('Failed to create session');
       }
 
-      console.log('Session created:', sessionData.id);
       setSessionId(sessionData.id);
       
-      console.log('Calling Edge Function...');
-      
+      // Create payment intent
       const { data, error: fnError } = await supabase.functions.invoke('create-payment-intent', {
         body: { 
           sessionId: sessionData.id,
@@ -83,26 +136,31 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
         }
       });
       
-      setDebugInfo({
-        response_received: !!data,
-        client_secret_present: !!(data?.client_secret),
-        error_present: !!fnError
-      });
-      
       if (fnError) throw fnError;
       if (!data?.client_secret) throw new Error('No client_secret in response');
       
-      console.log('Success! Got client_secret:', data.client_secret.slice(-6));
-      
-      // For now, just continue without actual payment processing
-      onContinue(sessionData.id, true);
+      setClientSecret(data.client_secret);
       
     } catch (err: any) {
-      console.error('Payment failed:', err);
+      console.error('Setup failed:', err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    createSessionAndPaymentIntent();
+  }, []);
+
+  const handlePaymentSuccess = () => {
+    if (sessionId) {
+      onContinue(sessionId, true);
+    }
+  };
+
+  const handlePaymentError = (errorMessage: string) => {
+    setError(errorMessage);
   };
 
   const formatDateTime = () => {
@@ -118,6 +176,45 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
     return `${format(date, 'EEEE, MMMM d, yyyy')} at ${format(date, 'h:mm a')} - ${format(endDate, 'h:mm a')}`;
   };
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center">
+              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+              <p>Setting up payment...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error && !clientSecret) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center space-y-4">
+              <div className="text-red-600 bg-red-50 p-3 rounded border border-red-200">
+                {error}
+              </div>
+              <div className="flex gap-4">
+                <Button variant="outline" onClick={onBack} className="flex-1">
+                  Back
+                </Button>
+                <Button onClick={createSessionAndPaymentIntent} className="flex-1">
+                  Try Again
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Session Summary */}
@@ -125,7 +222,7 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5" />
-            Payment Details
+            Complete Payment
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -156,37 +253,48 @@ export function PaymentStep({ onBack, onContinue, calculatedCost = 0 }: PaymentS
         </CardContent>
       </Card>
 
-      {/* Debug Panel */}
-      <div className="text-sm bg-gray-100 p-4 rounded space-y-1">
-        <div>Response received: {debugInfo.response_received ? 'YES' : 'NO'}</div>
-        <div>Client secret: {debugInfo.client_secret_present ? 'YES' : 'NO'}</div>
-        <div>Error: {debugInfo.error_present ? 'YES' : 'NO'}</div>
-        {sessionId && <div>Session ID: {sessionId}</div>}
-      </div>
+      {/* Payment Form */}
+      {clientSecret && sessionId && (
+        <Card>
+          <CardContent className="p-6">
+            <Elements 
+              stripe={stripePromise} 
+              options={{ 
+                clientSecret,
+                appearance: { 
+                  theme: 'stripe',
+                  variables: {
+                    colorPrimary: 'hsl(var(--primary))',
+                    colorBackground: 'hsl(var(--background))',
+                    colorText: 'hsl(var(--foreground))',
+                    colorDanger: 'hsl(var(--destructive))',
+                    fontFamily: 'system-ui, sans-serif',
+                    borderRadius: '8px',
+                  }
+                }
+              }}
+            >
+              <PaymentForm 
+                clientSecret={clientSecret}
+                sessionId={sessionId}
+                onSuccess={handlePaymentSuccess}
+                onError={handlePaymentError}
+              />
+            </Elements>
+          </CardContent>
+        </Card>
+      )}
       
       {error && (
-        <div className="text-red-600 bg-red-50 p-3 rounded border border-red-200">
+        <div className="text-destructive bg-destructive/10 p-3 rounded border border-destructive/20">
           {error}
         </div>
       )}
 
-      {/* Action Buttons */}
-      <div className="flex gap-4">
-        <Button 
-          variant="outline" 
-          onClick={onBack}
-          disabled={loading}
-          className="flex-1"
-        >
+      {/* Back Button */}
+      <div className="flex justify-start">
+        <Button variant="outline" onClick={onBack}>
           Back
-        </Button>
-        
-        <Button
-          onClick={handlePayment}
-          disabled={loading}
-          className="flex-1 bg-usc-cardinal hover:bg-usc-cardinal/90"
-        >
-          {loading ? 'Processing...' : 'Test Payment Connection'}
         </Button>
       </div>
     </div>
