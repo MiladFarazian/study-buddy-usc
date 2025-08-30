@@ -8,7 +8,7 @@ import { SessionDurationSelector } from "./duration/SessionDurationSelector";
 import { CourseSelector } from "./course/CourseSelector";
 import { SessionTypeSelector } from "./session-type/SessionTypeSelector";
 import { StudentInfoForm } from "./student-info/StudentInfoForm";
-import PaymentStep from "./PaymentStep";
+import { PaymentStep } from "./PaymentStep";
 import { ConfirmationStep } from "./ConfirmationStep";
 import { BookingSlot } from "@/lib/scheduling/types";
 import { Tutor } from "@/types/tutor";
