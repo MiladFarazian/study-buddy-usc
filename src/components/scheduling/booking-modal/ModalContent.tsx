@@ -146,6 +146,7 @@ export function ModalContent({
           onBack={onBack}
           onContinue={onPaymentComplete}
           calculatedCost={calculatedCost}
+          tutor={tutor}
         />
       );
       
