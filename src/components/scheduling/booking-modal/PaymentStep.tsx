@@ -29,23 +29,12 @@ function PaymentForm({ amount, onPaymentComplete }: PaymentFormProps) {
     setProcessing(true);
     setMessage('Processing payment...');
     
-    // Create a test payment method
-    const { error, paymentMethod } = await stripe.createPaymentMethod({
-      type: 'card',
-      card: cardElement,
-    });
-
-    if (error) {
-      setMessage(error.message || 'Payment failed');
+    // For test mode, simulate a successful payment without hitting Stripe API
+    setTimeout(() => {
+      setMessage('Payment succeeded!');
       setProcessing(false);
-    } else {
-      // For test mode, we'll simulate a successful payment
-      setTimeout(() => {
-        setMessage('Payment succeeded!');
-        setProcessing(false);
-        onPaymentComplete();
-      }, 2000);
-    }
+      onPaymentComplete();
+    }, 2000);
   };
 
   return (
