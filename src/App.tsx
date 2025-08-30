@@ -34,6 +34,8 @@ import BookingCalendly from "./pages/BookingCalendly";
 import Analytics from "./pages/Analytics";
 import BadgesDashboard from "./pages/TutorDashboard/BadgesDashboard";
 import StripeTestInterface from "./pages/StripeTestInterface";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentCanceled from "./pages/PaymentCanceled";
 
 const router = createBrowserRouter([
   {
@@ -133,6 +135,14 @@ const router = createBrowserRouter([
       {
         path: "/stripe-test",
         element: <PrivateRoute><RequireProfileCompletion><StripeTestInterface /></RequireProfileCompletion></PrivateRoute>
+      },
+      {
+        path: "/payment-success",
+        element: <PaymentSuccess />
+      },
+      {
+        path: "/payment-canceled", 
+        element: <PaymentCanceled />
       },
       {
         path: "*",

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, CreditCard, ExternalLink } from 'lucide-react';
 import { Tutor } from '@/types/tutor';
@@ -28,6 +28,28 @@ export function PaymentStep({
   const [processing, setProcessing] = useState(false);
   const [message, setMessage] = useState('');
 
+  // Listen for messages from payment window
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.type === 'PAYMENT_SUCCESS') {
+        setMessage('Payment successful! Finalizing booking...');
+        setProcessing(false);
+        
+        // Continue to next step in booking flow
+        setTimeout(() => {
+          const sessionId = event.data.sessionId || `session_${Date.now()}_${tutor.id}`;
+          onContinue?.(sessionId, true);
+        }, 1000);
+      } else if (event.data.type === 'PAYMENT_CANCELED') {
+        setMessage('Payment was canceled. You can try again.');
+        setProcessing(false);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [onContinue, tutor.id]);
+
   const handlePaymentClick = async () => {
     setProcessing(true);
     setMessage('Creating checkout session...');
@@ -56,9 +78,9 @@ export function PaymentStep({
       }
 
       if (data?.url) {
-        // Redirect to Stripe Checkout
+        // Open Stripe checkout in a new tab
         window.open(data.url, '_blank');
-        setMessage('Redirecting to Stripe checkout...');
+        setMessage('Complete your payment in the new tab...');
       } else {
         throw new Error('No checkout URL received');
       }
@@ -116,7 +138,13 @@ export function PaymentStep({
 
       {message && (
         <div className={`text-sm text-center p-3 rounded-lg ${
-          message.includes('Redirecting') ? 'bg-blue-50 text-blue-700' : 'bg-red-50 text-red-700'
+          message.includes('successful') 
+            ? 'bg-green-50 text-green-700' 
+            : message.includes('canceled') 
+            ? 'bg-yellow-50 text-yellow-700'
+            : message.includes('Complete your payment')
+            ? 'bg-blue-50 text-blue-700' 
+            : 'bg-red-50 text-red-700'
         }`}>
           {message}
         </div>
