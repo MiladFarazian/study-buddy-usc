@@ -123,6 +123,7 @@ serve(async (req) => {
 
     // Create payment intent
     try {
+      console.log('[PAYMENT INTENT] Starting payment intent creation...');
       const result = await createPaymentIntent(
         supabaseAdmin,
         stripeSecretKey,
@@ -135,15 +136,45 @@ serve(async (req) => {
         isProduction
       );
       
+      console.log('[PAYMENT INTENT] Payment intent created successfully:', {
+        id: result.id,
+        has_client_secret: !!result.client_secret,
+        client_secret_preview: result.client_secret?.substring(0, 20) + '...',
+        amount: result.amount,
+        environment: result.environment
+      });
+      
+      // Ensure we have the required fields
+      if (!result.client_secret) {
+        console.error('[PAYMENT INTENT] Missing client_secret in result:', result);
+        throw new Error('Payment intent created but missing client_secret');
+      }
+      
+      const responseData = {
+        id: result.id,
+        client_secret: result.client_secret,
+        amount: result.amount,
+        payment_transaction_id: result.payment_transaction_id,
+        two_stage_payment: result.two_stage_payment,
+        environment: result.environment
+      };
+      
+      console.log('[PAYMENT INTENT] Sending response to frontend:', {
+        ...responseData,
+        client_secret: responseData.client_secret.substring(0, 20) + '...'
+      });
+      
       // Return the client secret to the client
       return new Response(
-        JSON.stringify(result),
+        JSON.stringify(responseData),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200,
         }
       );
-    } catch (error) {
+    } catch (error: any) {
+      console.error('[PAYMENT INTENT] Error in payment intent creation:', error);
+      console.error('[PAYMENT INTENT] Error stack:', error.stack);
       return errorHandlers.handleStripeError(error, corsHeaders);
     }
   } catch (error: any) {
