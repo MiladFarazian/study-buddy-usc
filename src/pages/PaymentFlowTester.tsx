@@ -64,23 +64,27 @@ const PaymentFlowTester = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Load sessions
-      const { data: sessionsData } = await supabase
-        .from('sessions')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      // Load payment transactions
+      // Load last 5 payment transactions
       const { data: paymentsData } = await supabase
         .from('payment_transactions')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(5);
       
-      // Load pending transfers
+      // Get session IDs from these transactions
+      const sessionIds = paymentsData?.map(p => p.session_id) || [];
+      
+      // Load sessions for these transactions
+      const { data: sessionsData } = await supabase
+        .from('sessions')
+        .select('*')
+        .in('id', sessionIds);
+      
+      // Load pending transfers for these sessions
       const { data: transfersData } = await supabase
         .from('pending_transfers')
         .select('*')
-        .order('created_at', { ascending: false });
+        .in('session_id', sessionIds);
 
       setSessions(sessionsData || []);
       setPaymentTransactions(paymentsData || []);
@@ -171,163 +175,178 @@ const PaymentFlowTester = () => {
         </Card>
       </div>
 
-      {/* Session Confirmation Section */}
+      {/* Latest 5 Transactions with Complete Payment Flow */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5" />
-            Session Confirmation Simulator
+            <CreditCard className="h-5 w-5" />
+            Latest 5 Payment Transactions - Complete Flow
           </CardTitle>
           <CardDescription>
-            Test the session confirmation flow by simulating student and tutor confirmations
+            Complete payment process view for each transaction: payment details, confirmation status, transfer monitoring, and end-to-end progress
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {sessions.map((session) => {
-            const status = getSessionStatus(session);
-            const payment = paymentTransactions.find(p => p.session_id === session.id);
-            const fees = payment ? calculateFees(payment.amount) : null;
+        <CardContent className="space-y-6">
+          {paymentTransactions.map((payment) => {
+            const session = sessions.find(s => s.id === payment.session_id);
+            const transfer = pendingTransfers.find(t => t.session_id === payment.session_id);
+            const fees = calculateFees(payment.amount);
+            const status = session ? getSessionStatus(session) : { label: 'Unknown', color: 'bg-gray-500' };
+            
+            const steps = [
+              { label: 'Payment Captured', completed: true, icon: '💳' },
+              { label: 'Session Scheduled', completed: !!session, icon: '📅' },
+              { label: 'Student Confirmed', completed: session?.student_confirmed || false, icon: '👨‍🎓' },
+              { label: 'Tutor Confirmed', completed: session?.tutor_confirmed || false, icon: '👨‍🏫' },
+              { label: 'Transfer Created', completed: !!transfer, icon: '💰' },
+              { label: 'Complete', completed: session?.tutor_confirmed && session?.student_confirmed && !!transfer, icon: '✅' }
+            ];
             
             return (
-              <div key={session.id} className="border rounded-lg p-4 space-y-3">
-                <div className="flex justify-between items-start">
+              <div key={payment.id} className="border-2 rounded-lg p-6 space-y-4 bg-card">
+                {/* Transaction Header */}
+                <div className="flex justify-between items-start border-b pb-4">
                   <div>
-                    <h3 className="font-semibold">Session {session.id.slice(0, 8)}...</h3>
+                    <h3 className="text-lg font-semibold">Transaction {payment.id.slice(0, 8)}...</h3>
                     <p className="text-sm text-muted-foreground">
-                      {new Date(session.start_time).toLocaleString()}
+                      {new Date(payment.created_at).toLocaleString()}
                     </p>
-                    {payment && fees && (
-                      <div className="text-xs space-y-1 mt-2">
-                        <p>Amount: ${(fees.originalAmount / 100).toFixed(2)}</p>
-                        <p>Stripe Fee: ${(fees.stripeFee / 100).toFixed(2)} (2.9% + 30¢)</p>
-                        <p>Platform Fee: ${(fees.platformFee / 100).toFixed(2)} (15%)</p>
-                        <p className="font-semibold">Tutor Gets: ${(fees.tutorAmount / 100).toFixed(2)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Session: {payment.session_id.slice(0, 8)}... | Stripe: {payment.stripe_payment_intent_id}
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="text-lg px-3 py-1">
+                    ${(payment.amount / 100).toFixed(2)}
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Left Column: Payment Details & Session Controls */}
+                  <div className="space-y-4">
+                    {/* Payment Breakdown */}
+                    <div className="bg-muted/50 rounded-lg p-4">
+                      <h4 className="font-semibold mb-2 flex items-center gap-2">
+                        <DollarSign className="h-4 w-4" />
+                        Payment Breakdown
+                      </h4>
+                      <div className="text-sm space-y-1">
+                        <div className="flex justify-between">
+                          <span>Original Amount:</span>
+                          <span>${(fees.originalAmount / 100).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-red-600">
+                          <span>Stripe Fee (2.9% + 30¢):</span>
+                          <span>-${(fees.stripeFee / 100).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-red-600">
+                          <span>Platform Fee (15%):</span>
+                          <span>-${(fees.platformFee / 100).toFixed(2)}</span>
+                        </div>
+                        <hr className="my-2" />
+                        <div className="flex justify-between font-bold text-green-600">
+                          <span>Tutor Gets:</span>
+                          <span>${(fees.tutorAmount / 100).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Session Confirmation Controls */}
+                    {session && (
+                      <div className="bg-muted/50 rounded-lg p-4">
+                        <h4 className="font-semibold mb-2 flex items-center gap-2">
+                          <CheckCircle className="h-4 w-4" />
+                          Session Confirmation
+                        </h4>
+                        <div className="flex items-center gap-2 mb-3">
+                          <Badge className={status.color}>{status.label}</Badge>
+                          {session.completion_date && (
+                            <Badge variant="outline" className="text-green-600">
+                              Completed: {new Date(session.completion_date).toLocaleDateString()}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant={session.student_confirmed ? "default" : "outline"}
+                            onClick={() => confirmSession(session.id, 'student')}
+                            disabled={session.student_confirmed}
+                          >
+                            {session.student_confirmed ? '✓ Student Confirmed' : 'Student Confirm'}
+                          </Button>
+                          
+                          <Button
+                            size="sm"
+                            variant={session.tutor_confirmed ? "default" : "outline"}
+                            onClick={() => confirmSession(session.id, 'tutor')}
+                            disabled={session.tutor_confirmed}
+                          >
+                            {session.tutor_confirmed ? '✓ Tutor Confirmed' : 'Tutor Confirm'}
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>
-                  <Badge className={status.color}>{status.label}</Badge>
+
+                  {/* Right Column: Transfer Status & Flow Progress */}
+                  <div className="space-y-4">
+                    {/* Transfer Monitoring */}
+                    <div className="bg-muted/50 rounded-lg p-4">
+                      <h4 className="font-semibold mb-2 flex items-center gap-2">
+                        <DollarSign className="h-4 w-4" />
+                        Transfer Status
+                      </h4>
+                      {transfer ? (
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm">Transfer ID:</span>
+                            <span className="text-xs font-mono">{transfer.id.slice(0, 8)}...</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm">Amount to Tutor:</span>
+                            <span className="font-semibold">${((transfer.amount - transfer.platform_fee) / 100).toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm">Status:</span>
+                            <Badge variant={transfer.status === 'completed' ? 'default' : 'secondary'}>
+                              {transfer.status}
+                            </Badge>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Created: {new Date(transfer.created_at).toLocaleString()}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No transfer created yet</p>
+                      )}
+                    </div>
+
+                    {/* End-to-End Progress */}
+                    <div className="bg-muted/50 rounded-lg p-4">
+                      <h4 className="font-semibold mb-3 flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        Progress Flow
+                      </h4>
+                      <div className="space-y-2">
+                        {steps.map((step, index) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${step.completed ? 'bg-green-500' : 'bg-gray-300'}`} />
+                            <span className={`text-xs ${step.completed ? 'text-green-700' : 'text-gray-500'}`}>
+                              {step.icon} {step.label}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant={session.student_confirmed ? "default" : "outline"}
-                    onClick={() => confirmSession(session.id, 'student')}
-                    disabled={session.student_confirmed}
-                  >
-                    {session.student_confirmed ? '✓ Student Confirmed' : 'Student Confirm'}
-                  </Button>
-                  
-                  <Button
-                    size="sm"
-                    variant={session.tutor_confirmed ? "default" : "outline"}
-                    onClick={() => confirmSession(session.id, 'tutor')}
-                    disabled={session.tutor_confirmed}
-                  >
-                    {session.tutor_confirmed ? '✓ Tutor Confirmed' : 'Tutor Confirm'}
-                  </Button>
-                </div>
-                
-                {session.completion_date && (
-                  <p className="text-xs text-green-600">
-                    Completed: {new Date(session.completion_date).toLocaleString()}
-                  </p>
-                )}
               </div>
             );
           })}
-        </CardContent>
-      </Card>
-
-      {/* Transfer Monitoring */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
-            Transfer Monitoring Dashboard
-          </CardTitle>
-          <CardDescription>
-            Monitor automatic transfers to tutors after session completion
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {pendingTransfers.length === 0 ? (
-            <p className="text-muted-foreground">No pending transfers found</p>
-          ) : (
-            <div className="space-y-3">
-              {pendingTransfers.map((transfer) => (
-                <div key={transfer.id} className="border rounded-lg p-3">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h4 className="font-semibold">Transfer {transfer.id.slice(0, 8)}...</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Session: {transfer.session_id.slice(0, 8)}...
-                      </p>
-                      <p className="text-sm">
-                        Amount: ${(transfer.amount / 100).toFixed(2)} - 
-                        Platform Fee: ${(transfer.platform_fee / 100).toFixed(2)} = 
-                        <span className="font-semibold"> ${((transfer.amount - transfer.platform_fee) / 100).toFixed(2)}</span>
-                      </p>
-                    </div>
-                    <Badge variant={transfer.status === 'completed' ? 'default' : 'secondary'}>
-                      {transfer.status}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
+          
+          {paymentTransactions.length === 0 && (
+            <p className="text-center text-muted-foreground py-8">No payment transactions found</p>
           )}
-        </CardContent>
-      </Card>
-
-      {/* End-to-End Flow Visualization */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            End-to-End Flow Progress
-          </CardTitle>
-          <CardDescription>
-            Visual progress tracker for the complete payment and transfer flow
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {sessions.map((session) => {
-              const payment = paymentTransactions.find(p => p.session_id === session.id);
-              const transfer = pendingTransfers.find(t => t.session_id === session.id);
-              
-              const steps = [
-                { label: 'Payment Captured', completed: !!payment, icon: '💳' },
-                { label: 'Session Scheduled', completed: true, icon: '📅' },
-                { label: 'Student Confirmed', completed: session.student_confirmed, icon: '👨‍🎓' },
-                { label: 'Tutor Confirmed', completed: session.tutor_confirmed, icon: '👨‍🏫' },
-                { label: 'Transfer Processed', completed: !!transfer, icon: '💰' },
-                { label: 'Complete', completed: session.tutor_confirmed && session.student_confirmed && !!transfer, icon: '✅' }
-              ];
-              
-              return (
-                <div key={session.id} className="border rounded-lg p-4">
-                  <h4 className="font-semibold mb-3">Session {session.id.slice(0, 8)}...</h4>
-                  <div className="flex items-center space-x-2 overflow-x-auto">
-                    {steps.map((step, index) => (
-                      <div key={index} className="flex items-center">
-                        <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-sm ${
-                          step.completed ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                        }`}>
-                          <span>{step.icon}</span>
-                          <span>{step.label}</span>
-                        </div>
-                        {index < steps.length - 1 && (
-                          <div className={`w-8 h-0.5 ${step.completed ? 'bg-green-300' : 'bg-gray-300'}`} />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
         </CardContent>
       </Card>
     </div>
