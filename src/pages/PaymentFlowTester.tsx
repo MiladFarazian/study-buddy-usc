@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { CalendarDays, CreditCard, CheckCircle, Clock, DollarSign, ExternalLink } from "lucide-react";
+import { CalendarDays, CreditCard, CheckCircle, Clock, DollarSign, ExternalLink, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Session {
   id: string;
@@ -48,6 +49,8 @@ const PaymentFlowTester = () => {
   const [paymentTransactions, setPaymentTransactions] = useState<PaymentTransaction[]>([]);
   const [pendingTransfers, setPendingTransfers] = useState<PendingTransfer[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   // Calculate fees including Stripe's 2.9% + 30¢
   const calculateFees = (amount: number) => {
@@ -144,11 +147,22 @@ const PaymentFlowTester = () => {
 
   const createTestPaymentLink = async () => {
     try {
-      // Create a test session first
+      // Check if user is authenticated
+      const { data: { session }, error: authError } = await supabase.auth.getSession();
+      
+      if (authError || !session) {
+        toast.error('Authentication required: Please log in to create payment links');
+        console.error('Authentication error:', authError);
+        return;
+      }
+
+      console.log('Creating test payment link for user:', session.user.id);
+
+      // Create a test session first using current user as student
       const { data: sessionData, error: sessionError } = await supabase
         .from('sessions')
         .insert({
-          student_id: '11111111-1111-1111-1111-111111111111', // Test student ID
+          student_id: session.user.id, // Use current user as student
           tutor_id: '22222222-2222-2222-2222-222222222222', // Test tutor ID
           start_time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Tomorrow
           end_time: new Date(Date.now() + 25 * 60 * 60 * 1000).toISOString(), // Tomorrow + 1 hour
@@ -159,11 +173,14 @@ const PaymentFlowTester = () => {
         .single();
 
       if (sessionError) {
-        toast.error('Failed to create test session');
+        console.error('Session creation error:', sessionError);
+        toast.error(`Failed to create test session: ${sessionError.message}`);
         return;
       }
 
-      // Create Payment Link
+      console.log('Test session created:', sessionData.id);
+
+      // Create Payment Link with proper authentication
       const { data, error } = await supabase.functions.invoke('create-payment-link', {
         body: {
           sessionId: sessionData.id,
@@ -174,9 +191,18 @@ const PaymentFlowTester = () => {
       });
 
       if (error) {
-        toast.error(`Failed to create payment link: ${error.message}`);
+        console.error('Payment link creation error:', error);
+        toast.error(`Failed to create payment link: ${error.message || 'Unknown error'}`);
         return;
       }
+
+      if (!data || !data.payment_link_url) {
+        console.error('No payment link URL returned:', data);
+        toast.error('Payment link was not created properly');
+        return;
+      }
+
+      console.log('Payment link created successfully:', data);
 
       // Open Payment Link in new tab
       window.open(data.payment_link_url, '_blank');
@@ -185,11 +211,19 @@ const PaymentFlowTester = () => {
       loadData(); // Reload data to show new transaction
     } catch (error) {
       console.error('Error creating payment link:', error);
-      toast.error('Failed to create payment link');
+      toast.error(`Failed to create payment link: ${error.message || 'Unknown error'}`);
     }
   };
 
   useEffect(() => {
+    // Check authentication status
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+      setCurrentUser(session?.user || null);
+    };
+    
+    checkAuth();
     loadData();
   }, []);
 
@@ -221,7 +255,11 @@ const PaymentFlowTester = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Payment Links Flow Tester</h1>
         <div className="flex gap-2">
-          <Button onClick={createTestPaymentLink} variant="outline">
+          <Button 
+            onClick={createTestPaymentLink} 
+            variant="outline"
+            disabled={!isAuthenticated}
+          >
             Create Test Payment Link
           </Button>
           <Button onClick={loadData} disabled={loading}>
@@ -229,6 +267,16 @@ const PaymentFlowTester = () => {
           </Button>
         </div>
       </div>
+
+      {!isAuthenticated && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            You need to be logged in to create payment links. Please log in first.
+            Current user: {currentUser ? currentUser.email : 'Not logged in'}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Payment & Session Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
