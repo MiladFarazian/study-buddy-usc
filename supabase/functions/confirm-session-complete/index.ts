@@ -105,7 +105,7 @@ serve(async (req) => {
       .eq('id', sessionId)
       .single();
 
-    // If both have confirmed, mark session as complete and transfer payment
+    // If both have confirmed, verify payment and transfer
     if (updatedSession?.tutor_confirmed && updatedSession?.student_confirmed) {
       // Get the payment transaction
       const { data: payment } = await supabaseAdmin
@@ -114,12 +114,44 @@ serve(async (req) => {
         .eq('session_id', sessionId)
         .single();
 
-      if (payment && payment.payment_intent_id && !payment.transfer_id) {
-        try {
-          // Initialize Stripe
-          const stripe = new Stripe(Deno.env.get('STRIPE_CONNECT_SECRET_KEY') || '', {
-            apiVersion: '2023-10-16',
+      if (payment && payment.stripe_payment_intent_id) {
+        // First, verify payment is actually completed in Stripe
+        const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+          apiVersion: '2023-10-16',
+        });
+
+        console.log(`Verifying payment status for payment intent: ${payment.stripe_payment_intent_id}`);
+        
+        const paymentIntent = await stripe.paymentIntents.retrieve(payment.stripe_payment_intent_id);
+        
+        if (paymentIntent.status !== 'succeeded') {
+          console.log(`Payment not completed yet. Status: ${paymentIntent.status}`);
+          return new Response(JSON.stringify({ 
+            error: 'Payment not completed in Stripe',
+            paymentStatus: paymentIntent.status,
+            message: 'Both parties confirmed but payment is not yet completed in Stripe'
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
+        }
+
+        // Update payment transaction with charge ID if not already set
+        if (!payment.charge_id && paymentIntent.latest_charge) {
+          await supabaseAdmin
+            .from('payment_transactions')
+            .update({
+              charge_id: paymentIntent.latest_charge,
+              status: 'completed',
+              payment_intent_status: 'succeeded',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', payment.id);
+        }
+
+        // Now proceed with transfer if not already done
+        if (!payment.transfer_id && paymentIntent.latest_charge) {
+        try {
 
           // Get the tutor's connect account id
           const { data: tutorProfile } = await supabaseAdmin
@@ -144,13 +176,15 @@ serve(async (req) => {
             currency: 'usd',
             destination: tutorProfile.stripe_connect_id,
             transfer_group: `session_${sessionId}`,
-            source_transaction: payment.charge_id,
+            source_transaction: paymentIntent.latest_charge,
             metadata: {
               session_id: sessionId,
               tutor_id: session.tutor_id,
               student_id: session.student_id,
             },
           });
+
+          console.log(`Transfer created: ${transfer.id} for amount: ${tutorAmount}`);
 
           // Update the payment transaction with transfer info
           await supabaseAdmin
@@ -178,12 +212,23 @@ serve(async (req) => {
               transferred_at: new Date().toISOString(),
             });
 
-          // Update session completion date
+          // Verify transfer was successful
+          const verifyTransfer = await stripe.transfers.retrieve(transfer.id);
+          
+          if (verifyTransfer.status !== 'paid') {
+            console.error(`Transfer verification failed. Status: ${verifyTransfer.status}`);
+            throw new Error(`Transfer not completed. Status: ${verifyTransfer.status}`);
+          }
+
+          console.log(`Transfer verified: ${transfer.id} - Status: ${verifyTransfer.status}`);
+
+          // Update session completion date only after successful transfer
           await supabaseAdmin
             .from('sessions')
             .update({
               completion_date: new Date().toISOString(),
               status: 'completed',
+              payment_status: 'transferred',
               updated_at: new Date().toISOString(),
             })
             .eq('id', sessionId);
@@ -198,6 +243,15 @@ serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
+      } else {
+        console.log('Payment transaction missing required data for transfer');
+        return new Response(JSON.stringify({ 
+          error: 'Payment not ready for transfer',
+          details: 'Missing payment intent ID or charge ID'
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
       }
     }
 

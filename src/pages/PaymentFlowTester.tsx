@@ -48,15 +48,17 @@ const PaymentFlowTester = () => {
 
   // Calculate fees including Stripe's 2.9% + 30¢
   const calculateFees = (amount: number) => {
-    const stripeFee = Math.round(amount * 0.029 + 30); // 2.9% + 30¢
-    const platformFee = Math.round(amount * 0.15); // 15% of total
-    const tutorAmount = amount - stripeFee - platformFee;
+    // Amount is already in dollars, so convert to cents for Stripe fee calculation
+    const amountInCents = Math.round(amount * 100);
+    const stripeFee = Math.round(amountInCents * 0.029 + 30); // 2.9% + 30¢
+    const platformFee = Math.round(amountInCents * 0.15); // 15% of total
+    const tutorAmountInCents = amountInCents - stripeFee - platformFee;
     
     return {
       originalAmount: amount,
       stripeFee,
-      platformFee,
-      tutorAmount,
+      platformFee, 
+      tutorAmount: tutorAmountInCents,
       totalFees: stripeFee + platformFee
     };
   };
@@ -116,7 +118,7 @@ const PaymentFlowTester = () => {
 
   const confirmSession = async (sessionId: string, role: 'student' | 'tutor') => {
     try {
-      const { error } = await supabase.functions.invoke('confirm-session-complete', {
+      const { data, error } = await supabase.functions.invoke('confirm-session-complete', {
         body: { sessionId, userRole: role }
       });
 
@@ -125,11 +127,37 @@ const PaymentFlowTester = () => {
         return;
       }
 
-      toast.success(`Session confirmed as ${role}`);
+      if (data?.bothConfirmed) {
+        toast.success(`Both parties confirmed! Payment transfer initiated.`);
+      } else {
+        toast.success(`Session confirmed as ${role}`);
+      }
+      
       loadData(); // Reload data
     } catch (error) {
       console.error('Error confirming session:', error);
       toast.error(`Failed to confirm session as ${role}`);
+    }
+  };
+
+  const syncPaymentStatus = async (paymentIntentId: string, sessionId?: string) => {
+    try {
+      toast.loading('Syncing payment status...');
+      
+      const { data, error } = await supabase.functions.invoke('sync-payment-status', {
+        body: { paymentIntentId, sessionId }
+      });
+
+      if (error) {
+        toast.error(`Failed to sync payment: ${error.message}`);
+        return;
+      }
+
+      toast.success(`Payment status synced: ${data.paymentStatus}`);
+      loadData(); // Reload data
+    } catch (error) {
+      console.error('Error syncing payment:', error);
+      toast.error('Failed to sync payment status');
     }
   };
 
@@ -233,7 +261,7 @@ const PaymentFlowTester = () => {
                     </p>
                   </div>
                   <Badge variant="outline" className="text-lg px-3 py-1">
-                    ${(payment.amount / 100).toFixed(2)}
+                    ${payment.amount.toFixed(2)}
                   </Badge>
                 </div>
 
@@ -249,7 +277,7 @@ const PaymentFlowTester = () => {
                       <div className="text-sm space-y-1">
                         <div className="flex justify-between">
                           <span>Original Amount:</span>
-                          <span>${(fees.originalAmount / 100).toFixed(2)}</span>
+                          <span>${fees.originalAmount.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-red-600">
                           <span>Stripe Fee (2.9% + 30¢):</span>
@@ -264,6 +292,24 @@ const PaymentFlowTester = () => {
                           <span>Tutor Gets:</span>
                           <span>${(fees.tutorAmount / 100).toFixed(2)}</span>
                         </div>
+                      </div>
+                      
+                      {/* Payment Status Sync */}
+                      <div className="mt-3 pt-3 border-t">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm">Payment Status:</span>
+                          <Badge variant={payment.status === 'completed' ? 'default' : 'secondary'}>
+                            {payment.status}
+                          </Badge>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => syncPaymentStatus(payment.stripe_payment_intent_id, payment.session_id)}
+                          className="w-full"
+                        >
+                          Sync Payment Status
+                        </Button>
                       </div>
                     </div>
 
