@@ -78,3 +78,6 @@ verify_jwt = true
 
 [functions.send-notification-email]
 verify_jwt = false
+
+[functions.payment-link-webhook]
+verify_jwt = false

@@ -7,7 +7,7 @@ import { useSearchParams } from "react-router-dom";
 import { TutorPaymentView } from "./payment/TutorPaymentView";
 import { StudentPaymentView } from "./payment/StudentPaymentView";
 import { Badge } from "@/components/ui/badge";
-import { getStripeEnvironment } from "@/lib/stripe-utils";
+// Production mode detection moved to edge functions
 
 export const PaymentSettingsTab = () => {
   const { toast } = useToast();
@@ -15,11 +15,9 @@ export const PaymentSettingsTab = () => {
   const [searchParams] = useSearchParams();
   const [stripeEnvironment, setStripeEnvironment] = useState<string>('test');
 
-  // Check Stripe environment on component mount
+  // Default to test environment
   useEffect(() => {
-    const env = getStripeEnvironment();
-    console.log(`Current Stripe environment: ${env}`);
-    setStripeEnvironment(env);
+    setStripeEnvironment('test');
   }, []);
 
   // Check for Stripe redirect success/error

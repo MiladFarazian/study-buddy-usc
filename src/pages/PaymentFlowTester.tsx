@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { CalendarDays, CreditCard, CheckCircle, Clock, DollarSign } from "lucide-react";
+import { CalendarDays, CreditCard, CheckCircle, Clock, DollarSign, ExternalLink } from "lucide-react";
 
 interface Session {
   id: string;
@@ -24,7 +24,10 @@ interface PaymentTransaction {
   session_id: string;
   amount: number;
   status: string;
-  stripe_payment_intent_id: string;
+  payment_link_id: string;
+  payment_link_url: string;
+  stripe_checkout_session_id: string | null;
+  payment_completed_at: string | null;
   created_at: string;
   student_id: string;
   tutor_id: string;
@@ -48,7 +51,6 @@ const PaymentFlowTester = () => {
 
   // Calculate fees including Stripe's 2.9% + 30¢
   const calculateFees = (amount: number) => {
-    // Amount is already in dollars, so convert to cents for Stripe fee calculation
     const amountInCents = Math.round(amount * 100);
     const stripeFee = Math.round(amountInCents * 0.029 + 30); // 2.9% + 30¢
     const platformFee = Math.round(amountInCents * 0.15); // 15% of total
@@ -66,7 +68,7 @@ const PaymentFlowTester = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Load last 5 payment transactions with related data in a single optimized query
+      // Load last 5 payment transactions with related data
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('payment_transactions')
         .select(`
@@ -128,7 +130,7 @@ const PaymentFlowTester = () => {
       }
 
       if (data?.bothConfirmed) {
-        toast.success(`Both parties confirmed! Payment transfer initiated.`);
+        toast.success(`Both parties confirmed! Transfer created for tutor payout.`);
       } else {
         toast.success(`Session confirmed as ${role}`);
       }
@@ -140,23 +142,50 @@ const PaymentFlowTester = () => {
     }
   };
 
-  const checkStripePaymentStatus = async (paymentIntentId: string) => {
+  const createTestPaymentLink = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('check-payment-status', {
-        body: { paymentIntentId }
+      // Create a test session first
+      const { data: sessionData, error: sessionError } = await supabase
+        .from('sessions')
+        .insert({
+          student_id: '11111111-1111-1111-1111-111111111111', // Test student ID
+          tutor_id: '22222222-2222-2222-2222-222222222222', // Test tutor ID
+          start_time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Tomorrow
+          end_time: new Date(Date.now() + 25 * 60 * 60 * 1000).toISOString(), // Tomorrow + 1 hour
+          status: 'scheduled',
+          payment_status: 'unpaid',
+        })
+        .select()
+        .single();
+
+      if (sessionError) {
+        toast.error('Failed to create test session');
+        return;
+      }
+
+      // Create Payment Link
+      const { data, error } = await supabase.functions.invoke('create-payment-link', {
+        body: {
+          sessionId: sessionData.id,
+          amount: 50, // $50 test amount
+          tutorId: sessionData.tutor_id,
+          description: 'Test Tutoring Session'
+        }
       });
 
       if (error) {
-        toast.error(`Failed to check payment: ${error.message}`);
-        return null;
+        toast.error(`Failed to create payment link: ${error.message}`);
+        return;
       }
 
-      toast.success(`Stripe status: ${data.status} | Amount: $${(data.amount / 100).toFixed(2)}`);
-      return data;
+      // Open Payment Link in new tab
+      window.open(data.payment_link_url, '_blank');
+      toast.success('Payment Link created! Opening in new tab...');
+      
+      loadData(); // Reload data to show new transaction
     } catch (error) {
-      console.error('Error checking payment status:', error);
-      toast.error('Failed to check payment status');
-      return null;
+      console.error('Error creating payment link:', error);
+      toast.error('Failed to create payment link');
     }
   };
 
@@ -177,13 +206,28 @@ const PaymentFlowTester = () => {
     return { label: 'Pending Confirmation', color: 'bg-gray-500' };
   };
 
+  const getPaymentStatus = (payment: PaymentTransaction) => {
+    if (payment.status === 'completed' && payment.payment_completed_at) {
+      return { label: 'Payment Completed', color: 'bg-green-500' };
+    }
+    if (payment.status === 'pending') {
+      return { label: 'Awaiting Payment', color: 'bg-orange-500' };
+    }
+    return { label: payment.status, color: 'bg-gray-500' };
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Payment Flow Tester</h1>
-        <Button onClick={loadData} disabled={loading}>
-          {loading ? 'Loading...' : 'Refresh Data'}
-        </Button>
+        <h1 className="text-3xl font-bold">Payment Links Flow Tester</h1>
+        <div className="flex gap-2">
+          <Button onClick={createTestPaymentLink} variant="outline">
+            Create Test Payment Link
+          </Button>
+          <Button onClick={loadData} disabled={loading}>
+            {loading ? 'Loading...' : 'Refresh Data'}
+          </Button>
+        </div>
       </div>
 
       {/* Payment & Session Overview */}
@@ -200,7 +244,7 @@ const PaymentFlowTester = () => {
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Payment Transactions</CardTitle>
+            <CardTitle className="text-sm font-medium">Payment Links</CardTitle>
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -219,15 +263,15 @@ const PaymentFlowTester = () => {
         </Card>
       </div>
 
-      {/* Latest 5 Transactions with Complete Payment Flow */}
+      {/* Payment Links Flow */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5" />
-            Latest 5 Payment Transactions - Complete Flow
+            Payment Links Flow - Complete Process
           </CardTitle>
           <CardDescription>
-            Complete payment process view for each transaction: payment details, confirmation status, transfer monitoring, and end-to-end progress
+            Student clicks Pay → Redirected to Stripe → Pays → Returns to app → Platform holds funds → Both confirm → Tutor gets paid
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -235,15 +279,16 @@ const PaymentFlowTester = () => {
             const session = sessions.find(s => s.id === payment.session_id);
             const transfer = pendingTransfers.find(t => t.session_id === payment.session_id);
             const fees = calculateFees(payment.amount);
-            const status = session ? getSessionStatus(session) : { label: 'Unknown', color: 'bg-gray-500' };
+            const sessionStatus = session ? getSessionStatus(session) : { label: 'Unknown', color: 'bg-gray-500' };
+            const paymentStatus = getPaymentStatus(payment);
             
             const steps = [
-              { label: 'Payment Captured', completed: true, icon: '💳' },
-              { label: 'Session Scheduled', completed: !!session, icon: '📅' },
+              { label: 'Payment Link Created', completed: true, icon: '🔗' },
+              { label: 'Student Paid via Stripe', completed: payment.status === 'completed', icon: '💳' },
+              { label: 'Platform Holds Funds', completed: payment.status === 'completed', icon: '🏦' },
               { label: 'Student Confirmed', completed: session?.student_confirmed || false, icon: '👨‍🎓' },
               { label: 'Tutor Confirmed', completed: session?.tutor_confirmed || false, icon: '👨‍🏫' },
-              { label: 'Transfer Created', completed: !!transfer, icon: '💰' },
-              { label: 'Complete', completed: session?.tutor_confirmed && session?.student_confirmed && !!transfer, icon: '✅' }
+              { label: 'Tutor Payout Ready', completed: !!transfer, icon: '💰' },
             ];
             
             return (
@@ -251,23 +296,58 @@ const PaymentFlowTester = () => {
                 {/* Transaction Header */}
                 <div className="flex justify-between items-start border-b pb-4">
                   <div>
-                    <h3 className="text-lg font-semibold">Transaction {payment.id.slice(0, 8)}...</h3>
+                    <h3 className="text-lg font-semibold">Payment Link {payment.id.slice(0, 8)}...</h3>
                     <p className="text-sm text-muted-foreground">
-                      {new Date(payment.created_at).toLocaleString()}
+                      Created: {new Date(payment.created_at).toLocaleString()}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      Session: {payment.session_id.slice(0, 8)}... | Stripe: {payment.stripe_payment_intent_id}
-                    </p>
+                    {payment.payment_completed_at && (
+                      <p className="text-sm text-green-600">
+                        Paid: {new Date(payment.payment_completed_at).toLocaleString()}
+                      </p>
+                    )}
                   </div>
-                  <Badge variant="outline" className="text-lg px-3 py-1">
-                    ${payment.amount.toFixed(2)}
-                  </Badge>
+                  <div className="text-right">
+                    <Badge variant="outline" className="text-lg px-3 py-1">
+                      ${payment.amount.toFixed(2)}
+                    </Badge>
+                    <div className="mt-2">
+                      <Badge className={paymentStatus.color}>
+                        {paymentStatus.label}
+                      </Badge>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Left Column: Payment Details & Session Controls */}
+                  {/* Left Column: Payment Details & Links */}
                   <div className="space-y-4">
-                    {/* Payment Breakdown */}
+                    {/* Payment Link Details */}
+                    <div className="bg-muted/50 rounded-lg p-4">
+                      <h4 className="font-semibold mb-2 flex items-center gap-2">
+                        <ExternalLink className="h-4 w-4" />
+                        Payment Link
+                      </h4>
+                      
+                      {payment.payment_link_url && (
+                        <div className="space-y-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => window.open(payment.payment_link_url, '_blank')}
+                            className="w-full"
+                          >
+                            Open Payment Link
+                          </Button>
+                          {payment.stripe_checkout_session_id && (
+                            <p className="text-xs text-muted-foreground">
+                              Checkout Session: {payment.stripe_checkout_session_id}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Fee Breakdown */}
                     <div className="bg-muted/50 rounded-lg p-4">
                       <h4 className="font-semibold mb-2 flex items-center gap-2">
                         <DollarSign className="h-4 w-4" />
@@ -275,11 +355,11 @@ const PaymentFlowTester = () => {
                       </h4>
                       <div className="text-sm space-y-1">
                         <div className="flex justify-between">
-                          <span>Original Amount:</span>
+                          <span>Student Paid:</span>
                           <span>${fees.originalAmount.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-red-600">
-                          <span>Stripe Fee (2.9% + 30¢):</span>
+                          <span>Stripe Fee:</span>
                           <span>-${(fees.stripeFee / 100).toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-red-600">
@@ -292,35 +372,17 @@ const PaymentFlowTester = () => {
                           <span>${(fees.tutorAmount / 100).toFixed(2)}</span>
                         </div>
                       </div>
-                      
-                      {/* Payment Status Sync */}
-                      <div className="mt-3 pt-3 border-t">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm">Payment Status:</span>
-                          <Badge variant={payment.status === 'completed' ? 'default' : 'secondary'}>
-                            {payment.status}
-                          </Badge>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => checkStripePaymentStatus(payment.stripe_payment_intent_id)}
-                          className="w-full"
-                        >
-                          Check Stripe Status
-                        </Button>
-                      </div>
                     </div>
 
                     {/* Session Confirmation Controls */}
-                    {session && (
+                    {session && payment.status === 'completed' && (
                       <div className="bg-muted/50 rounded-lg p-4">
                         <h4 className="font-semibold mb-2 flex items-center gap-2">
                           <CheckCircle className="h-4 w-4" />
                           Session Confirmation
                         </h4>
                         <div className="flex items-center gap-2 mb-3">
-                          <Badge className={status.color}>{status.label}</Badge>
+                          <Badge className={sessionStatus.color}>{sessionStatus.label}</Badge>
                           {session.completion_date && (
                             <Badge variant="outline" className="text-green-600">
                               Completed: {new Date(session.completion_date).toLocaleDateString()}
@@ -352,11 +414,11 @@ const PaymentFlowTester = () => {
 
                   {/* Right Column: Transfer Status & Flow Progress */}
                   <div className="space-y-4">
-                    {/* Transfer Monitoring */}
+                    {/* Transfer Status */}
                     <div className="bg-muted/50 rounded-lg p-4">
                       <h4 className="font-semibold mb-2 flex items-center gap-2">
                         <DollarSign className="h-4 w-4" />
-                        Transfer Status
+                        Tutor Payout Status
                       </h4>
                       {transfer ? (
                         <div className="space-y-2">
@@ -365,8 +427,10 @@ const PaymentFlowTester = () => {
                             <span className="text-xs font-mono">{transfer.id.slice(0, 8)}...</span>
                           </div>
                           <div className="flex justify-between items-center">
-                            <span className="text-sm">Amount to Tutor:</span>
-                            <span className="font-semibold">${((transfer.amount - transfer.platform_fee) / 100).toFixed(2)}</span>
+                            <span className="text-sm">Net to Tutor:</span>
+                            <span className="font-semibold text-green-600">
+                              ${((transfer.amount - transfer.platform_fee) / 100).toFixed(2)}
+                            </span>
                           </div>
                           <div className="flex justify-between items-center">
                             <span className="text-sm">Status:</span>
@@ -379,15 +443,26 @@ const PaymentFlowTester = () => {
                           </div>
                         </div>
                       ) : (
-                        <p className="text-sm text-muted-foreground">No transfer created yet</p>
+                        <div className="space-y-2">
+                          <p className="text-sm text-muted-foreground">
+                            {payment.status === 'completed' 
+                              ? 'Awaiting both parties to confirm session completion' 
+                              : 'Payment must be completed first'}
+                          </p>
+                          {payment.status === 'pending' && (
+                            <p className="text-xs text-orange-600">
+                              Student needs to complete payment first
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
 
-                    {/* End-to-End Progress */}
+                    {/* Progress Flow */}
                     <div className="bg-muted/50 rounded-lg p-4">
                       <h4 className="font-semibold mb-3 flex items-center gap-2">
                         <Clock className="h-4 w-4" />
-                        Progress Flow
+                        Payment Flow Progress
                       </h4>
                       <div className="space-y-2">
                         {steps.map((step, index) => (
@@ -407,7 +482,12 @@ const PaymentFlowTester = () => {
           })}
           
           {paymentTransactions.length === 0 && (
-            <p className="text-center text-muted-foreground py-8">No payment transactions found</p>
+            <div className="text-center py-8">
+              <p className="text-muted-foreground mb-4">No payment transactions found</p>
+              <Button onClick={createTestPaymentLink} variant="outline">
+                Create Your First Payment Link
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>

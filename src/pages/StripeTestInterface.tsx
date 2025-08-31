@@ -27,8 +27,10 @@ interface PaymentTransaction {
   amount: number;
   status: string;
   created_at: string;
-  stripe_payment_intent_id: string;
-  payment_intent_status: string;
+  payment_link_id: string;
+  payment_link_url: string;
+  stripe_checkout_session_id: string | null;
+  payment_completed_at: string | null;
 }
 
 interface PendingTransfer {
@@ -240,27 +242,27 @@ export default function StripeTestInterface() {
 
       if (sessionError) throw sessionError;
 
-      // Create payment intent
+      // Create Payment Link
       const paymentData = {
         sessionId: session.id,
-        amount: Math.round(parseFloat(bookingAmount) * 100), // Convert to cents
+        amount: parseFloat(bookingAmount), // Amount in dollars
         tutorId: selectedTutorId,
-        studentId: user.id,
-        tutorName: `${selectedTutor.first_name} ${selectedTutor.last_name}`,
-        studentEmail: user.email
+        description: `Test Tutoring Session with ${selectedTutor.first_name} ${selectedTutor.last_name}`
       };
 
-      const { data: paymentIntent, error: paymentError } = await supabase.functions.invoke('create-payment-intent', {
+      const { data: paymentLink, error: paymentError } = await supabase.functions.invoke('create-payment-link', {
         body: paymentData
       });
 
       if (paymentError) throw paymentError;
 
-      if (paymentIntent?.clientSecret) {
-        toast.success('Payment intent created! Check the payment transactions below.');
+      if (paymentLink?.payment_link_url) {
+        // Open Payment Link in new tab
+        window.open(paymentLink.payment_link_url, '_blank');
+        toast.success('Payment Link created! Opening in new tab...');
         await loadPaymentTransactions();
       } else {
-        toast.error('No client secret received');
+        toast.error('No payment link received');
       }
     } catch (error) {
       console.error('Error creating test booking:', error);
@@ -533,7 +535,7 @@ export default function StripeTestInterface() {
                   <th className="text-left p-2">Created</th>
                   <th className="text-left p-2">Amount</th>
                   <th className="text-left p-2">Status</th>
-                  <th className="text-left p-2">Payment Intent</th>
+                  <th className="text-left p-2">Payment Link</th>
                   <th className="text-left p-2">Session ID</th>
                 </tr>
               </thead>
@@ -547,7 +549,7 @@ export default function StripeTestInterface() {
                         {transaction.status}
                       </Badge>
                     </td>
-                    <td className="p-2 text-xs">{transaction.stripe_payment_intent_id || 'N/A'}</td>
+                    <td className="p-2 text-xs">{transaction.payment_link_id || 'N/A'}</td>
                     <td className="p-2 text-xs">{transaction.session_id}</td>
                   </tr>
                 ))}

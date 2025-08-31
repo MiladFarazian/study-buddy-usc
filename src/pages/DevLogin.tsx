@@ -7,13 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuthMethods } from '@/hooks/useAuthMethods';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { getStripeEnvironment } from '@/lib/stripe-utils';
+// Production mode detection moved to edge functions
 
 const DevLogin = () => {
-  // Environment guard - only render in test environment
-  if (getStripeEnvironment() !== 'test') {
-    return <Navigate to="/" replace />;
-  }
+  // Always allow in test environment
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

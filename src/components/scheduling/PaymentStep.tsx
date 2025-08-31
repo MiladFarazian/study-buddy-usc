@@ -6,10 +6,11 @@ import { format } from 'date-fns';
 import { CalendarIcon, Clock, User, CreditCard, ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { useScheduling } from '@/contexts/SchedulingContext';
 import { createSessionBooking } from "@/lib/scheduling/booking-utils";
-import { StripePaymentForm } from "./payment/StripePaymentForm";
-import { createPaymentIntent } from "@/lib/stripe-utils";
+// Payment Links - no client components needed
+// Payment Links - no client-side processing needed
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function PaymentStep({ 
@@ -103,18 +104,23 @@ export function PaymentStep({
         const sessionTime = format(startDateTime, 'h:mm a');
         const description = `Tutoring session with ${tutor.name} on ${sessionDate} at ${sessionTime}`;
         
-        const paymentIntent = await createPaymentIntent(
-          bookingResult.id,
-          totalCost,
-          tutor.id,
-          user.id,
-          description
-        );
+        // Create Payment Link instead of payment intent
+        const { data: paymentLink, error: paymentError } = await supabase.functions.invoke('create-payment-link', {
+          body: {
+            sessionId: bookingResult.id,
+            amount: totalCost,
+            tutorId: tutor.id,
+            description
+          }
+        });
         
-        if (paymentIntent && paymentIntent.client_secret) {
-          setClientSecret(paymentIntent.client_secret);
+        if (paymentError) throw paymentError;
+        
+        if (paymentLink?.payment_link_url) {
+          // Redirect to Payment Link
+          window.location.href = paymentLink.payment_link_url;
         } else {
-          throw new Error("Failed to create payment intent");
+          throw new Error("Failed to create payment link");
         }
       } else {
         throw new Error("Failed to create session booking");
@@ -227,14 +233,10 @@ export function PaymentStep({
                 </Button>
               </div>
             ) : (
-              clientSecret ? (
-                <StripePaymentForm
-                  clientSecret={clientSecret}
-                  amount={totalCost}
-                  onSuccess={handlePaymentSuccess}
-                  onCancel={goToPreviousStep}
-                  processing={paymentProcessing}
-                />
+              true ? (
+                <div className="text-center py-10">
+                  <p className="text-green-600">Redirecting to secure payment page...</p>
+                </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-10">
                   <p className="text-center text-red-600">

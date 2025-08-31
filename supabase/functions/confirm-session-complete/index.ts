@@ -1,7 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.23.0';
-import Stripe from 'https://esm.sh/stripe@12.13.0?target=deno';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -54,7 +53,7 @@ serve(async (req) => {
     // Get session data
     const { data: session, error: sessionError } = await supabaseAdmin
       .from('sessions')
-      .select('*, student:student_id(*), tutor:tutor_id(*), payment:payment_transactions!inner(*)')
+      .select('*')
       .eq('id', sessionId)
       .single();
 
@@ -105,7 +104,7 @@ serve(async (req) => {
       .eq('id', sessionId)
       .single();
 
-    // If both have confirmed, mark session as completed
+    // If both have confirmed, mark session as completed and create transfer
     if (updatedSession?.tutor_confirmed && updatedSession?.student_confirmed) {
       await supabaseAdmin
         .from('sessions')
@@ -115,6 +114,33 @@ serve(async (req) => {
           updated_at: new Date().toISOString(),
         })
         .eq('id', sessionId);
+
+      // Create pending transfer for tutor payout simulation
+      const { data: paymentData } = await supabaseAdmin
+        .from('payment_transactions')
+        .select('*')
+        .eq('session_id', sessionId)
+        .eq('status', 'completed')
+        .single();
+
+      if (paymentData) {
+        // Calculate fees: 15% platform fee + Stripe's 2.9% + 30¢
+        const amountInCents = Math.round(paymentData.amount * 100);
+        const stripeFee = Math.round(amountInCents * 0.029 + 30);
+        const platformFee = Math.round(amountInCents * 0.15);
+        const tutorAmount = amountInCents - stripeFee - platformFee;
+
+        await supabaseAdmin
+          .from('pending_transfers')
+          .insert({
+            session_id: sessionId,
+            tutor_id: paymentData.tutor_id,
+            student_id: paymentData.student_id,
+            amount: amountInCents,
+            platform_fee: platformFee,
+            status: 'pending',
+          });
+      }
     }
 
     return new Response(JSON.stringify({ 

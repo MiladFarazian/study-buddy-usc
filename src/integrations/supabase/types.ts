@@ -269,58 +269,49 @@ export type Database = {
       payment_transactions: {
         Row: {
           amount: number
-          charge_id: string | null
           created_at: string | null
           environment: string | null
           id: string
-          payment_intent_status: string | null
-          payment_type: string | null
+          payment_completed_at: string | null
+          payment_link_id: string | null
+          payment_link_url: string | null
           platform_fee: number | null
-          requires_transfer: boolean | null
           session_id: string | null
           status: string
-          stripe_payment_intent_id: string | null
+          stripe_checkout_session_id: string | null
           student_id: string | null
-          transfer_id: string | null
-          transfer_status: string | null
           tutor_id: string | null
           updated_at: string | null
         }
         Insert: {
           amount: number
-          charge_id?: string | null
           created_at?: string | null
           environment?: string | null
           id?: string
-          payment_intent_status?: string | null
-          payment_type?: string | null
+          payment_completed_at?: string | null
+          payment_link_id?: string | null
+          payment_link_url?: string | null
           platform_fee?: number | null
-          requires_transfer?: boolean | null
           session_id?: string | null
           status?: string
-          stripe_payment_intent_id?: string | null
+          stripe_checkout_session_id?: string | null
           student_id?: string | null
-          transfer_id?: string | null
-          transfer_status?: string | null
           tutor_id?: string | null
           updated_at?: string | null
         }
         Update: {
           amount?: number
-          charge_id?: string | null
           created_at?: string | null
           environment?: string | null
           id?: string
-          payment_intent_status?: string | null
-          payment_type?: string | null
+          payment_completed_at?: string | null
+          payment_link_id?: string | null
+          payment_link_url?: string | null
           platform_fee?: number | null
-          requires_transfer?: boolean | null
           session_id?: string | null
           status?: string
-          stripe_payment_intent_id?: string | null
+          stripe_checkout_session_id?: string | null
           student_id?: string | null
-          transfer_id?: string | null
-          transfer_status?: string | null
           tutor_id?: string | null
           updated_at?: string | null
         }
