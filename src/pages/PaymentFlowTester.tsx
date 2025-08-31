@@ -64,21 +64,35 @@ const PaymentFlowTester = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Load last 5 payment transactions
-      const { data: paymentsData } = await supabase
+      // Load last 5 payment transactions with related data in a single optimized query
+      const { data: paymentsData, error: paymentsError } = await supabase
         .from('payment_transactions')
-        .select('*')
+        .select(`
+          *,
+          sessions!inner(
+            id,
+            student_id,
+            tutor_id,
+            start_time,
+            end_time,
+            status,
+            tutor_confirmed,
+            student_confirmed,
+            completion_date,
+            payment_status
+          )
+        `)
         .order('created_at', { ascending: false })
         .limit(5);
-      
-      // Get session IDs from these transactions
-      const sessionIds = paymentsData?.map(p => p.session_id) || [];
-      
-      // Load sessions for these transactions
-      const { data: sessionsData } = await supabase
-        .from('sessions')
-        .select('*')
-        .in('id', sessionIds);
+
+      if (paymentsError) {
+        console.error('Error loading payments:', paymentsError);
+        toast.error('Failed to load payment data');
+        return;
+      }
+
+      // Get session IDs for transfer lookup
+      const sessionIds = paymentsData?.map(p => p.session_id).filter(Boolean) || [];
       
       // Load pending transfers for these sessions
       const { data: transfersData } = await supabase
@@ -86,7 +100,10 @@ const PaymentFlowTester = () => {
         .select('*')
         .in('session_id', sessionIds);
 
-      setSessions(sessionsData || []);
+      // Transform data to match existing structure
+      const sessions = paymentsData?.map(p => p.sessions).filter(Boolean) || [];
+      
+      setSessions(sessions);
       setPaymentTransactions(paymentsData || []);
       setPendingTransfers(transfersData || []);
     } catch (error) {
