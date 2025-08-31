@@ -36,6 +36,7 @@ import BadgesDashboard from "./pages/TutorDashboard/BadgesDashboard";
 import StripeTestInterface from "./pages/StripeTestInterface";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCanceled from "./pages/PaymentCanceled";
+import PaymentFlowTester from "./pages/PaymentFlowTester";
 
 const router = createBrowserRouter([
   {
@@ -143,6 +144,10 @@ const router = createBrowserRouter([
       {
         path: "/payment-canceled", 
         element: <PaymentCanceled />
+      },
+      {
+        path: "/payment-flow-tester",
+        element: <PrivateRoute><RequireProfileCompletion><PaymentFlowTester /></RequireProfileCompletion></PrivateRoute>
       },
       {
         path: "*",

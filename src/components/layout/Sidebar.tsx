@@ -93,6 +93,12 @@ const Sidebar = () => {
       icon: Settings,
       path: "/settings",
       showWhen: !!user // Only for authenticated users
+    },
+    {
+      title: "Payment Tester",
+      icon: CreditCard,
+      path: "/payment-flow-tester",
+      showWhen: !!user // Only for authenticated users
     }
   ];
 

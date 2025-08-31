@@ -271,6 +271,7 @@ export type Database = {
           amount: number
           charge_id: string | null
           created_at: string | null
+          environment: string | null
           id: string
           payment_intent_status: string | null
           payment_type: string | null
@@ -289,6 +290,7 @@ export type Database = {
           amount: number
           charge_id?: string | null
           created_at?: string | null
+          environment?: string | null
           id?: string
           payment_intent_status?: string | null
           payment_type?: string | null
@@ -307,6 +309,7 @@ export type Database = {
           amount?: number
           charge_id?: string | null
           created_at?: string | null
+          environment?: string | null
           id?: string
           payment_intent_status?: string | null
           payment_type?: string | null
@@ -556,6 +559,7 @@ export type Database = {
           accepted_at: string | null
           actual_end_time: string | null
           actual_start_time: string | null
+          completion_date: string | null
           completion_method:
             | Database["public"]["Enums"]["completion_method"]
             | null
@@ -571,7 +575,9 @@ export type Database = {
           session_type: string | null
           start_time: string
           status: Database["public"]["Enums"]["session_status"] | null
+          student_confirmed: boolean | null
           student_id: string
+          tutor_confirmed: boolean | null
           tutor_id: string
           updated_at: string
           zoom_created_at: string | null
@@ -585,6 +591,7 @@ export type Database = {
           accepted_at?: string | null
           actual_end_time?: string | null
           actual_start_time?: string | null
+          completion_date?: string | null
           completion_method?:
             | Database["public"]["Enums"]["completion_method"]
             | null
@@ -600,7 +607,9 @@ export type Database = {
           session_type?: string | null
           start_time: string
           status?: Database["public"]["Enums"]["session_status"] | null
+          student_confirmed?: boolean | null
           student_id: string
+          tutor_confirmed?: boolean | null
           tutor_id: string
           updated_at?: string
           zoom_created_at?: string | null
@@ -614,6 +623,7 @@ export type Database = {
           accepted_at?: string | null
           actual_end_time?: string | null
           actual_start_time?: string | null
+          completion_date?: string | null
           completion_method?:
             | Database["public"]["Enums"]["completion_method"]
             | null
@@ -629,7 +639,9 @@ export type Database = {
           session_type?: string | null
           start_time?: string
           status?: Database["public"]["Enums"]["session_status"] | null
+          student_confirmed?: boolean | null
           student_id?: string
+          tutor_confirmed?: boolean | null
           tutor_id?: string
           updated_at?: string
           zoom_created_at?: string | null
