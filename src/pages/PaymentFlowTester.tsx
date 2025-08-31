@@ -376,28 +376,56 @@ const PaymentFlowTester = () => {
                         Payment Link
                       </h4>
                       
-                      {payment.payment_link_url && (
+                      {payment.payment_link_url ? (
                         <div className="space-y-2">
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => {
-                              console.log('Opening payment link:', payment.payment_link_url);
-                              if (payment.payment_link_url) {
-                                window.open(payment.payment_link_url, '_blank');
-                              } else {
+                              console.log('=== PAYMENT LINK CLICK DEBUG ===');
+                              console.log('Payment ID:', payment.id);
+                              console.log('Payment Link URL:', payment.payment_link_url);
+                              console.log('Payment Status:', payment.status);
+                              console.log('Full payment object:', payment);
+                              
+                              if (!payment.payment_link_url) {
+                                console.error('Payment link URL is null/undefined');
                                 toast.error('Payment link URL is missing');
+                                return;
+                              }
+                              
+                              try {
+                                console.log('Attempting to open URL:', payment.payment_link_url);
+                                const opened = window.open(payment.payment_link_url, '_blank');
+                                
+                                if (!opened) {
+                                  console.error('window.open returned null - popup blocked?');
+                                  toast.error('Popup blocked! Please allow popups or copy the link manually.');
+                                } else {
+                                  console.log('Payment link opened successfully');
+                                  toast.success('Payment link opened in new tab');
+                                }
+                              } catch (error) {
+                                console.error('Error opening payment link:', error);
+                                toast.error('Failed to open payment link');
                               }
                             }}
                             className="w-full"
                           >
-                            Open Payment Link
+                            Open Payment Link 🔗
                           </Button>
+                          <div className="text-xs text-muted-foreground break-all">
+                            URL: {payment.payment_link_url}
+                          </div>
                           {payment.stripe_checkout_session_id && (
                             <p className="text-xs text-muted-foreground">
                               Checkout Session: {payment.stripe_checkout_session_id}
                             </p>
                           )}
+                        </div>
+                      ) : (
+                        <div className="p-2 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+                          ⚠️ Payment link URL not found
                         </div>
                       )}
                     </div>
