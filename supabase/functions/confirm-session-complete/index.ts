@@ -105,154 +105,16 @@ serve(async (req) => {
       .eq('id', sessionId)
       .single();
 
-    // If both have confirmed, verify payment and transfer
+    // If both have confirmed, mark session as completed
     if (updatedSession?.tutor_confirmed && updatedSession?.student_confirmed) {
-      // Get the payment transaction
-      const { data: payment } = await supabaseAdmin
-        .from('payment_transactions')
-        .select('*')
-        .eq('session_id', sessionId)
-        .single();
-
-      if (payment && payment.stripe_payment_intent_id) {
-        // First, verify payment is actually completed in Stripe
-        const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
-          apiVersion: '2023-10-16',
-        });
-
-        console.log(`Verifying payment status for payment intent: ${payment.stripe_payment_intent_id}`);
-        
-        const paymentIntent = await stripe.paymentIntents.retrieve(payment.stripe_payment_intent_id);
-        
-        if (paymentIntent.status !== 'succeeded') {
-          console.log(`Payment not completed yet. Status: ${paymentIntent.status}`);
-          return new Response(JSON.stringify({ 
-            error: 'Payment not completed in Stripe',
-            paymentStatus: paymentIntent.status,
-            message: 'Both parties confirmed but payment is not yet completed in Stripe'
-          }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
-        }
-
-        // Update payment transaction with charge ID if not already set
-        if (!payment.charge_id && paymentIntent.latest_charge) {
-          await supabaseAdmin
-            .from('payment_transactions')
-            .update({
-              charge_id: paymentIntent.latest_charge,
-              status: 'completed',
-              payment_intent_status: 'succeeded',
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', payment.id);
-        }
-
-        // Now proceed with transfer if not already done
-        if (!payment.transfer_id && paymentIntent.latest_charge) {
-        try {
-
-          // Get the tutor's connect account id
-          const { data: tutorProfile } = await supabaseAdmin
-            .from('profiles')
-            .select('stripe_connect_id')
-            .eq('id', session.tutor_id)
-            .single();
-
-          if (!tutorProfile?.stripe_connect_id) {
-            throw new Error('Tutor does not have a Stripe Connect account');
-          }
-
-          // Calculate the platform fee (e.g., 15%)
-          const amount = payment.amount;
-          const platformFeePercent = 0.15;
-          const platformFee = Math.round(amount * platformFeePercent);
-          const tutorAmount = amount - platformFee;
-
-          // Create a transfer to the tutor's connect account
-          const transfer = await stripe.transfers.create({
-            amount: tutorAmount,
-            currency: 'usd',
-            destination: tutorProfile.stripe_connect_id,
-            transfer_group: `session_${sessionId}`,
-            source_transaction: paymentIntent.latest_charge,
-            metadata: {
-              session_id: sessionId,
-              tutor_id: session.tutor_id,
-              student_id: session.student_id,
-            },
-          });
-
-          console.log(`Transfer created: ${transfer.id} for amount: ${tutorAmount}`);
-
-          // Update the payment transaction with transfer info
-          await supabaseAdmin
-            .from('payment_transactions')
-            .update({
-              transfer_id: transfer.id,
-              transfer_status: 'completed',
-              platform_fee: platformFee,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', payment.id);
-
-          // Create a record in payment_transfers
-          await supabaseAdmin
-            .from('payment_transfers')
-            .insert({
-              payment_id: payment.id,
-              session_id: sessionId,
-              tutor_id: session.tutor_id,
-              student_id: session.student_id,
-              amount: tutorAmount,
-              platform_fee: platformFee,
-              transfer_id: transfer.id,
-              status: 'completed',
-              transferred_at: new Date().toISOString(),
-            });
-
-          // Verify transfer was successful
-          const verifyTransfer = await stripe.transfers.retrieve(transfer.id);
-          
-          if (verifyTransfer.status !== 'paid') {
-            console.error(`Transfer verification failed. Status: ${verifyTransfer.status}`);
-            throw new Error(`Transfer not completed. Status: ${verifyTransfer.status}`);
-          }
-
-          console.log(`Transfer verified: ${transfer.id} - Status: ${verifyTransfer.status}`);
-
-          // Update session completion date only after successful transfer
-          await supabaseAdmin
-            .from('sessions')
-            .update({
-              completion_date: new Date().toISOString(),
-              status: 'completed',
-              payment_status: 'transferred',
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', sessionId);
-            
-        } catch (error) {
-          console.error('Error processing transfer:', error);
-          return new Response(JSON.stringify({ 
-            error: 'Failed to process payment transfer',
-            details: error.message 
-          }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
-        }
-      } else {
-        console.log('Payment transaction missing required data for transfer');
-        return new Response(JSON.stringify({ 
-          error: 'Payment not ready for transfer',
-          details: 'Missing payment intent ID or charge ID'
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
+      await supabaseAdmin
+        .from('sessions')
+        .update({
+          completion_date: new Date().toISOString(),
+          status: 'completed',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', sessionId);
     }
 
     return new Response(JSON.stringify({ 

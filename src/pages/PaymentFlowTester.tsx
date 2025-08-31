@@ -140,24 +140,23 @@ const PaymentFlowTester = () => {
     }
   };
 
-  const syncPaymentStatus = async (paymentIntentId: string, sessionId?: string) => {
+  const checkStripePaymentStatus = async (paymentIntentId: string) => {
     try {
-      toast.loading('Syncing payment status...');
-      
-      const { data, error } = await supabase.functions.invoke('sync-payment-status', {
-        body: { paymentIntentId, sessionId }
+      const { data, error } = await supabase.functions.invoke('check-payment-status', {
+        body: { paymentIntentId }
       });
 
       if (error) {
-        toast.error(`Failed to sync payment: ${error.message}`);
-        return;
+        toast.error(`Failed to check payment: ${error.message}`);
+        return null;
       }
 
-      toast.success(`Payment status synced: ${data.paymentStatus}`);
-      loadData(); // Reload data
+      toast.success(`Stripe status: ${data.status} | Amount: $${(data.amount / 100).toFixed(2)}`);
+      return data;
     } catch (error) {
-      console.error('Error syncing payment:', error);
-      toast.error('Failed to sync payment status');
+      console.error('Error checking payment status:', error);
+      toast.error('Failed to check payment status');
+      return null;
     }
   };
 
@@ -305,10 +304,10 @@ const PaymentFlowTester = () => {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => syncPaymentStatus(payment.stripe_payment_intent_id, payment.session_id)}
+                          onClick={() => checkStripePaymentStatus(payment.stripe_payment_intent_id)}
                           className="w-full"
                         >
-                          Sync Payment Status
+                          Check Stripe Status
                         </Button>
                       </div>
                     </div>
