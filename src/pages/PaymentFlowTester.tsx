@@ -381,7 +381,14 @@ const PaymentFlowTester = () => {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => window.open(payment.payment_link_url, '_blank')}
+                            onClick={() => {
+                              console.log('Opening payment link:', payment.payment_link_url);
+                              if (payment.payment_link_url) {
+                                window.open(payment.payment_link_url, '_blank');
+                              } else {
+                                toast.error('Payment link URL is missing');
+                              }
+                            }}
                             className="w-full"
                           >
                             Open Payment Link
