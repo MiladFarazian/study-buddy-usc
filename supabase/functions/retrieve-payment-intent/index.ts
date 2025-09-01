@@ -7,6 +7,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper to determine if we're in production
+const isProduction = () => {
+  // Check for production hostname
+  const hostname = Deno.env.get('HOSTNAME') || '';
+  const isDeploy = hostname.includes('studybuddyusc.com') || hostname.includes('prod');
+  
+  // Override for explicit environment variable
+  const envFlag = Deno.env.get('USE_PRODUCTION_STRIPE');
+  if (envFlag === 'true') return true;
+  if (envFlag === 'false') return false;
+  
+  return isDeploy;
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -14,13 +28,20 @@ serve(async (req) => {
   }
 
   try {
-    // Check if Stripe secret key is configured
-    const stripeSecretKey = Deno.env.get('STRIPE_CONNECT_SECRET_KEY');
+    // Determine the environment
+    const environment = isProduction() ? 'production' : 'test';
+    console.log(`Retrieving payment intent in ${environment} mode`);
+    
+    // Get appropriate Stripe key based on environment
+    const stripeSecretKey = isProduction()
+      ? Deno.env.get('STRIPE_CONNECT_LIVE_SECRET_KEY')
+      : Deno.env.get('STRIPE_CONNECT_SECRET_KEY');
+      
     if (!stripeSecretKey) {
-      console.error('Missing STRIPE_CONNECT_SECRET_KEY environment variable');
+      console.error(`Missing STRIPE_CONNECT_${environment.toUpperCase()}_SECRET_KEY environment variable`);
       return new Response(
         JSON.stringify({ 
-          error: 'Stripe configuration missing. Please set the STRIPE_CONNECT_SECRET_KEY in Supabase edge function secrets.' 
+          error: `Stripe configuration missing. Please set the STRIPE_CONNECT_${environment.toUpperCase()}_SECRET_KEY in Supabase edge function secrets.` 
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
