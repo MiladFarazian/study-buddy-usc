@@ -84,3 +84,9 @@ verify_jwt = false
 
 [functions.payment_intent-succeeded]
 verify_jwt = false
+
+[functions.confirm-session-complete]
+verify_jwt = false
+
+[functions.auto-confirm-session]
+verify_jwt = false
