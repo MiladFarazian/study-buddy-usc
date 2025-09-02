@@ -81,3 +81,6 @@ verify_jwt = false
 
 [functions.payment-link-webhook]
 verify_jwt = false
+
+[functions.payment_intent-succeeded]
+verify_jwt = false

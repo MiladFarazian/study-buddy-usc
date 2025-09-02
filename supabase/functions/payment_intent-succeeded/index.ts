@@ -1,0 +1,136 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.23.0';
+import Stripe from 'https://esm.sh/stripe@12.13.0?target=deno';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    console.log('Payment Intent Succeeded webhook received');
+    
+    // Initialize Stripe
+    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+      apiVersion: '2023-10-16',
+    });
+
+    // Initialize Supabase client
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') || '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+    );
+
+    // Get the raw body for webhook signature verification
+    const body = await req.text();
+    const signature = req.headers.get('stripe-signature');
+
+    if (!signature) {
+      console.error('No signature provided');
+      return new Response('No signature', { status: 400 });
+    }
+
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(
+        body,
+        signature,
+        Deno.env.get('STRIPE_WEBHOOK_SECRET') || ''
+      );
+    } catch (err) {
+      console.error('Webhook signature verification failed:', err.message);
+      return new Response(`Webhook Error: ${err.message}`, { status: 400 });
+    }
+
+    console.log('Webhook event received:', event.type);
+
+    // Handle payment_intent.succeeded event
+    if (event.type === 'payment_intent.succeeded') {
+      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      
+      console.log('Payment Intent succeeded:', {
+        id: paymentIntent.id,
+        amount: paymentIntent.amount,
+        currency: paymentIntent.currency,
+        status: paymentIntent.status,
+      });
+
+      // Find payment transaction by amount and update status
+      // Note: In a production system, you'd want a more reliable way to match payments
+      // Consider storing the payment_intent.id when creating the transaction
+      const { data: transactions, error: fetchError } = await supabaseAdmin
+        .from('payment_transactions')
+        .select('*')
+        .eq('amount', paymentIntent.amount / 100) // Convert cents to dollars
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (fetchError) {
+        console.error('Error fetching payment transaction:', fetchError);
+        return new Response('Database fetch failed', { status: 500 });
+      }
+
+      if (!transactions || transactions.length === 0) {
+        console.log('No matching payment transaction found for amount:', paymentIntent.amount / 100);
+        // This might be normal if the payment wasn't created through your system
+        return new Response(JSON.stringify({ 
+          received: true, 
+          message: 'No matching transaction found' 
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      const transaction = transactions[0];
+
+      // Update payment transaction
+      const { error: updateError } = await supabaseAdmin
+        .from('payment_transactions')
+        .update({
+          status: 'completed',
+          stripe_checkout_session_id: paymentIntent.id, // Store payment intent ID
+          payment_completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', transaction.id);
+
+      if (updateError) {
+        console.error('Error updating payment transaction:', updateError);
+        return new Response('Database update failed', { status: 500 });
+      }
+
+      // Update session payment status if session exists
+      if (transaction.session_id) {
+        const { error: sessionUpdateError } = await supabaseAdmin
+          .from('sessions')
+          .update({
+            payment_status: 'paid',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', transaction.session_id);
+
+        if (sessionUpdateError) {
+          console.error('Error updating session payment status:', sessionUpdateError);
+        }
+      }
+
+      console.log('Payment completed successfully for transaction:', transaction.id);
+    }
+
+    return new Response(JSON.stringify({ received: true }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+
+  } catch (error) {
+    console.error('Webhook error:', error);
+    return new Response(`Webhook Error: ${error.message}`, { status: 500 });
+  }
+});
