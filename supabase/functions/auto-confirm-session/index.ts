@@ -27,8 +27,21 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
     );
 
-    // Parse request body
-    const { sessionId } = await req.json();
+    // Parse request body - handle empty body gracefully
+    let sessionId;
+    try {
+      const body = await req.text();
+      if (body) {
+        const parsed = JSON.parse(body);
+        sessionId = parsed.sessionId;
+      }
+    } catch (parseError) {
+      logStep('ERROR: Failed to parse request body', { error: parseError.message });
+      return new Response(JSON.stringify({ error: 'Invalid JSON in request body' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
     
     if (!sessionId) {
       logStep('ERROR: No session ID provided');

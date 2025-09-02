@@ -115,8 +115,9 @@ serve(async (req) => {
     }
 
     // Get the appropriate Connect account ID field based on environment
-    const connectIdField = isProduction() ? 'stripe_connect_live_id' : 'stripe_connect_id';
-    const onboardingCompleteField = isProduction() ? 'stripe_connect_live_onboarding_complete' : 'stripe_connect_onboarding_complete';
+    // Note: Currently using same fields for both test and live - this can be expanded later
+    const connectIdField = 'stripe_connect_id';
+    const onboardingCompleteField = 'stripe_connect_onboarding_complete';
     
     console.log(`Checking if tutor has a Stripe Connect account in ${environment} mode`);
     

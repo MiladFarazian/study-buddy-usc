@@ -10,10 +10,14 @@ import { PrivacySettings } from "@/components/settings/PrivacySettings";
 import { TutorSettingsTab } from "@/components/settings/TutorSettingsTab";
 import { CoursesSettings } from "@/components/settings/CoursesSettings";
 import { TutorStudentCoursesSettings } from "@/components/settings/TutorStudentCoursesSettings";
+import { TestAutoConfirmButton } from "@/components/debug/TestAutoConfirmButton";
 
 const Settings = () => {
   const { loading, profile, isTutor } = useAuthRedirect('/settings', true);
   const [activeTab, setActiveTab] = useState("profile");
+  
+  // Check for debug mode
+  const showDebug = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === 'session';
 
   if (loading) {
     return (
@@ -50,6 +54,9 @@ const Settings = () => {
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="payment">Payment</TabsTrigger>
           <TabsTrigger value="privacy">Privacy</TabsTrigger>
+          {showDebug && (
+            <TabsTrigger value="debug">Debug</TabsTrigger>
+          )}
         </TabsList>
         
         <TabsContent value="profile" className="space-y-6">
@@ -87,6 +94,20 @@ const Settings = () => {
         <TabsContent value="privacy" className="space-y-6">
           <PrivacySettings />
         </TabsContent>
+        
+        {showDebug && (
+          <TabsContent value="debug" className="space-y-6">
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Debug Tools</h2>
+                <p className="text-muted-foreground mb-6">
+                  These tools are only visible with ?debug=session in the URL
+                </p>
+              </div>
+              <TestAutoConfirmButton />
+            </div>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
