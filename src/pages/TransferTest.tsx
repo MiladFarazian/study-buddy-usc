@@ -89,24 +89,42 @@ export const TransferTest = () => {
     setProcessingTransfers(prev => new Set([...prev, tutorId]));
     
     try {
+      console.log('Processing transfer for tutor:', tutorId);
+      
       const { data, error } = await supabase.functions.invoke('transfer-pending-funds', {
-        body: { tutor_id: tutorId }
+        body: { tutorId: tutorId }
       });
+
+      console.log('Transfer response:', { data, error });
 
       if (error) {
         console.error('Transfer error:', error);
-        toast.error(`Transfer failed: ${error.message}`);
+        if (error.message?.includes('Not authorized')) {
+          toast.error('Authorization failed: You must be an admin or the tutor to process transfers');
+        } else {
+          toast.error(`Transfer failed: ${error.message}`);
+        }
         return;
       }
 
-      toast.success(`Transfer processing completed! ${data.transfers_processed} transfers processed.`);
+      if (data?.error) {
+        console.error('Transfer error from function:', data.error);
+        if (data.error.includes('Not authorized')) {
+          toast.error('Authorization failed: You must be an admin or the tutor to process transfers');
+        } else {
+          toast.error(`Transfer failed: ${data.error}`);
+        }
+        return;
+      }
+
+      toast.success(`Transfer processing completed! ${data?.transfersProcessed || data?.transfers_processed || 0} transfers processed.`);
       
       // Refresh the transfers list
       await fetchPendingTransfers();
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Transfer error:', error);
-      toast.error('Transfer failed: Network error');
+      toast.error(`Transfer failed: ${error.message || 'Network error'}`);
     } finally {
       setProcessingTransfers(prev => {
         const newSet = new Set(prev);
