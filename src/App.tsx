@@ -37,6 +37,7 @@ import StripeTestInterface from "./pages/StripeTestInterface";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCanceled from "./pages/PaymentCanceled";
 import PaymentFlowTester from "./pages/PaymentFlowTester";
+import TestAutoConfirm from "./pages/TestAutoConfirm";
 
 const router = createBrowserRouter([
   {
@@ -148,6 +149,10 @@ const router = createBrowserRouter([
       {
         path: "/payment-flow-tester",
         element: <PrivateRoute><RequireProfileCompletion><PaymentFlowTester /></RequireProfileCompletion></PrivateRoute>
+      },
+      {
+        path: "/test-auto-confirm",
+        element: <TestAutoConfirm />
       },
       {
         path: "*",
