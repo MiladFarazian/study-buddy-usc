@@ -60,16 +60,35 @@ serve(async (req) => {
         status: paymentIntent.status,
       });
 
-      // Find payment transaction by amount and update status
-      // Note: In a production system, you'd want a more reliable way to match payments
-      // Consider storing the payment_intent.id when creating the transaction
-      const { data: transactions, error: fetchError } = await supabaseAdmin
+      // First try to find transaction by payment intent ID (most reliable)
+      let transactions;
+      let fetchError;
+      
+      console.log('Searching for transaction by payment intent ID:', paymentIntent.id);
+      const { data: transactionsByIntentId, error: intentIdError } = await supabaseAdmin
         .from('payment_transactions')
         .select('*')
-        .eq('amount', paymentIntent.amount / 100) // Convert cents to dollars
+        .eq('stripe_payment_intent_id', paymentIntent.id)
         .eq('status', 'pending')
-        .order('created_at', { ascending: false })
         .limit(1);
+
+      if (!intentIdError && transactionsByIntentId && transactionsByIntentId.length > 0) {
+        transactions = transactionsByIntentId;
+        console.log('Found transaction by payment intent ID');
+      } else {
+        // Fallback: Find by amount and status (less reliable but covers older transactions)
+        console.log('Payment intent ID match failed, falling back to amount matching');
+        const { data: transactionsByAmount, error: amountError } = await supabaseAdmin
+          .from('payment_transactions')
+          .select('*')
+          .eq('amount', paymentIntent.amount / 100) // Convert cents to dollars
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false })
+          .limit(1);
+        
+        transactions = transactionsByAmount;
+        fetchError = amountError;
+      }
 
       if (fetchError) {
         console.error('Error fetching payment transaction:', fetchError);
@@ -95,7 +114,8 @@ serve(async (req) => {
         .from('payment_transactions')
         .update({
           status: 'completed',
-          stripe_checkout_session_id: paymentIntent.id, // Store payment intent ID
+          stripe_payment_intent_id: paymentIntent.id, // Store payment intent ID in correct column
+          stripe_checkout_session_id: paymentIntent.id, // Keep existing for compatibility
           payment_completed_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
