@@ -9,6 +9,7 @@ import { BookSessionModal } from "../scheduling/booking-modal/BookSessionModal";
 import { AuthRequiredDialog } from "../scheduling/booking-modal/AuthRequiredDialog";
 import { useAuthState } from "@/hooks/useAuthState";
 import { useLocation } from "react-router-dom";
+import { toast } from "sonner";
 
 interface TutorBookingSidebarProps {
   tutor: Tutor;
@@ -25,6 +26,13 @@ export const TutorBookingSidebar = ({ tutor }: TutorBookingSidebarProps) => {
       setShowAuthDialog(true);
       return;
     }
+    
+    // Prevent tutors from booking sessions with themselves
+    if (user.id === tutor.id) {
+      toast.error("Tutors cannot book sessions with themselves. Please log in as a student to book a session.");
+      return;
+    }
+    
     setShowBookingModal(true);
   };
 

@@ -85,6 +85,12 @@ export function PaymentStep({
       const endDateTime = new Date(startDateTime);
       endDateTime.setMinutes(endDateTime.getMinutes() + selectedDuration);
       
+      // Validate user is not the tutor
+      if (user.id === tutor.id) {
+        setError("Tutors cannot book sessions with themselves. Please log in as a student.");
+        return;
+      }
+      
       // Create session booking
       const bookingResult = await createSessionBooking(
         user.id,

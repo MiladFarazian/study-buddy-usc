@@ -189,6 +189,16 @@ export function NewBookingWizard({ tutor, onClose }: NewBookingWizardProps) {
       const endDate = addMinutes(startDate, selectedDuration);
       const endTime = endDate.toISOString();
       
+      // Validate user is not the tutor
+      if (user.id === tutor.id) {
+        toast({
+          title: "Error",
+          description: "Tutors cannot book sessions with themselves",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       const session = await createSessionBooking(
         user.id,
         tutor.id,
