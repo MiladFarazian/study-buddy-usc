@@ -22,7 +22,7 @@ import TutorProfile from "./pages/TutorProfile";
 import TutorProfilePage from "./pages/TutorProfile/TutorProfilePage";
 import NotFound from "./pages/NotFound";
 import PrivateRoute from "./components/auth/PrivateRoute";
-import RequireProfileCompletion from "./components/auth/RequireProfileCompletion";
+
 import Schedule from "./pages/Schedule";
 import Messages from "./pages/Messages";
 import FeaturedTutors from "./pages/FeaturedTutors";
@@ -80,7 +80,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/profile",
-        element: <PrivateRoute><RequireProfileCompletion><Profile /></RequireProfileCompletion></PrivateRoute>
+        element: <PrivateRoute><Profile /></PrivateRoute>
       },
       {
         path: "/courses",
@@ -100,11 +100,11 @@ const router = createBrowserRouter([
       },
       {
         path: "/schedule",
-        element: <PrivateRoute><RequireProfileCompletion><Schedule /></RequireProfileCompletion></PrivateRoute>
+        element: <PrivateRoute><Schedule /></PrivateRoute>
       },
       {
         path: "/messages",
-        element: <PrivateRoute><RequireProfileCompletion><Messages /></RequireProfileCompletion></PrivateRoute>
+        element: <PrivateRoute><Messages /></PrivateRoute>
       },
       {
         path: "/featured-tutors",
@@ -112,7 +112,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/settings",
-        element: <PrivateRoute><RequireProfileCompletion><Settings /></RequireProfileCompletion></PrivateRoute>
+        element: <PrivateRoute><Settings /></PrivateRoute>
       },
       {
         path: "/resources",
@@ -120,23 +120,23 @@ const router = createBrowserRouter([
       },
       {
         path: "/students",
-        element: <PrivateRoute><RequireProfileCompletion><Students /></RequireProfileCompletion></PrivateRoute>
+        element: <PrivateRoute><Students /></PrivateRoute>
       },
       {
         path: "/booking",
-        element: <PrivateRoute><RequireProfileCompletion><BookingCalendly /></RequireProfileCompletion></PrivateRoute>
+        element: <PrivateRoute><BookingCalendly /></PrivateRoute>
       },
       {
         path: "/analytics",
-        element: <PrivateRoute><RequireProfileCompletion><Analytics /></RequireProfileCompletion></PrivateRoute>
+        element: <PrivateRoute><Analytics /></PrivateRoute>
       },
       {
         path: "/badges",
-        element: <PrivateRoute><RequireProfileCompletion><BadgesDashboard /></RequireProfileCompletion></PrivateRoute>
+        element: <PrivateRoute><BadgesDashboard /></PrivateRoute>
       },
       {
         path: "/stripe-test",
-        element: <PrivateRoute><RequireProfileCompletion><StripeTestInterface /></RequireProfileCompletion></PrivateRoute>
+        element: <PrivateRoute><StripeTestInterface /></PrivateRoute>
       },
       {
         path: "/payment-success",
@@ -148,7 +148,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/payment-flow-tester",
-        element: <PrivateRoute><RequireProfileCompletion><PaymentFlowTester /></RequireProfileCompletion></PrivateRoute>
+        element: <PrivateRoute><PaymentFlowTester /></PrivateRoute>
       },
       {
         path: "/transfer-test",
