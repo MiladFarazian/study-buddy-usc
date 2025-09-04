@@ -1,5 +1,6 @@
 
-import { useState } from "react";
+import { useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
 import { ProfileSettings } from "@/components/settings/ProfileSettings";
@@ -10,11 +11,20 @@ import { PrivacySettings } from "@/components/settings/PrivacySettings";
 import { TutorSettingsTab } from "@/components/settings/TutorSettingsTab";
 import { CoursesSettings } from "@/components/settings/CoursesSettings";
 import { TutorStudentCoursesSettings } from "@/components/settings/TutorStudentCoursesSettings";
+import { AvailabilitySettings } from "@/components/scheduling/AvailabilitySettings";
 import { TestAutoConfirmButton } from "@/components/debug/TestAutoConfirmButton";
 
 const Settings = () => {
   const { loading, profile, isTutor } = useAuthRedirect('/settings', true);
-  const [activeTab, setActiveTab] = useState("profile");
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Get the active tab from URL or default to "profile"
+  const activeTab = searchParams.get('tab') || 'profile';
+  
+  // Update URL when tab changes
+  const setActiveTab = (tab: string) => {
+    setSearchParams({ tab });
+  };
   
   // Check for debug mode
   const showDebug = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === 'session';
@@ -49,6 +59,9 @@ const Settings = () => {
             <TabsTrigger value="student-courses">Courses I Need Help With</TabsTrigger>
           )}
           {isTutor && (
+            <TabsTrigger value="availability">Availability</TabsTrigger>
+          )}
+          {isTutor && (
             <TabsTrigger value="tutor-settings">Tutor Settings</TabsTrigger>
           )}
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
@@ -74,6 +87,12 @@ const Settings = () => {
         {isTutor && (
           <TabsContent value="student-courses" className="space-y-6">
             <TutorStudentCoursesSettings />
+          </TabsContent>
+        )}
+        
+        {isTutor && (
+          <TabsContent value="availability" className="space-y-6">
+            <AvailabilitySettings />
           </TabsContent>
         )}
         
