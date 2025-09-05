@@ -119,6 +119,20 @@ export function PaymentStep({
         const sessionTime = format(startDateTime, 'h:mm a');
         const description = `Tutoring session with ${tutor.name} on ${sessionDate} at ${sessionTime}`;
         
+        // Store booking data for PaymentSuccess page
+        const bookingData = {
+          tutorId: tutor.id,
+          courseId: null, // No course selection in PaymentStep
+          startTime: startDateTime.toISOString(),
+          endTime: endDateTime.toISOString(),
+          location: 'TBD', // Default location
+          notes: notes || null,
+          sessionType: 'in_person', // Default session type
+          totalAmount: totalCost
+        };
+        localStorage.setItem('currentBooking', JSON.stringify(bookingData));
+        console.log("💾 Booking data stored for PaymentSuccess:", bookingData);
+        
         // Create Payment Link instead of payment intent
         const { data: paymentLink, error: paymentError } = await supabase.functions.invoke('create-payment-link', {
           body: {

@@ -1,12 +1,102 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Loader2, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 export default function PaymentSuccess() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [sessionCreated, setSessionCreated] = useState(false);
+  const [creating, setCreating] = useState(false);
+  
   const sessionId = searchParams.get('session_id');
+  const stripeSessionId = searchParams.get('session_id');
+
+  // Create session record after successful payment
+  useEffect(() => {
+    const createSessionRecord = async () => {
+      if (!user || sessionCreated || creating || !stripeSessionId) return;
+      
+      console.log("🎯 PaymentSuccess: Creating session record...");
+      setCreating(true);
+
+      try {
+        // Get booking data from localStorage
+        const bookingData = localStorage.getItem('currentBooking');
+        if (!bookingData) {
+          console.error("❌ No booking data found in localStorage");
+          toast.error("Booking data not found. Please contact support.");
+          return;
+        }
+
+        const booking = JSON.parse(bookingData);
+        console.log("📋 Booking data:", booking);
+
+        // Create session record with paid status
+        const { data: sessionData, error: sessionError } = await supabase
+          .from('sessions')
+          .insert({
+            student_id: user.id,
+            tutor_id: booking.tutorId,
+            course_id: booking.courseId || null,
+            start_time: booking.startTime,
+            end_time: booking.endTime,
+            location: booking.location || null,
+            notes: booking.notes || null,
+            session_type: booking.sessionType || 'in_person',
+            status: 'scheduled',
+            payment_status: 'paid'
+          })
+          .select()
+          .single();
+
+        if (sessionError) {
+          console.error("❌ Session creation error:", sessionError);
+          toast.error("Failed to create session record");
+          return;
+        }
+
+        console.log("✅ Session created:", sessionData);
+
+        // Create payment transaction record
+        const { error: paymentError } = await supabase
+          .from('payment_transactions')
+          .insert({
+            session_id: sessionData.id,
+            student_id: user.id,
+            tutor_id: booking.tutorId,
+            amount: booking.totalAmount || 0,
+            status: 'completed',
+            stripe_checkout_session_id: stripeSessionId,
+            payment_completed_at: new Date().toISOString(),
+            environment: 'production'
+          });
+
+        if (paymentError) {
+          console.error("❌ Payment transaction error:", paymentError);
+          // Don't fail completely if payment record fails - session is created
+        }
+
+        setSessionCreated(true);
+        toast.success("Session booked successfully!");
+        
+        // Clear booking data
+        localStorage.removeItem('currentBooking');
+
+      } catch (error) {
+        console.error("❌ Error creating session:", error);
+        toast.error("Failed to finalize booking. Please contact support.");
+      } finally {
+        setCreating(false);
+      }
+    };
+
+    createSessionRecord();
+  }, [user, sessionCreated, creating, stripeSessionId]);
 
   useEffect(() => {
     // Close this window and notify parent if opened in popup
