@@ -268,6 +268,24 @@ export function useBookSessionModal(
 
       console.log("✅ Session created:", sessionData);
 
+      // Send booking confirmation emails
+      try {
+        console.log("📧 Sending booking confirmation emails...");
+        const { error: emailError } = await supabase.functions.invoke('send-session-emails', {
+          body: { sessionId: sessionData.id }
+        });
+        
+        if (emailError) {
+          console.error("⚠️ Email sending failed:", emailError);
+          // Don't fail the entire booking for email errors
+        } else {
+          console.log("✅ Booking confirmation emails sent");
+        }
+      } catch (emailError) {
+        console.error("⚠️ Email sending error:", emailError);
+        // Don't fail the entire booking for email errors
+      }
+
       // Create payment transaction record
       const { error: paymentError } = await supabase
         .from('payment_transactions')
