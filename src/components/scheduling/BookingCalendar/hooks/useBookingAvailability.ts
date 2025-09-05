@@ -20,13 +20,25 @@ export const useBookingAvailability = (tutor: Tutor, selectedDate: Date) => {
   // Filter slots for the selected date
   useEffect(() => {
     if (selectedDate && availableSlots.length > 0) {
+      console.log('Filtering slots for selected date:', format(selectedDate, 'yyyy-MM-dd'));
       const slotsForDate = availableSlots.filter(
         slot => {
           const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
           return format(slotDay, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd');
         }
       );
+      console.log(`Found ${slotsForDate.length} slots for selected date`);
       setVisibleSlots(slotsForDate);
+    } else if (availableSlots.length > 0 && !selectedDate) {
+      // Only fall back to today if no date is selected
+      const today = new Date();
+      const todaySlots = availableSlots.filter(
+        slot => {
+          const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
+          return format(slotDay, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
+        }
+      );
+      setVisibleSlots(todaySlots);
     }
   }, [selectedDate, availableSlots]);
 
@@ -70,14 +82,8 @@ export const useBookingAvailability = (tutor: Tutor, selectedDate: Date) => {
       console.log(`Generated ${slotsWithTutor.length} available slots for tutor: ${tutor.id}`);
       setAvailableSlots(slotsWithTutor);
       
-      // Set initial visible slots for today
-      const todaySlots = slotsWithTutor.filter(
-        slot => {
-          const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
-          return format(slotDay, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
-        }
-      );
-      setVisibleSlots(todaySlots);
+      // Let the useEffect filter by selectedDate handle setting visibleSlots
+      // Don't override with today's slots here
       
     } catch (error) {
       console.error("Error loading tutor availability:", error);

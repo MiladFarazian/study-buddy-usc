@@ -37,6 +37,7 @@ export const BookingCalendar = ({ tutor, onSelectSlot }: BookingCalendarProps) =
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
+      console.log('BookingCalendar: Date selected:', format(date, 'yyyy-MM-dd'));
       setSelectedDate(date);
     }
   };
