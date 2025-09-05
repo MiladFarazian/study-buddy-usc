@@ -272,7 +272,10 @@ export function useBookSessionModal(
       try {
         console.log("📧 Sending booking confirmation emails...");
         const { error: emailError } = await supabase.functions.invoke('send-session-emails', {
-          body: { sessionId: sessionData.id }
+          body: { 
+            sessionId: sessionData.id,
+            emailType: 'confirmation'
+          }
         });
         
         if (emailError) {
