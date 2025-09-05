@@ -38,8 +38,9 @@ function Calendar({
         cell: "h-9 w-9 text-center p-0 relative flex-1",
         day: cn(
           buttonVariants({ variant: "ghost" }),
-          "h-9 w-9 p-0 font-normal hover:bg-muted" // Removed selected state styling
+          "h-9 w-9 p-0 font-normal hover:bg-muted"
         ),
+        day_selected: "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark focus:bg-usc-cardinal-dark",
         day_range_end: "day-range-end",
         day_today: "text-accent-foreground", // Removed background highlighting
         day_outside:

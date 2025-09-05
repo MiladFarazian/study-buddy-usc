@@ -115,6 +115,8 @@ export function generateAvailableSlots(
 ): BookingSlot[] {
   const availableSlots: BookingSlot[] = [];
   const weekDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const now = new Date();
+  const bufferTime = addMinutes(now, 180); // 3-hour minimum booking buffer
   
   // Generate slots for the specified number of days
   for (let i = 0; i < daysToGenerate; i++) {
@@ -133,6 +135,14 @@ export function generateAvailableSlots(
       for (let minutes = startMinutes; minutes < endMinutes; minutes += 30) {
         const slotStart = convertMinutesToTime(minutes);
         const slotEnd = convertMinutesToTime(minutes + 30);
+        
+        // Create slot date/time for comparison
+        const slotStartTime = parse(slotStart, 'HH:mm', currentDate);
+        
+        // Skip if slot is in the past (including 3-hour buffer)
+        if (slotStartTime <= bufferTime) {
+          continue;
+        }
         
         // Create a slot
         const slot: BookingSlot = {

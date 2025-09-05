@@ -34,7 +34,6 @@ export const CalendarSection = ({
       <p className="text-sm font-medium mb-2">Select a Date:</p>
       <div className="min-h-[350px] w-full border rounded-md p-2 flex items-center justify-center">
         <Calendar
-          key={`calendar-${selectedDateKey}`} // This key forces a re-render when the date changes
           mode="single"
           selected={selectedDate}
           onSelect={onDateSelect}
@@ -52,7 +51,7 @@ export const CalendarSection = ({
             const dateStr = format(date, 'yyyy-MM-dd');
             return !getDatesWithSlots().some(d => format(d, 'yyyy-MM-dd') === dateStr);
           }}
-          className="w-full"
+          className="w-full pointer-events-auto"
           classNames={{
             day_today: "bg-muted",
             day_selected: "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark focus:bg-usc-cardinal-dark",
