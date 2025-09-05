@@ -31,6 +31,91 @@ export default function PaymentSuccess() {
     }
   }, [sessionId]);
 
+  // Add session creation as backup if user reaches this page
+  useEffect(() => {
+    const createSessionFromPaymentSuccess = async () => {
+      console.log("SESSION CREATION STARTING - PaymentSuccess");
+      console.log("🎯 PaymentSuccess: Creating session record...");
+      
+      if (!sessionId || !user || creating || sessionCreated) {
+        console.log("❌ PaymentSuccess: Missing requirements:", { sessionId: !!sessionId, user: !!user, creating, sessionCreated });
+        return;
+      }
+
+      setCreating(true);
+
+      try {
+        // Get booking data from localStorage
+        const bookingDataStr = localStorage.getItem('currentBooking');
+        if (!bookingDataStr) {
+          console.error("❌ PaymentSuccess: No booking data found in localStorage");
+          return;
+        }
+
+        const booking = JSON.parse(bookingDataStr);
+        console.log("💾 PaymentSuccess: Retrieved booking data:", booking);
+
+        // Create session record
+        const { data: sessionData, error: sessionError } = await supabase
+          .from('sessions')
+          .insert({
+            student_id: user.id,
+            tutor_id: booking.tutorId,
+            course_id: booking.courseId,
+            start_time: booking.startTime,
+            end_time: booking.endTime,
+            location: booking.location || 'Location TBD',
+            notes: booking.notes,
+            session_type: booking.sessionType || 'in_person',
+            status: 'scheduled',
+            payment_status: 'paid'
+          })
+          .select()
+          .single();
+
+        if (sessionError) {
+          console.error("❌ PaymentSuccess: Session creation error:", sessionError);
+          toast.error("Failed to create session record");
+          return;
+        }
+
+        console.log("✅ PaymentSuccess: Session created:", sessionData);
+
+        // Create payment transaction record
+        const { error: paymentError } = await supabase
+          .from('payment_transactions')
+          .insert({
+            session_id: sessionData.id,
+            student_id: user.id,
+            tutor_id: booking.tutorId,
+            amount: booking.totalAmount || 0,
+            status: 'completed',
+            payment_completed_at: new Date().toISOString(),
+            environment: 'production',
+            stripe_checkout_session_id: sessionId
+          });
+
+        if (paymentError) {
+          console.error("❌ PaymentSuccess: Payment transaction error:", paymentError);
+        }
+
+        setSessionCreated(true);
+        toast.success("Session created successfully!");
+        
+        // Clear booking data
+        localStorage.removeItem('currentBooking');
+        
+      } catch (error) {
+        console.error("❌ PaymentSuccess: Error creating session:", error);
+        toast.error("Failed to create session");
+      } finally {
+        setCreating(false);
+      }
+    };
+
+    createSessionFromPaymentSuccess();
+  }, [sessionId, user, creating, sessionCreated]);
+
   const handleContinue = () => {
     // If not in popup, redirect to home with success message
     navigate('/', { 

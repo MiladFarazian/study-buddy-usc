@@ -185,6 +185,7 @@ export function useBookSessionModal(
 
   // Handle booking completion (after confirmation)
   const handleBookingComplete = useCallback(async () => {
+    console.log("SESSION CREATION STARTING - handleBookingComplete");
     console.log("[handleBookingComplete] Finalizing booking...");
     
     try {
