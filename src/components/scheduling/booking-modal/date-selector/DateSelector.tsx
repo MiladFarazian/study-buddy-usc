@@ -49,6 +49,13 @@ export function DateSelector({
     }
   }, [date, availableDates, onDateChange, isLoading]);
 
+  // Update current view date when selected date changes
+  useEffect(() => {
+    if (date) {
+      setCurrentViewDate(date);
+    }
+  }, [date]);
+
   // Function to determine if a date has available slots
   const hasAvailableSlots = (day: Date): boolean => {
     // Prevent booking sessions in the past
