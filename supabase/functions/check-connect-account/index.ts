@@ -1,11 +1,54 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.23.0';
-import Stripe from 'https://esm.sh/stripe@12.13.0?target=deno';
+import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno&bundle';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+// Helper function to retry Stripe API calls with exponential backoff
+const retryStripeOperation = async <T>(
+  operation: () => Promise<T>,
+  operationName: string,
+  maxRetries: number = 3
+): Promise<T> => {
+  const delays = [200, 500, 1000]; // ms
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const startTime = Date.now();
+      const result = await operation();
+      const duration = Date.now() - startTime;
+      console.log(`${operationName} completed in ${duration}ms (attempt ${attempt + 1})`);
+      return result;
+    } catch (error) {
+      const isLastAttempt = attempt === maxRetries - 1;
+      const isRetryableError = error.type === 'StripeConnectionError' || 
+                              error.code === 'rate_limit' ||
+                              (error.message && error.message.includes('runMicrotasks'));
+      
+      console.log(`${operationName} attempt ${attempt + 1} failed:`, {
+        error: error.message,
+        type: error.type,
+        code: error.code,
+        retryable: isRetryableError,
+        isLastAttempt
+      });
+      
+      if (isLastAttempt || !isRetryableError) {
+        throw error;
+      }
+      
+      if (attempt < delays.length) {
+        console.log(`Retrying ${operationName} in ${delays[attempt]}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delays[attempt]));
+      }
+    }
+  }
+  
+  throw new Error(`${operationName} failed after ${maxRetries} attempts`);
 };
 
 // Helper to determine if we're in production
@@ -155,12 +198,19 @@ serve(async (req) => {
     
     const stripe = new Stripe(stripeKey, {
       apiVersion: '2023-10-16',
+      timeout: 30000, // 30 second timeout
     });
 
     try {
       console.log(`Retrieving Stripe account: ${profile[connectIdField]}`);
-      const account = await stripe.accounts.retrieve(profile[connectIdField]);
-      console.log("Account retrieved:", {
+      
+      // Use retry logic for Stripe API call
+      const account = await retryStripeOperation(
+        () => stripe.accounts.retrieve(profile[connectIdField]),
+        'stripe.accounts.retrieve'
+      );
+      
+      console.log("Account retrieved successfully:", {
         details_submitted: account.details_submitted,
         charges_enabled: account.charges_enabled,
         payouts_enabled: account.payouts_enabled
@@ -193,7 +243,19 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     } catch (stripeError) {
-      console.error("Error retrieving Stripe account:", stripeError);
+      console.error("Error retrieving Stripe account after retries:", stripeError);
+      
+      // Handle rate limiting specifically
+      if (stripeError.code === 'rate_limit') {
+        return new Response(JSON.stringify({ 
+          error: 'Rate limited by Stripe', 
+          details: 'Too many requests, please try again later',
+          retry_after: stripeError.headers?.['retry-after'] || 60
+        }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
       
       // If the account doesn't exist or was deleted
       if (stripeError.code === 'resource_missing') {
@@ -211,6 +273,7 @@ serve(async (req) => {
         return new Response(JSON.stringify({ 
           has_account: false,
           needs_onboarding: true,
+          payouts_enabled: false,
           error: `Previous account no longer exists in ${environment} mode`,
           environment
         }), {
@@ -219,10 +282,33 @@ serve(async (req) => {
         });
       }
       
+      // Handle authentication/permission errors
+      if (stripeError.type === 'StripePermissionError' || stripeError.type === 'StripeAuthenticationError') {
+        return new Response(JSON.stringify({ 
+          error: 'Stripe authentication error', 
+          details: 'Invalid Stripe credentials configuration'
+        }), {
+          status: 503,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
+      // Handle connection errors that might be temporary
+      if (stripeError.type === 'StripeConnectionError') {
+        return new Response(JSON.stringify({ 
+          error: 'Stripe connection error', 
+          details: 'Temporary connection issue, please try again'
+        }), {
+          status: 503,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
       // For other Stripe errors
       return new Response(JSON.stringify({ 
         error: 'Error retrieving Stripe account', 
-        details: stripeError.message
+        details: stripeError.message,
+        type: stripeError.type || 'unknown'
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
