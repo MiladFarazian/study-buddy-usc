@@ -134,6 +134,38 @@ export function useBookSessionModal(
     }
     
     const nextStep = state.bookingStep + 1 as BookingStep;
+    
+    // Store booking data in localStorage when moving to payment step
+    if (nextStep === BookingStep.PAYMENT) {
+      console.log("💾 Storing booking data to localStorage before payment...");
+      
+      // Calculate start and end times
+      const startTime = new Date(selectedDate);
+      const [startHour, startMinute] = state.selectedTimeSlot!.start.split(':').map(Number);
+      startTime.setHours(startHour, startMinute, 0, 0);
+      
+      const endTime = new Date(startTime);
+      endTime.setMinutes(endTime.getMinutes() + state.selectedDuration);
+      
+      // Calculate total amount
+      const hourlyRate = tutor.hourlyRate || 25;
+      const totalAmount = (hourlyRate / 60) * state.selectedDuration;
+      
+      const bookingData = {
+        tutorId: tutor.id,
+        courseId: state.selectedCourseId,
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+        location: contextState.location || null,
+        notes: contextState.notes || null,
+        sessionType: contextState.sessionType || 'in_person',
+        totalAmount: totalAmount
+      };
+      
+      localStorage.setItem('currentBooking', JSON.stringify(bookingData));
+      console.log("✅ Booking data stored:", bookingData);
+    }
+    
     setState(prev => ({ ...prev, bookingStep: nextStep }));
     dispatch({ type: 'SET_STEP', payload: nextStep });
   };
