@@ -27,6 +27,16 @@ import Schedule from "./pages/Schedule";
 import Messages from "./pages/Messages";
 import FeaturedTutors from "./pages/FeaturedTutors";
 import Settings from "./pages/Settings";
+import { Navigate } from "react-router-dom";
+import { ProfileSettings } from "./components/settings/ProfileSettings";
+import { AccountSettings } from "./components/settings/AccountSettings";
+import { NotificationSettings } from "./components/settings/NotificationSettings";
+import { PaymentSettingsTab } from "./components/settings/PaymentSettingsTab";
+import { PrivacySettings } from "./components/settings/PrivacySettings";
+import { TutorSettingsTab } from "./components/settings/TutorSettingsTab";
+import { CoursesSettings } from "./components/settings/CoursesSettings";
+import { TutorStudentCoursesSettings } from "./components/settings/TutorStudentCoursesSettings";
+import { AvailabilitySettings } from "./components/scheduling/AvailabilitySettings";
 import Resources from "./pages/Resources";
 import Students from "./pages/Students";
 import AuthCallback from "./pages/AuthCallback";
@@ -112,7 +122,49 @@ const router = createBrowserRouter([
       },
       {
         path: "/settings",
-        element: <PrivateRoute><Settings /></PrivateRoute>
+        element: <PrivateRoute><Settings /></PrivateRoute>,
+        children: [
+          {
+            index: true,
+            element: <Navigate to="/settings/profile" replace />
+          },
+          {
+            path: "profile",
+            element: <ProfileSettings />
+          },
+          {
+            path: "account", 
+            element: <AccountSettings />
+          },
+          {
+            path: "courses",
+            element: <CoursesSettings />
+          },
+          {
+            path: "student-courses",
+            element: <TutorStudentCoursesSettings />
+          },
+          {
+            path: "availability",
+            element: <AvailabilitySettings />
+          },
+          {
+            path: "tutor-settings", 
+            element: <TutorSettingsTab />
+          },
+          {
+            path: "notifications",
+            element: <NotificationSettings />
+          },
+          {
+            path: "payment",
+            element: <PaymentSettingsTab />
+          },
+          {
+            path: "privacy",
+            element: <PrivacySettings />
+          }
+        ]
       },
       {
         path: "/resources",

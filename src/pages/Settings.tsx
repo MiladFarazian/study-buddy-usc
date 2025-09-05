@@ -1,30 +1,10 @@
 
-import { useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
-import { ProfileSettings } from "@/components/settings/ProfileSettings";
-import { AccountSettings } from "@/components/settings/AccountSettings";
-import { NotificationSettings } from "@/components/settings/NotificationSettings";
-import { PaymentSettingsTab } from "@/components/settings/PaymentSettingsTab";
-import { PrivacySettings } from "@/components/settings/PrivacySettings";
-import { TutorSettingsTab } from "@/components/settings/TutorSettingsTab";
-import { CoursesSettings } from "@/components/settings/CoursesSettings";
-import { TutorStudentCoursesSettings } from "@/components/settings/TutorStudentCoursesSettings";
-import { AvailabilitySettings } from "@/components/scheduling/AvailabilitySettings";
-import { TestAutoConfirmButton } from "@/components/debug/TestAutoConfirmButton";
 
 const Settings = () => {
   const { loading, profile, isTutor } = useAuthRedirect('/settings', true);
-  const [searchParams, setSearchParams] = useSearchParams();
-  
-  // Get the active tab from URL or default to "profile"
-  const activeTab = searchParams.get('tab') || 'profile';
-  
-  // Update URL when tab changes
-  const setActiveTab = (tab: string) => {
-    setSearchParams({ tab });
-  };
+  const location = useLocation();
   
   // Check for debug mode
   const showDebug = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === 'session';
@@ -37,6 +17,8 @@ const Settings = () => {
     );
   }
 
+  const isActiveTab = (path: string) => location.pathname === `/settings/${path}`;
+
   return (
     <div className="container max-w-6xl py-6 md:py-10">
       <div className="space-y-0.5 mb-6">
@@ -46,88 +28,136 @@ const Settings = () => {
         </p>
       </div>
 
-      <Tabs
-        value={activeTab}
-        onValueChange={setActiveTab}
-        className="space-y-6"
-      >
-        <TabsList className="flex flex-wrap h-auto py-2 gap-2">
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="account">Account</TabsTrigger>
-          <TabsTrigger value="courses">My Courses</TabsTrigger>
-          {isTutor && (
-            <TabsTrigger value="student-courses">Courses I Need Help With</TabsTrigger>
-          )}
-          {isTutor && (
-            <TabsTrigger value="availability">Availability</TabsTrigger>
-          )}
-          {isTutor && (
-            <TabsTrigger value="tutor-settings">Tutor Settings</TabsTrigger>
-          )}
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="payment">Payment</TabsTrigger>
-          <TabsTrigger value="privacy">Privacy</TabsTrigger>
-          {showDebug && (
-            <TabsTrigger value="debug">Debug</TabsTrigger>
-          )}
-        </TabsList>
-        
-        <TabsContent value="profile" className="space-y-6">
-          <ProfileSettings />
-        </TabsContent>
-        
-        <TabsContent value="account" className="space-y-6">
-          <AccountSettings />
-        </TabsContent>
-        
-        <TabsContent value="courses" className="space-y-6">
-          <CoursesSettings />
-        </TabsContent>
+      <div className="space-y-6">
+        <nav className="flex flex-wrap gap-2 p-1 bg-muted rounded-lg">
+          <NavLink 
+            to="/settings/profile" 
+            className={({ isActive }) => 
+              `px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                isActive 
+                  ? "bg-background text-foreground shadow-sm" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+              }`
+            }
+          >
+            Profile
+          </NavLink>
+          
+          <NavLink 
+            to="/settings/account" 
+            className={({ isActive }) => 
+              `px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                isActive 
+                  ? "bg-background text-foreground shadow-sm" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+              }`
+            }
+          >
+            Account
+          </NavLink>
+          
+          <NavLink 
+            to="/settings/courses" 
+            className={({ isActive }) => 
+              `px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                isActive 
+                  ? "bg-background text-foreground shadow-sm" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+              }`
+            }
+          >
+            My Courses
+          </NavLink>
 
-        {isTutor && (
-          <TabsContent value="student-courses" className="space-y-6">
-            <TutorStudentCoursesSettings />
-          </TabsContent>
-        )}
+          {isTutor && (
+            <NavLink 
+              to="/settings/student-courses" 
+              className={({ isActive }) => 
+                `px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  isActive 
+                    ? "bg-background text-foreground shadow-sm" 
+                    : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                }`
+              }
+            >
+              Courses I Need Help With
+            </NavLink>
+          )}
+
+          {isTutor && (
+            <NavLink 
+              to="/settings/availability" 
+              className={({ isActive }) => 
+                `px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  isActive 
+                    ? "bg-background text-foreground shadow-sm" 
+                    : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                }`
+              }
+            >
+              Availability
+            </NavLink>
+          )}
+
+          {isTutor && (
+            <NavLink 
+              to="/settings/tutor-settings" 
+              className={({ isActive }) => 
+                `px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  isActive 
+                    ? "bg-background text-foreground shadow-sm" 
+                    : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                }`
+              }
+            >
+              Tutor Settings
+            </NavLink>
+          )}
+
+          <NavLink 
+            to="/settings/notifications" 
+            className={({ isActive }) => 
+              `px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                isActive 
+                  ? "bg-background text-foreground shadow-sm" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+              }`
+            }
+          >
+            Notifications
+          </NavLink>
+
+          <NavLink 
+            to="/settings/payment" 
+            className={({ isActive }) => 
+              `px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                isActive 
+                  ? "bg-background text-foreground shadow-sm" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+              }`
+            }
+          >
+            Payment
+          </NavLink>
+
+          <NavLink 
+            to="/settings/privacy" 
+            className={({ isActive }) => 
+              `px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                isActive 
+                  ? "bg-background text-foreground shadow-sm" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+              }`
+            }
+          >
+            Privacy
+          </NavLink>
+        </nav>
         
-        {isTutor && (
-          <TabsContent value="availability" className="space-y-6">
-            <AvailabilitySettings />
-          </TabsContent>
-        )}
-        
-        {isTutor && (
-          <TabsContent value="tutor-settings" className="space-y-6">
-            <TutorSettingsTab />
-          </TabsContent>
-        )}
-        
-        <TabsContent value="notifications" className="space-y-6">
-          <NotificationSettings />
-        </TabsContent>
-        
-        <TabsContent value="payment" className="space-y-6">
-          <PaymentSettingsTab />
-        </TabsContent>
-        
-        <TabsContent value="privacy" className="space-y-6">
-          <PrivacySettings />
-        </TabsContent>
-        
-        {showDebug && (
-          <TabsContent value="debug" className="space-y-6">
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-semibold mb-4">Debug Tools</h2>
-                <p className="text-muted-foreground mb-6">
-                  These tools are only visible with ?debug=session in the URL
-                </p>
-              </div>
-              <TestAutoConfirmButton />
-            </div>
-          </TabsContent>
-        )}
-      </Tabs>
+        <div className="space-y-6">
+          <Outlet />
+        </div>
+      </div>
     </div>
   );
 };
