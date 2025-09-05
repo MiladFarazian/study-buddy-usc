@@ -36,7 +36,7 @@ export async function createSessionBooking(
       throw new Error("Cannot book sessions in the past");
     }
 
-    console.log("[createSessionBooking] Creating session with params:", {
+    console.log("🚀 [createSessionBooking] Starting session creation with params:", {
       student_id: studentId,
       tutor_id: tutorId,
       course_id: courseId, // This is a course number string or null
@@ -119,17 +119,26 @@ export async function createSessionBooking(
       .single();
     
     if (error) {
-      console.error("[createSessionBooking] Supabase error:", error);
-      console.error("[createSessionBooking] Error details:", {
+      console.error("❌ [createSessionBooking] CRITICAL DATABASE ERROR:", error);
+      console.error("❌ [createSessionBooking] Full error details:", {
         message: error.message,
         details: error.details,
         hint: error.hint,
-        code: error.code
+        code: error.code,
+        studentId,
+        tutorId,
+        courseId,
+        startTime,
+        endTime
       });
+      // Also log to browser console for debugging
+      alert(`BOOKING FAILED: ${error.message}`);
       return null;
     }
     
-    console.log("[createSessionBooking] Session created:", data);
+    console.log("✅ [createSessionBooking] SUCCESS! Session created:", data);
+    console.log("✅ Session ID:", data.id);
+    console.log("✅ Database write successful - session should appear in schedule");
     
     // After successfully creating the session, send notification to tutor
     // First, get the student and tutor details

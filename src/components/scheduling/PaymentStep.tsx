@@ -91,7 +91,13 @@ export function PaymentStep({
         return;
       }
       
-      // Create session booking
+      // Create session booking FIRST (before payment)
+      console.log("🎯 PaymentStep: About to create session booking...");
+      console.log("🎯 User ID:", user.id);
+      console.log("🎯 Tutor ID:", tutor.id);
+      console.log("🎯 Start time:", startDateTime.toISOString());
+      console.log("🎯 End time:", endDateTime.toISOString());
+      
       const bookingResult = await createSessionBooking(
         user.id,
         tutor.id,
@@ -102,7 +108,10 @@ export function PaymentStep({
         notes || null
       );
       
+      console.log("🎯 Booking result received:", bookingResult);
+      
       if (bookingResult && bookingResult.id) {
+        console.log("✅ Session created successfully with ID:", bookingResult.id);
         setSessionId(bookingResult.id);
         
         // Create payment intent with Stripe
@@ -129,7 +138,9 @@ export function PaymentStep({
           throw new Error("Failed to create payment link");
         }
       } else {
-        throw new Error("Failed to create session booking");
+        console.error("❌ CRITICAL: Session booking failed - no ID returned");
+        console.error("❌ Booking result was:", bookingResult);
+        throw new Error("Failed to create session booking - no session ID returned");
       }
     } catch (error) {
       console.error("Error creating session or payment intent:", error);
