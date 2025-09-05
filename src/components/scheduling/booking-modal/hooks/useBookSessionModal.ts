@@ -42,6 +42,9 @@ export function useBookSessionModal(
     if (initialDate) return startOfDay(initialDate);
     return startOfDay(new Date());
   });
+  
+  // State for booking completion loading
+  const [bookingInProgress, setBookingInProgress] = useState(false);
 
   // Ensure we set the tutor in context
   useEffect(() => {
@@ -220,6 +223,8 @@ export function useBookSessionModal(
     console.log("SESSION CREATION STARTING - handleBookingComplete");
     console.log("[handleBookingComplete] Finalizing booking...");
     
+    setBookingInProgress(true);
+    
     try {
       // Get booking data from localStorage
       const bookingDataStr = localStorage.getItem('currentBooking');
@@ -335,6 +340,8 @@ export function useBookSessionModal(
     } catch (error) {
       console.error("[handleBookingComplete] Error finalizing booking:", error);
       toast.error("Booking confirmation failed");
+    } finally {
+      setBookingInProgress(false);
     }
   }, [onClose, tutor, selectedDate, state, contextState, showConfirmation]);
 
@@ -342,6 +349,7 @@ export function useBookSessionModal(
     selectedDate,
     state,
     loading,
+    bookingInProgress,
     availableSlots,
     hasAvailability,
     errorMessage,

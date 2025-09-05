@@ -16,6 +16,7 @@ import { Tutor } from "@/types/tutor";
 interface ModalContentProps {
   step: BookingStep;
   loading: boolean;
+  bookingInProgress: boolean;
   hasAvailability: boolean;
   errorMessage?: string;
   refreshAvailability: () => void;
@@ -40,6 +41,7 @@ interface ModalContentProps {
 export function ModalContent({
   step,
   loading,
+  bookingInProgress,
   hasAvailability,
   errorMessage,
   refreshAvailability,
@@ -159,14 +161,23 @@ export function ModalContent({
             <Button 
               variant="outline" 
               onClick={onBack}
+              disabled={bookingInProgress}
             >
               Back
             </Button>
             <Button 
               className="bg-usc-cardinal hover:bg-usc-cardinal-dark"
               onClick={onComplete}
+              disabled={bookingInProgress}
             >
-              Confirm Booking
+              {bookingInProgress ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                "Confirm Booking"
+              )}
             </Button>
           </div>
         </>

@@ -36,6 +36,7 @@ function BookSessionModalContent({
     selectedDate,
     state,
     loading,
+    bookingInProgress,
     availableSlots,
     hasAvailability,
     errorMessage,
@@ -72,6 +73,7 @@ function BookSessionModalContent({
           <ModalContent 
             step={state.bookingStep}
             loading={loading}
+            bookingInProgress={bookingInProgress}
             hasAvailability={hasAvailability}
             errorMessage={errorMessage}
             refreshAvailability={refreshAvailability}
