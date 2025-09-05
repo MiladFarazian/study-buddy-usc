@@ -188,6 +188,71 @@ export function useBookSessionModal(
     console.log("[handleBookingComplete] Finalizing booking...");
     
     try {
+      // Get booking data from localStorage
+      const bookingDataStr = localStorage.getItem('currentBooking');
+      if (!bookingDataStr) {
+        console.error("❌ No booking data found in localStorage");
+        toast.error("Booking data not found. Please try booking again.");
+        return;
+      }
+
+      const booking = JSON.parse(bookingDataStr);
+      console.log("💾 Retrieved booking data:", booking);
+
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error("❌ No authenticated user found");
+        toast.error("Authentication required");
+        return;
+      }
+
+      console.log("👤 User authenticated:", user.id);
+
+      // Create session record
+      const { data: sessionData, error: sessionError } = await supabase
+        .from('sessions')
+        .insert({
+          student_id: user.id,
+          tutor_id: booking.tutorId,
+          course_id: booking.courseId,
+          start_time: booking.startTime,
+          end_time: booking.endTime,
+          location: booking.location || 'Location TBD',
+          notes: booking.notes,
+          session_type: booking.sessionType || 'in_person',
+          status: 'scheduled',
+          payment_status: 'paid'
+        })
+        .select()
+        .single();
+
+      if (sessionError) {
+        console.error("❌ Session creation error:", sessionError);
+        toast.error("Failed to create session record");
+        return;
+      }
+
+      console.log("✅ Session created:", sessionData);
+
+      // Create payment transaction record
+      const { error: paymentError } = await supabase
+        .from('payment_transactions')
+        .insert({
+          session_id: sessionData.id,
+          student_id: user.id,
+          tutor_id: booking.tutorId,
+          amount: booking.totalAmount || 0,
+          status: 'completed',
+          payment_completed_at: new Date().toISOString(),
+          environment: 'production'
+        });
+
+      if (paymentError) {
+        console.error("❌ Payment transaction error:", paymentError);
+        // Don't fail completely if payment record fails - session is created
+      }
+
       // Calculate start and end times for display
       const startTime = new Date(selectedDate);
       const [startHour, startMinute] = state.selectedTimeSlot!.start.split(':').map(Number);
@@ -195,23 +260,23 @@ export function useBookSessionModal(
       
       const endTime = new Date(startTime);
       endTime.setMinutes(endTime.getMinutes() + state.selectedDuration);
-      
-      // Get session type and location from context
-      const sessionTypeValue = contextState.sessionType;
-      const locationValue = contextState.location;
-      
-      // Show animated confirmation
+
+      // Show confirmation with session details
       showConfirmation({
-        tutorName: `${tutor.firstName || tutor.name} ${tutor.lastName || ''}`.trim() || tutor.name,
-        date: startTime.toISOString(),
+        tutorName: tutor.name,
+        date: format(selectedDate, 'EEEE, MMMM d, yyyy'),
         startTime: format(startTime, 'h:mm a'),
         endTime: format(endTime, 'h:mm a'),
-        location: locationValue || 'Location TBD',
+        location: contextState.location || 'Location TBD',
         courseName: state.selectedCourseId || undefined,
-        sessionType: sessionTypeValue || 'In Person'
+        sessionType: contextState.sessionType || 'In Person'
       });
       
       toast.success("Your session has been booked and payment processed!");
+      
+      // Clear booking data
+      localStorage.removeItem('currentBooking');
+      
       onClose();
     } catch (error) {
       console.error("[handleBookingComplete] Error finalizing booking:", error);
