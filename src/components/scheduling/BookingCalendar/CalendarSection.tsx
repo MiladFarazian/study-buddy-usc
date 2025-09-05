@@ -37,6 +37,8 @@ export const CalendarSection = ({
           mode="single"
           selected={selectedDate}
           onSelect={onDateSelect}
+          defaultMonth={selectedDate}
+          month={selectedDate}
           disabled={(date) => {
             // Disable dates before today
             const today = new Date();
