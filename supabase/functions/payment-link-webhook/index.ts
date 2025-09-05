@@ -56,6 +56,17 @@ serve(async (req) => {
         payment_status: session.payment_status,
       });
 
+      // Extract clean UUID from session ID (remove "session_" prefix and timestamp)
+      const rawSessionId = session.metadata?.sessionId;
+      const cleanSessionId = rawSessionId ? rawSessionId.replace(/^session_\d+_/, '') : null;
+      
+      console.log('Extracted session ID:', { raw: rawSessionId, clean: cleanSessionId });
+
+      if (!cleanSessionId) {
+        console.error('No valid session ID found in metadata');
+        return new Response('Invalid session ID', { status: 400 });
+      }
+
       // Update payment transaction
       const { error: updateError } = await supabaseAdmin
         .from('payment_transactions')
@@ -65,7 +76,7 @@ serve(async (req) => {
           payment_completed_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
-        .eq('session_id', session.metadata?.sessionId);
+        .eq('session_id', cleanSessionId);
 
       if (updateError) {
         console.error('Error updating payment transaction:', updateError);
@@ -73,18 +84,16 @@ serve(async (req) => {
       }
 
       // Update session payment status
-      if (session.metadata?.sessionId) {
-        const { error: sessionUpdateError } = await supabaseAdmin
-          .from('sessions')
-          .update({
-            payment_status: 'paid',
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', session.metadata.sessionId);
+      const { error: sessionUpdateError } = await supabaseAdmin
+        .from('sessions')
+        .update({
+          payment_status: 'paid',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', cleanSessionId);
 
-        if (sessionUpdateError) {
-          console.error('Error updating session payment status:', sessionUpdateError);
-        }
+      if (sessionUpdateError) {
+        console.error('Error updating session payment status:', sessionUpdateError);
       }
 
       console.log('Payment completed successfully for session:', session.metadata?.sessionId);
