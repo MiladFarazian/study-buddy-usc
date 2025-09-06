@@ -51,18 +51,28 @@ const retryStripeOperation = async <T>(
   throw new Error(`${operationName} failed after ${maxRetries} attempts`);
 };
 
-// Helper to determine if we're in production
-const isProduction = () => {
-  // Check for production hostname
-  const hostname = Deno.env.get('HOSTNAME') || '';
-  const isDeploy = hostname.includes('studybuddyusc.com') || hostname.includes('prod');
-  
-  // Override for explicit environment variable
-  const envFlag = Deno.env.get('USE_PRODUCTION_STRIPE');
-  if (envFlag === 'true') return true;
-  if (envFlag === 'false') return false;
-  
-  return isDeploy;
+// Helper functions for explicit Stripe mode selection
+const getStripeMode = (): 'test' | 'live' => {
+  const mode = (Deno.env.get('STRIPE_MODE') || '').toLowerCase();
+  if (mode !== 'test' && mode !== 'live') {
+    throw new Error('STRIPE_MODE must be "test" or "live"');
+  }
+  return mode as 'test' | 'live';
+};
+
+const getStripeKey = (mode: 'test' | 'live') => {
+  const key = mode === 'live'
+    ? Deno.env.get('STRIPE_CONNECT_LIVE_SECRET_KEY')
+    : Deno.env.get('STRIPE_CONNECT_SECRET_KEY');
+
+  if (!key) throw new Error(`Missing Stripe ${mode} secret key`);
+  if (mode === 'live' && !key.startsWith('sk_live_')) {
+    throw new Error('Live mode requires an sk_live_ key');
+  }
+  if (mode === 'test' && !key.startsWith('sk_test_')) {
+    throw new Error('Test mode requires an sk_test_ key');
+  }
+  return key;
 };
 
 serve(async (req) => {
@@ -75,9 +85,10 @@ serve(async (req) => {
   }
 
   try {
-    // Determine the environment
-    const environment = isProduction() ? 'production' : 'test';
-    console.log(`Checking Connect account in ${environment} mode`);
+    // Determine environment explicitly
+    const mode = getStripeMode(); // 'test' | 'live'
+    console.log(`Checking Connect account in ${mode} mode`);
+    
     // Get authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -162,16 +173,16 @@ serve(async (req) => {
     const connectIdField = 'stripe_connect_id';
     const onboardingCompleteField = 'stripe_connect_onboarding_complete';
     
-    console.log(`Checking if tutor has a Stripe Connect account in ${environment} mode`);
+    console.log(`Checking if tutor has a Stripe Connect account in ${mode} mode`);
     
-    // Check if tutor has a Stripe Connect account for this environment
+    // Check if tutor has a Stripe Connect account for this mode
     if (!profile[connectIdField]) {
-      console.log(`No Stripe Connect account found for tutor in ${environment} mode`);
+      console.log(`No Stripe Connect account found for tutor in ${mode} mode`);
       return new Response(JSON.stringify({ 
         has_account: false,
         needs_onboarding: true,
         payouts_enabled: false,
-        environment
+        environment: mode
       }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -179,17 +190,16 @@ serve(async (req) => {
     }
 
     console.log(`Stripe Connect ID found: ${profile[connectIdField]}`);
-    console.log(`Checking Stripe Connect account status in ${environment} mode`);
+    console.log(`Checking Stripe Connect account status in ${mode} mode`);
     
-    // Get appropriate Stripe key based on environment  
-    const stripeKey = isProduction()
-      ? Deno.env.get('STRIPE_CONNECT_LIVE_SECRET_KEY')
-      : Deno.env.get('STRIPE_CONNECT_SECRET_KEY');
+    // Get appropriate Stripe key using explicit mode selector
+    const stripeKey = getStripeKey(mode);
+    console.log(`Stripe mode=${mode} keyPrefix=${stripeKey.slice(0, 8)}`);
     if (!stripeKey) {
-      console.error(`Missing Stripe Connect ${environment} secret key`);
+      console.error(`Missing Stripe Connect ${mode} secret key`);
       return new Response(JSON.stringify({ 
         error: 'Server configuration error', 
-        details: `Missing Stripe ${environment} credentials` 
+        details: `Missing Stripe ${mode} credentials` 
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -216,11 +226,19 @@ serve(async (req) => {
         payouts_enabled: account.payouts_enabled
       });
       
+      // Sanity check mode vs account livemode
+      if (mode === 'test' && account.livemode) {
+        throw new Error('Misconfig: test mode with a live connect account id');
+      }
+      if (mode === 'live' && !account.livemode) {
+        throw new Error('Misconfig: live mode with a test connect account id');
+      }
+      
       const onboardingComplete = account.details_submitted && account.payouts_enabled;
       
       // Update onboarding status in the profile if needed
       if (onboardingComplete !== profile[onboardingCompleteField]) {
-        console.log(`Updating onboarding status from ${profile[onboardingCompleteField]} to ${onboardingComplete} for ${environment} mode`);
+        console.log(`Updating onboarding status from ${profile[onboardingCompleteField]} to ${onboardingComplete} for ${mode} mode`);
         const updateFields: any = { updated_at: new Date().toISOString() };
         updateFields[onboardingCompleteField] = onboardingComplete;
         
@@ -237,7 +255,7 @@ serve(async (req) => {
         charges_enabled: account.charges_enabled,
         payouts_enabled: account.payouts_enabled,
         needs_onboarding: !onboardingComplete,
-        environment
+        environment: mode
       }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -259,8 +277,8 @@ serve(async (req) => {
       
       // If the account doesn't exist or was deleted
       if (stripeError.code === 'resource_missing') {
-        console.log(`Stripe account no longer exists in ${environment} mode, resetting profile`);
-        // Reset the Connect ID in the profile for this environment
+        console.log(`Stripe account no longer exists in ${mode} mode, resetting profile`);
+        // Reset the Connect ID in the profile for this mode
         const resetFields: any = { updated_at: new Date().toISOString() };
         resetFields[connectIdField] = null;
         resetFields[onboardingCompleteField] = false;
@@ -274,8 +292,8 @@ serve(async (req) => {
           has_account: false,
           needs_onboarding: true,
           payouts_enabled: false,
-          error: `Previous account no longer exists in ${environment} mode`,
-          environment
+          error: `Previous account no longer exists in ${mode} mode`,
+          environment: mode
         }), {
           status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
