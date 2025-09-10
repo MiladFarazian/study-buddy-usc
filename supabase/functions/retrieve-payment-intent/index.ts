@@ -1,24 +1,34 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@12.13.0?target=deno";
+import Stripe from "https://esm.sh/stripe@14.21.0?target=deno&bundle";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Helper to determine if we're in production
-const isProduction = () => {
-  // Check for production hostname
-  const hostname = Deno.env.get('HOSTNAME') || '';
-  const isDeploy = hostname.includes('studybuddyusc.com') || hostname.includes('prod');
-  
-  // Override for explicit environment variable
-  const envFlag = Deno.env.get('USE_PRODUCTION_STRIPE');
-  if (envFlag === 'true') return true;
-  if (envFlag === 'false') return false;
-  
-  return isDeploy;
+// Helper functions for explicit Stripe mode selection
+const getStripeMode = (): 'test' | 'live' => {
+  const mode = (Deno.env.get('STRIPE_MODE') || '').toLowerCase();
+  if (mode !== 'test' && mode !== 'live') {
+    throw new Error('STRIPE_MODE must be "test" or "live"');
+  }
+  return mode as 'test' | 'live';
+};
+
+const getStripeKey = (mode: 'test' | 'live') => {
+  const key = mode === 'live'
+    ? Deno.env.get('STRIPE_CONNECT_LIVE_SECRET_KEY')
+    : Deno.env.get('STRIPE_CONNECT_SECRET_KEY');
+
+  if (!key) throw new Error(`Missing Stripe ${mode} secret key`);
+  if (mode === 'live' && !key.startsWith('sk_live_')) {
+    throw new Error('Live mode requires an sk_live_ key');
+  }
+  if (mode === 'test' && !key.startsWith('sk_test_')) {
+    throw new Error('Test mode requires an sk_test_ key');
+  }
+  return key;
 };
 
 serve(async (req) => {
@@ -28,20 +38,19 @@ serve(async (req) => {
   }
 
   try {
-    // Determine the environment
-    const environment = isProduction() ? 'production' : 'test';
-    console.log(`Retrieving payment intent in ${environment} mode`);
+    // Determine environment explicitly
+    const mode = getStripeMode(); // 'test' | 'live'
+    console.log(`Retrieving payment intent in ${mode} mode`);
     
-    // Get appropriate Stripe key based on environment
-    const stripeSecretKey = isProduction()
-      ? Deno.env.get('STRIPE_CONNECT_LIVE_SECRET_KEY')
-      : Deno.env.get('STRIPE_CONNECT_SECRET_KEY');
-      
+    // Get appropriate Stripe key using explicit mode selector
+    const stripeSecretKey = getStripeKey(mode);
+    console.log(`Stripe mode=${mode} keyPrefix=${stripeSecretKey.slice(0, 8)}`);
+    
     if (!stripeSecretKey) {
-      console.error(`Missing STRIPE_CONNECT_${environment.toUpperCase()}_SECRET_KEY environment variable`);
+      console.error(`Missing STRIPE_CONNECT_${mode.toUpperCase()}_SECRET_KEY environment variable`);
       return new Response(
         JSON.stringify({ 
-          error: `Stripe configuration missing. Please set the STRIPE_CONNECT_${environment.toUpperCase()}_SECRET_KEY in Supabase edge function secrets.` 
+          error: `Stripe configuration missing. Please set the STRIPE_CONNECT_${mode.toUpperCase()}_SECRET_KEY in Supabase edge function secrets.` 
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -80,6 +89,7 @@ serve(async (req) => {
     // Initialize Stripe
     const stripe = new Stripe(stripeSecretKey, {
       apiVersion: '2023-10-16',
+      timeout: 30000,
     });
 
     try {

@@ -1,10 +1,34 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.23.0';
-import Stripe from 'https://esm.sh/stripe@12.13.0?target=deno';
+import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno&bundle';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+// Helper functions for explicit Stripe mode selection
+const getStripeMode = (): 'test' | 'live' => {
+  const mode = (Deno.env.get('STRIPE_MODE') || '').toLowerCase();
+  if (mode !== 'test' && mode !== 'live') {
+    throw new Error('STRIPE_MODE must be "test" or "live"');
+  }
+  return mode as 'test' | 'live';
+};
+
+const getStripeKey = (mode: 'test' | 'live') => {
+  const key = mode === 'live'
+    ? Deno.env.get('STRIPE_LIVE_SECRET_KEY')
+    : Deno.env.get('STRIPE_SECRET_KEY');
+
+  if (!key) throw new Error(`Missing Stripe ${mode} secret key`);
+  if (mode === 'live' && !key.startsWith('sk_live_')) {
+    throw new Error('Live mode requires an sk_live_ key');
+  }
+  if (mode === 'test' && !key.startsWith('sk_test_')) {
+    throw new Error('Test mode requires an sk_test_ key');
+  }
+  return key;
 };
 
 serve(async (req) => {
@@ -13,9 +37,18 @@ serve(async (req) => {
   }
 
   try {
+    // Determine environment explicitly
+    const mode = getStripeMode(); // 'test' | 'live'
+    console.log(`Processing webhook in ${mode} mode`);
+    
+    // Get appropriate Stripe key using explicit mode selector
+    const stripeKey = getStripeKey(mode);
+    console.log(`Stripe mode=${mode} keyPrefix=${stripeKey.slice(0, 8)}`);
+    
     // Initialize Stripe
-    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+    const stripe = new Stripe(stripeKey, {
       apiVersion: '2023-10-16',
+      timeout: 30000,
     });
 
     // Initialize Supabase client
