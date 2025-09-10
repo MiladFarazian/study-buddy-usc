@@ -78,6 +78,23 @@ const getStripeKey = (mode: 'test' | 'live') => {
 serve(async (req) => {
   console.log("Check Connect Account function invoked");
   
+  // === STRIPE_CONNECT_SECRET_KEY TRACING CODE START ===
+  console.log('=== ENVIRONMENT VARIABLE TRACING ===');
+  console.log('Initial STRIPE_CONNECT_SECRET_KEY:', !!Deno.env.get('STRIPE_CONNECT_SECRET_KEY'));
+  console.log('Initial SECRET KEY VALUE LENGTH:', (Deno.env.get('STRIPE_CONNECT_SECRET_KEY') || '').length);
+  
+  // Trace all environment variable access
+  const originalGet = Deno.env.get;
+  Deno.env.get = function(key) {
+    const value = originalGet.call(this, key);
+    if (key === 'STRIPE_CONNECT_SECRET_KEY') {
+      const stack = new Error().stack.split('\n')[2];
+      console.log(`SECRET_ACCESS_TRACE: ${key} = ${value ? 'EXISTS' : 'MISSING'} called from: ${stack}`);
+    }
+    return value;
+  };
+  // === STRIPE_CONNECT_SECRET_KEY TRACING CODE END ===
+  
   // === SECRET ACCESS DEBUG CODE START ===
   const secretValue = Deno.env.get('STRIPE_CONNECT_SECRET_KEY');
   const secretExists = !!secretValue;
