@@ -78,6 +78,32 @@ const getStripeKey = (mode: 'test' | 'live') => {
 serve(async (req) => {
   console.log("Check Connect Account function invoked");
   
+  // === SECRET ACCESS DEBUG CODE START ===
+  const secretValue = Deno.env.get('STRIPE_CONNECT_SECRET_KEY');
+  const secretExists = !!secretValue;
+  const secretLength = secretValue?.length || 0;
+  const timestamp = new Date().toISOString();
+
+  console.log(`SECRET_TRACKING: ${timestamp} | exists: ${secretExists} | length: ${secretLength}`);
+
+  // Track function instance lifecycle
+  if (!globalThis.functionInstanceId) {
+    globalThis.functionInstanceId = Math.random().toString(36);
+    globalThis.functionStartTime = Date.now();
+    globalThis.secretFirstSeen = timestamp;
+    console.log(`SECRET_LIFECYCLE: First access at ${timestamp}`);
+  }
+
+  const timeSinceFirst = new Date() - new Date(globalThis.secretFirstSeen);
+  console.log(`SECRET_LIFECYCLE: ${Math.round(timeSinceFirst / 60000)} minutes since first access`);
+  console.log(`INSTANCE_TRACKING: ID=${globalThis.functionInstanceId} | uptime=${Date.now() - globalThis.functionStartTime}ms`);
+
+  // Log all STRIPE environment variables
+  const allEnvKeys = Object.keys(Deno.env.toObject());
+  const stripeKeys = allEnvKeys.filter(k => k.includes('STRIPE'));
+  console.log('STRIPE_ENV_VARS:', stripeKeys);
+  // === SECRET ACCESS DEBUG CODE END ===
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     console.log("Handling OPTIONS request");
