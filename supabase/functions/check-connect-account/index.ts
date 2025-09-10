@@ -120,6 +120,80 @@ serve(async (req) => {
   const stripeKeys = allEnvKeys.filter(k => k.includes('STRIPE'));
   console.log('STRIPE_ENV_VARS:', stripeKeys);
   // === SECRET ACCESS DEBUG CODE END ===
+  
+  // === ENVIRONMENT STABILITY MONITORING START ===
+  // Track environment variable stability over multiple function calls
+  if (!globalThis.envStabilityTracker) {
+    globalThis.envStabilityTracker = {
+      functionInstanceId: Math.random().toString(36).substring(7),
+      functionStartTime: Date.now(),
+      secretAccessLog: [],
+      environmentSnapshots: []
+    };
+    console.log('🔍 ENV_STABILITY: Initialized tracker', {
+      instanceId: globalThis.envStabilityTracker.functionInstanceId
+    });
+  }
+  
+  // Take environment snapshot
+  const currentTime = Date.now();
+  const envSnapshot = {
+    timestamp: currentTime,
+    uptimeMs: currentTime - globalThis.envStabilityTracker.functionStartTime,
+    stripeSecrets: {
+      STRIPE_CONNECT_SECRET_KEY: !!Deno.env.get('STRIPE_CONNECT_SECRET_KEY'),
+      STRIPE_CONNECT_LIVE_SECRET_KEY: !!Deno.env.get('STRIPE_CONNECT_LIVE_SECRET_KEY'),
+      STRIPE_SECRET_KEY: !!Deno.env.get('STRIPE_SECRET_KEY'),
+      STRIPE_PUBLISHABLE_KEY: !!Deno.env.get('STRIPE_PUBLISHABLE_KEY'),
+      STRIPE_WEBHOOK_SECRET: !!Deno.env.get('STRIPE_WEBHOOK_SECRET')
+    }
+  };
+  
+  globalThis.envStabilityTracker.environmentSnapshots.push(envSnapshot);
+  
+  // Keep only last 50 snapshots to prevent memory issues
+  if (globalThis.envStabilityTracker.environmentSnapshots.length > 50) {
+    globalThis.envStabilityTracker.environmentSnapshots = 
+      globalThis.envStabilityTracker.environmentSnapshots.slice(-50);
+  }
+  
+  // Log stability analysis
+  const uptimeMinutes = Math.round(envSnapshot.uptimeMs / 60000);
+  console.log('🔍 ENV_STABILITY:', {
+    uptimeMinutes,
+    snapshotCount: globalThis.envStabilityTracker.environmentSnapshots.length,
+    currentSecretState: envSnapshot.stripeSecrets,
+    criticalMissing: !envSnapshot.stripeSecrets.STRIPE_CONNECT_SECRET_KEY
+  });
+  
+  // Check for degradation patterns
+  if (globalThis.envStabilityTracker.environmentSnapshots.length > 1) {
+    const previousSnapshot = globalThis.envStabilityTracker.environmentSnapshots[
+      globalThis.envStabilityTracker.environmentSnapshots.length - 2
+    ];
+    
+    Object.keys(envSnapshot.stripeSecrets).forEach(secretName => {
+      const wasAvailable = previousSnapshot.stripeSecrets[secretName];
+      const isAvailable = envSnapshot.stripeSecrets[secretName];
+      
+      if (wasAvailable && !isAvailable) {
+        console.error('🚨 SECRET_DEGRADATION:', {
+          secretName,
+          degradedAt: uptimeMinutes + ' minutes',
+          previousState: 'AVAILABLE',
+          currentState: 'MISSING'
+        });
+      } else if (!wasAvailable && isAvailable) {
+        console.log('✅ SECRET_RECOVERY:', {
+          secretName,
+          recoveredAt: uptimeMinutes + ' minutes',
+          previousState: 'MISSING',
+          currentState: 'AVAILABLE'
+        });
+      }
+    });
+  }
+  // === ENVIRONMENT STABILITY MONITORING END ===
 
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {

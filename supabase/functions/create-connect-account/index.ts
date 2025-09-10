@@ -35,6 +35,29 @@ const getStripeKey = (mode: 'test' | 'live') => {
 serve(async (req) => {
   console.log("Create Connect Account function invoked");
   
+  // === STRIPE_CONNECT_SECRET_KEY INVESTIGATION START ===
+  console.log('🔍 CREATE_CONNECT_DEBUG: Environment variable analysis');
+  console.log('STRIPE_CONNECT_SECRET_KEY exists:', !!Deno.env.get('STRIPE_CONNECT_SECRET_KEY'));
+  console.log('STRIPE_CONNECT_SECRET_KEY length:', (Deno.env.get('STRIPE_CONNECT_SECRET_KEY') || '').length);
+  console.log('STRIPE_CONNECT_LIVE_SECRET_KEY exists:', !!Deno.env.get('STRIPE_CONNECT_LIVE_SECRET_KEY'));
+  
+  // Log environment variable binding patterns
+  const allEnvKeys = Object.keys(Deno.env.toObject());
+  const stripeKeys = allEnvKeys.filter(k => k.includes('STRIPE'));
+  console.log('🔍 AVAILABLE_STRIPE_VARS:', stripeKeys);
+  console.log('🔍 MISSING_TARGET_VAR:', !stripeKeys.includes('STRIPE_CONNECT_SECRET_KEY'));
+  
+  // Track function instance for debugging
+  if (!globalThis.createConnectDebugId) {
+    globalThis.createConnectDebugId = Math.random().toString(36).substring(7);
+    globalThis.createConnectStartTime = Date.now();
+    console.log('🔍 CREATE_CONNECT_INSTANCE:', globalThis.createConnectDebugId);
+  }
+  
+  const uptimeMs = Date.now() - globalThis.createConnectStartTime;
+  console.log('🔍 FUNCTION_UPTIME:', Math.round(uptimeMs / 60000) + ' minutes');
+  // === STRIPE_CONNECT_SECRET_KEY INVESTIGATION END ===
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     console.log("Handling OPTIONS request");
