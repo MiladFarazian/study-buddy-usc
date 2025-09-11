@@ -152,97 +152,28 @@ serve(async (req) => {
       studentConfirmed: updatedSession?.student_confirmed 
     });
 
-    // If both have confirmed, mark session as completed and create transfer
+    // If both have confirmed, call the escrow processing function
     if (updatedSession?.tutor_confirmed && updatedSession?.student_confirmed) {
-      logStep('Both parties confirmed - completing session');
+      logStep('Both parties confirmed - calling escrow processing function');
       
-      const { error: completionError } = await supabaseAdmin
-        .from('sessions')
-        .update({
-          completion_date: new Date().toISOString(),
-          status: 'completed',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', sessionId);
+      try {
+        const { data: escrowResult, error: escrowError } = await supabaseAdmin.functions.invoke(
+          'process-session-escrow',
+          {
+            body: { sessionId }
+          }
+        );
 
-      if (completionError) {
-        logStep('ERROR: Failed to mark session as completed', { error: completionError.message });
-      } else {
-        logStep('Session marked as completed successfully');
-      }
-
-      // Find payment transaction for this session
-      logStep('Looking for payment transaction');
-      const { data: paymentData, error: paymentError } = await supabaseAdmin
-        .from('payment_transactions')
-        .select('*')
-        .eq('session_id', sessionId)
-        .eq('status', 'completed')
-        .single();
-
-      if (paymentError) {
-        logStep('Payment transaction lookup failed', { 
-          error: paymentError.message,
-          sessionId 
-        });
-        
-        // Try without the status filter as fallback
-        const { data: paymentDataFallback, error: paymentErrorFallback } = await supabaseAdmin
-          .from('payment_transactions')
-          .select('*')
-          .eq('session_id', sessionId)
-          .single();
-          
-        if (paymentDataFallback) {
-          logStep('Found payment transaction without status filter', { 
-            paymentStatus: paymentDataFallback.status,
-            amount: paymentDataFallback.amount 
-          });
+        if (escrowError) {
+          logStep('ERROR: Escrow processing failed', { error: escrowError.message });
+          // Don't fail the entire confirmation process - the confirmation status was already updated
+          logStep('WARNING: Confirmation succeeded but escrow processing failed');
         } else {
-          logStep('No payment transaction found for session', { sessionId });
+          logStep('Escrow processing completed successfully', escrowResult);
         }
-      }
-
-      if (paymentData) {
-        logStep('Payment transaction found', { 
-          paymentId: paymentData.id,
-          amount: paymentData.amount,
-          status: paymentData.status 
-        });
-
-        // Calculate fees: 15% platform fee + Stripe's 2.9% + 30¢
-        const amountInCents = Math.round(paymentData.amount * 100);
-        const stripeFee = Math.round(amountInCents * 0.029 + 30);
-        const platformFee = Math.round(amountInCents * 0.15);
-        const tutorAmount = amountInCents - stripeFee - platformFee;
-
-        logStep('Fee calculation', {
-          originalAmount: paymentData.amount,
-          amountInCents,
-          stripeFee,
-          platformFee,
-          tutorAmount
-        });
-
-        const { error: transferError } = await supabaseAdmin
-          .from('pending_transfers')
-          .insert({
-            session_id: sessionId,
-            tutor_id: paymentData.tutor_id,
-            student_id: paymentData.student_id,
-            amount: tutorAmount, // Store the tutor's net amount
-            platform_fee: platformFee,
-            status: 'pending',
-            payment_transaction_id: paymentData.id,
-          });
-
-        if (transferError) {
-          logStep('ERROR: Failed to create pending transfer', { error: transferError.message });
-        } else {
-          logStep('Pending transfer created successfully', { tutorAmount, platformFee });
-        }
-      } else {
-        logStep('WARNING: No payment transaction found - cannot create pending transfer');
+      } catch (error) {
+        logStep('ERROR: Exception calling escrow function', { error: error.message });
+        // Don't fail the entire confirmation process
       }
     } else {
       logStep('Not both parties confirmed yet', {
