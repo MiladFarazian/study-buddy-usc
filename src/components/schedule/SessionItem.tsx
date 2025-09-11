@@ -51,7 +51,7 @@ export const SessionItem = ({
       try {
         const { data, error } = await supabase
           .from('student_reviews')
-          .select('id')
+          .select('session_id')
           .eq('session_id', session.id)
           .eq('tutor_id', session.tutor_id)
           .eq('student_id', session.student_id)
