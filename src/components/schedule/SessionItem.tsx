@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Session } from "@/types/session";
 import { CalendarDays, Clock, User, MapPin, GraduationCap, BookOpen, Calendar } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SessionCalendarDialog } from "./SessionCalendarDialog";
 import { ZoomMeetingActions } from "@/components/zoom/ZoomMeetingActions";
 import { RescheduleDialog } from "./RescheduleDialog";
 import { useReview } from "@/contexts/ReviewContext";
 import { Tutor } from "@/types/tutor";
 import { Profile } from "@/integrations/supabase/types-extension";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SessionItemProps {
   session: Session;
@@ -35,11 +36,41 @@ export const SessionItem = ({
   const { startTutorReview, startStudentReview } = useReview();
   const [showCalendarDialog, setShowCalendarDialog] = useState(false);
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
+  const [hasExistingReview, setHasExistingReview] = useState(false);
 
   const isUserTutor = user?.id === session.tutor_id;
   const roleStyleClass = isUserTutor 
     ? "border-l-4 border-usc-cardinal" 
     : "border-l-4 border-usc-gold";
+
+  // Check for existing review when variant is 'past' and user is authenticated
+  useEffect(() => {
+    const checkExistingReview = async () => {
+      if (variant !== 'past' || !user?.id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('student_reviews')
+          .select('id')
+          .eq('session_id', session.id)
+          .eq('tutor_id', session.tutor_id)
+          .eq('student_id', session.student_id)
+          .limit(1)
+          .maybeSingle();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error checking existing review:', error);
+          return;
+        }
+
+        setHasExistingReview(!!data);
+      } catch (error) {
+        console.error('Error checking existing review:', error);
+      }
+    };
+
+    checkExistingReview();
+  }, [variant, session.id, session.tutor_id, session.student_id, user?.id]);
 
   const getBadge = () => {
     switch (variant) {
@@ -191,51 +222,57 @@ export const SessionItem = ({
             </>
           )}
           {variant === 'past' && (
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => {
-                if (isUserTutor && session.student) {
-                  const studentProfile: Profile = {
-                    id: session.student.id,
-                    first_name: session.student.first_name || '',
-                    last_name: session.student.last_name || '',
-                    avatar_url: session.student.avatar_url || '',
-                    approved_tutor: false,
-                    availability: null,
-                    average_rating: null,
-                    bio: null,
-                    created_at: new Date().toISOString(),
-                    graduation_year: null,
-                    hourly_rate: null,
-                    major: null,
-                    role: 'student' as const,
-                    stripe_connect_id: null,
-                    stripe_connect_onboarding_complete: false,
-                    subjects: null,
-                    updated_at: new Date().toISOString()
-                  };
-                  startTutorReview(session, studentProfile);
-                } else if (!isUserTutor && session.tutor) {
-                  const tutorData: Tutor = {
-                    id: session.tutor.id,
-                    name: `${session.tutor.first_name || ''} ${session.tutor.last_name || ''}`.trim(),
-                    firstName: session.tutor.first_name || '',
-                    lastName: session.tutor.last_name || '',
-                    field: '',
-                    rating: 0,
-                    hourlyRate: 0,
-                    subjects: [],
-                    imageUrl: session.tutor.avatar_url || '',
-                    bio: '',
-                    graduationYear: '',
-                  };
-                  startStudentReview(session, tutorData);
-                }
-              }}
-            >
-              {isUserTutor ? "Review Student" : "Review Tutor"}
-            </Button>
+            hasExistingReview ? (
+              <span className="text-sm text-gray-500 px-3 py-2">
+                Review Completed
+              </span>
+            ) : (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  if (isUserTutor && session.student) {
+                    const studentProfile: Profile = {
+                      id: session.student.id,
+                      first_name: session.student.first_name || '',
+                      last_name: session.student.last_name || '',
+                      avatar_url: session.student.avatar_url || '',
+                      approved_tutor: false,
+                      availability: null,
+                      average_rating: null,
+                      bio: null,
+                      created_at: new Date().toISOString(),
+                      graduation_year: null,
+                      hourly_rate: null,
+                      major: null,
+                      role: 'student' as const,
+                      stripe_connect_id: null,
+                      stripe_connect_onboarding_complete: false,
+                      subjects: null,
+                      updated_at: new Date().toISOString()
+                    };
+                    startTutorReview(session, studentProfile);
+                  } else if (!isUserTutor && session.tutor) {
+                    const tutorData: Tutor = {
+                      id: session.tutor.id,
+                      name: `${session.tutor.first_name || ''} ${session.tutor.last_name || ''}`.trim(),
+                      firstName: session.tutor.first_name || '',
+                      lastName: session.tutor.last_name || '',
+                      field: '',
+                      rating: 0,
+                      hourlyRate: 0,
+                      subjects: [],
+                      imageUrl: session.tutor.avatar_url || '',
+                      bio: '',
+                      graduationYear: '',
+                    };
+                    startStudentReview(session, tutorData);
+                  }
+                }}
+              >
+                {isUserTutor ? "Review Student" : "Review Tutor"}
+              </Button>
+            )
           )}
           {variant === 'cancelled' && (
             <Button 
