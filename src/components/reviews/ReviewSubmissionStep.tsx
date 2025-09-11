@@ -7,7 +7,7 @@ import { Session } from "@/types/session";
 import { Tutor } from "@/types/tutor";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 import { 
   CheckCircle, 
   Send, 
@@ -36,18 +36,26 @@ export function ReviewSubmissionStep({
 }: ReviewSubmissionStepProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user, loading } = useAuth();
+  const { toast } = useToast();
 
   const handleSubmitReview = async () => {
     console.log("🔍 Starting review submission", { user: !!user, loading, userId: user?.id });
     
     if (loading) {
-      toast("Please wait while we verify your authentication...");
+      toast({
+        title: "Please wait",
+        description: "Authentication is still loading. Please try again in a moment.",
+      });
       return;
     }
     
     if (!user) {
       console.error("❌ Authentication failed", { user, loading });
-      toast.error("You must be logged in to submit a review");
+      toast({
+        title: "Authentication Error",
+        description: "You must be logged in to submit a review",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -79,7 +87,11 @@ export function ReviewSubmissionStep({
 
       if (studentReviewError) {
         console.error("Error submitting student review:", studentReviewError);
-        toast.error("Failed to submit review. Please try again.");
+        toast({
+          title: "Submission Error",
+          description: "Failed to submit review. Please try again.",
+          variant: "destructive",
+        });
         return;
       }
 
@@ -100,21 +112,26 @@ export function ReviewSubmissionStep({
         if (reviewError) {
           console.error("Error submitting tutor review:", reviewError);
           // Don't fail the entire process if this fails - the student review was already saved
-          toast("Review submitted, but there was an issue updating the tutor's rating.", { 
-            description: "The review was still recorded successfully." 
+          toast({
+            title: "Review submitted successfully",
+            description: "Review was recorded successfully, but there was an issue updating the tutor's rating.",
           });
         }
       }
 
       console.log("✅ Review submitted successfully, calling onSubmitted callback");
-      toast.success("Review submitted successfully!", {
-        position: "bottom-right",
-        duration: 4000,
+      toast({
+        title: "Review submitted successfully",
+        description: "Thank you for your feedback!",
       });
       onSubmitted();
     } catch (error) {
       console.error("Error submitting review:", error);
-      toast.error("An unexpected error occurred. Please try again.");
+      toast({
+        title: "Unexpected Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
