@@ -93,3 +93,6 @@ verify_jwt = false
 
 [functions.process-session-escrow]
 verify_jwt = false
+
+[functions.process-session-badges]
+verify_jwt = false

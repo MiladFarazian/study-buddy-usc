@@ -212,6 +212,30 @@ async function processPayment(supabaseAdmin: any, sessionId: string, paymentData
     });
   } else {
     logStep('Pending transfer created successfully', { tutorAmount, platformFee });
+    
+    // Process badges AFTER payment processing with error handling
+    try {
+      logStep('Initiating badge processing for completed session');
+      const { data: badgeResult, error: badgeError } = await supabaseAdmin.functions.invoke(
+        'process-session-badges',
+        {
+          body: { sessionId }
+        }
+      );
+
+      if (badgeError) {
+        logStep('WARNING: Badge processing failed but payment completed', { 
+          error: badgeError.message 
+        });
+      } else {
+        logStep('Badge processing completed successfully', badgeResult);
+      }
+    } catch (badgeException) {
+      logStep('WARNING: Badge processing threw exception but payment completed', { 
+        error: badgeException.message 
+      });
+    }
+    
     return new Response(JSON.stringify({ 
       success: true, 
       message: 'Escrow processing completed successfully',
