@@ -222,13 +222,14 @@ serve(async (req) => {
         // Only create pending transfer if payment is completed
         if (paymentData.status === 'completed') {
           // Calculate fees: 15% platform fee + Stripe's 2.9% + 30¢
-          const amountInCents = Math.round(paymentData.amount * 100);
+          // paymentData.amount is already in cents after migration
+          const amountInCents = Math.round(paymentData.amount);
           const stripeFee = Math.round(amountInCents * 0.029 + 30);
           const platformFee = Math.round(amountInCents * 0.15);
           const tutorAmount = amountInCents - stripeFee - platformFee;
 
           logStep('Fee calculation', {
-            originalAmount: paymentData.amount,
+            originalAmountCents: paymentData.amount,
             amountInCents,
             stripeFee,
             platformFee,

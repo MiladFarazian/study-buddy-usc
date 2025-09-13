@@ -70,14 +70,15 @@ async function processTransferBatch(
   
   for (const transfer of transfers) {
     try {
-      console.log(`[TRANSFER-PROCESSOR] Processing transfer ${transfer.id} - Amount: $${transfer.amount}`);
+      console.log(`[TRANSFER-PROCESSOR] Processing transfer ${transfer.id} - Amount: ${transfer.amount}¢`);
       
       // Check Stripe balance
       const availableBalance = await checkStripeBalance(stripe);
-      const transferAmountCents = Math.round(transfer.amount * 100);
+      // transfer.amount is already in cents after migration
+      const transferAmountCents = Math.round(transfer.amount);
       
       if (availableBalance < transferAmountCents) {
-        console.log(`[TRANSFER-PROCESSOR] Insufficient balance for transfer ${transfer.id}. Need: $${transferAmountCents / 100}, Have: $${availableBalance / 100}`);
+        console.log(`[TRANSFER-PROCESSOR] Insufficient balance for transfer ${transfer.id}. Need: ${transferAmountCents}¢, Have: ${availableBalance}¢`);
         
         // Update retry count and last_retry_at
         await supabase
@@ -309,7 +310,7 @@ async function sendAdminNotifications(supabase: any): Promise<number> {
     
     // Prepare notification email content
     const transferDetails = failedTransfers.map(t => 
-      `Transfer ID: ${t.id}\nTutor ID: ${t.tutor_id}\nAmount: $${t.amount}\nRetry Count: ${t.retry_count}\nLast Retry: ${t.last_retry_at}\n`
+      `Transfer ID: ${t.id}\nTutor ID: ${t.tutor_id}\nAmount: ${t.amount}¢\nRetry Count: ${t.retry_count}\nLast Retry: ${t.last_retry_at}\n`
     ).join('\n---\n');
     
     // Send admin notification

@@ -176,7 +176,7 @@ serve(async (req) => {
       try {
         // Create a transfer to the tutor's connect account
         const newTransfer = await stripe.transfers.create({
-          amount: Math.round(transfer.amount * 100), // Convert to cents
+          amount: Math.round(transfer.amount), // transfer.amount is already in cents
           currency: 'usd',
           destination: tutorProfile[connectIdField],
           transfer_group: transfer.transfer_group,

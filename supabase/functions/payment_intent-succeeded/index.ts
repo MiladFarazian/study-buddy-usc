@@ -112,7 +112,7 @@ serve(async (req) => {
         const { data: transactionsByAmount, error: amountError } = await supabaseAdmin
           .from('payment_transactions')
           .select('*')
-          .eq('amount', paymentIntent.amount / 100) // Convert cents to dollars
+          .eq('amount', paymentIntent.amount) // Both are now in cents
           .eq('status', 'pending')
           .order('created_at', { ascending: false })
           .limit(1);
@@ -127,7 +127,7 @@ serve(async (req) => {
       }
 
       if (!transactions || transactions.length === 0) {
-        console.log('No matching payment transaction found for amount:', paymentIntent.amount / 100);
+        console.log('No matching payment transaction found for amount:', paymentIntent.amount, 'cents');
         // This might be normal if the payment wasn't created through your system
         return new Response(JSON.stringify({ 
           received: true, 

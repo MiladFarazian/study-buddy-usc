@@ -179,13 +179,14 @@ async function processPayment(supabaseAdmin: any, sessionId: string, paymentData
   });
 
   // Calculate fees: 15% platform fee + Stripe's 2.9% + 30¢
-  const amountInCents = Math.round(paymentData.amount * 100);
+  // paymentData.amount is already in cents after migration
+  const amountInCents = Math.round(paymentData.amount);
   const stripeFee = Math.round(amountInCents * 0.029 + 30);
   const platformFee = Math.round(amountInCents * 0.15);
   const tutorAmount = amountInCents - stripeFee - platformFee;
 
   logStep('Fee calculation', {
-    originalAmount: paymentData.amount,
+    originalAmountCents: paymentData.amount,
     amountInCents,
     stripeFee,
     platformFee,
@@ -240,8 +241,8 @@ async function processPayment(supabaseAdmin: any, sessionId: string, paymentData
     return new Response(JSON.stringify({ 
       success: true, 
       message: 'Escrow processing completed successfully',
-      tutorAmount: tutorAmount / 100, // Convert back to dollars for response
-      platformFee: platformFee / 100,
+      tutorAmountCents: tutorAmount,
+      platformFeeCents: platformFee,
       paymentProcessed: true
     }), {
       status: 200,
