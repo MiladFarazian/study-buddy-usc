@@ -61,7 +61,8 @@ async function checkStripeBalance(stripe: Stripe): Promise<number> {
 async function processTransferBatch(
   supabase: any,
   transfers: PendingTransfer[],
-  stripe: Stripe
+  stripe: Stripe,
+  mode: string
 ): Promise<number> {
   console.log(`[TRANSFER-PROCESSOR] Processing ${transfers.length} transfers`);
   
@@ -96,20 +97,35 @@ async function processTransferBatch(
         .update({ status: 'processing' })
         .eq('id', transfer.id);
       
-      // Call existing transfer function
-      console.log(`[TRANSFER-PROCESSOR] Calling transfer-pending-funds for tutor ${transfer.tutor_id}`);
-      
-      const { data: transferResult, error: transferError } = await supabase.functions.invoke(
-        'transfer-pending-funds',
-        {
-          body: { tutorId: transfer.tutor_id }
-        }
-      );
-      
-      if (transferError) {
-        console.error(`[TRANSFER-PROCESSOR] Transfer function error for ${transfer.id}:`, transferError);
+      // Get tutor's Connect account info
+      console.log(`[TRANSFER-PROCESSOR] Getting Connect account for tutor ${transfer.tutor_id}`);
+      const { data: tutorProfile, error: tutorError } = await supabase
+        .from('profiles')
+        .select('stripe_connect_id, stripe_connect_onboarding_complete, first_name, last_name')
+        .eq('id', transfer.tutor_id)
+        .single();
+
+      if (tutorError || !tutorProfile) {
+        console.error(`[TRANSFER-PROCESSOR] Tutor profile not found for ${transfer.id}:`, tutorError);
         
-        // Update to failed with retry info
+        // Update retry info
+        await supabase
+          .from('pending_transfers')
+          .update({
+            status: 'pending',
+            retry_count: (transfer.retry_count || 0) + 1,
+            last_retry_at: new Date().toISOString()
+          })
+          .eq('id', transfer.id);
+          
+        continue;
+      }
+
+      // Validate Connect account is ready
+      if (!tutorProfile.stripe_connect_id || !tutorProfile.stripe_connect_onboarding_complete) {
+        console.error(`[TRANSFER-PROCESSOR] Tutor Connect account not ready for ${transfer.id}. ID: ${tutorProfile.stripe_connect_id}, Complete: ${tutorProfile.stripe_connect_onboarding_complete}`);
+        
+        // Update retry info
         await supabase
           .from('pending_transfers')
           .update({
@@ -122,14 +138,35 @@ async function processTransferBatch(
         continue;
       }
       
-      if (transferResult?.success) {
-        console.log(`[TRANSFER-PROCESSOR] Transfer ${transfer.id} completed successfully`);
+      // Create Stripe transfer directly
+      console.log(`[TRANSFER-PROCESSOR] Creating Stripe transfer for ${transfer.id} to ${tutorProfile.stripe_connect_id}`);
+      
+      const stripeTransfer = await stripe.transfers.create({
+        amount: transferAmountCents,
+        currency: 'usd',
+        destination: tutorProfile.stripe_connect_id,
+        transfer_group: transfer.transfer_group,
+        metadata: {
+          session_id: transfer.session_id,
+          tutor_id: transfer.tutor_id,
+          student_id: transfer.student_id,
+          payment_transaction_id: transfer.payment_transaction_id,
+          pending_transfer_id: transfer.id,
+          environment: mode
+        },
+        description: `Tutor payment for session ${transfer.session_id} (${mode})`
+      });
+      
+      // CRITICAL: Only mark completed if we have stripe_transfer_id
+      if (stripeTransfer.id) {
+        console.log(`[TRANSFER-PROCESSOR] Transfer ${transfer.id} completed with Stripe ID: ${stripeTransfer.id}`);
         
-        // Mark as completed
+        // Mark as completed with stripe_transfer_id
         await supabase
           .from('pending_transfers')
           .update({
             status: 'completed',
+            stripe_transfer_id: stripeTransfer.id, // This is the critical fix
             processed_at: new Date().toISOString(),
             processor: 'automated-batch'
           })
@@ -137,9 +174,9 @@ async function processTransferBatch(
           
         processed++;
       } else {
-        console.error(`[TRANSFER-PROCESSOR] Transfer ${transfer.id} failed:`, transferResult);
+        console.error(`[TRANSFER-PROCESSOR] Transfer ${transfer.id} failed: No Stripe transfer ID returned`);
         
-        // Update retry info
+        // Update retry info - keep as pending
         await supabase
           .from('pending_transfers')
           .update({
@@ -154,7 +191,7 @@ async function processTransferBatch(
       console.error(`[TRANSFER-PROCESSOR] Error processing transfer ${transfer.id}:`, error);
       
       try {
-        // Update retry info
+        // Update retry info - keep as pending on failure
         await supabase
           .from('pending_transfers')
           .update({
@@ -172,7 +209,7 @@ async function processTransferBatch(
   return processed;
 }
 
-async function processNewTransfers(supabase: any, stripe: Stripe): Promise<number> {
+async function processNewTransfers(supabase: any, stripe: Stripe, mode: string): Promise<number> {
   console.log('[TRANSFER-PROCESSOR] Processing new transfers...');
   
   try {
@@ -201,7 +238,7 @@ async function processNewTransfers(supabase: any, stripe: Stripe): Promise<numbe
     }
     
     console.log(`[TRANSFER-PROCESSOR] Found ${transfers.length} new transfers ready for processing`);
-    return await processTransferBatch(supabase, transfers, stripe);
+    return await processTransferBatch(supabase, transfers, stripe, mode);
     
   } catch (error: any) {
     console.error('[TRANSFER-PROCESSOR] Error in processNewTransfers:', error);
@@ -209,7 +246,7 @@ async function processNewTransfers(supabase: any, stripe: Stripe): Promise<numbe
   }
 }
 
-async function processRetries(supabase: any, stripe: Stripe): Promise<number> {
+async function processRetries(supabase: any, stripe: Stripe, mode: string): Promise<number> {
   console.log('[TRANSFER-PROCESSOR] Processing retry transfers...');
   
   try {
@@ -238,7 +275,7 @@ async function processRetries(supabase: any, stripe: Stripe): Promise<number> {
     }
     
     console.log(`[TRANSFER-PROCESSOR] Found ${transfers.length} retry transfers ready for processing`);
-    return await processTransferBatch(supabase, transfers, stripe);
+    return await processTransferBatch(supabase, transfers, stripe, mode);
     
   } catch (error: any) {
     console.error('[TRANSFER-PROCESSOR] Error in processRetries:', error);
@@ -349,7 +386,7 @@ serve(async (req) => {
 
     // Process new transfers
     try {
-      results.newTransfersProcessed = await processNewTransfers(supabase, stripe);
+      results.newTransfersProcessed = await processNewTransfers(supabase, stripe, stripeMode);
     } catch (error: any) {
       console.error('[TRANSFER-PROCESSOR] Error processing new transfers:', error);
       results.errors.push(`New transfers: ${error.message}`);
@@ -357,7 +394,7 @@ serve(async (req) => {
 
     // Process retries
     try {
-      results.retriesProcessed = await processRetries(supabase, stripe);
+      results.retriesProcessed = await processRetries(supabase, stripe, stripeMode);
     } catch (error: any) {
       console.error('[TRANSFER-PROCESSOR] Error processing retries:', error);
       results.errors.push(`Retries: ${error.message}`);

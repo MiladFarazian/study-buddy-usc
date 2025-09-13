@@ -395,6 +395,7 @@ export type Database = {
           retry_count: number | null
           session_id: string | null
           status: string
+          stripe_transfer_id: string | null
           student_id: string
           transfer_group: string | null
           transfer_id: string | null
@@ -414,6 +415,7 @@ export type Database = {
           retry_count?: number | null
           session_id?: string | null
           status?: string
+          stripe_transfer_id?: string | null
           student_id: string
           transfer_group?: string | null
           transfer_id?: string | null
@@ -433,6 +435,7 @@ export type Database = {
           retry_count?: number | null
           session_id?: string | null
           status?: string
+          stripe_transfer_id?: string | null
           student_id?: string
           transfer_group?: string | null
           transfer_id?: string | null
