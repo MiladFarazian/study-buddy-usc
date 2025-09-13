@@ -100,12 +100,13 @@ serve(async (req) => {
         return new Response('Invalid session ID', { status: 400 });
       }
 
-      // Update payment transaction
+      // Update payment transaction with amount in cents (Stripe already sends cents)
       const { error: updateError } = await supabaseAdmin
         .from('payment_transactions')
         .update({
           status: 'completed',
           stripe_checkout_session_id: session.id,
+          amount: session.amount_total, // Store Stripe amount directly (already in cents)
           payment_completed_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })

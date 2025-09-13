@@ -342,6 +342,60 @@ export type Database = {
           },
         ]
       }
+      payment_transactions_backup: {
+        Row: {
+          amount: number | null
+          created_at: string | null
+          environment: string | null
+          id: string | null
+          payment_completed_at: string | null
+          payment_link_id: string | null
+          payment_link_url: string | null
+          platform_fee: number | null
+          session_id: string | null
+          status: string | null
+          stripe_checkout_session_id: string | null
+          stripe_payment_intent_id: string | null
+          student_id: string | null
+          tutor_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string | null
+          environment?: string | null
+          id?: string | null
+          payment_completed_at?: string | null
+          payment_link_id?: string | null
+          payment_link_url?: string | null
+          platform_fee?: number | null
+          session_id?: string | null
+          status?: string | null
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          student_id?: string | null
+          tutor_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string | null
+          environment?: string | null
+          id?: string | null
+          payment_completed_at?: string | null
+          payment_link_id?: string | null
+          payment_link_url?: string | null
+          platform_fee?: number | null
+          session_id?: string | null
+          status?: string | null
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          student_id?: string | null
+          tutor_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number | null
@@ -385,8 +439,10 @@ export type Database = {
         Row: {
           amount: number
           created_at: string | null
+          error_message: string | null
           id: string
           last_retry_at: string | null
+          next_retry_at: string | null
           payment_intent_id: string | null
           payment_transaction_id: string | null
           platform_fee: number | null
@@ -395,6 +451,7 @@ export type Database = {
           retry_count: number | null
           session_id: string | null
           status: string
+          stripe_error_code: string | null
           stripe_transfer_id: string | null
           student_id: string
           transfer_group: string | null
@@ -405,8 +462,10 @@ export type Database = {
         Insert: {
           amount: number
           created_at?: string | null
+          error_message?: string | null
           id?: string
           last_retry_at?: string | null
+          next_retry_at?: string | null
           payment_intent_id?: string | null
           payment_transaction_id?: string | null
           platform_fee?: number | null
@@ -415,6 +474,7 @@ export type Database = {
           retry_count?: number | null
           session_id?: string | null
           status?: string
+          stripe_error_code?: string | null
           stripe_transfer_id?: string | null
           student_id: string
           transfer_group?: string | null
@@ -425,8 +485,10 @@ export type Database = {
         Update: {
           amount?: number
           created_at?: string | null
+          error_message?: string | null
           id?: string
           last_retry_at?: string | null
+          next_retry_at?: string | null
           payment_intent_id?: string | null
           payment_transaction_id?: string | null
           platform_fee?: number | null
@@ -435,6 +497,7 @@ export type Database = {
           retry_count?: number | null
           session_id?: string | null
           status?: string
+          stripe_error_code?: string | null
           stripe_transfer_id?: string | null
           student_id?: string
           transfer_group?: string | null
@@ -465,6 +528,69 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pending_transfers_backup: {
+        Row: {
+          amount: number | null
+          created_at: string | null
+          id: string | null
+          last_retry_at: string | null
+          payment_intent_id: string | null
+          payment_transaction_id: string | null
+          platform_fee: number | null
+          processed_at: string | null
+          processor: string | null
+          retry_count: number | null
+          session_id: string | null
+          status: string | null
+          stripe_transfer_id: string | null
+          student_id: string | null
+          transfer_group: string | null
+          transfer_id: string | null
+          tutor_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string | null
+          id?: string | null
+          last_retry_at?: string | null
+          payment_intent_id?: string | null
+          payment_transaction_id?: string | null
+          platform_fee?: number | null
+          processed_at?: string | null
+          processor?: string | null
+          retry_count?: number | null
+          session_id?: string | null
+          status?: string | null
+          stripe_transfer_id?: string | null
+          student_id?: string | null
+          transfer_group?: string | null
+          transfer_id?: string | null
+          tutor_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string | null
+          id?: string | null
+          last_retry_at?: string | null
+          payment_intent_id?: string | null
+          payment_transaction_id?: string | null
+          platform_fee?: number | null
+          processed_at?: string | null
+          processor?: string | null
+          retry_count?: number | null
+          session_id?: string | null
+          status?: string | null
+          stripe_transfer_id?: string | null
+          student_id?: string | null
+          transfer_group?: string | null
+          transfer_id?: string | null
+          tutor_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -981,7 +1107,17 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      platform_revenue: {
+        Row: {
+          daily_platform_revenue_cents: number | null
+          daily_platform_revenue_dollars: number | null
+          daily_tutor_payouts_cents: number | null
+          daily_tutor_payouts_dollars: number | null
+          date: string | null
+          transfer_count: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       approve_tutor: {
