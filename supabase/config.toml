@@ -96,3 +96,6 @@ verify_jwt = false
 
 [functions.process-session-badges]
 verify_jwt = false
+
+[functions.process-pending-transfers-batch]
+verify_jwt = false

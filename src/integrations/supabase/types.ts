@@ -386,11 +386,13 @@ export type Database = {
           amount: number
           created_at: string | null
           id: string
+          last_retry_at: string | null
           payment_intent_id: string | null
           payment_transaction_id: string | null
           platform_fee: number | null
           processed_at: string | null
           processor: string | null
+          retry_count: number | null
           session_id: string | null
           status: string
           student_id: string
@@ -403,11 +405,13 @@ export type Database = {
           amount: number
           created_at?: string | null
           id?: string
+          last_retry_at?: string | null
           payment_intent_id?: string | null
           payment_transaction_id?: string | null
           platform_fee?: number | null
           processed_at?: string | null
           processor?: string | null
+          retry_count?: number | null
           session_id?: string | null
           status?: string
           student_id: string
@@ -420,11 +424,13 @@ export type Database = {
           amount?: number
           created_at?: string | null
           id?: string
+          last_retry_at?: string | null
           payment_intent_id?: string | null
           payment_transaction_id?: string | null
           platform_fee?: number | null
           processed_at?: string | null
           processor?: string | null
+          retry_count?: number | null
           session_id?: string | null
           status?: string
           student_id?: string
