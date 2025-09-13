@@ -181,13 +181,13 @@ async function processNewTransfers(supabase: any, stripe: Stripe): Promise<numbe
       .from('pending_transfers')
       .select(`
         *,
-        sessions!inner(completion_date)
+        sessions!fk_pending_transfers_session(completion_date)
       `)
       .eq('status', 'pending')
       .lt('retry_count', 3)
       .not('sessions.completion_date', 'is', null)
       .lte('sessions.completion_date', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-      .order('sessions(completion_date)', { ascending: true })
+      .order('created_at', { ascending: true })
       .limit(20);
     
     if (error) {
@@ -218,13 +218,13 @@ async function processRetries(supabase: any, stripe: Stripe): Promise<number> {
       .from('pending_transfers')
       .select(`
         *,
-        sessions!inner(completion_date)
+        sessions!fk_pending_transfers_session(completion_date)
       `)
       .eq('status', 'pending')
       .gt('retry_count', 0)
       .lt('retry_count', 3)
       .lte('last_retry_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-      .order('sessions(completion_date)', { ascending: true })
+      .order('last_retry_at', { ascending: true })
       .limit(20);
     
     if (error) {

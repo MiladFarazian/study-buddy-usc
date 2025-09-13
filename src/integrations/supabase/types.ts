@@ -441,6 +441,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_pending_transfers_payment"
+            columns: ["payment_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "payment_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_pending_transfers_session"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "pending_transfers_payment_transaction_id_fkey"
             columns: ["payment_transaction_id"]
             isOneToOne: false
