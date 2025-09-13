@@ -145,7 +145,7 @@ async function processTransferBatch(
         amount: transferAmountCents,
         currency: 'usd',
         destination: tutorProfile.stripe_connect_id,
-        transfer_group: transfer.transfer_group,
+        transfer_group: transfer.transfer_group || `session_${transfer.session_id}`,
         metadata: {
           session_id: transfer.session_id,
           tutor_id: transfer.tutor_id,

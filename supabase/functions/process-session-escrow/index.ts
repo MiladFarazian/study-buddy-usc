@@ -202,6 +202,7 @@ async function processPayment(supabaseAdmin: any, sessionId: string, paymentData
       platform_fee: platformFee,
       status: 'pending',
       payment_transaction_id: paymentData.id,
+      transfer_group: `session_${sessionId}`, // ALWAYS populate transfer_group
     });
 
   if (transferError) {
