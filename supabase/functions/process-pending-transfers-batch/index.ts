@@ -224,7 +224,7 @@ async function processNewTransfers(supabase: any, stripe: Stripe, mode: string):
       .eq('status', 'pending')
       .lt('retry_count', 3)
       .not('sessions.completion_date', 'is', null)
-      .lte('sessions.completion_date', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+      .lte('sessions.completion_date', new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString())
       .order('created_at', { ascending: true })
       .limit(20);
     
