@@ -609,6 +609,7 @@ export type Database = {
           role: Database["public"]["Enums"]["user_role"]
           stripe_connect_id: string | null
           stripe_connect_onboarding_complete: boolean | null
+          stripe_customer_id: string | null
           subjects: string[] | null
           updated_at: string
         }
@@ -628,6 +629,7 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"]
           stripe_connect_id?: string | null
           stripe_connect_onboarding_complete?: boolean | null
+          stripe_customer_id?: string | null
           subjects?: string[] | null
           updated_at?: string
         }
@@ -647,6 +649,7 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"]
           stripe_connect_id?: string | null
           stripe_connect_onboarding_complete?: boolean | null
+          stripe_customer_id?: string | null
           subjects?: string[] | null
           updated_at?: string
         }
