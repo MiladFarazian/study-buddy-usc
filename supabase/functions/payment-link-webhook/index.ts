@@ -130,6 +130,45 @@ serve(async (req) => {
         console.error('Error updating session payment status:', sessionUpdateError);
       }
 
+      // PERMANENT FIX: Save customer ID to profile to prevent future fragmentation
+      const customerId = session.customer;
+      const customerEmail = session.customer_details?.email;
+      
+      if (customerId && customerEmail) {
+        console.log('Saving customer ID to profile:', { customerId, customerEmail });
+        
+        const { error: profileUpdateError } = await supabaseAdmin
+          .from('profiles')
+          .update({ stripe_customer_id: customerId })
+          .eq('id', (await supabaseAdmin.auth.admin.getUserByEmail(customerEmail)).data?.user?.id);
+
+        if (profileUpdateError) {
+          console.warn('Could not update profile with customer ID:', profileUpdateError);
+          
+          // Try alternative approach: update by matching the session's student_id
+          const { data: sessionData } = await supabaseAdmin
+            .from('sessions')
+            .select('student_id')
+            .eq('id', cleanSessionId)
+            .single();
+            
+          if (sessionData?.student_id) {
+            const { error: altUpdateError } = await supabaseAdmin
+              .from('profiles')
+              .update({ stripe_customer_id: customerId })
+              .eq('id', sessionData.student_id);
+              
+            if (altUpdateError) {
+              console.error('Failed to update profile via student_id:', altUpdateError);
+            } else {
+              console.log('Successfully updated profile via student_id');
+            }
+          }
+        } else {
+          console.log('Successfully saved customer ID to profile');
+        }
+      }
+
       console.log('Payment completed successfully for session:', session.metadata?.sessionId);
     }
 
