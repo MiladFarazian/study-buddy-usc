@@ -25,7 +25,7 @@ export function ReviewRequirement() {
     }
   }, [user, profile]);
 
-  // Set up real-time subscription for session status changes
+  // Set up real-time subscription for session status changes with delay
   useEffect(() => {
     if (!user) return;
 
@@ -40,9 +40,12 @@ export function ReviewRequirement() {
           filter: `student_id=eq.${user.id},tutor_id=eq.${user.id}`
         },
         (payload) => {
-          // When a session status changes, check for new pending reviews
+          // When a session status changes, check for new pending reviews after delay
           if (payload.new.status === 'completed') {
-            checkForPendingReviews();
+            // Wait 2 hours before checking for reviews to avoid immediate popups
+            setTimeout(() => {
+              checkForPendingReviews();
+            }, 2 * 60 * 60 * 1000); // 2 hours delay
           }
         }
       )
@@ -52,6 +55,34 @@ export function ReviewRequirement() {
       supabase.removeChannel(channel);
     };
   }, [user]);
+
+  // Helper function to validate if review should be shown
+  const shouldShowReview = async (session: any) => {
+    // 1. Session must be completed (not a new booking!)
+    if (session.status !== 'completed') return false;
+    
+    // 2. User must be the student (tutors handle differently)
+    if (profile.role === 'student' && session.student_id !== user.id) return false;
+    if (profile.role === 'tutor' && session.tutor_id !== user.id) return false;
+    
+    // 3. Session must be at least 1 hour old (not immediate after completion)
+    const sessionEndTime = new Date(session.end_time).getTime();
+    const sessionAge = Date.now() - sessionEndTime;
+    const oneHour = 60 * 60 * 1000;
+    if (sessionAge < oneHour) return false;
+    
+    // 4. CHECK IF REVIEW ALREADY EXISTS (critical!)
+    const { data: existingReview } = await supabase
+      .from('student_reviews')
+      .select('review_id')
+      .eq('session_id', session.id)
+      .eq(profile.role === 'student' ? 'student_id' : 'tutor_id', user.id)
+      .maybeSingle();
+    
+    if (existingReview) return false; // Already reviewed
+    
+    return true; // OK to show review modal
+  };
 
   const checkForPendingReviews = async () => {
     if (!user || !profile) return;
@@ -73,24 +104,15 @@ export function ReviewRequirement() {
 
       if (sessionsError) throw sessionsError;
 
-      // Get existing reviews for this user
-      const { data: existingReviews, error: reviewsError } = await supabase
-        .from('student_reviews')
-        .select('session_id')
-        .or(
-          profile.role === 'student' 
-            ? `student_id.eq.${user.id}` 
-            : `tutor_id.eq.${user.id}`
-        );
+      // Filter sessions using comprehensive validation
+      const validSessions = [];
+      for (const session of completedSessions || []) {
+        if (await shouldShowReview(session)) {
+          validSessions.push(session);
+        }
+      }
 
-      if (reviewsError) throw reviewsError;
-
-      const reviewedSessionIds = new Set(existingReviews?.map(r => r.session_id) || []);
-
-      // Filter out sessions that already have reviews from this user
-      const sessionsNeedingReview = (completedSessions || []).filter(session => 
-        !reviewedSessionIds.has(session.id)
-      );
+      const sessionsNeedingReview = validSessions;
 
       // Create pending review objects
       const pending: PendingReview[] = sessionsNeedingReview
