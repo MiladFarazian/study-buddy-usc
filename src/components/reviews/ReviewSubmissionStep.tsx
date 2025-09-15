@@ -87,6 +87,17 @@ export function ReviewSubmissionStep({
 
       if (studentReviewError) {
         console.error("Error submitting student review:", studentReviewError);
+        
+        // Handle specific error cases
+        if (studentReviewError.code === '23505' || studentReviewError.message?.includes('duplicate') || studentReviewError.message?.includes('unique_reviewer_session')) {
+          toast({
+            title: "Already Reviewed",
+            description: "You've already submitted a review for this session.",
+          });
+          onSubmitted(); // Close the modal since review exists
+          return;
+        }
+        
         toast({
           title: "Submission Error",
           description: "Failed to submit review. Please try again.",
