@@ -232,12 +232,13 @@ export const SessionItem = ({
                 size="sm"
                 onClick={() => {
                   if (isUserTutor && session.student) {
-                    const studentProfile: Profile = {
-                      id: session.student.id,
-                      first_name: session.student.first_name || '',
-                      last_name: session.student.last_name || '',
-                      avatar_url: session.student.avatar_url || '',
-                      approved_tutor: false,
+                     const studentProfile: Profile = {
+                       id: session.student.id,
+                       first_name: session.student.first_name || '',
+                       last_name: session.student.last_name || '',
+                       avatar_url: session.student.avatar_url || '',
+                       approved_tutor: false,
+                       stripe_customer_id: null,
                       availability: null,
                       average_rating: null,
                       bio: null,

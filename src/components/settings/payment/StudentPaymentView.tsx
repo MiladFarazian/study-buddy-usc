@@ -17,28 +17,46 @@ export const StudentPaymentView = () => {
 
     setLoading(true);
     try {
+      console.log('Opening Stripe portal for user:', user.id);
       const { data, error } = await supabase.functions.invoke('create-portal-session', {
         body: { 
           returnUrl: window.location.href
         }
       });
 
+      console.log('Portal response:', { data, error });
+
       if (error) {
         console.error('Error creating portal session:', error);
-        toast({
-          title: "Error",
-          description: "Failed to open payment portal. Please try again.",
-          variant: "destructive",
-        });
+        
+        // Check for specific Stripe configuration error
+        if (error.message?.includes('configuration') || error.message?.includes('portal')) {
+          toast({
+            title: "Setup Required",
+            description: "The Stripe billing portal needs to be configured. Please contact support.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: error.message || "Failed to open payment portal. Please try again.",
+            variant: "destructive",
+          });
+        }
         return;
       }
 
       if (data?.url) {
+        console.log('Opening portal URL:', data.url);
         window.open(data.url, '_blank');
+        toast({
+          title: "Success",
+          description: "Payment portal opened in a new tab.",
+        });
       } else {
         toast({
           title: "Error",
-          description: "Invalid portal URL received.",
+          description: "No portal URL received. Please try again.",
           variant: "destructive",
         });
       }
@@ -46,7 +64,7 @@ export const StudentPaymentView = () => {
       console.error('Error opening portal:', error);
       toast({
         title: "Error",
-        description: "Failed to open payment portal. Please try again.",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
