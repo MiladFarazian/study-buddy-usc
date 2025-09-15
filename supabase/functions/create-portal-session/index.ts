@@ -116,11 +116,54 @@ Deno.serve(async (req) => {
       }
     }
 
-    // If no customer ID exists, create a Stripe customer
+    // If no customer ID exists, try to find existing Stripe customer(s) by email with payment history
+    if (!customerId) {
+      console.log('No customer ID found in DB. Checking Stripe for existing customers by email...');
+      const candidates = await stripe.customers.list({ email: user.email || undefined, limit: 20 });
+      let foundCustomerId: string | null = null;
+
+      if (candidates.data.length > 0) {
+        for (const c of candidates.data) {
+          try {
+            // Prefer customers that have any payment intents (indicates real payment history)
+            const intents = await stripe.paymentIntents.list({ customer: c.id, limit: 1 });
+            if (intents.data.length > 0) {
+              foundCustomerId = c.id;
+              console.log('Matched existing Stripe customer with payment history:', foundCustomerId);
+              break;
+            }
+          } catch (e) {
+            console.warn('Error checking payment intents for customer', c.id, e);
+          }
+        }
+
+        // If none have payment history, fall back to first existing to avoid creating duplicates
+        if (!foundCustomerId) {
+          foundCustomerId = candidates.data[0].id;
+          console.log('No customer with payment history found; using first existing customer:', foundCustomerId);
+        }
+      }
+
+      if (foundCustomerId) {
+        customerId = foundCustomerId;
+        const { error: updateError } = await supabaseClient
+          .from('profiles')
+          .update({ stripe_customer_id: customerId })
+          .eq('id', user.id);
+
+        if (updateError) {
+          console.warn('Could not update profile with existing Stripe customer ID:', updateError);
+        } else {
+          console.log('Profile updated with existing Stripe customer ID from Stripe search');
+        }
+      }
+    }
+
+    // If still no customer, create a new Stripe customer
     if (!customerId) {
       console.log('Creating new Stripe customer for user:', user.id);
       const customer = await stripe.customers.create({
-        email: user.email,
+        email: user.email || undefined,
         metadata: {
           supabase_user_id: user.id,
         },
