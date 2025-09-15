@@ -77,9 +77,10 @@ export function ReviewRequirement() {
       const { data: existingReviews, error: reviewsError } = await supabase
         .from('student_reviews')
         .select('session_id')
-        .eq(
-          profile.role === 'student' ? 'student_id' : 'tutor_id',
-          user.id
+        .or(
+          profile.role === 'student' 
+            ? `student_id.eq.${user.id}` 
+            : `tutor_id.eq.${user.id}`
         );
 
       if (reviewsError) throw reviewsError;
