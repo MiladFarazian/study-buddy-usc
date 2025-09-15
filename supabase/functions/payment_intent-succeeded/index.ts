@@ -91,6 +91,13 @@ serve(async (req) => {
         status: paymentIntent.status,
       });
 
+      // Extract customer ID from payment intent
+      const customerId = typeof paymentIntent.customer === 'string' 
+        ? paymentIntent.customer 
+        : paymentIntent.customer?.id;
+      
+      console.log('Customer ID from payment intent:', customerId);
+
       // First try to find transaction by payment intent ID (most reliable)
       let transactions;
       let fetchError;
@@ -140,21 +147,43 @@ serve(async (req) => {
 
       const transaction = transactions[0];
 
-      // Update payment transaction
+      // Update payment transaction with customer ID
+      const updateData: any = {
+        status: 'completed',
+        stripe_payment_intent_id: paymentIntent.id,
+        stripe_checkout_session_id: paymentIntent.id, // Keep existing for compatibility
+        payment_completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      
+      // Add customer ID if available
+      if (customerId) {
+        updateData.stripe_customer_id = customerId;
+      }
+      
       const { error: updateError } = await supabaseAdmin
         .from('payment_transactions')
-        .update({
-          status: 'completed',
-          stripe_payment_intent_id: paymentIntent.id, // Store payment intent ID in correct column
-          stripe_checkout_session_id: paymentIntent.id, // Keep existing for compatibility
-          payment_completed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('id', transaction.id);
 
       if (updateError) {
         console.error('Error updating payment transaction:', updateError);
         return new Response('Database update failed', { status: 500 });
+      }
+
+      // Update user's profile with customer ID if not already set
+      if (customerId && transaction.student_id) {
+        const { error: profileUpdateError } = await supabaseAdmin
+          .from('profiles')
+          .update({ stripe_customer_id: customerId })
+          .eq('id', transaction.student_id)
+          .is('stripe_customer_id', null);
+          
+        if (profileUpdateError) {
+          console.warn('Could not update profile with customer ID:', profileUpdateError);
+        } else {
+          console.log('Profile updated with customer ID');
+        }
       }
 
       // Update session payment status if session exists

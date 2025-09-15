@@ -279,6 +279,7 @@ export type Database = {
           session_id: string | null
           status: string
           stripe_checkout_session_id: string | null
+          stripe_customer_id: string | null
           stripe_payment_intent_id: string | null
           student_id: string | null
           tutor_id: string | null
@@ -296,6 +297,7 @@ export type Database = {
           session_id?: string | null
           status?: string
           stripe_checkout_session_id?: string | null
+          stripe_customer_id?: string | null
           stripe_payment_intent_id?: string | null
           student_id?: string | null
           tutor_id?: string | null
@@ -313,6 +315,7 @@ export type Database = {
           session_id?: string | null
           status?: string
           stripe_checkout_session_id?: string | null
+          stripe_customer_id?: string | null
           stripe_payment_intent_id?: string | null
           student_id?: string | null
           tutor_id?: string | null

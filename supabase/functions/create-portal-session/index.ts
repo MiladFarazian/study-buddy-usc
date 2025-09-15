@@ -79,6 +79,43 @@ Deno.serve(async (req) => {
 
     let customerId = profile.stripe_customer_id;
 
+    // If no customer ID in profile, try to find one from payment history
+    if (!customerId) {
+      console.log('No customer ID in profile, checking payment history...');
+      
+      // Use service role key to query payment_transactions
+      const supabaseAdmin = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
+      
+      const { data: paymentTransaction, error: paymentError } = await supabaseAdmin
+        .from('payment_transactions')
+        .select('stripe_customer_id')
+        .eq('student_id', user.id)
+        .not('stripe_customer_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!paymentError && paymentTransaction?.stripe_customer_id) {
+        customerId = paymentTransaction.stripe_customer_id;
+        console.log('Found customer ID from payment history:', customerId);
+        
+        // Update profile with the found customer ID for future use
+        const { error: updateError } = await supabaseClient
+          .from('profiles')
+          .update({ stripe_customer_id: customerId })
+          .eq('id', user.id);
+          
+        if (updateError) {
+          console.warn('Could not update profile with customer ID:', updateError);
+        } else {
+          console.log('Profile updated with customer ID from payment history');
+        }
+      }
+    }
+
     // If no customer ID exists, create a Stripe customer
     if (!customerId) {
       console.log('Creating new Stripe customer for user:', user.id);
@@ -99,6 +136,8 @@ Deno.serve(async (req) => {
 
       if (updateError) {
         console.error('Error updating profile with customer ID:', updateError);
+      } else {
+        console.log('Profile updated with new customer ID');
       }
     }
 
