@@ -110,7 +110,6 @@ serve(async (req) => {
         },
       ],
       mode: 'payment',
-      customer_creation: 'always', // Force real customer creation (not guest)
       success_url: `${req.headers.get("origin")}/payment-success?session_id=${sessionId}`,
       cancel_url: `${req.headers.get("origin")}/payment-canceled?session_id=${sessionId}`,
       metadata: {
@@ -121,7 +120,7 @@ serve(async (req) => {
       },
     };
 
-    // Reuse existing customer if found
+    // Set customer configuration - either reuse existing or create new
     if (existingCustomerId) {
       sessionConfig.customer = existingCustomerId;
       console.log('Reusing existing customer:', existingCustomerId);
