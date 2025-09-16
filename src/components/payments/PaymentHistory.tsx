@@ -90,7 +90,12 @@ export const PaymentHistory = () => {
   }, [user]);
 
   const formatAmount = (amount: number) => {
-    return `$${(amount / 100).toFixed(2)}`;
+    // Handle both cents (large numbers) and dollars (small numbers)
+    // If amount > 100, assume it's in cents, otherwise assume dollars
+    if (amount > 100) {
+      return `$${(amount / 100).toFixed(2)}`;
+    }
+    return `$${amount.toFixed(2)}`;
   };
 
   const formatDate = (dateString: string) => {
