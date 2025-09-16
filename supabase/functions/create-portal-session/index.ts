@@ -79,6 +79,12 @@ Deno.serve(async (req) => {
 
     let customerId = profile.stripe_customer_id;
 
+    // IGNORE guest customers (gcus_) - they don't work with billing portal
+    if (customerId && customerId.startsWith('gcus_')) {
+      console.log('Ignoring guest customer ID:', customerId);
+      customerId = null;
+    }
+
     // If no customer ID in profile, try to find one from payment history
     if (!customerId) {
       console.log('No customer ID in profile, checking payment history...');
@@ -94,6 +100,7 @@ Deno.serve(async (req) => {
         .select('stripe_customer_id')
         .eq('student_id', user.id)
         .not('stripe_customer_id', 'is', null)
+        .not('stripe_customer_id', 'like', 'gcus_%') // Exclude guest customers
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -124,6 +131,12 @@ Deno.serve(async (req) => {
 
       if (candidates.data.length > 0) {
         for (const c of candidates.data) {
+          // Skip guest customers (gcus_)
+          if (c.id.startsWith('gcus_')) {
+            console.log('Skipping guest customer:', c.id);
+            continue;
+          }
+          
           try {
             // Prefer customers that have any payment intents (indicates real payment history)
             const intents = await stripe.paymentIntents.list({ customer: c.id, limit: 1 });
@@ -137,10 +150,13 @@ Deno.serve(async (req) => {
           }
         }
 
-        // If none have payment history, fall back to first existing to avoid creating duplicates
+        // If none have payment history, fall back to first non-guest existing customer
         if (!foundCustomerId) {
-          foundCustomerId = candidates.data[0].id;
-          console.log('No customer with payment history found; using first existing customer:', foundCustomerId);
+          const nonGuestCustomer = candidates.data.find(c => !c.id.startsWith('gcus_'));
+          if (nonGuestCustomer) {
+            foundCustomerId = nonGuestCustomer.id;
+            console.log('No customer with payment history found; using first non-guest customer:', foundCustomerId);
+          }
         }
       }
 

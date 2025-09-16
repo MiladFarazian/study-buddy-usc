@@ -71,6 +71,7 @@ serve(async (req) => {
           quantity: 1,
         },
       ],
+      customer_creation: 'always', // Force real customer creation (not guest)
       after_completion: {
         type: 'redirect',
         redirect: {

@@ -70,6 +70,7 @@ serve(async (req) => {
         },
       ],
       mode: 'payment',
+      customer_creation: 'always', // Force real customer creation (not guest)
       success_url: `${req.headers.get("origin")}/payment-success?session_id=${sessionId}`,
       cancel_url: `${req.headers.get("origin")}/payment-canceled?session_id=${sessionId}`,
       metadata: {
