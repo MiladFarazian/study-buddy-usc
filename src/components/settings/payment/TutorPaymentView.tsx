@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { User } from "@supabase/supabase-js";
 import { Profile } from "@/types/profile";
 import { useStripeConnect } from "@/hooks/useStripeConnect";
+import { TutorEarningsSummary } from "@/components/payments/TutorEarningsSummary";
 import { Loader2, CheckCircle, AlertCircle, Clock } from "lucide-react";
 
 interface TutorPaymentViewProps {
@@ -141,30 +142,7 @@ export const TutorPaymentView: React.FC<TutorPaymentViewProps> = ({ user, profil
         </CardContent>
       </Card>
       
-      <Card>
-        <CardHeader>
-          <CardTitle>Earnings Dashboard</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {accountStatus?.payouts_enabled ? (
-            <div className="space-y-3">
-              <p className="text-muted-foreground">
-                Your Connect account is active and ready to receive payments.
-              </p>
-              <div className="bg-muted/50 p-4 rounded-lg">
-                <p className="text-sm text-muted-foreground">
-                  Earnings and payout history will appear here once you complete tutoring sessions.
-                  Transfers are processed automatically after session completion.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <p className="text-muted-foreground">
-              Complete your Stripe Connect account setup to view earnings and payout history.
-            </p>
-          )}
-        </CardContent>
-      </Card>
+      <TutorEarningsSummary user={user} accountStatus={accountStatus} />
     </div>
   );
 };
