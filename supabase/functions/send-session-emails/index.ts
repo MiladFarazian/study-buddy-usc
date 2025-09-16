@@ -88,10 +88,14 @@ serve(async (req) => {
     const sendToTutor = tutorPrefs?.session_reminders !== false; // Default to true if not set
     const sendToStudent = studentPrefs?.session_reminders !== false; // Default to true if not set
     
-    // Format dates for display
+    // Calculate duration
     const startDate = new Date(session.start_time);
     const endDate = new Date(session.end_time);
+    const durationMinutes = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60));
+    const durationHours = Math.floor(durationMinutes / 60);
+    const remainderMinutes = durationMinutes % 60;
     
+    // Format dates for display
     const formattedDate = startDate.toLocaleDateString('en-US', {
       weekday: 'long',
       month: 'long',
@@ -110,6 +114,22 @@ serve(async (req) => {
       minute: '2-digit',
       hour12: true
     });
+
+    // Format duration
+    const formattedDuration = durationHours > 0 
+      ? `${durationHours}h${remainderMinutes > 0 ? ` ${remainderMinutes}m` : ''}` 
+      : `${durationMinutes}m`;
+
+    // Generate calendar attachment
+    const calendarEvent = {
+      title: `Tutoring Session${session.course_id ? ` - ${session.course_id}` : ''}`,
+      description: `Tutoring session with ${tutorName}${session.course_id ? ` for ${session.course_id}` : ''}${session.notes ? `\n\nNotes: ${session.notes}` : ''}${session.session_type === 'virtual' && session.zoom_join_url ? `\n\nZoom Link: ${session.zoom_join_url}` : ''}`,
+      location: session.session_type === 'virtual' ? 'Virtual (Zoom)' : (session.location || 'USC Campus'),
+      startDate,
+      endDate
+    };
+
+    const icsContent = generateICSContent(calendarEvent);
 
     // Build the email information based on type
     let tutorSubject, studentSubject, tutorHtml, studentHtml;
@@ -141,13 +161,26 @@ serve(async (req) => {
             sessionDate: formattedDate,
             startTime: formattedStartTime,
             endTime: formattedEndTime,
+            duration: formattedDuration,
             courseName: session.course_id,
             location: session.location,
             notes: session.notes,
             counterpartName: studentName,
             counterpartRole: 'student',
-            emailType
+            emailType,
+            sessionType: session.session_type,
+            zoomInfo: session.session_type === 'virtual' ? {
+              joinUrl: session.zoom_join_url,
+              meetingId: session.zoom_meeting_id,
+              password: session.zoom_password
+            } : null
           }),
+          attachments: [{
+            filename: 'session.ics',
+            content: Buffer.from(icsContent).toString('base64'),
+            type: 'text/calendar',
+            disposition: 'attachment'
+          }],
           reply_to: REPLY_TO,
         });
 
@@ -174,13 +207,26 @@ serve(async (req) => {
             sessionDate: formattedDate,
             startTime: formattedStartTime,
             endTime: formattedEndTime,
+            duration: formattedDuration,
             courseName: session.course_id,
             location: session.location,
             notes: session.notes,
             counterpartName: tutorName,
             counterpartRole: 'tutor',
-            emailType
+            emailType,
+            sessionType: session.session_type,
+            zoomInfo: session.session_type === 'virtual' ? {
+              joinUrl: session.zoom_join_url,
+              meetingId: session.zoom_meeting_id,
+              password: session.zoom_password
+            } : null
           }),
+          attachments: [{
+            filename: 'session.ics',
+            content: Buffer.from(icsContent).toString('base64'),
+            type: 'text/calendar',
+            disposition: 'attachment'
+          }],
           reply_to: REPLY_TO,
         });
 
@@ -220,29 +266,68 @@ serve(async (req) => {
   }
 });
 
+// ICS Content Generator
+function generateICSContent(event: { title: string, description: string, location: string, startDate: Date, endDate: Date }): string {
+  const formatDateForICal = (date: Date): string => {
+    return date.toISOString().replace(/-|:|\.\d+/g, '');
+  };
+  
+  const now = new Date();
+  const formattedNow = formatDateForICal(now);
+  const formattedStart = formatDateForICal(event.startDate);
+  const formattedEnd = formatDateForICal(event.endDate);
+  
+  // Escape special characters
+  const escapedTitle = event.title?.replace(/[\\;,]/g, (match) => '\\' + match) || "Tutoring Session";
+  const escapedDesc = event.description?.replace(/[\\;,]/g, (match) => '\\' + match) || "";
+  const escapedLocation = event.location?.replace(/[\\;,]/g, (match) => '\\' + match) || "";
+  
+  return `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//USC Study Buddy//EN
+CALSCALE:GREGORIAN
+BEGIN:VEVENT
+DTSTAMP:${formattedNow}
+DTSTART:${formattedStart}
+DTEND:${formattedEnd}
+SUMMARY:${escapedTitle}
+DESCRIPTION:${escapedDesc}
+LOCATION:${escapedLocation}
+STATUS:CONFIRMED
+SEQUENCE:0
+END:VEVENT
+END:VCALENDAR`;
+}
+
 // Helper function to generate email HTML
 function generateEmailHtml({
   recipientName,
   sessionDate,
   startTime,
   endTime,
+  duration,
   courseName,
   location,
   notes,
   counterpartName,
   counterpartRole,
-  emailType
+  emailType,
+  sessionType,
+  zoomInfo
 }: {
   recipientName: string,
   sessionDate: string,
   startTime: string,
   endTime: string,
+  duration: string,
   courseName?: string,
   location?: string,
   notes?: string,
   counterpartName: string,
   counterpartRole: 'tutor' | 'student',
-  emailType: 'confirmation' | 'cancellation' | 'reminder'
+  emailType: 'confirmation' | 'cancellation' | 'reminder',
+  sessionType?: string,
+  zoomInfo?: { joinUrl?: string, meetingId?: string, password?: string } | null
 }): string {
   let title, message, actionText;
   
@@ -285,12 +370,36 @@ function generateEmailHtml({
           <p><strong>${counterpartRole === 'tutor' ? 'Tutor' : 'Student'}:</strong> ${counterpartName}</p>
           <p><strong>Date:</strong> ${sessionDate}</p>
           <p><strong>Time:</strong> ${startTime} - ${endTime}</p>
+          <p><strong>Duration:</strong> ${duration}</p>
           ${courseName ? `<p><strong>Course:</strong> ${courseName}</p>` : ''}
-          ${location ? `<p><strong>Location:</strong> ${location}</p>` : ''}
+          ${sessionType === 'virtual' ? `<p><strong>Session Type:</strong> Virtual (Online)</p>` : ''}
+          ${location && sessionType !== 'virtual' ? `<p><strong>Location:</strong> ${location}</p>` : ''}
           ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ''}
         </div>
         
+        ${sessionType === 'virtual' && zoomInfo?.joinUrl ? `
+          <div style="background-color: #e8f4f8; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #1e90ff;">
+            <h3 style="margin: 0 0 10px 0; color: #1e90ff;">🎥 Zoom Meeting Details</h3>
+            <p><strong>Join Meeting:</strong> <a href="${zoomInfo.joinUrl}" style="color: #1e90ff; text-decoration: none;">${zoomInfo.joinUrl}</a></p>
+            ${zoomInfo.meetingId ? `<p><strong>Meeting ID:</strong> ${zoomInfo.meetingId}</p>` : ''}
+            ${zoomInfo.password ? `<p><strong>Passcode:</strong> ${zoomInfo.password}</p>` : ''}
+            <p style="font-size: 12px; color: #666; margin-top: 10px;">💡 <em>Click the link above to join the meeting, or copy and paste it into your browser.</em></p>
+          </div>
+        ` : ''}
+        
+        ${sessionType !== 'virtual' && location ? `
+          <div style="background-color: #f0f8e8; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #28a745;">
+            <h3 style="margin: 0 0 10px 0; color: #28a745;">📍 Meeting Location</h3>
+            <p><strong>Address:</strong> ${location}</p>
+            <p style="font-size: 12px; color: #666; margin-top: 10px;">💡 <em>Please arrive on time at the specified location.</em></p>
+          </div>
+        ` : ''}
+        
         <p>${actionText}</p>
+        
+        <div style="background-color: #fff3cd; padding: 12px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #ffc107;">
+          <p style="margin: 0; font-size: 14px;">📅 <strong>Calendar Reminder:</strong> This email includes a calendar file attachment. Click on the attachment to add this session to your calendar!</p>
+        </div>
         
         <p>Thank you for using USC Study Buddy!</p>
       </div>
