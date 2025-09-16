@@ -171,18 +171,30 @@ serve(async (req) => {
         return new Response('Database update failed', { status: 500 });
       }
 
-      // Update user's profile with customer ID if not already set
+      // Update user's profile with customer ID (overwrite guest customers)
       if (customerId && transaction.student_id) {
-        const { error: profileUpdateError } = await supabaseAdmin
+        // Always update if customer ID is different or if it's a guest customer
+        const { data: currentProfile } = await supabaseAdmin
           .from('profiles')
-          .update({ stripe_customer_id: customerId })
+          .select('stripe_customer_id')
           .eq('id', transaction.student_id)
-          .is('stripe_customer_id', null);
-          
-        if (profileUpdateError) {
-          console.warn('Could not update profile with customer ID:', profileUpdateError);
-        } else {
-          console.log('Profile updated with customer ID');
+          .single();
+        
+        const shouldUpdate = !currentProfile?.stripe_customer_id || 
+          currentProfile.stripe_customer_id.startsWith('gcus_') ||
+          currentProfile.stripe_customer_id !== customerId;
+        
+        if (shouldUpdate) {
+          const { error: profileUpdateError } = await supabaseAdmin
+            .from('profiles')
+            .update({ stripe_customer_id: customerId })
+            .eq('id', transaction.student_id);
+            
+          if (profileUpdateError) {
+            console.warn('Could not update profile with customer ID:', profileUpdateError);
+          } else {
+            console.log('Profile updated with customer ID:', customerId);
+          }
         }
       }
 

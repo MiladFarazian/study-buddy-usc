@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.23.0';
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno&bundle";
 
 const corsHeaders = {
@@ -41,7 +42,7 @@ serve(async (req) => {
     const mode = getStripeMode(); // 'test' | 'live'
     console.log(`Creating checkout session in ${mode} mode`);
     
-    const { sessionId, amount, tutorName, studentName, sessionDate, sessionTime } = await req.json();
+    const { sessionId, amount, tutorName, studentName, sessionDate, sessionTime, userId } = await req.json();
 
     // Get appropriate Stripe key using explicit mode selector
     const stripeKey = getStripeKey(mode);
@@ -53,8 +54,47 @@ serve(async (req) => {
       timeout: 30000,
     });
 
+    // Initialize Supabase client
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') || '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+    );
+
+    // Find existing customer ID to reuse
+    let existingCustomerId = null;
+    if (userId) {
+      console.log('Looking for existing customer for user:', userId);
+      
+      // Check profile first
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('stripe_customer_id')
+        .eq('id', userId)
+        .single();
+      
+      if (profile?.stripe_customer_id && !profile.stripe_customer_id.startsWith('gcus_')) {
+        existingCustomerId = profile.stripe_customer_id;
+        console.log('Found existing customer ID in profile:', existingCustomerId);
+      } else {
+        // Check payment transactions for existing customer
+        const { data: transactions } = await supabaseAdmin
+          .from('payment_transactions')
+          .select('stripe_customer_id')
+          .eq('student_id', userId)
+          .not('stripe_customer_id', 'is', null)
+          .not('stripe_customer_id', 'like', 'gcus_%')
+          .order('created_at', { ascending: false })
+          .limit(1);
+        
+        if (transactions && transactions.length > 0) {
+          existingCustomerId = transactions[0].stripe_customer_id;
+          console.log('Found existing customer ID in transactions:', existingCustomerId);
+        }
+      }
+    }
+
     // Create Stripe Checkout Session
-    const session = await stripe.checkout.sessions.create({
+    const sessionConfig: any = {
       payment_method_types: ['card'],
       line_items: [
         {
@@ -77,8 +117,53 @@ serve(async (req) => {
         sessionId: sessionId,
         tutorName: tutorName,
         studentName: studentName,
+        userId: userId || '',
       },
-    });
+    };
+
+    // Reuse existing customer if found
+    if (existingCustomerId) {
+      sessionConfig.customer = existingCustomerId;
+      console.log('Reusing existing customer:', existingCustomerId);
+    } else {
+      sessionConfig.customer_creation = 'always';
+      console.log('Will create new customer');
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig);
+
+    // Create invoice for this payment to ensure it shows in billing portal
+    try {
+      const customerId = session.customer || existingCustomerId;
+      if (customerId) {
+        console.log('Creating invoice for customer:', customerId);
+        
+        const invoice = await stripe.invoices.create({
+          customer: customerId,
+          description: `Tutoring Session with ${tutorName} - ${sessionDate} at ${sessionTime}`,
+          metadata: {
+            sessionId: sessionId,
+            checkout_session_id: session.id,
+            tutorName: tutorName,
+          },
+        });
+
+        // Add line item to invoice
+        await stripe.invoiceItems.create({
+          customer: customerId,
+          invoice: invoice.id,
+          amount: Math.round(amount),
+          currency: 'usd',
+          description: `Tutoring Session with ${tutorName}`,
+        });
+
+        // Finalize and pay the invoice automatically when payment succeeds
+        await stripe.invoices.finalizeInvoice(invoice.id);
+        console.log('Invoice created and finalized:', invoice.id);
+      }
+    } catch (invoiceError) {
+      console.warn('Failed to create invoice (payment will still work):', invoiceError.message);
+    }
 
     return new Response(
       JSON.stringify({ 

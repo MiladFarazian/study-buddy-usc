@@ -137,13 +137,29 @@ serve(async (req) => {
       if (customerId && customerEmail) {
         console.log('Saving customer ID to profile:', { customerId, customerEmail });
         
-        const { error: profileUpdateError } = await supabaseAdmin
-          .from('profiles')
-          .update({ stripe_customer_id: customerId })
-          .eq('id', (await supabaseAdmin.auth.admin.getUserByEmail(customerEmail)).data?.user?.id);
+        // Try to find user by email first
+        let userFound = false;
+        try {
+          const { data: users } = await supabaseAdmin.auth.admin.listUsers();
+          const matchingUser = users.users.find(u => u.email === customerEmail);
+          
+          if (matchingUser) {
+            const { error: profileUpdateError } = await supabaseAdmin
+              .from('profiles')
+              .update({ stripe_customer_id: customerId })
+              .eq('id', matchingUser.id);
+              
+            if (!profileUpdateError) {
+              console.log('Successfully updated profile with customer ID via email');
+              userFound = true;
+            }
+          }
+        } catch (emailLookupError) {
+          console.warn('Email lookup failed:', emailLookupError);
+        }
 
-        if (profileUpdateError) {
-          console.warn('Could not update profile with customer ID:', profileUpdateError);
+        if (!userFound) {
+          console.warn('Could not update profile with customer ID via email, trying student_id fallback');
           
           // Try alternative approach: update by matching the session's student_id
           const { data: sessionData } = await supabaseAdmin
@@ -164,8 +180,6 @@ serve(async (req) => {
               console.log('Successfully updated profile via student_id');
             }
           }
-        } else {
-          console.log('Successfully saved customer ID to profile');
         }
       }
 

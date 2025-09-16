@@ -45,7 +45,7 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { sessionId, amount, tutorId, description } = await req.json();
+    const { sessionId, amount, tutorId, description, userId } = await req.json();
     
     if (!sessionId || !amount || !tutorId) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
@@ -82,6 +82,9 @@ serve(async (req) => {
         sessionId,
         tutorId,
         studentId: user.id,
+        userId: user.id,
+        tutorName: description?.split(' with ')?.[1]?.split(' - ')?.[0] || 'Tutor',
+        studentName: 'Student',
       },
     });
 

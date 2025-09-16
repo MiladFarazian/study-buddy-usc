@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, CreditCard, ExternalLink } from 'lucide-react';
 import { Tutor } from '@/types/tutor';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 
 interface PaymentStepProps {
@@ -27,6 +28,7 @@ export function PaymentStep({
 }: PaymentStepProps) {
   const [processing, setProcessing] = useState(false);
   const [message, setMessage] = useState('');
+  const { user } = useAuth();
 
   // Listen for messages from payment window
   useEffect(() => {
@@ -70,6 +72,7 @@ export function PaymentStep({
           studentName: studentName || 'Student',
           sessionDate,
           sessionTime,
+          userId: user?.id,
         },
       });
 
