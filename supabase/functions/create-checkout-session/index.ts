@@ -131,38 +131,7 @@ serve(async (req) => {
 
     const session = await stripe.checkout.sessions.create(sessionConfig);
 
-    // Create invoice for this payment to ensure it shows in billing portal
-    try {
-      const customerId = session.customer || existingCustomerId;
-      if (customerId) {
-        console.log('Creating invoice for customer:', customerId);
-        
-        const invoice = await stripe.invoices.create({
-          customer: customerId,
-          description: `Tutoring Session with ${tutorName} - ${sessionDate} at ${sessionTime}`,
-          metadata: {
-            sessionId: sessionId,
-            checkout_session_id: session.id,
-            tutorName: tutorName,
-          },
-        });
-
-        // Add line item to invoice
-        await stripe.invoiceItems.create({
-          customer: customerId,
-          invoice: invoice.id,
-          amount: Math.round(amount),
-          currency: 'usd',
-          description: `Tutoring Session with ${tutorName}`,
-        });
-
-        // Finalize and pay the invoice automatically when payment succeeds
-        await stripe.invoices.finalizeInvoice(invoice.id);
-        console.log('Invoice created and finalized:', invoice.id);
-      }
-    } catch (invoiceError) {
-      console.warn('Failed to create invoice (payment will still work):', invoiceError.message);
-    }
+    // Note: Invoices removed - using simple payment flow instead
 
     return new Response(
       JSON.stringify({ 
