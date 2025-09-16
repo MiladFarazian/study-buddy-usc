@@ -10,6 +10,7 @@ import { createSessionBooking } from "@/lib/scheduling/booking-utils";
 import { useSessionBooking } from "@/contexts/SessionBookingContext";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { createZoomMeeting } from "@/lib/zoomAPI";
 
 interface BookingState {
   bookingStep: BookingStep; 
@@ -272,6 +273,47 @@ export function useBookSessionModal(
       }
 
       console.log("✅ Session created:", sessionData);
+
+      // Create Zoom meeting if session type is virtual
+      if (booking.sessionType === 'virtual') {
+        console.log("🔗 Creating Zoom meeting for virtual session...");
+        try {
+          const zoomResult = await createZoomMeeting({
+            tutor_id: booking.tutorId,
+            student_name: user.user_metadata?.full_name || user.email || 'Student',
+            course_name: state.selectedCourseId || 'Tutoring Session',
+            start_time: booking.startTime,
+            end_time: booking.endTime
+          });
+
+          if (zoomResult.error) {
+            console.error("⚠️ Zoom meeting creation failed:", zoomResult.error);
+            toast.error("Session created but Zoom meeting setup failed");
+          } else if (zoomResult.id && zoomResult.join_url) {
+            console.log("✅ Zoom meeting created:", zoomResult.id);
+            
+            // Update session with Zoom details
+            const { error: zoomUpdateError } = await supabase
+              .from('sessions')
+              .update({
+                zoom_meeting_id: zoomResult.id,
+                zoom_join_url: zoomResult.join_url,
+                zoom_start_url: zoomResult.start_url,
+                zoom_password: zoomResult.password
+              })
+              .eq('id', sessionData.id);
+              
+            if (zoomUpdateError) {
+              console.error("⚠️ Failed to save Zoom details:", zoomUpdateError);
+            } else {
+              console.log("✅ Zoom details saved to session");
+            }
+          }
+        } catch (zoomError) {
+          console.error("⚠️ Zoom creation error:", zoomError);
+          toast.error("Session created but Zoom meeting setup failed");
+        }
+      }
 
       // Send booking confirmation emails
       try {
