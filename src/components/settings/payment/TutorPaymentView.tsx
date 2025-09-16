@@ -125,7 +125,7 @@ export const TutorPaymentView: React.FC<TutorPaymentViewProps> = ({ user, profil
                   onClick={setupConnectAccount}
                   disabled={loading}
                   variant="outline"
-                  className="w-full"
+                  className="w-full mb-2"
                 >
                   {loading ? (
                     <>

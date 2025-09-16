@@ -13,6 +13,12 @@ interface TutorEarningsSummaryProps {
 }
 
 interface EarningsData {
+  recent_payments: Array<{
+    amount: number;
+    created_at: string;
+    status: string;
+    session_id: string | null;
+  }>;
   recent_transfers: Array<{
     amount: number;
     created_at: string;
@@ -31,7 +37,7 @@ export const TutorEarningsSummary: React.FC<TutorEarningsSummaryProps> = ({ user
   const { toast } = useToast();
 
   useEffect(() => {
-    if (user && accountStatus?.payouts_enabled) {
+    if (user) {
       fetchEarningsData();
     } else {
       setLoading(false);
@@ -42,16 +48,24 @@ export const TutorEarningsSummary: React.FC<TutorEarningsSummaryProps> = ({ user
     if (!user) return;
 
     try {
+      // Fetch payment transactions
+      const { data: payments, error: paymentError } = await supabase
+        .from('payment_transactions')
+        .select('amount, created_at, status, session_id')
+        .eq('tutor_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
       // Fetch recent transfers
       const { data: transfers, error: transferError } = await supabase
         .from('pending_transfers')
         .select('amount, created_at, status, session_id')
         .eq('tutor_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(10);
 
-      if (transferError) {
-        console.error('Error fetching transfers:', transferError);
+      if (paymentError || transferError) {
+        console.error('Error fetching data:', paymentError || transferError);
         toast({
           title: "Error",
           description: "Failed to load earnings data",
@@ -60,21 +74,23 @@ export const TutorEarningsSummary: React.FC<TutorEarningsSummaryProps> = ({ user
         return;
       }
 
-      // Calculate totals
+      // Calculate totals from payments
+      const completedPayments = payments?.filter(p => p.status === 'completed') || [];
       const completedTransfers = transfers?.filter(t => t.status === 'completed') || [];
       const pendingTransfers = transfers?.filter(t => t.status === 'pending') || [];
       
-      const totalEarned = completedTransfers.reduce((sum, t) => sum + (t.amount / 100), 0);
+      const totalEarned = completedPayments.reduce((sum, p) => sum + (p.amount / 100), 0);
       const pendingAmount = pendingTransfers.reduce((sum, t) => sum + (t.amount / 100), 0);
       
       // Calculate this month's earnings
       const thisMonth = new Date();
       thisMonth.setDate(1);
-      const thisMonthEarned = completedTransfers
-        .filter(t => new Date(t.created_at) >= thisMonth)
-        .reduce((sum, t) => sum + (t.amount / 100), 0);
+      const thisMonthEarned = completedPayments
+        .filter(p => new Date(p.created_at) >= thisMonth)
+        .reduce((sum, p) => sum + (p.amount / 100), 0);
 
       setEarningsData({
+        recent_payments: payments || [],
         recent_transfers: transfers || [],
         pending_amount: pendingAmount,
         total_earned: totalEarned,
@@ -143,20 +159,6 @@ export const TutorEarningsSummary: React.FC<TutorEarningsSummaryProps> = ({ user
     return new Date(dateString).toLocaleDateString();
   };
 
-  if (!accountStatus?.payouts_enabled) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Earnings Dashboard</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">
-            Complete your Stripe Connect account setup to view earnings and payout history.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <Card>
@@ -199,10 +201,30 @@ export const TutorEarningsSummary: React.FC<TutorEarningsSummaryProps> = ({ user
               </div>
             </div>
 
+            {/* Recent Payments */}
+            {earningsData.recent_payments.length > 0 && (
+              <div>
+                <h4 className="font-medium mb-2">Recent Payments</h4>
+                <div className="space-y-2">
+                  {earningsData.recent_payments.slice(0, 5).map((payment, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-muted/30 rounded">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={payment.status === 'completed' ? 'default' : 'secondary'}>
+                          {payment.status}
+                        </Badge>
+                        <span className="text-sm">{formatDate(payment.created_at)}</span>
+                      </div>
+                      <span className="font-medium">{formatAmount(payment.amount / 100)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Recent Transfers */}
             {earningsData.recent_transfers.length > 0 && (
               <div>
-                <h4 className="font-medium mb-2">Recent Transfers</h4>
+                <h4 className="font-medium mb-2">Recent Transfers to You</h4>
                 <div className="space-y-2">
                   {earningsData.recent_transfers.slice(0, 3).map((transfer, index) => (
                     <div key={index} className="flex items-center justify-between p-2 bg-muted/30 rounded">
@@ -219,35 +241,46 @@ export const TutorEarningsSummary: React.FC<TutorEarningsSummaryProps> = ({ user
               </div>
             )}
 
-            {/* Dashboard Access Button */}
-            <div className="pt-2 border-t">
-              <Button 
-                onClick={handleAccessDashboard}
-                disabled={dashboardLoading}
-                className="w-full"
-                variant="outline"
-              >
-                {dashboardLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Opening Dashboard...
-                  </>
-                ) : (
-                  <>
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    Access Full Stripe Dashboard
-                  </>
-                )}
-              </Button>
-              <p className="text-xs text-muted-foreground text-center mt-2">
-                View detailed earnings, update bank information, and manage payouts
-              </p>
-            </div>
-          </>
+        </>
         ) : (
           <p className="text-muted-foreground">
             No earnings data available yet. Complete your first tutoring session to see earnings here.
           </p>
+        )}
+
+        {/* Dashboard Access Button - Always show if user has account */}
+        {accountStatus?.has_account && (
+          <div className="pt-4 border-t">
+            <Button 
+              onClick={handleAccessDashboard}
+              disabled={dashboardLoading}
+              className="w-full"
+              variant="default"
+            >
+              {dashboardLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Opening Dashboard...
+                </>
+              ) : (
+                <>
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Open Stripe Dashboard
+                </>
+              )}
+            </Button>
+            <p className="text-xs text-muted-foreground text-center mt-2">
+              Manage earnings, payouts, tax documents, and account settings
+            </p>
+          </div>
+        )}
+
+        {!accountStatus?.has_account && (
+          <div className="pt-4 border-t">
+            <p className="text-muted-foreground text-center">
+              Set up your Stripe Connect account to start receiving payments
+            </p>
+          </div>
         )}
       </CardContent>
     </Card>
