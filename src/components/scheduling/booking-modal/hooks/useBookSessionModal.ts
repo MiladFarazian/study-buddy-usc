@@ -317,74 +317,19 @@ export function useBookSessionModal(
 
       // Send booking confirmation emails
       try {
-        console.log("📧 DEBUG: Starting email sending process...");
-        console.log("📧 DEBUG: Session Type:", booking.sessionType);
-        console.log("📧 DEBUG: Session Data:", sessionData);
-        
-        // Format display times
-        const formattedDate = format(selectedDate, 'EEEE, MMMM d, yyyy');
-        const startTime = new Date(booking.startTime);
-        const endTime = new Date(booking.endTime);
-        const formattedStartTime = format(startTime, 'h:mm a');
-        const formattedEndTime = format(endTime, 'h:mm a');
-        
-        console.log("📧 DEBUG: Switching to send-notification-email function");
-
-        // Send email to tutor
-        console.log("📧 DEBUG: Sending email to tutor:", booking.tutorId);
-        const { error: tutorEmailError } = await supabase.functions.invoke('send-notification-email', {
-          body: {
-            recipientUserId: booking.tutorId,
-            recipientName: tutor.name,
-            subject: "New Tutoring Session Booked",
-            notificationType: 'session_booked',
-            data: {
-              bookingInfo: {
-                studentName: user.user_metadata?.full_name || user.email || 'Student',
-                date: formattedDate,
-                startTime: formattedStartTime,
-                endTime: formattedEndTime,
-                courseName: state.selectedCourseId || 'General Tutoring',
-                location: booking.location || 'Location TBD',
-                sessionType: booking.sessionType,
-                zoomJoinUrl: sessionData.zoom_join_url,
-                zoomMeetingId: sessionData.zoom_meeting_id,
-                zoomPassword: sessionData.zoom_password
-              }
-            }
-          }
-        });
-
-        // Send confirmation email to student
-        console.log("📧 DEBUG: Sending confirmation email to student:", user.id);
-        const { error: studentEmailError } = await supabase.functions.invoke('send-notification-email', {
-          body: {
-            recipientUserId: user.id,
-            recipientName: user.user_metadata?.full_name || user.email || 'Student',
-            subject: "Tutoring Session Confirmed",
-            notificationType: 'session_booked',
-            data: {
-              bookingInfo: {
-                tutorName: tutor.name,
-                date: formattedDate,
-                startTime: formattedStartTime,
-                endTime: formattedEndTime,
-                courseName: state.selectedCourseId || 'General Tutoring',
-                location: booking.location || 'Location TBD',
-                sessionType: booking.sessionType,
-                zoomJoinUrl: sessionData.zoom_join_url,
-                zoomMeetingId: sessionData.zoom_meeting_id,
-                zoomPassword: sessionData.zoom_password
-              }
-            }
+        console.log("📧 Sending booking confirmation emails...");
+        const { error: emailError } = await supabase.functions.invoke('send-session-emails', {
+          body: { 
+            sessionId: sessionData.id,
+            emailType: 'confirmation'
           }
         });
         
-        if (tutorEmailError || studentEmailError) {
-          console.error("⚠️ Email sending failed:", { tutorEmailError, studentEmailError });
+        if (emailError) {
+          console.error("⚠️ Email sending failed:", emailError);
           // Don't fail the entire booking for email errors
         } else {
-          console.log("✅ Booking confirmation emails sent to both tutor and student");
+          console.log("✅ Booking confirmation emails sent");
         }
       } catch (emailError) {
         console.error("⚠️ Email sending error:", emailError);
