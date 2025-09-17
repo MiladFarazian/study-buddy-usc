@@ -111,6 +111,10 @@ serve(async (req) => {
       hour12: true
     });
 
+    // Define names before using them
+    const tutorName = `${session.tutor.first_name} ${session.tutor.last_name}`;
+    const studentName = `${session.student.first_name} ${session.student.last_name}`;
+
     // Generate ICS calendar content
     const icsContent = generateICSContent({
       title: `Tutoring Session - ${session.course_id || 'Subject TBD'}`,
@@ -122,8 +126,6 @@ serve(async (req) => {
 
     // Build the email information based on type
     let tutorSubject, studentSubject, tutorHtml, studentHtml;
-    const tutorName = `${session.tutor.first_name} ${session.tutor.last_name}`;
-    const studentName = `${session.student.first_name} ${session.student.last_name}`;
 
     if (emailType === 'confirmation') {
       tutorSubject = `New Tutoring Session Booked - ${formattedDate}`;
