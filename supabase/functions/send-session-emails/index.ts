@@ -127,6 +127,19 @@ serve(async (req) => {
       studentSubject = `Reminder: Upcoming Tutoring Session - ${formattedDate}`;
     }
 
+    // Generate ICS attachment
+    const icsTitle = `${courseName ? `${courseName} - ` : ''}Tutoring Session`;
+    const icsDescription = `Tutoring session between ${tutorName} and ${studentName}${notes ? ` - ${notes}` : ''}`;
+    const icsContent = generateICSAttachment(
+      icsTitle,
+      icsDescription,
+      startDate,
+      endDate,
+      session.location || 'USC Campus',
+      session.session_type === 'virtual',
+      session.zoom_join_url
+    );
+
     const results = [];
     
     // Send email to tutor if enabled
@@ -146,8 +159,20 @@ serve(async (req) => {
             notes: session.notes,
             counterpartName: studentName,
             counterpartRole: 'student',
-            emailType
+            emailType,
+            sessionType: session.session_type,
+            zoomJoinUrl: session.zoom_join_url,
+            zoomMeetingId: session.zoom_meeting_id,
+            zoomPassword: session.zoom_password
           }),
+          attachments: [
+            {
+              filename: 'tutoring-session.ics',
+              content: Buffer.from(icsContent).toString('base64'),
+              contentType: 'text/calendar',
+              encoding: 'base64'
+            }
+          ],
           reply_to: REPLY_TO,
         });
 
@@ -179,8 +204,20 @@ serve(async (req) => {
             notes: session.notes,
             counterpartName: tutorName,
             counterpartRole: 'tutor',
-            emailType
+            emailType,
+            sessionType: session.session_type,
+            zoomJoinUrl: session.zoom_join_url,
+            zoomMeetingId: session.zoom_meeting_id,
+            zoomPassword: session.zoom_password
           }),
+          attachments: [
+            {
+              filename: 'tutoring-session.ics',
+              content: Buffer.from(icsContent).toString('base64'),
+              contentType: 'text/calendar',
+              encoding: 'base64'
+            }
+          ],
           reply_to: REPLY_TO,
         });
 
@@ -220,6 +257,49 @@ serve(async (req) => {
   }
 });
 
+// Helper function to generate ICS attachment
+function generateICSAttachment(
+  title: string,
+  description: string,
+  startDate: Date,
+  endDate: Date,
+  location: string,
+  isVirtual: boolean,
+  zoomJoinUrl?: string
+): string {
+  const now = new Date();
+  const formatDateForICal = (date: Date): string => {
+    return date.toISOString().replace(/-|:|\.\d+/g, '');
+  };
+
+  const formattedNow = formatDateForICal(now);
+  const formattedStart = formatDateForICal(startDate);
+  const formattedEnd = formatDateForICal(endDate);
+  
+  // Use Zoom URL as location for virtual sessions, otherwise use provided location
+  const calendarLocation = isVirtual && zoomJoinUrl ? zoomJoinUrl : location;
+  
+  const escapedTitle = title?.replace(/[\\;,]/g, (match) => '\\' + match) || "Tutoring Session";
+  const escapedDesc = description?.replace(/[\\;,]/g, (match) => '\\' + match) || "Tutoring Session Details";
+  const escapedLocation = calendarLocation?.replace(/[\\;,]/g, (match) => '\\' + match) || "USC Campus";
+
+  return `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//USC Study Buddy//EN
+CALSCALE:GREGORIAN
+BEGIN:VEVENT
+DTSTAMP:${formattedNow}
+DTSTART:${formattedStart}
+DTEND:${formattedEnd}
+SUMMARY:${escapedTitle}
+DESCRIPTION:${escapedDesc}
+LOCATION:${escapedLocation}
+STATUS:CONFIRMED
+SEQUENCE:0
+END:VEVENT
+END:VCALENDAR`;
+}
+
 // Helper function to generate email HTML
 function generateEmailHtml({
   recipientName,
@@ -231,7 +311,11 @@ function generateEmailHtml({
   notes,
   counterpartName,
   counterpartRole,
-  emailType
+  emailType,
+  sessionType,
+  zoomJoinUrl,
+  zoomMeetingId,
+  zoomPassword
 }: {
   recipientName: string,
   sessionDate: string,
@@ -242,7 +326,11 @@ function generateEmailHtml({
   notes?: string,
   counterpartName: string,
   counterpartRole: 'tutor' | 'student',
-  emailType: 'confirmation' | 'cancellation' | 'reminder'
+  emailType: 'confirmation' | 'cancellation' | 'reminder',
+  sessionType?: string,
+  zoomJoinUrl?: string,
+  zoomMeetingId?: string,
+  zoomPassword?: string
 }): string {
   let title, message, actionText;
   
@@ -272,6 +360,18 @@ function generateEmailHtml({
       `Please ensure you're prepared and available for this session.`;
   }
 
+  const isVirtual = sessionType === 'virtual';
+  
+  // Generate Zoom section HTML for virtual sessions
+  const zoomSection = isVirtual && zoomJoinUrl ? `
+    <div style="background-color: #e3f2fd; border-left: 4px solid #2196f3; padding: 15px; margin: 15px 0; border-radius: 5px;">
+      <h3 style="margin: 0 0 10px 0; color: #1976d2; font-size: 16px;">📹 Virtual Session Details</h3>
+      <p style="margin: 5px 0;"><strong>Join URL:</strong> <a href="${zoomJoinUrl}" style="color: #2196f3;">${zoomJoinUrl}</a></p>
+      ${zoomMeetingId ? `<p style="margin: 5px 0;"><strong>Meeting ID:</strong> ${zoomMeetingId}</p>` : ''}
+      ${zoomPassword ? `<p style="margin: 5px 0;"><strong>Password:</strong> ${zoomPassword}</p>` : ''}
+    </div>
+  ` : '';
+
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
       <div style="background-color: #990000; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0;">
@@ -289,6 +389,8 @@ function generateEmailHtml({
           ${location ? `<p><strong>Location:</strong> ${location}</p>` : ''}
           ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ''}
         </div>
+        
+        ${zoomSection}
         
         <p>${actionText}</p>
         
