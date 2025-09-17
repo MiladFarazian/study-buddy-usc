@@ -146,7 +146,11 @@ serve(async (req) => {
             notes: session.notes,
             counterpartName: studentName,
             counterpartRole: 'student',
-            emailType
+            emailType,
+            sessionType: session.session_type,
+            zoomJoinUrl: session.zoom_join_url,
+            zoomMeetingId: session.zoom_meeting_id,
+            zoomPassword: session.zoom_password
           }),
           reply_to: REPLY_TO,
         });
@@ -179,7 +183,11 @@ serve(async (req) => {
             notes: session.notes,
             counterpartName: tutorName,
             counterpartRole: 'tutor',
-            emailType
+            emailType,
+            sessionType: session.session_type,
+            zoomJoinUrl: session.zoom_join_url,
+            zoomMeetingId: session.zoom_meeting_id,
+            zoomPassword: session.zoom_password
           }),
           reply_to: REPLY_TO,
         });
@@ -231,7 +239,11 @@ function generateEmailHtml({
   notes,
   counterpartName,
   counterpartRole,
-  emailType
+  emailType,
+  sessionType,
+  zoomJoinUrl,
+  zoomMeetingId,
+  zoomPassword
 }: {
   recipientName: string,
   sessionDate: string,
@@ -242,7 +254,11 @@ function generateEmailHtml({
   notes?: string,
   counterpartName: string,
   counterpartRole: 'tutor' | 'student',
-  emailType: 'confirmation' | 'cancellation' | 'reminder'
+  emailType: 'confirmation' | 'cancellation' | 'reminder',
+  sessionType?: string,
+  zoomJoinUrl?: string,
+  zoomMeetingId?: string,
+  zoomPassword?: string
 }): string {
   let title, message, actionText;
   
@@ -289,6 +305,17 @@ function generateEmailHtml({
           ${location ? `<p><strong>Location:</strong> ${location}</p>` : ''}
           ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ''}
         </div>
+        
+        ${sessionType === 'virtual' && zoomJoinUrl ? `
+        <div style="background-color: #dbeafe; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #3b82f6;">
+          <p style="margin: 0 0 10px 0; font-weight: bold; color: #1e40af;">🎥 Virtual Meeting Details</p>
+          <div style="margin: 10px 0;">
+            <a href="${zoomJoinUrl}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Join Zoom Meeting</a>
+          </div>
+          ${zoomMeetingId ? `<p style="margin: 5px 0;"><strong>Meeting ID:</strong> ${zoomMeetingId}</p>` : ''}
+          ${zoomPassword ? `<p style="margin: 5px 0;"><strong>Password:</strong> ${zoomPassword}</p>` : ''}
+        </div>
+        ` : ''}
         
         <p>${actionText}</p>
         
