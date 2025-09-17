@@ -128,8 +128,8 @@ serve(async (req) => {
     }
 
     // Generate ICS attachment
-    const icsTitle = `${courseName ? `${courseName} - ` : ''}Tutoring Session`;
-    const icsDescription = `Tutoring session between ${tutorName} and ${studentName}${notes ? ` - ${notes}` : ''}`;
+    const icsTitle = `${session.course_id ? `${session.course_id} - ` : ''}Tutoring Session`;
+    const icsDescription = `Tutoring session between ${tutorName} and ${studentName}${session.notes ? ` - ${session.notes}` : ''}`;
     const icsContent = generateICSAttachment(
       icsTitle,
       icsDescription,
