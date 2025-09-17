@@ -43,7 +43,7 @@ serve(async (req) => {
       throw new Error('Invalid email type. Must be confirmation, cancellation, or reminder');
     }
     
-    // Fetch the session with related data
+    // Fetch the session with related data including Zoom info
     const { data: session, error: sessionError } = await supabase
       .from('sessions')
       .select(`
@@ -111,6 +111,15 @@ serve(async (req) => {
       hour12: true
     });
 
+    // Generate ICS calendar content
+    const icsContent = generateICSContent({
+      title: `Tutoring Session - ${session.course_id || 'Subject TBD'}`,
+      description: `Tutoring session between ${tutorName} and ${studentName}${session.notes ? `\n\nNotes: ${session.notes}` : ''}`,
+      location: session.session_type === 'virtual' ? 'Virtual (Zoom)' : (session.location || 'USC Campus'),
+      startDate: startDate,
+      endDate: endDate
+    });
+
     // Build the email information based on type
     let tutorSubject, studentSubject, tutorHtml, studentHtml;
     const tutorName = `${session.tutor.first_name} ${session.tutor.last_name}`;
@@ -132,7 +141,7 @@ serve(async (req) => {
     // Send email to tutor if enabled
     if (sendToTutor) {
       try {
-        const tutorEmailResponse = await resend.emails.send({
+        const tutorEmailData: any = {
           from: FROM_ADDRESS,
           to: [tutorEmail],
           subject: tutorSubject,
@@ -146,10 +155,25 @@ serve(async (req) => {
             notes: session.notes,
             counterpartName: studentName,
             counterpartRole: 'student',
-            emailType
+            emailType,
+            sessionType: session.session_type,
+            zoomJoinUrl: session.zoom_join_url,
+            zoomMeetingId: session.zoom_meeting_id,
+            zoomPassword: session.zoom_password
           }),
           reply_to: REPLY_TO,
-        });
+        };
+
+        // Add ICS attachment
+        if (icsContent) {
+          tutorEmailData.attachments = [{
+            filename: 'tutoring-session.ics',
+            content: Buffer.from(icsContent).toString('base64'),
+            content_type: 'text/calendar; charset=utf-8'
+          }];
+        }
+
+        const tutorEmailResponse = await resend.emails.send(tutorEmailData);
 
         console.log("Tutor email sent successfully:", tutorEmailResponse);
         results.push({ recipient: 'tutor', id: tutorEmailResponse.id });
@@ -165,7 +189,7 @@ serve(async (req) => {
     // Send email to student if enabled
     if (sendToStudent) {
       try {
-        const studentEmailResponse = await resend.emails.send({
+        const studentEmailData: any = {
           from: FROM_ADDRESS,
           to: [studentEmail],
           subject: studentSubject,
@@ -179,10 +203,25 @@ serve(async (req) => {
             notes: session.notes,
             counterpartName: tutorName,
             counterpartRole: 'tutor',
-            emailType
+            emailType,
+            sessionType: session.session_type,
+            zoomJoinUrl: session.zoom_join_url,
+            zoomMeetingId: session.zoom_meeting_id,
+            zoomPassword: session.zoom_password
           }),
           reply_to: REPLY_TO,
-        });
+        };
+
+        // Add ICS attachment
+        if (icsContent) {
+          studentEmailData.attachments = [{
+            filename: 'tutoring-session.ics',
+            content: Buffer.from(icsContent).toString('base64'),
+            content_type: 'text/calendar; charset=utf-8'
+          }];
+        }
+
+        const studentEmailResponse = await resend.emails.send(studentEmailData);
 
         console.log("Student email sent successfully:", studentEmailResponse);
         results.push({ recipient: 'student', id: studentEmailResponse.id });
@@ -220,6 +259,50 @@ serve(async (req) => {
   }
 });
 
+// Generate ICS content helper function
+function generateICSContent(event: {
+  title: string;
+  description: string;
+  location: string;
+  startDate: Date;
+  endDate: Date;
+}): string {
+  try {
+    const now = new Date();
+    const formatDateForICal = (date: Date): string => {
+      return date.toISOString().replace(/-|:|\.\d+/g, '');
+    };
+    
+    const formattedNow = formatDateForICal(now);
+    const formattedStart = formatDateForICal(event.startDate);
+    const formattedEnd = formatDateForICal(event.endDate);
+    
+    // Escape special characters
+    const escapedTitle = event.title?.replace(/[\\;,]/g, (match) => '\\' + match) || "Tutoring Session";
+    const escapedDesc = event.description?.replace(/[\\;,]/g, (match) => '\\' + match) || "Tutoring Session Details";
+    const escapedLocation = event.location?.replace(/[\\;,]/g, (match) => '\\' + match) || "USC Campus";
+    
+    return `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//USC Tutoring//EN
+CALSCALE:GREGORIAN
+BEGIN:VEVENT
+DTSTAMP:${formattedNow}
+DTSTART:${formattedStart}
+DTEND:${formattedEnd}
+SUMMARY:${escapedTitle}
+DESCRIPTION:${escapedDesc}
+LOCATION:${escapedLocation}
+STATUS:CONFIRMED
+SEQUENCE:0
+END:VEVENT
+END:VCALENDAR`;
+  } catch (error) {
+    console.error("Error generating ICS content:", error);
+    return "";
+  }
+}
+
 // Helper function to generate email HTML
 function generateEmailHtml({
   recipientName,
@@ -231,7 +314,11 @@ function generateEmailHtml({
   notes,
   counterpartName,
   counterpartRole,
-  emailType
+  emailType,
+  sessionType,
+  zoomJoinUrl,
+  zoomMeetingId,
+  zoomPassword
 }: {
   recipientName: string,
   sessionDate: string,
@@ -242,7 +329,11 @@ function generateEmailHtml({
   notes?: string,
   counterpartName: string,
   counterpartRole: 'tutor' | 'student',
-  emailType: 'confirmation' | 'cancellation' | 'reminder'
+  emailType: 'confirmation' | 'cancellation' | 'reminder',
+  sessionType?: string,
+  zoomJoinUrl?: string,
+  zoomMeetingId?: string,
+  zoomPassword?: string
 }): string {
   let title, message, actionText;
   
@@ -286,8 +377,32 @@ function generateEmailHtml({
           <p><strong>Date:</strong> ${sessionDate}</p>
           <p><strong>Time:</strong> ${startTime} - ${endTime}</p>
           ${courseName ? `<p><strong>Course:</strong> ${courseName}</p>` : ''}
-          ${location ? `<p><strong>Location:</strong> ${location}</p>` : ''}
+          ${location && sessionType !== 'virtual' ? `<p><strong>Location:</strong> ${location}</p>` : ''}
           ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ''}
+        </div>
+        
+        ${sessionType === 'virtual' && zoomJoinUrl ? `
+        <div style="background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #2196f3;">
+          <h3 style="margin: 0 0 10px 0; color: #1976d2;">🎥 Virtual Session - Zoom Details</h3>
+          <p style="margin: 5px 0;"><strong>Join URL:</strong></p>
+          <a href="${zoomJoinUrl}" style="display: inline-block; background-color: #2196f3; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 5px 0;"
+             target="_blank" rel="noopener noreferrer">Join Zoom Meeting</a>
+          ${zoomMeetingId ? `<p style="margin: 5px 0;"><strong>Meeting ID:</strong> ${zoomMeetingId}</p>` : ''}
+          ${zoomPassword ? `<p style="margin: 5px 0;"><strong>Meeting Password:</strong> ${zoomPassword}</p>` : ''}
+          <p style="margin: 10px 0 0 0; font-size: 12px; color: #666;">
+            💡 <em>We recommend joining the meeting 5 minutes early to test your audio and video.</em>
+          </p>
+        </div>
+        ` : ''}
+        
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 15px 0; text-align: center;">
+          <h3 style="margin: 0 0 10px 0; color: #333;">📅 Add to Your Calendar</h3>
+          <p style="margin: 0 0 10px 0; font-size: 14px; color: #666;">
+            A calendar file (.ics) is attached to this email. Download and open it to add this session to your calendar.
+          </p>
+          <p style="margin: 0; font-size: 12px; color: #999;">
+            The attachment works with Google Calendar, Outlook, Apple Calendar, and most other calendar apps.
+          </p>
         </div>
         
         <p>${actionText}</p>
