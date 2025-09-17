@@ -228,6 +228,81 @@ serve(async (req) => {
   }
 });
 
+// Helper function to format date for Google Calendar (YYYYMMDDTHHMMSSZ)
+function formatDateForGoogle(dateStr: string, timeStr: string): string {
+  const date = new Date(`${dateStr} ${timeStr}`);
+  return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+}
+
+// Helper function to generate Google Calendar URL
+function generateGoogleCalendarUrl({
+  title,
+  startTime,
+  endTime,
+  description,
+  location
+}: {
+  title: string;
+  startTime: string;
+  endTime: string;
+  description: string;
+  location: string;
+}): string {
+  const [startDate, startTimeOnly] = startTime.split(' ');
+  const [endDate, endTimeOnly] = endTime.split(' ');
+  
+  const googleStartTime = formatDateForGoogle(startDate, startTimeOnly);
+  const googleEndTime = formatDateForGoogle(endDate, endTimeOnly);
+  
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: title,
+    dates: `${googleStartTime}/${googleEndTime}`,
+    details: description,
+    location: location
+  });
+  
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+// Helper function to generate Apple Calendar URL (.ics data URL)
+function generateAppleCalendarUrl({
+  title,
+  startTime,
+  endTime,
+  description,
+  location
+}: {
+  title: string;
+  startTime: string;
+  endTime: string;
+  description: string;
+  location: string;
+}): string {
+  const [startDate, startTimeOnly] = startTime.split(' ');
+  const [endDate, endTimeOnly] = endTime.split(' ');
+  
+  const icsStartTime = formatDateForGoogle(startDate, startTimeOnly);
+  const icsEndTime = formatDateForGoogle(endDate, endTimeOnly);
+  
+  const icsContent = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//USC Study Buddy//EN',
+    'BEGIN:VEVENT',
+    `DTSTART:${icsStartTime}`,
+    `DTEND:${icsEndTime}`,
+    `SUMMARY:${title}`,
+    `DESCRIPTION:${description.replace(/\n/g, '\\n')}`,
+    `LOCATION:${location}`,
+    `UID:${Date.now()}@studybuddyusc.com`,
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].join('\r\n');
+  
+  return `data:text/calendar;charset=utf8,${encodeURIComponent(icsContent)}`;
+}
+
 // Helper function to generate email HTML
 function generateEmailHtml({
   recipientName,
@@ -316,6 +391,26 @@ function generateEmailHtml({
           ${zoomPassword ? `<p style="margin: 5px 0;"><strong>Password:</strong> ${zoomPassword}</p>` : ''}
         </div>
         ` : ''}
+        
+        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 5px; margin: 15px 0;">
+          <p style="margin: 0 0 10px 0; font-weight: bold; color: #374151;">📅 Add to Calendar</p>
+          <div style="margin: 10px 0;">
+            <a href="${generateGoogleCalendarUrl({
+              title: `Tutoring Session${courseName ? `: ${courseName}` : ''}`,
+              startTime: sessionDate + ' ' + startTime,
+              endTime: sessionDate + ' ' + endTime,
+              description: `Tutoring session with ${counterpartName}${notes ? ` - ${notes}` : ''}${sessionType === 'virtual' && zoomJoinUrl ? `\\n\\nZoom Meeting: ${zoomJoinUrl}` : ''}`,
+              location: sessionType === 'virtual' && zoomJoinUrl ? zoomJoinUrl : (location || '')
+            })}" style="display: inline-block; background-color: #10b981; color: white; padding: 8px 16px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-right: 10px;">Add to Google Calendar</a>
+            <a href="${generateAppleCalendarUrl({
+              title: `Tutoring Session${courseName ? `: ${courseName}` : ''}`,
+              startTime: sessionDate + ' ' + startTime,
+              endTime: sessionDate + ' ' + endTime,
+              description: `Tutoring session with ${counterpartName}${notes ? ` - ${notes}` : ''}${sessionType === 'virtual' && zoomJoinUrl ? `\\n\\nZoom Meeting: ${zoomJoinUrl}` : ''}`,
+              location: sessionType === 'virtual' && zoomJoinUrl ? zoomJoinUrl : (location || '')
+            })}" style="display: inline-block; background-color: #6366f1; color: white; padding: 8px 16px; text-decoration: none; border-radius: 5px; font-weight: bold;">Add to Apple Calendar</a>
+          </div>
+        </div>
         
         <p>${actionText}</p>
         
