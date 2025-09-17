@@ -150,9 +150,7 @@ serve(async (req) => {
             sessionType: session.session_type,
             zoomJoinUrl: session.zoom_join_url,
             zoomMeetingId: session.zoom_meeting_id,
-            zoomPassword: session.zoom_password,
-            sessionStartTime: startDate,
-            sessionEndTime: endDate
+            zoomPassword: session.zoom_password
           }),
           reply_to: REPLY_TO,
         });
@@ -189,9 +187,7 @@ serve(async (req) => {
             sessionType: session.session_type,
             zoomJoinUrl: session.zoom_join_url,
             zoomMeetingId: session.zoom_meeting_id,
-            zoomPassword: session.zoom_password,
-            sessionStartTime: startDate,
-            sessionEndTime: endDate
+            zoomPassword: session.zoom_password
           }),
           reply_to: REPLY_TO,
         });
@@ -232,92 +228,6 @@ serve(async (req) => {
   }
 });
 
-// Helper functions for calendar integration
-const formatDateForGoogleCalendar = (date: Date): string => {
-  try {
-    if (!(date instanceof Date) || isNaN(date.getTime())) {
-      return new Date().toISOString().replace(/-|:|\.\d+/g, '');
-    }
-    return date.toISOString().replace(/-|:|\.\d+/g, '');
-  } catch (error) {
-    return new Date().toISOString().replace(/-|:|\.\d+/g, '');
-  }
-};
-
-const generateGoogleCalendarUrl = (
-  tutorName: string,
-  startDate: Date,
-  endDate: Date,
-  courseName?: string,
-  location?: string,
-  zoomJoinUrl?: string
-): string => {
-  try {
-    const startIso = formatDateForGoogleCalendar(startDate);
-    const endIso = formatDateForGoogleCalendar(endDate);
-    
-    const title = encodeURIComponent(`Tutoring Session with ${tutorName}`);
-    
-    let descriptionText = `Tutoring session with ${tutorName}\n`;
-    if (courseName) descriptionText += `Course: ${courseName}\n`;
-    if (zoomJoinUrl) descriptionText += `Zoom Link: ${zoomJoinUrl}\n`;
-    
-    const description = encodeURIComponent(descriptionText);
-    const locationParam = encodeURIComponent(location || (zoomJoinUrl ? 'Virtual Meeting' : 'USC Campus'));
-    
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startIso}/${endIso}&details=${description}&location=${locationParam}`;
-  } catch (error) {
-    return "https://calendar.google.com/calendar/";
-  }
-};
-
-const generateAppleCalendarData = (
-  tutorName: string,
-  startDate: Date,
-  endDate: Date,
-  courseName?: string,
-  location?: string,
-  zoomJoinUrl?: string
-): string => {
-  try {
-    const formatDateForICal = (date: Date): string => {
-      return date.toISOString().replace(/-|:|\.\d+/g, '');
-    };
-    
-    const now = new Date();
-    const formattedNow = formatDateForICal(now);
-    const formattedStart = formatDateForICal(startDate);
-    const formattedEnd = formatDateForICal(endDate);
-    
-    const title = `Tutoring Session with ${tutorName}`;
-    let description = `Tutoring session with ${tutorName}`;
-    if (courseName) description += `\\nCourse: ${courseName}`;
-    if (zoomJoinUrl) description += `\\nZoom Link: ${zoomJoinUrl}`;
-    
-    const locationText = location || (zoomJoinUrl ? 'Virtual Meeting' : 'USC Campus');
-    
-    const icsContent = `BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//USC Tutoring//EN
-CALSCALE:GREGORIAN
-BEGIN:VEVENT
-DTSTAMP:${formattedNow}
-DTSTART:${formattedStart}
-DTEND:${formattedEnd}
-SUMMARY:${title}
-DESCRIPTION:${description}
-LOCATION:${locationText}
-STATUS:CONFIRMED
-SEQUENCE:0
-END:VEVENT
-END:VCALENDAR`;
-
-    return `data:text/calendar;charset=utf8,${encodeURIComponent(icsContent)}`;
-  } catch (error) {
-    return '#';
-  }
-};
-
 // Helper function to generate email HTML
 function generateEmailHtml({
   recipientName,
@@ -348,9 +258,7 @@ function generateEmailHtml({
   sessionType?: string,
   zoomJoinUrl?: string,
   zoomMeetingId?: string,
-  zoomPassword?: string,
-  sessionStartTime?: Date,
-  sessionEndTime?: Date
+  zoomPassword?: string
 }): string {
   let title, message, actionText;
   
@@ -406,23 +314,6 @@ function generateEmailHtml({
           </div>
           ${zoomMeetingId ? `<p style="margin: 5px 0;"><strong>Meeting ID:</strong> ${zoomMeetingId}</p>` : ''}
           ${zoomPassword ? `<p style="margin: 5px 0;"><strong>Password:</strong> ${zoomPassword}</p>` : ''}
-        </div>
-        ` : ''}
-        
-        ${sessionStartTime && sessionEndTime && emailType !== 'cancellation' ? `
-        <div style="background-color: #f0f9ff; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #0ea5e9;">
-          <p style="margin: 0 0 10px 0; font-weight: bold; color: #0c4a6e;">📅 Add to Calendar</p>
-          <div style="display: flex; gap: 10px; margin: 10px 0;">
-            <a href="${generateGoogleCalendarUrl(counterpartName, sessionStartTime, sessionEndTime, courseName, location, zoomJoinUrl)}" 
-               style="display: inline-block; background-color: #4285f4; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 14px;">
-              Add to Google Calendar
-            </a>
-            <a href="${generateAppleCalendarData(counterpartName, sessionStartTime, sessionEndTime, courseName, location, zoomJoinUrl)}" 
-               download="tutoring-session.ics"
-               style="display: inline-block; background-color: #007aff; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 14px;">
-              Add to Apple Calendar
-            </a>
-          </div>
         </div>
         ` : ''}
         
