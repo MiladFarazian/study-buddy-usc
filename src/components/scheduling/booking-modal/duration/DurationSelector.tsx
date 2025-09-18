@@ -84,28 +84,9 @@ export function DurationSelector({
   
   // Get available start times within the selected and consecutive slots
   const getAvailableStartTimes = () => {
-    // Helper function to convert time string to minutes
-    const timeToMinutes = (time: string) => {
-      const [hours, minutes] = time.split(':').map(Number);
-      return hours * 60 + minutes;
-    };
-
-    // Filter function to check if startTime + duration fits within slot
-    const slotFitsSession = (slot: BookingSlot) => {
-      const startMinutes = timeToMinutes(slot.start);
-      const endMinutes = timeToMinutes(slot.end);
-      return startMinutes + selectedDuration <= endMinutes;
-    };
-
-    if (consecutiveSlots.length === 0) {
-      // Check if the selected slot can fit the session duration
-      return slotFitsSession(selectedSlot) ? [selectedSlot.start] : [];
-    }
+    if (consecutiveSlots.length === 0) return [selectedSlot.start];
     
-    // Filter consecutive slots to only include those where the session would fit
-    return consecutiveSlots
-      .filter(slotFitsSession)
-      .map(slot => slot.start);
+    return consecutiveSlots.map(slot => slot.start);
   };
   
   // Find selected course by ID
