@@ -23,6 +23,14 @@ export const CoursesSettings = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
 
+  // Get the appropriate courses array based on role
+  const getUserCourses = () => {
+    if (!profile) return [];
+    return profile.role === 'tutor' 
+      ? profile.tutor_courses_subjects || []
+      : profile.student_courses || [];
+  };
+
   const handleRemoveCourse = async (courseNumber: string) => {
     if (!user) return;
     
@@ -30,13 +38,18 @@ export const CoursesSettings = () => {
       setRemovingCourse(courseNumber);
       await removeCourseFromProfile(user.id, courseNumber);
       
-      // Update local state
+      // Update local state based on role
       if (profile && updateProfile) {
-        const updatedSubjects = profile.subjects?.filter(
+        const currentCourses = getUserCourses();
+        const updatedCourses = currentCourses.filter(
           (subject) => subject !== courseNumber
-        ) || [];
+        );
         
-        updateProfile({ subjects: updatedSubjects });
+        const updateData = profile.role === 'tutor' 
+          ? { tutor_courses_subjects: updatedCourses }
+          : { student_courses: updatedCourses };
+        
+        updateProfile(updateData);
       }
       
       toast({
@@ -67,23 +80,25 @@ export const CoursesSettings = () => {
     <Card>
       <CardHeader>
         <CardTitle>My Courses</CardTitle>
-        {profile?.role === 'tutor' && (
-          <CardDescription>
-            The courses you add here will appear to students when they book a tutoring session with you.
-            Add courses that you're qualified to tutor.
-          </CardDescription>
-        )}
+        <CardDescription>
+          {profile?.role === 'tutor' 
+            ? "The courses you add here will appear to students when they book a tutoring session with you. Add courses that you're qualified to tutor."
+            : "Add courses that you need help with to find matching tutors and get personalized recommendations."
+          }
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        {profile?.subjects && profile.subjects.length > 0 ? (
+        {getUserCourses().length > 0 ? (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground mb-4">
-              These are the courses you've added to your profile. 
-              {profile.role === 'tutor' && " As a tutor, these courses will be displayed to students during the booking process."}
+              {profile?.role === 'tutor' 
+                ? "These are the courses you can tutor. They will be displayed to students during the booking process."
+                : "These are the courses you need help with. You'll see tutors who can help with these courses."
+              }
             </p>
             
             <div className="flex flex-wrap gap-2">
-              {profile.subjects.map((course) => (
+              {getUserCourses().map((course) => (
                 <div key={course} className="relative inline-flex">
                   <Badge variant="secondary" className="pr-8 py-2">
                     {course}
@@ -109,12 +124,10 @@ export const CoursesSettings = () => {
         ) : (
           <div className="text-center py-6">
             <p className="text-sm text-muted-foreground mb-3">
-              You haven't added any courses yet. 
-              {profile?.role === 'tutor' ? (
-                " Add the courses you can tutor to make them available during booking."
-              ) : (
-                " Browse the courses page to add courses to your profile."
-              )}
+              {profile?.role === 'tutor' 
+                ? "You haven't added any courses you can tutor yet. Add courses to make them available during booking."
+                : "You haven't added any courses you need help with yet. Add courses to find matching tutors."
+              }
             </p>
             <Button variant="outline" onClick={() => window.location.href = '/courses'}>
               Browse Courses

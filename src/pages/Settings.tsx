@@ -69,20 +69,6 @@ const Settings = () => {
             My Courses
           </NavLink>
 
-          {isTutor && (
-            <NavLink 
-              to="/settings/student-courses" 
-              className={({ isActive }) => 
-                `px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  isActive 
-                    ? "bg-background text-foreground shadow-sm" 
-                    : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-                }`
-              }
-            >
-              Courses I Need Help With
-            </NavLink>
-          )}
 
           {isTutor && (
             <NavLink 

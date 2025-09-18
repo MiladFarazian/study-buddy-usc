@@ -53,8 +53,8 @@ export const CourseSelectionDialog = ({
           description: `${courseNumber} has been added to your courses to tutor.`,
         });
       } else {
-        // Add as a course the tutor needs help with
-        await addTutorStudentCourse(user.id, courseNumber);
+        // Add as a course the user needs help with (using the role-based course-utils function)
+        await addCourseToProfile(user.id, courseNumber);
         toast({
           title: "Course added for help",
           description: `${courseNumber} has been added to courses you need help with.`,

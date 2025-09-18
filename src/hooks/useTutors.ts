@@ -18,8 +18,8 @@ export function useTutors() {
   const getStudentCourses = async (): Promise<string[]> => {
     if (!profile) return [];
     
-    if (profile.role === 'student' && profile.subjects && Array.isArray(profile.subjects)) {
-      return profile.subjects;
+    if (profile.role === 'student' && profile.student_courses && Array.isArray(profile.student_courses)) {
+      return profile.student_courses;
     }
     
     // If user is a tutor, fetch courses they need help with
@@ -97,9 +97,9 @@ export function useTutors() {
 
         // Process tutor profiles to create tutor objects
         const processedTutors = tutorProfiles.map(profile => {
-          // Get subjects from profile if available
-          const subjects: Subject[] = profile.subjects && Array.isArray(profile.subjects) && profile.subjects.length > 0 
-            ? profile.subjects.map((courseCode: string) => ({
+          // Get subjects from tutor_courses_subjects field for tutors
+          const subjects: Subject[] = profile.tutor_courses_subjects && Array.isArray(profile.tutor_courses_subjects) && profile.tutor_courses_subjects.length > 0 
+            ? profile.tutor_courses_subjects.map((courseCode: string) => ({
                 code: courseCode,
                 name: courseCode
               }))

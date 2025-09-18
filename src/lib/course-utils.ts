@@ -4,13 +4,13 @@ import { Course } from "@/types/CourseTypes";
 import { fetchCourseDetails } from "@/lib/scheduling/course-utils";
 
 /**
- * Add a course to a user's profile
+ * Add a course to a user's profile based on their role
  */
 export async function addCourseToProfile(userId: string, courseNumber: string) {
-  // First get current subjects array
+  // First get current profile data
   const { data: profile, error: fetchError } = await supabase
     .from("profiles")
-    .select("subjects")
+    .select("role, tutor_courses_subjects, student_courses")
     .eq("id", userId)
     .single();
 
@@ -18,34 +18,18 @@ export async function addCourseToProfile(userId: string, courseNumber: string) {
     throw fetchError;
   }
 
-  // Add the new course to the subjects array
-  const updatedSubjects = [...(profile?.subjects || [])];
-  if (!updatedSubjects.includes(courseNumber)) {
-    updatedSubjects.push(courseNumber);
-  }
+  let updateData: any = {};
 
-  // Update the profile with the new subjects array
-  const { error: profileError } = await supabase
-    .from("profiles")
-    .update({ subjects: updatedSubjects })
-    .eq("id", userId);
+  if (profile?.role === "tutor") {
+    // For tutors, add to tutor_courses_subjects array
+    const updatedSubjects = [...(profile?.tutor_courses_subjects || [])];
+    if (!updatedSubjects.includes(courseNumber)) {
+      updatedSubjects.push(courseNumber);
+    }
+    updateData.tutor_courses_subjects = updatedSubjects;
 
-  if (profileError) {
-    throw profileError;
-  }
-
-  // If user is a tutor, also add to tutor_courses table
-  const { data: profileData } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", userId)
-    .single();
-
-  if (profileData?.role === "tutor") {
-    // Get course details
+    // Also add to tutor_courses table
     const courseDetails = await fetchCourseDetails(courseNumber);
-
-    // Add to tutor_courses table
     const { error: tutorCourseError } = await supabase
       .from("tutor_courses")
       .upsert({
@@ -59,19 +43,36 @@ export async function addCourseToProfile(userId: string, courseNumber: string) {
       console.error("Failed to add to tutor_courses:", tutorCourseError);
       // Continue anyway as the main profile update worked
     }
+  } else {
+    // For students, add to student_courses array
+    const updatedSubjects = [...(profile?.student_courses || [])];
+    if (!updatedSubjects.includes(courseNumber)) {
+      updatedSubjects.push(courseNumber);
+    }
+    updateData.student_courses = updatedSubjects;
+  }
+
+  // Update the profile with the role-specific array
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .update(updateData)
+    .eq("id", userId);
+
+  if (profileError) {
+    throw profileError;
   }
 
   return { success: true };
 }
 
 /**
- * Remove a course from a user's profile
+ * Remove a course from a user's profile based on their role
  */
 export async function removeCourseFromProfile(userId: string, courseNumber: string) {
-  // First get current subjects array
+  // First get current profile data
   const { data: profile, error: fetchError } = await supabase
     .from("profiles")
-    .select("subjects")
+    .select("role, tutor_courses_subjects, student_courses")
     .eq("id", userId)
     .single();
 
@@ -79,29 +80,16 @@ export async function removeCourseFromProfile(userId: string, courseNumber: stri
     throw fetchError;
   }
 
-  // Filter out the course to remove
-  const updatedSubjects = (profile?.subjects || []).filter(
-    (subject) => subject !== courseNumber
-  );
+  let updateData: any = {};
 
-  // Update the profile
-  const { error: updateError } = await supabase
-    .from("profiles")
-    .update({ subjects: updatedSubjects })
-    .eq("id", userId);
+  if (profile?.role === "tutor") {
+    // For tutors, remove from tutor_courses_subjects array
+    const updatedSubjects = (profile?.tutor_courses_subjects || []).filter(
+      (subject) => subject !== courseNumber
+    );
+    updateData.tutor_courses_subjects = updatedSubjects;
 
-  if (updateError) {
-    throw updateError;
-  }
-
-  // If user is a tutor, also remove from tutor_courses table
-  const { data: profileData } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", userId)
-    .single();
-
-  if (profileData?.role === "tutor") {
+    // Also remove from tutor_courses table
     const { error: tutorCourseError } = await supabase
       .from("tutor_courses")
       .delete()
@@ -112,6 +100,22 @@ export async function removeCourseFromProfile(userId: string, courseNumber: stri
       console.error("Failed to remove from tutor_courses:", tutorCourseError);
       // Continue anyway as the main profile update worked
     }
+  } else {
+    // For students, remove from student_courses array
+    const updatedSubjects = (profile?.student_courses || []).filter(
+      (subject) => subject !== courseNumber
+    );
+    updateData.student_courses = updatedSubjects;
+  }
+
+  // Update the profile with the role-specific array
+  const { error: updateError } = await supabase
+    .from("profiles")
+    .update(updateData)
+    .eq("id", userId);
+
+  if (updateError) {
+    throw updateError;
   }
 
   return { success: true };
