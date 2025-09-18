@@ -82,11 +82,33 @@ export function DurationSelector({
     }
   };
   
+  // Helper function to validate if start time + duration fits within availability
+  const isValidStartTime = (startTime: string, durationMinutes: number, availabilityEnd: string) => {
+    const startMinutes = parseInt(startTime.split(':')[0]) * 60 + parseInt(startTime.split(':')[1]);
+    const sessionEndMinutes = startMinutes + durationMinutes + 30; // Add 30-minute buffer
+    const availabilityEndMinutes = parseInt(availabilityEnd.split(':')[0]) * 60 + parseInt(availabilityEnd.split(':')[1]);
+    
+    return sessionEndMinutes <= availabilityEndMinutes;
+  };
+
   // Get available start times within the selected and consecutive slots
   const getAvailableStartTimes = () => {
-    if (consecutiveSlots.length === 0) return [selectedSlot.start];
+    if (consecutiveSlots.length === 0) {
+      // For single slot, check if duration + buffer fits within availability
+      if (selectedSlot.availabilityEnd && selectedDuration) {
+        if (isValidStartTime(selectedSlot.start, selectedDuration, selectedSlot.availabilityEnd)) {
+          return [selectedSlot.start];
+        }
+        return [];
+      }
+      return [selectedSlot.start];
+    }
     
-    return consecutiveSlots.map(slot => slot.start);
+    // For consecutive slots, filter based on duration and availability end time
+    return consecutiveSlots.filter(slot => {
+      if (!slot.availabilityEnd || !selectedDuration) return true;
+      return isValidStartTime(slot.start, selectedDuration, slot.availabilityEnd);
+    }).map(slot => slot.start);
   };
   
   // Find selected course by ID
