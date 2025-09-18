@@ -38,8 +38,8 @@ export function useSessionCost(selectedSlot: BookingSlot | null, tutor: Tutor | 
       // Use tutor's hourly rate or default to $25/hour
       const hourlyRate = tutor.hourlyRate || 25;
       
-      // Calculate cost (round to 2 decimal places)
-      const cost = Math.round(hourlyRate * durationHours * 100) / 100;
+      // Calculate cost in cents for consistency with database storage
+      const cost = Math.round(hourlyRate * durationHours * 100);
       
       setSessionCost(cost);
     } catch (error) {

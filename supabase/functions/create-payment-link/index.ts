@@ -95,7 +95,7 @@ serve(async (req) => {
         session_id: sessionId,
         student_id: user.id,
         tutor_id: tutorId,
-        amount: amount,
+        amount: Math.round(amount * 100), // Store cents in database
         status: 'pending',
         payment_link_id: paymentLink.id,
         payment_link_url: paymentLink.url,

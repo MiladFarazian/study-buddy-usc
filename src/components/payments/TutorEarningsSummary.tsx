@@ -79,15 +79,15 @@ export const TutorEarningsSummary: React.FC<TutorEarningsSummaryProps> = ({ user
       const completedTransfers = transfers?.filter(t => t.status === 'completed') || [];
       const pendingTransfers = transfers?.filter(t => t.status === 'pending') || [];
       
-      const totalEarned = completedPayments.reduce((sum, p) => sum + (p.amount / 100), 0);
-      const pendingAmount = pendingTransfers.reduce((sum, t) => sum + (t.amount / 100), 0);
+      const totalEarned = completedPayments.reduce((sum, p) => sum + p.amount, 0);
+      const pendingAmount = pendingTransfers.reduce((sum, t) => sum + t.amount, 0);
       
       // Calculate this month's earnings
       const thisMonth = new Date();
       thisMonth.setDate(1);
       const thisMonthEarned = completedPayments
         .filter(p => new Date(p.created_at) >= thisMonth)
-        .reduce((sum, p) => sum + (p.amount / 100), 0);
+        .reduce((sum, p) => sum + p.amount, 0);
 
       setEarningsData({
         recent_payments: payments || [],
@@ -152,7 +152,8 @@ export const TutorEarningsSummary: React.FC<TutorEarningsSummaryProps> = ({ user
   };
 
   const formatAmount = (amount: number) => {
-    return `$${amount.toFixed(2)}`;
+    // Convert cents to dollars for display
+    return `$${(amount / 100).toFixed(2)}`;
   };
 
   const formatDate = (dateString: string) => {
@@ -214,7 +215,7 @@ export const TutorEarningsSummary: React.FC<TutorEarningsSummaryProps> = ({ user
                         </Badge>
                         <span className="text-sm">{formatDate(payment.created_at)}</span>
                       </div>
-                      <span className="font-medium">{formatAmount(payment.amount / 100)}</span>
+                      <span className="font-medium">{formatAmount(payment.amount)}</span>
                     </div>
                   ))}
                 </div>
@@ -234,7 +235,7 @@ export const TutorEarningsSummary: React.FC<TutorEarningsSummaryProps> = ({ user
                         </Badge>
                         <span className="text-sm">{formatDate(transfer.created_at)}</span>
                       </div>
-                      <span className="font-medium">{formatAmount(transfer.amount / 100)}</span>
+                      <span className="font-medium">{formatAmount(transfer.amount)}</span>
                     </div>
                   ))}
                 </div>
