@@ -33,7 +33,8 @@ export const updateUserProfile = async (
     last_name: string;
     major: string;
     graduation_year: string;
-    bio: string;
+    student_bio: string;
+    tutor_bio: string;
     role: UserRole;
     hourly_rate: string;
   },
@@ -64,7 +65,8 @@ export const updateUserProfile = async (
       last_name: formData.last_name,
       major: formData.major,
       graduation_year: formData.graduation_year,
-      bio: formData.bio,
+      student_bio: formData.student_bio,
+      tutor_bio: formData.tutor_bio,
       avatar_url: finalAvatarUrl,
       updated_at: new Date().toISOString(),
     };

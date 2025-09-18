@@ -13,8 +13,8 @@ interface ProfileFormProps {
     last_name: string;
     major: string;
     graduation_year: string;
-    bio: string;
-    role: UserRole;
+    student_bio: string;
+    tutor_bio: string;
     hourly_rate: string;
   };
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
@@ -105,8 +105,16 @@ export const ProfileForm = ({
           </div>}
         
         <div className="space-y-2">
-          <Label htmlFor="bio">Bio</Label>
-          <Textarea id="bio" name="bio" value={formData.bio} onChange={handleInputChange} placeholder="Tell us about yourself..." />
+          <Label htmlFor="bio">
+            {isStudent ? "Bio (Student)" : "Bio (Tutor)"}
+          </Label>
+          <Textarea 
+            id="bio" 
+            name={isStudent ? "studentBio" : "tutorBio"}
+            value={isStudent ? formData.student_bio : formData.tutor_bio} 
+            onChange={handleInputChange} 
+            placeholder={isStudent ? "Tell students about your learning style and what subjects you need help with..." : "Tell students about your teaching experience and approach..."}
+          />
         </div>
         
         <Button className="bg-usc-cardinal hover:bg-usc-cardinal-dark" onClick={handleProfileUpdate} disabled={loading || uploadingAvatar}>

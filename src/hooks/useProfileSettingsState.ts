@@ -1,4 +1,3 @@
-
 import { Profile } from "@/types/profile";
 import { useProfileForm } from "./useProfileForm";
 import { useProfileAvatar } from "./useProfileAvatar";
@@ -7,18 +6,20 @@ import { useEffect } from "react";
 
 export const useProfileSettingsState = (profile: Profile | null) => {
   const { loading, setLoading } = useLoadingState();
-  const { 
-    firstName, 
-    lastName, 
-    major, 
-    gradYear, 
-    bio, 
+  const {
+    firstName,
+    lastName,
+    major,
+    gradYear,
+    studentBio,
+    tutorBio,
     hourlyRate,
     setFirstName,
     setLastName,
     setMajor,
     setGradYear,
-    setBio,
+    setStudentBio,
+    setTutorBio,
     setHourlyRate,
     isProfileComplete
   } = useProfileForm(profile);
@@ -38,16 +39,18 @@ export const useProfileSettingsState = (profile: Profile | null) => {
     console.log("ProfileSettingsState - profile hourly_rate:", profile?.hourly_rate);
   }, [hourlyRate, profile?.hourly_rate]);
 
-  // Create a formData object that matches what ProfileSettings expects
+  // Create form data object
   const formData = {
     first_name: firstName,
     last_name: lastName,
-    major: major,
+    major,
     graduation_year: gradYear,
-    bio: bio,
-    role: profile?.role || "student",
-    hourly_rate: hourlyRate || "",
-    subjects: profile?.subjects || [] as string[]
+    student_bio: studentBio,
+    tutor_bio: tutorBio,
+    hourly_rate: hourlyRate,
+    role: profile?.role || "student" as any,
+    avatarUrl,
+    currentAvatarUrl: profile?.avatar_url || null
   };
 
   // Create a setFormData function
@@ -58,24 +61,22 @@ export const useProfileSettingsState = (profile: Profile | null) => {
       setLastName(updatedData.last_name);
       setMajor(updatedData.major);
       setGradYear(updatedData.graduation_year);
-      setBio(updatedData.bio);
+      setStudentBio(updatedData.student_bio);
+      setTutorBio(updatedData.tutor_bio);
       setHourlyRate(updatedData.hourly_rate);
-      console.log("setFormData function updated hourly_rate to:", updatedData.hourly_rate);
     } else {
       setFirstName(newFormData.first_name);
       setLastName(newFormData.last_name);
       setMajor(newFormData.major);
       setGradYear(newFormData.graduation_year);
-      setBio(newFormData.bio);
+      setStudentBio(newFormData.student_bio);
+      setTutorBio(newFormData.tutor_bio);
       setHourlyRate(newFormData.hourly_rate);
-      console.log("setFormData direct updated hourly_rate to:", newFormData.hourly_rate);
     }
   };
 
-  // Create a handleInputChange function
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    console.log(`Input changed: ${name} = ${value}`);
     
     switch (name) {
       case "first_name":
@@ -90,15 +91,16 @@ export const useProfileSettingsState = (profile: Profile | null) => {
       case "graduation_year":
         setGradYear(value);
         break;
-      case "bio":
-        setBio(value);
+      case "studentBio":
+        setStudentBio(value);
+        break;
+      case "tutorBio":
+        setTutorBio(value);
         break;
       case "hourly_rate":
-        console.log("Setting hourly rate to:", value);
         setHourlyRate(value);
         break;
       default:
-        console.log(`Unhandled input field: ${name}`);
         break;
     }
   };

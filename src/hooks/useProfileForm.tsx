@@ -7,7 +7,8 @@ export const useProfileForm = (profile: Profile | null) => {
   const [lastName, setLastName] = useState<string>(profile?.last_name || "");
   const [major, setMajor] = useState<string>(profile?.major || "");
   const [gradYear, setGradYear] = useState<string>(profile?.graduation_year || "");
-  const [bio, setBio] = useState<string>(profile?.bio || "");
+  const [studentBio, setStudentBio] = useState<string>(profile?.student_bio || "");
+  const [tutorBio, setTutorBio] = useState<string>(profile?.tutor_bio || "");
   const [hourlyRate, setHourlyRate] = useState<string>(
     profile?.hourly_rate !== null && profile?.hourly_rate !== undefined
       ? String(profile.hourly_rate)
@@ -21,7 +22,8 @@ export const useProfileForm = (profile: Profile | null) => {
       setLastName(profile.last_name || "");
       setMajor(profile.major || "");
       setGradYear(profile.graduation_year || "");
-      setBio(profile.bio || "");
+      setStudentBio(profile.student_bio || "");
+      setTutorBio(profile.tutor_bio || "");
       
       if (profile.hourly_rate !== null && profile.hourly_rate !== undefined) {
         setHourlyRate(String(profile.hourly_rate));
@@ -43,13 +45,15 @@ export const useProfileForm = (profile: Profile | null) => {
     lastName,
     major,
     gradYear,
-    bio,
+    studentBio,
+    tutorBio,
     hourlyRate,
     setFirstName,
     setLastName,
     setMajor,
     setGradYear,
-    setBio,
+    setStudentBio,
+    setTutorBio,
     setHourlyRate,
     isProfileComplete
   };
