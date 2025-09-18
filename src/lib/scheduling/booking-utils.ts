@@ -4,6 +4,7 @@ import { sendSessionBookingNotification, sendSessionBookedStudentNotification } 
 import { format } from "date-fns";
 import { createZoomMeeting as createZoomMeetingAPI, getDurationFromSession, getUserTimezone, updateZoomMeeting as updateZoomMeetingAPI, deleteZoomMeeting as deleteZoomMeetingAPI } from "@/lib/zoomAPI";
 import { sendBookingConfirmation, sendRescheduleNotification, sendCancellationNotification } from "@/lib/emailService";
+import { dollarsToCents } from "@/lib/currency-utils";
 
 /**
  * Zoom meeting creation handled by src/lib/zoomAPI.js
@@ -251,7 +252,7 @@ export async function createPaymentTransaction(
         session_id: sessionId,
         student_id: studentId,
         tutor_id: tutorId,
-        amount: amount,
+        amount: dollarsToCents(amount),
         status: 'pending',
         created_at: new Date().toISOString()
       });

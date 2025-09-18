@@ -8,7 +8,7 @@
  * @param dollars Amount in dollars (e.g., 19.99)
  * @returns Amount in cents (e.g., 1999)
  */
-export const dollarsTooCents = (dollars: number): number => {
+export const dollarsToCents = (dollars: number): number => {
   return Math.round(dollars * 100);
 };
 
@@ -48,5 +48,5 @@ export const validateCentsFormat = (amount: number): boolean => {
  */
 export const calculateSessionCostInCents = (hourlyRate: number, durationMinutes: number): number => {
   const priceInDollars = (hourlyRate / 60) * durationMinutes;
-  return dollarsTooCents(priceInDollars);
+  return dollarsToCents(priceInDollars);
 };

@@ -11,6 +11,7 @@ import { useSessionBooking } from "@/contexts/SessionBookingContext";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { createZoomMeeting } from "@/lib/zoomAPI";
+import { dollarsToCents } from "@/lib/currency-utils";
 
 interface BookingState {
   bookingStep: BookingStep; 
@@ -343,7 +344,7 @@ export function useBookSessionModal(
           session_id: sessionData.id,
           student_id: user.id,
           tutor_id: booking.tutorId,
-          amount: booking.totalAmount || 0,
+          amount: dollarsToCents(booking.totalAmount || 0),
           status: 'completed',
           payment_completed_at: new Date().toISOString(),
           environment: 'production'

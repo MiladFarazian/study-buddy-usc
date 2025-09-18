@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { dollarsToCents } from '@/lib/currency-utils';
 
 export default function PaymentSuccess() {
   const [searchParams] = useSearchParams();
@@ -88,7 +89,7 @@ export default function PaymentSuccess() {
             session_id: sessionData.id,
             student_id: user.id,
             tutor_id: booking.tutorId,
-            amount: booking.totalAmount || 0,
+            amount: dollarsToCents(booking.totalAmount || 0),
             status: 'completed',
             payment_completed_at: new Date().toISOString(),
             environment: 'production',
