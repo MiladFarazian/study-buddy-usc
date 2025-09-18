@@ -144,14 +144,13 @@ export function generateAvailableSlots(
           continue;
         }
         
-        // Create a slot with availability end time for duration validation
+        // Create a slot
         const slot: BookingSlot = {
           day: currentDate,
           start: slotStart,
           end: slotEnd,
           available: true,
-          tutorId: '',
-          availabilityEnd: timeSlot.end // Add availability end time
+          tutorId: ''
         };
         
         // Check if this slot overlaps with any booked session
