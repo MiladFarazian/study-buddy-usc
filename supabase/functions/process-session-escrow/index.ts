@@ -179,11 +179,23 @@ async function processPayment(supabaseAdmin: any, sessionId: string, paymentData
   });
 
   // Calculate fees: 15% platform fee + Stripe's 2.9% + 30¢
-  // paymentData.amount is already in cents after migration
-  const amountInCents = Math.round(paymentData.amount);
+  // Convert dollars to cents (paymentData.amount is stored in dollars)
+  const amountInCents = Math.round(paymentData.amount * 100);
   const stripeFee = Math.round(amountInCents * 0.029 + 30);
   const platformFee = Math.round(amountInCents * 0.15);
   const tutorAmount = amountInCents - stripeFee - platformFee;
+
+  // Prevent negative transfers - this should never happen with proper fee calculation
+  if (tutorAmount < 0) {
+    logStep('ERROR: Calculated tutor amount is negative', {
+      originalAmount: paymentData.amount,
+      amountInCents,
+      stripeFee,
+      platformFee,
+      tutorAmount
+    });
+    throw new Error(`Invalid payment amount: tutor payout would be negative (${tutorAmount} cents)`);
+  }
 
   logStep('Fee calculation', {
     originalAmountCents: paymentData.amount,
