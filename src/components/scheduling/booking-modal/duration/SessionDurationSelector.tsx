@@ -18,6 +18,7 @@ interface SessionDurationSelectorProps {
   availableStartTimes?: string[];
   selectedStartTime?: string;
   formatTimeForDisplay?: (time: string) => string;
+  availabilityEnd?: string; // End of tutor's availability window
   onBack?: () => void;
   onContinue?: () => void;
 }
@@ -31,16 +32,39 @@ export function SessionDurationSelector({
   availableStartTimes = [],
   selectedStartTime,
   formatTimeForDisplay = (time) => time,
+  availabilityEnd,
   onBack,
   onContinue
 }: SessionDurationSelectorProps) {
-  // Session duration options in minutes
-  const durationOptions = [
-    { value: 30, label: "30 min" },
-    { value: 60, label: "60 min" },
-    { value: 90, label: "90 min" },
-    { value: 120, label: "120 min" }
-  ];
+  // Helper function to calculate valid duration options
+  const getValidDurationOptions = () => {
+    const allOptions = [
+      { value: 30, label: "30 min" },
+      { value: 60, label: "60 min" },
+      { value: 90, label: "90 min" },
+      { value: 120, label: "120 min" }
+    ];
+
+    if (!selectedStartTime || !availabilityEnd) {
+      return allOptions;
+    }
+
+    // Calculate remaining time window
+    const startMinutes = convertTimeToMinutes(selectedStartTime);
+    const endMinutes = convertTimeToMinutes(availabilityEnd);
+    const remainingMinutes = endMinutes - startMinutes;
+
+    // Filter options that fit in remaining time window
+    return allOptions.filter(option => option.value <= remainingMinutes);
+  };
+
+  // Helper function to convert time string to minutes
+  const convertTimeToMinutes = (time: string) => {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
+
+  const durationOptions = getValidDurationOptions();
 
   return (
     <div className="space-y-6">
@@ -52,22 +76,30 @@ export function SessionDurationSelector({
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {durationOptions.map((option) => (
-          <Button
-            key={option.value}
-            type="button"
-            onClick={() => onDurationChange(option.value)}
-            className={cn(
-              "h-auto py-4 flex flex-col items-center justify-center",
-              selectedDuration === option.value
-                ? "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark"
-                : "bg-white text-gray-800 border hover:bg-gray-100"
-            )}
-            variant={selectedDuration === option.value ? "default" : "outline"}
-          >
-            <span className="text-lg font-medium">{option.label}</span>
-          </Button>
-        ))}
+        {[30, 60, 90, 120].map((minutes) => {
+          const isAvailable = durationOptions.some(opt => opt.value === minutes);
+          const option = { value: minutes, label: `${minutes} min` };
+          
+          return (
+            <Button
+              key={option.value}
+              type="button"
+              onClick={() => isAvailable && onDurationChange(option.value)}
+              disabled={!isAvailable}
+              className={cn(
+                "h-auto py-4 flex flex-col items-center justify-center",
+                !isAvailable && "opacity-50 cursor-not-allowed",
+                selectedDuration === option.value && isAvailable
+                  ? "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark"
+                  : "bg-white text-gray-800 border hover:bg-gray-100"
+              )}
+              variant={selectedDuration === option.value && isAvailable ? "default" : "outline"}
+              title={!isAvailable ? "Not enough time remaining in availability window" : undefined}
+            >
+              <span className="text-lg font-medium">{option.label}</span>
+            </Button>
+          );
+        })}
       </div>
 
       {onStartTimeChange && availableStartTimes.length > 0 && (

@@ -82,11 +82,38 @@ export function DurationSelector({
     }
   };
   
-  // Get available start times within the selected and consecutive slots
+  // Get available start times filtered by selected duration
   const getAvailableStartTimes = () => {
-    if (consecutiveSlots.length === 0) return [selectedSlot.start];
+    if (consecutiveSlots.length === 0) {
+      // Single slot - check if duration fits
+      if (!selectedSlot.availabilityEnd || !selectedDuration) {
+        return [selectedSlot.start];
+      }
+      
+      const slotStartMinutes = convertTimeToMinutes(selectedSlot.start);
+      const availabilityEndMinutes = convertTimeToMinutes(selectedSlot.availabilityEnd);
+      const remainingMinutes = availabilityEndMinutes - slotStartMinutes;
+      
+      // Only return start time if duration fits
+      return selectedDuration <= remainingMinutes ? [selectedSlot.start] : [];
+    }
     
-    return consecutiveSlots.map(slot => slot.start);
+    // Multiple slots - filter based on duration
+    return consecutiveSlots.filter(slot => {
+      if (!slot.availabilityEnd || !selectedDuration) return true;
+      
+      const slotStartMinutes = convertTimeToMinutes(slot.start);
+      const availabilityEndMinutes = convertTimeToMinutes(slot.availabilityEnd);
+      const remainingMinutes = availabilityEndMinutes - slotStartMinutes;
+      
+      return selectedDuration <= remainingMinutes;
+    }).map(slot => slot.start);
+  };
+  
+  // Helper function to convert time string to minutes
+  const convertTimeToMinutes = (time: string) => {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
   };
   
   // Find selected course by ID
@@ -140,6 +167,7 @@ export function DurationSelector({
         availableStartTimes={getAvailableStartTimes()}
         selectedStartTime={selectedStartTime}
         formatTimeForDisplay={formatTimeForDisplay}
+        availabilityEnd={selectedSlot.availabilityEnd}
       />
       
       <div className="mt-8 flex justify-between">

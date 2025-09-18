@@ -51,6 +51,55 @@ export function BookingStepSelector({
     { minutes: 120, cost: (tutor.hourlyRate || 25) * 2 }
   ];
   
+  // Calculate consecutive slots from available slots
+  const calculateConsecutiveSlots = (selectedSlot: BookingSlot): BookingSlot[] => {
+    if (!availableSlots.length) return [];
+    
+    const selectedDate = selectedSlot.day instanceof Date ? 
+      selectedSlot.day.toDateString() : 
+      new Date(selectedSlot.day).toDateString();
+    
+    // Get all slots for the same day
+    const daySlots = availableSlots.filter(slot => {
+      const slotDate = slot.day instanceof Date ? 
+        slot.day.toDateString() : 
+        new Date(slot.day).toDateString();
+      return slotDate === selectedDate && slot.available;
+    });
+    
+    // Sort slots by start time
+    const sortedSlots = daySlots.sort((a, b) => {
+      const aMinutes = convertTimeToMinutes(a.start);
+      const bMinutes = convertTimeToMinutes(b.start);
+      return aMinutes - bMinutes;
+    });
+    
+    // Find consecutive slots starting from selected slot
+    const selectedStartMinutes = convertTimeToMinutes(selectedSlot.start);
+    const consecutiveSlots: BookingSlot[] = [];
+    
+    for (const slot of sortedSlots) {
+      const slotStartMinutes = convertTimeToMinutes(slot.start);
+      if (slotStartMinutes >= selectedStartMinutes) {
+        // Check if this slot is consecutive with the previous one
+        if (consecutiveSlots.length === 0 || 
+            slotStartMinutes === convertTimeToMinutes(consecutiveSlots[consecutiveSlots.length - 1].end)) {
+          consecutiveSlots.push(slot);
+        } else {
+          break; // Gap found, stop looking
+        }
+      }
+    }
+    
+    return consecutiveSlots;
+  };
+  
+  // Helper function to convert time string to minutes
+  const convertTimeToMinutes = (time: string) => {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
+  
   // Render the current step
   const renderStep = () => {
     if (loading) {
@@ -77,7 +126,7 @@ export function BookingStepSelector({
             onBack={() => dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_DATE_TIME })}
             onContinue={() => dispatch({ type: 'SET_STEP', payload: BookingStep.SELECT_COURSE })}
             hourlyRate={tutor.hourlyRate || 25}
-            consecutiveSlots={[]}  // We'd need to compute this from availableSlots
+            consecutiveSlots={calculateConsecutiveSlots(state.selectedTimeSlot!)}
             selectedCourseId={state.selectedCourseId}
             courses={courses as Course[]}
           />
