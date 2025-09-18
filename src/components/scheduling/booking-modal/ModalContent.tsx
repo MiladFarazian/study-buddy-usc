@@ -110,6 +110,7 @@ export function ModalContent({
           onDurationChange={onDurationChange}
           sessionTimeRange={sessionTimeRange}
           calculatedCost={calculatedCost}
+          selectedSlot={selectedSlot}
           onBack={onBack}
           onContinue={onContinue}
         />

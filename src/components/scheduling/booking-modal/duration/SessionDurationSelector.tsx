@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { BookingSlot } from "@/lib/scheduling/types";
+import { convertTimeToMinutes } from "@/lib/scheduling/time-utils";
 
 interface SessionDurationSelectorProps {
   selectedDuration: number;
@@ -18,6 +20,7 @@ interface SessionDurationSelectorProps {
   availableStartTimes?: string[];
   selectedStartTime?: string;
   formatTimeForDisplay?: (time: string) => string;
+  selectedSlot?: BookingSlot;
   onBack?: () => void;
   onContinue?: () => void;
 }
@@ -31,16 +34,34 @@ export function SessionDurationSelector({
   availableStartTimes = [],
   selectedStartTime,
   formatTimeForDisplay = (time) => time,
+  selectedSlot,
   onBack,
   onContinue
 }: SessionDurationSelectorProps) {
-  // Session duration options in minutes
-  const durationOptions = [
+  // Helper function to check if a duration is valid for the selected slot
+  const isValidDuration = (durationMinutes: number): boolean => {
+    if (!selectedSlot?.start || !selectedSlot?.availabilityEnd) return true;
+    
+    const startMinutes = convertTimeToMinutes(selectedSlot.start);
+    const endMinutes = convertTimeToMinutes(selectedSlot.availabilityEnd);
+    const sessionEndMinutes = startMinutes + durationMinutes + 30; // 30-minute buffer
+    
+    return sessionEndMinutes <= endMinutes;
+  };
+
+  // Session duration options in minutes - filter based on availability
+  const baseDurationOptions = [
     { value: 30, label: "30 min" },
     { value: 60, label: "60 min" },
     { value: 90, label: "90 min" },
     { value: 120, label: "120 min" }
   ];
+
+  const durationOptions = baseDurationOptions.map(option => ({
+    ...option,
+    disabled: !isValidDuration(option.value),
+    reason: !isValidDuration(option.value) ? "Extends beyond tutor availability" : undefined
+  }));
 
   return (
     <div className="space-y-6">
@@ -57,15 +78,22 @@ export function SessionDurationSelector({
             key={option.value}
             type="button"
             onClick={() => onDurationChange(option.value)}
+            disabled={option.disabled}
             className={cn(
-              "h-auto py-4 flex flex-col items-center justify-center",
+              "h-auto py-4 flex flex-col items-center justify-center relative",
               selectedDuration === option.value
                 ? "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark"
+                : option.disabled
+                ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
                 : "bg-white text-gray-800 border hover:bg-gray-100"
             )}
             variant={selectedDuration === option.value ? "default" : "outline"}
+            title={option.reason}
           >
             <span className="text-lg font-medium">{option.label}</span>
+            {option.disabled && (
+              <span className="text-xs text-gray-400 mt-1">Not available</span>
+            )}
           </Button>
         ))}
       </div>

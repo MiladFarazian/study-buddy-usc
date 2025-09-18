@@ -79,7 +79,8 @@ export function useDragSelection(availableSlots: BookingSlot[], onSelectSlot: (s
       day: slot.day,
       start: startTimeString,
       end: finalEndTimeString,
-      available: true
+      available: true,
+      availabilityEnd: slot.availabilityEnd || slot.end
     };
     
     setSelectedSlot(bookingSlot);

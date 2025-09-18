@@ -150,7 +150,8 @@ export function generateAvailableSlots(
           start: slotStart,
           end: slotEnd,
           available: true,
-          tutorId: ''
+          tutorId: '',
+          availabilityEnd: timeSlot.end
         };
         
         // Check if this slot overlaps with any booked session
