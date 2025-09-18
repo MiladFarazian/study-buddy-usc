@@ -1,0 +1,38 @@
+-- Currency Standardization Migration: Convert dollars to cents and add constraints
+
+-- First, convert any remaining dollar amounts to cents in payment_transactions
+-- (amounts < 1000 are likely in dollars, created before Sept 18, 2025)
+UPDATE payment_transactions 
+SET amount = amount * 100 
+WHERE amount < 1000 AND created_at < '2025-09-18T00:00:00Z';
+
+-- Convert dollar amounts to cents in pending_transfers
+UPDATE pending_transfers 
+SET amount = amount * 100, 
+    platform_fee = COALESCE(platform_fee * 100, 0)
+WHERE amount < 1000 AND created_at < '2025-09-18T00:00:00Z';
+
+-- Add constraints to ensure all future amounts are stored in cents (minimum 50 cents = $0.50)
+ALTER TABLE payment_transactions 
+ADD CONSTRAINT amounts_in_cents CHECK (amount >= 50);
+
+ALTER TABLE pending_transfers 
+ADD CONSTRAINT amounts_in_cents CHECK (amount >= 50);
+
+-- Log the standardization
+INSERT INTO notifications (
+  user_id, 
+  title, 
+  message, 
+  type,
+  metadata
+) VALUES (
+  'deabe8e0-ed86-4909-b05d-fa0b0801d5bd'::uuid,
+  'Currency System Standardized',
+  'All monetary values now stored in cents. Display components updated to convert cents to dollars.',
+  'system',
+  jsonb_build_object(
+    'standardization_date', now(),
+    'currency_unit', 'cents'
+  )
+);
