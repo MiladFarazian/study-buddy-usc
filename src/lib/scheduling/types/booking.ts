@@ -7,7 +7,6 @@ export interface BookingSlot {
   end: string;   // Format: "HH:MM" in 24-hour format
   available: boolean; // Making this required
   tutorId: string; // Make sure tutorId is required
-  availabilityEnd?: string; // End time of the tutor's availability window
   
   // Additional properties that are used in the application
   startTime?: Date;

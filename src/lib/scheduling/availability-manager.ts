@@ -132,10 +132,7 @@ export function generateAvailableSlots(
       const endMinutes = convertTimeToMinutes(timeSlot.end);
       
       // Generate 30-minute slots within the time window
-      // But enforce 30-minute buffer before availability end
-      const bufferEndMinutes = endMinutes - 30; // 30-minute buffer before availability ends
-      
-      for (let minutes = startMinutes; minutes < bufferEndMinutes; minutes += 30) {
+      for (let minutes = startMinutes; minutes < endMinutes; minutes += 30) {
         const slotStart = convertMinutesToTime(minutes);
         const slotEnd = convertMinutesToTime(minutes + 30);
         
@@ -153,8 +150,7 @@ export function generateAvailableSlots(
           start: slotStart,
           end: slotEnd,
           available: true,
-          tutorId: '',
-          availabilityEnd: timeSlot.end // Include availability end time
+          tutorId: ''
         };
         
         // Check if this slot overlaps with any booked session
