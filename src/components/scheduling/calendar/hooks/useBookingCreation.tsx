@@ -97,8 +97,7 @@ export function useBookingCreation(
       day: startSlot.day,
       start: startTimeString,
       end: finalEndTimeString,
-      available: true,
-      availabilityEnd: startSlot.availabilityEnd || startSlot.end
+      available: true
     };
     
     console.log("Final booking slot:", bookingSlot);
