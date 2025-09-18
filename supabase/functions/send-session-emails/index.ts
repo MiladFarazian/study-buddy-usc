@@ -289,8 +289,16 @@ function generateEmailHtml({
   }
 
   return `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
-      <div style="background-color: #990000; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0;">
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; color: #333;">
+      <!-- Header with branding -->
+      <div style="background-color: #f8f9fa; padding: 15px; text-align: center; border-radius: 5px 5px 0 0;">
+        <a href="https://studybuddyusc.com" style="text-decoration: none; color: #990000; font-size: 24px; font-weight: bold;">
+          🎓 StudyBuddy USC
+        </a>
+        <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">Your Premier Tutoring Marketplace</p>
+      </div>
+      <!-- Main content -->
+      <div style="background-color: #990000; color: white; padding: 20px; text-align: center;">
         <h1 style="margin: 0;">${title}</h1>
       </div>
       <div style="padding: 20px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 5px 5px;">
@@ -321,8 +329,16 @@ function generateEmailHtml({
         
         <p>Thank you for using USC Study Buddy!</p>
       </div>
-      <div style="text-align: center; padding: 10px; color: #666; font-size: 12px;">
-        <p>&copy; 2025 USC Study Buddy. All rights reserved.</p>
+      <!-- Enhanced footer -->
+      <div style="background-color: #f8f9fa; padding: 20px; text-align: center; border-radius: 0 0 5px 5px; border-top: 1px solid #ddd;">
+        <div style="margin-bottom: 15px;">
+          <a href="https://studybuddyusc.com" style="background-color: #990000; color: white; padding: 12px 24px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block;">Visit StudyBuddy USC</a>
+        </div>
+        <p style="margin: 0; color: #666; font-size: 12px;">&copy; 2025 USC Study Buddy. All rights reserved.</p>
+        <p style="margin: 5px 0 0 0; color: #999; font-size: 11px;">
+          <a href="https://studybuddyusc.com" style="color: #990000; text-decoration: none;">studybuddyusc.com</a> | 
+          The premier tutoring marketplace for USC students
+        </p>
       </div>
     </div>
   `;
