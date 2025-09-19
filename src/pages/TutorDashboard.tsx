@@ -3,27 +3,23 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
 import { Loader2, X, LogOut } from "lucide-react";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
-import { StudentProfileForm } from "@/components/profile-editor/StudentProfileForm";
+import { TutorProfileForm } from "@/components/profile-editor/TutorProfileForm";
 import { ProfileAvatarCard } from "@/components/profile-editor/ProfileAvatarCard";
-import { useStudentProfile } from "@/hooks/useStudentProfile";
+import { useTutorProfile } from "@/hooks/useTutorProfile";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { removeCourseFromProfile } from "@/lib/course-utils";
 import { useState } from "react";
-import { useLocation } from "react-router-dom";
 
-const Profile = () => {
-  const { user, profile, loading, isProfileComplete, signOut } = useAuthRedirect("/profile", true);
+const TutorDashboard = () => {
+  const { user, profile, loading, signOut } = useAuthRedirect("/tutor-dashboard", true);
   const { updateProfile } = useAuth();
   const { toast } = useToast();
   const [removingCourse, setRemovingCourse] = useState<string | null>(null);
-  const location = useLocation();
 
-
-  // Student profile state
   const {
-    loading: studentLoading,
+    loading: tutorLoading,
     setLoading,
     formData,
     setFormData,
@@ -35,7 +31,7 @@ const Profile = () => {
     setAvatarFile,
     handleInputChange,
     handleProfileUpdate,
-  } = useStudentProfile(profile);
+  } = useTutorProfile(profile);
 
   const handleRemoveCourse = async (courseNumber: string) => {
     if (!user) return;
@@ -67,24 +63,23 @@ const Profile = () => {
   if (loading) {
     return (
       <div className="container py-8 flex justify-center items-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-usc-cardinal" />
-        <span className="ml-2">Loading profile...</span>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Loading dashboard...</span>
       </div>
     );
   }
 
-  if (!user) return null; // will be redirected by useAuthRedirect
+  if (!user) return null;
 
-  // Redirect tutors to their dashboard
-  if (profile?.role === 'tutor') {
-    window.location.href = '/tutor-dashboard';
+  // Redirect non-tutors
+  if (profile?.role !== 'tutor') {
+    window.location.href = '/profile';
     return null;
   }
 
   return (
     <div className="container py-8 pb-20">
-      <ProfileHeader title="Your Profile" />
-
+      <ProfileHeader title="Tutor Dashboard" />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="md:col-span-1">
@@ -93,7 +88,7 @@ const Profile = () => {
             setAvatarUrl={setAvatarUrl}
             setAvatarFile={setAvatarFile}
             avatarFile={avatarFile}
-            loading={studentLoading}
+            loading={tutorLoading}
             uploadingAvatar={uploadingAvatar}
             firstName={formData.first_name}
             userEmail={user.email}
@@ -134,13 +129,14 @@ const Profile = () => {
         </div>
 
         <div className="md:col-span-2">
-          <StudentProfileForm
+          <TutorProfileForm
             formData={formData as any}
             handleInputChange={handleInputChange}
-            loading={studentLoading}
+            loading={tutorLoading}
             uploadingAvatar={uploadingAvatar}
             handleProfileUpdate={handleProfileUpdate}
             userEmail={user.email}
+            approvedTutor={profile?.approved_tutor}
           />
         </div>
       </div>
@@ -156,4 +152,4 @@ const Profile = () => {
   );
 };
 
-export default Profile;
+export default TutorDashboard;
