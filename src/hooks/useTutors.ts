@@ -69,16 +69,26 @@ export function useTutors() {
       setError(null);
       
       try {
-        console.log("Fetching tutor profiles...");
-        // Fetch tutors - public access enabled via RLS policy
-        const { data: tutorProfiles, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('role', 'tutor')
+        console.log("Fetching tutors...");
+        // Fetch tutors from the new tutors table with profile data
+        const { data: tutorData, error } = await supabase
+          .from('tutors')
+          .select(`
+            *,
+            profiles:profile_id (
+              first_name,
+              last_name,
+              major,
+              graduation_year,
+              avatar_url,
+              tutor_courses_subjects
+            )
+          `)
+          .eq('approved_tutor', true)
           .order('average_rating', { ascending: false }); // Order by rating so best tutors show first
 
         if (error) {
-          console.error("Error fetching tutor profiles:", error);
+          console.error("Error fetching tutors:", error);
           setError(error.message);
           setTutors([]);
           setLoading(false);
@@ -86,38 +96,44 @@ export function useTutors() {
         }
 
         // If no tutors found, just set empty array
-        if (!tutorProfiles || tutorProfiles.length === 0) {
-          console.log("No tutor profiles found");
+        if (!tutorData || tutorData.length === 0) {
+          console.log("No tutors found");
           setTutors([]);
           setLoading(false);
           return;
         }
 
-        console.log("Tutors found:", tutorProfiles.length);
+        console.log("Tutors found:", tutorData.length);
 
-        // Process tutor profiles to create tutor objects
-        const processedTutors = tutorProfiles.map(profile => {
-          // Get subjects from tutor_courses_subjects field for tutors
-          const subjects: Subject[] = profile.tutor_courses_subjects && Array.isArray(profile.tutor_courses_subjects) && profile.tutor_courses_subjects.length > 0 
+        // Process tutors to create tutor objects
+        const processedTutors = tutorData.map(tutor => {
+          const profile = tutor.profiles;
+          
+          // Get subjects from tutor_courses_subjects field
+          const subjects: Subject[] = profile?.tutor_courses_subjects && Array.isArray(profile.tutor_courses_subjects) && profile.tutor_courses_subjects.length > 0 
             ? profile.tutor_courses_subjects.map((courseCode: string) => ({
                 code: courseCode,
                 name: courseCode
               }))
             : [];
 
+          // Use first_name and last_name from tutors table if available, fallback to profiles
+          const firstName = tutor.first_name || profile?.first_name || '';
+          const lastName = tutor.last_name || profile?.last_name || '';
+
           // Create tutor object from real data
           return {
-            id: profile.id,
-            name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'USC Tutor',
-            firstName: profile.first_name || '',
-            lastName: profile.last_name || '',
-            field: profile.major || 'USC Student',
-            rating: profile.average_rating || 0,
-            hourlyRate: profile.hourly_rate || 0,
+            id: tutor.profile_id,
+            name: `${firstName} ${lastName}`.trim() || 'USC Tutor',
+            firstName: firstName,
+            lastName: lastName,
+            field: profile?.major || 'USC Student',
+            rating: tutor.average_rating || 0,
+            hourlyRate: tutor.hourly_rate || 0,
             subjects: subjects,
-            imageUrl: profile.avatar_url || '',
-            bio: profile.bio || '',
-            graduationYear: profile.graduation_year || ''
+            imageUrl: profile?.avatar_url || '',
+            bio: tutor.bio || '',
+            graduationYear: profile?.graduation_year || ''
           };
         });
 

@@ -1168,8 +1168,10 @@ export type Database = {
           average_rating: number | null
           bio: string | null
           created_at: string | null
+          first_name: string | null
           hourly_rate: number | null
           id: string
+          last_name: string | null
           profile_id: string
           stripe_connect_id: string | null
           stripe_connect_onboarding_complete: boolean | null
@@ -1182,8 +1184,10 @@ export type Database = {
           average_rating?: number | null
           bio?: string | null
           created_at?: string | null
+          first_name?: string | null
           hourly_rate?: number | null
           id?: string
+          last_name?: string | null
           profile_id: string
           stripe_connect_id?: string | null
           stripe_connect_onboarding_complete?: boolean | null
@@ -1196,8 +1200,10 @@ export type Database = {
           average_rating?: number | null
           bio?: string | null
           created_at?: string | null
+          first_name?: string | null
           hourly_rate?: number | null
           id?: string
+          last_name?: string | null
           profile_id?: string
           stripe_connect_id?: string | null
           stripe_connect_onboarding_complete?: boolean | null
