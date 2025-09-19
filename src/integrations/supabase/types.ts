@@ -941,6 +941,44 @@ export type Database = {
           },
         ]
       }
+      students: {
+        Row: {
+          bio: string | null
+          courses: string[] | null
+          created_at: string | null
+          id: string
+          profile_id: string
+          stripe_customer_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          bio?: string | null
+          courses?: string[] | null
+          created_at?: string | null
+          id?: string
+          profile_id: string
+          stripe_customer_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          bio?: string | null
+          courses?: string[] | null
+          created_at?: string | null
+          id?: string
+          profile_id?: string
+          stripe_customer_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "students_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       terms: {
         Row: {
           code: string
@@ -1118,6 +1156,59 @@ export type Database = {
             foreignKeyName: "tutor_students_tutor_id_fkey"
             columns: ["tutor_id"]
             isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tutors: {
+        Row: {
+          approved_tutor: boolean | null
+          availability: Json | null
+          average_rating: number | null
+          bio: string | null
+          created_at: string | null
+          hourly_rate: number | null
+          id: string
+          profile_id: string
+          stripe_connect_id: string | null
+          stripe_connect_onboarding_complete: boolean | null
+          subjects: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          approved_tutor?: boolean | null
+          availability?: Json | null
+          average_rating?: number | null
+          bio?: string | null
+          created_at?: string | null
+          hourly_rate?: number | null
+          id?: string
+          profile_id: string
+          stripe_connect_id?: string | null
+          stripe_connect_onboarding_complete?: boolean | null
+          subjects?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          approved_tutor?: boolean | null
+          availability?: Json | null
+          average_rating?: number | null
+          bio?: string | null
+          created_at?: string | null
+          hourly_rate?: number | null
+          id?: string
+          profile_id?: string
+          stripe_connect_id?: string | null
+          stripe_connect_onboarding_complete?: boolean | null
+          subjects?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutors_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
