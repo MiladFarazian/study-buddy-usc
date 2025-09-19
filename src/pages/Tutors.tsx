@@ -31,8 +31,8 @@ const Tutors = () => {
         return;
       }
       
-      if (profile.role === 'student' && profile.student_courses && Array.isArray(profile.student_courses)) {
-        setStudentCourses(profile.student_courses);
+      if (profile.subjects && Array.isArray(profile.subjects)) {
+        setStudentCourses(profile.subjects);
       } else if (profile.role === 'tutor' && user) {
         try {
           const tutorStudentCourses = await getTutorStudentCourses(user.id);
@@ -51,8 +51,8 @@ const Tutors = () => {
 
   // Check if user is logged in and is a student or tutor
   const isLoggedIn = profile !== null;
-  const isStudent = profile && profile.role === 'student';
-  const isTutor = profile && profile.role === 'tutor';
+  const isStudent = profile?.role === 'student';
+  const isTutor = profile?.role === 'tutor';
   
   // Determine if user has courses based on their role
   const hasStudentCourses = isLoggedIn && studentCourses.length > 0;

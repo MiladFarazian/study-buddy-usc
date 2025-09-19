@@ -1,136 +1,118 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { ProfileAvatarCard } from "@/components/profile-editor/ProfileAvatarCard";
-import { ProfileEditorForm } from "@/components/profile-editor/ProfileEditorForm";
-import { useProfileEditor } from "@/hooks/useProfileEditor";
-import { updateUserProfile, updateUserRole } from "./profileSettingsUtils";
-import { Database } from "@/integrations/supabase/types";
-
-type UserRole = Database['public']['Enums']['user_role'];
+import { StudentProfileForm } from "@/components/profile-editor/StudentProfileForm";
+import { TutorProfileForm } from "@/components/profile-editor/TutorProfileForm";
+import { useTutorProfile } from "@/hooks/useTutorProfile";
+import { useStudentProfile } from "@/hooks/useStudentProfile";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 export const ProfileSettings = () => {
-  const { user, profile, isStudent, isTutor, updateProfile } = useAuth();
+  const { user, profile, updateProfile } = useAuth();
   const { toast } = useToast();
   
+  const tutorProfileHook = useTutorProfile(profile?.role === 'tutor' ? profile : null);
+  const studentProfileHook = useStudentProfile(profile?.role === 'student' ? profile : null);
+
+  // Use the appropriate hook based on user role
   const {
     loading,
-    setLoading,
     formData,
-    setFormData,
     avatarUrl,
     setAvatarUrl,
     uploadingAvatar,
     setUploadingAvatar,
     avatarFile,
     setAvatarFile,
-    handleInputChange
-  } = useProfileEditor(profile);
+    handleInputChange,
+    handleProfileUpdate,
+  } = profile?.role === 'tutor' ? tutorProfileHook : studentProfileHook;
 
-  const handleRoleChange = async (role: UserRole) => {
-    if (!user) return;
-    
-    // Prevent role change to tutor if not approved
-    if (role === 'tutor' && !profile?.approved_tutor) {
-      toast({
-        title: "Not Approved",
-        description: "You must be approved as a tutor before selecting this role.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    const { error } = await updateUserRole(user, role, setLoading);
-
-    if (error) {
-      toast({
-        title: "Error",
-        description: error || "Failed to update role",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    toast({
-      title: "Profile Updated",
-      description: `Your role has been updated to ${role}`,
-    });
-
-    setFormData((prev) => ({
-      ...prev,
-      role,
-    }));
-
-    // Update local profile state
-    if (updateProfile && profile) {
-      updateProfile({
-        ...profile,
-        role: role as "student" | "tutor",
-      });
-    }
-  };
-
-  const handleProfileUpdate = async () => {
-    if (!user) return;
-
-    const { data, error } = await updateUserProfile(
-      user,
-      profile,
-      formData,
-      avatarFile,
-      profile?.avatar_url,
-      setLoading,
-      setUploadingAvatar
+  if (!user || !profile) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <p className="text-center text-muted-foreground">Loading profile...</p>
+        </CardContent>
+      </Card>
     );
+  }
 
-    if (error) {
-      toast({
-        title: "Error",
-        description: error || "Failed to update profile",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Update local profile state
-    if (updateProfile && data) {
-      updateProfile(data);
-    }
-    
-    setAvatarFile(null);
-
-    toast({
-      title: "Profile Updated",
-      description: "Your profile has been successfully updated",
-    });
-  };
+  const isTutor = profile.role === 'tutor';
+  const isStudent = profile.role === 'student';
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <ProfileEditorForm
-        formData={formData as any}
-        handleInputChange={handleInputChange}
-        isStudent={isStudent}
-        isTutor={isTutor}
-        loading={loading}
-        uploadingAvatar={uploadingAvatar}
-        handleRoleChange={handleRoleChange as any}
-        handleProfileUpdate={handleProfileUpdate}
-        userEmail={user?.email}
-        approvedTutor={profile?.approved_tutor}
-      />
-      
-      <div className="lg:col-span-1">
-        <ProfileAvatarCard 
-          avatarUrl={avatarUrl}
-          setAvatarUrl={setAvatarUrl}
-          setAvatarFile={setAvatarFile}
-          avatarFile={avatarFile}
-          loading={loading}
-          uploadingAvatar={uploadingAvatar}
-          firstName={formData.first_name}
-          userEmail={user?.email}
-          setUploadingAvatar={setUploadingAvatar}
-        />
+    <div className="space-y-6">
+      {/* Role Badge */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            Current Role
+            <Badge variant={isTutor ? "default" : "secondary"}>
+              {profile.role === 'tutor' ? 'Tutor' : 'Student'}
+            </Badge>
+          </CardTitle>
+          <CardDescription>
+            {isTutor 
+              ? "You have access to tutor features and can manage your tutoring profile." 
+              : "You can browse tutors and book sessions. Want to become a tutor? Apply to get approved first."
+            }
+          </CardDescription>
+        </CardHeader>
+        {!isTutor && (
+          <CardContent>
+            <Button asChild variant="outline">
+              <a 
+                href="https://usc.qualtrics.com/jfe/form/SV_7QU9OKorLMDmxNk" 
+                target="_blank" 
+                rel="noopener noreferrer"
+              >
+                Apply to Become a Tutor
+              </a>
+            </Button>
+          </CardContent>
+        )}
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2">
+          {isTutor ? (
+            <TutorProfileForm
+              formData={formData as any}
+              handleInputChange={handleInputChange}
+              loading={loading}
+              uploadingAvatar={uploadingAvatar}
+              handleProfileUpdate={handleProfileUpdate}
+              userEmail={user.email}
+              approvedTutor={profile.approved_tutor}
+            />
+          ) : (
+            <StudentProfileForm
+              formData={formData as any}
+              handleInputChange={handleInputChange}
+              loading={loading}
+              uploadingAvatar={uploadingAvatar}
+              handleProfileUpdate={handleProfileUpdate}
+              userEmail={user.email}
+            />
+          )}
+        </div>
+        
+        <div className="lg:col-span-1">
+          <ProfileAvatarCard 
+            avatarUrl={avatarUrl}
+            setAvatarUrl={setAvatarUrl}
+            setAvatarFile={setAvatarFile}
+            avatarFile={avatarFile}
+            loading={loading}
+            uploadingAvatar={uploadingAvatar}
+            firstName={formData.first_name}
+            userEmail={user?.email}
+            setUploadingAvatar={setUploadingAvatar}
+          />
+        </div>
       </div>
     </div>
   );

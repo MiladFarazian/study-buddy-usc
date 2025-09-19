@@ -62,8 +62,8 @@ export function ReviewRequirement() {
     if (session.status !== 'completed') return false;
     
     // 2. User must be the student (tutors handle differently)
-    if (profile.role === 'student' && session.student_id !== user.id) return false;
-    if (profile.role === 'tutor' && session.tutor_id !== user.id) return false;
+    if (profile?.role === 'student' && session.student_id !== user.id) return false;
+    if (profile?.role === 'tutor' && session.tutor_id !== user.id) return false;
     
     // 3. Session must be at least 1 hour old (not immediate after completion)
     const sessionEndTime = new Date(session.end_time).getTime();
@@ -76,7 +76,7 @@ export function ReviewRequirement() {
       .from('student_reviews')
       .select('review_id')
       .eq('session_id', session.id)
-      .eq(profile.role === 'student' ? 'student_id' : 'tutor_id', user.id)
+      .eq(profile?.role === 'student' ? 'student_id' : 'tutor_id', user.id)
       .maybeSingle();
     
     if (existingReview) return false; // Already reviewed

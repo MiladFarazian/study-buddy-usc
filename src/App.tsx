@@ -23,6 +23,7 @@ import TutorProfile from "./pages/TutorProfile";
 import TutorProfilePage from "./pages/TutorProfile/TutorProfilePage";
 import NotFound from "./pages/NotFound";
 import PrivateRoute from "./components/auth/PrivateRoute";
+import { RoleGuard } from "./components/auth/RoleGuard";
 
 import Schedule from "./pages/Schedule";
 import Messages from "./pages/Messages";
@@ -91,11 +92,11 @@ const router = createBrowserRouter([
       },
       {
         path: "/profile",
-        element: <PrivateRoute><Profile /></PrivateRoute>
+        element: <PrivateRoute><RoleGuard allowedRoles={['student']}><Profile /></RoleGuard></PrivateRoute>
       },
       {
         path: "/tutor-dashboard",
-        element: <PrivateRoute><TutorDashboard /></PrivateRoute>
+        element: <PrivateRoute><RoleGuard allowedRoles={['tutor']}><TutorDashboard /></RoleGuard></PrivateRoute>
       },
       {
         path: "/courses",
@@ -151,11 +152,11 @@ const router = createBrowserRouter([
           },
           {
             path: "availability",
-            element: <AvailabilitySettings />
+            element: <RoleGuard allowedRoles={['tutor']}><AvailabilitySettings /></RoleGuard>
           },
           {
             path: "tutor-settings", 
-            element: <TutorSettingsTab />
+            element: <RoleGuard allowedRoles={['tutor']}><TutorSettingsTab /></RoleGuard>
           },
           {
             path: "notifications",
@@ -177,7 +178,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/students",
-        element: <PrivateRoute><Students /></PrivateRoute>
+        element: <PrivateRoute><RoleGuard allowedRoles={['tutor']}><Students /></RoleGuard></PrivateRoute>
       },
       {
         path: "/booking",
@@ -189,7 +190,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/badges",
-        element: <PrivateRoute><BadgesDashboard /></PrivateRoute>
+        element: <PrivateRoute><RoleGuard allowedRoles={['tutor']}><BadgesDashboard /></RoleGuard></PrivateRoute>
       },
       {
         path: "/stripe-test",

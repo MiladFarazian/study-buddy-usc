@@ -26,9 +26,7 @@ export const CoursesSettings = () => {
   // Get the appropriate courses array based on role
   const getUserCourses = () => {
     if (!profile) return [];
-    return profile.role === 'tutor' 
-      ? profile.tutor_courses_subjects || []
-      : profile.student_courses || [];
+    return profile.subjects || [];
   };
 
   const handleRemoveCourse = async (courseNumber: string) => {
@@ -38,18 +36,13 @@ export const CoursesSettings = () => {
       setRemovingCourse(courseNumber);
       await removeCourseFromProfile(user.id, courseNumber);
       
-      // Update local state based on role
+      // Update local state
       if (profile && updateProfile) {
-        const currentCourses = getUserCourses();
-        const updatedCourses = currentCourses.filter(
+        const updatedCourses = (profile.subjects || []).filter(
           (subject) => subject !== courseNumber
         );
         
-        const updateData = profile.role === 'tutor' 
-          ? { tutor_courses_subjects: updatedCourses }
-          : { student_courses: updatedCourses };
-        
-        updateProfile(updateData);
+        updateProfile({ ...profile, subjects: updatedCourses });
       }
       
       toast({
