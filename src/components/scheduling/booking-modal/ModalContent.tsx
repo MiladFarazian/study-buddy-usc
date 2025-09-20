@@ -17,7 +17,6 @@ interface ModalContentProps {
   step: BookingStep;
   loading: boolean;
   bookingInProgress: boolean;
-  bookingCompleted: boolean;
   hasAvailability: boolean;
   errorMessage?: string;
   refreshAvailability: () => void;
@@ -43,7 +42,6 @@ export function ModalContent({
   step,
   loading,
   bookingInProgress,
-  bookingCompleted,
   hasAvailability,
   errorMessage,
   refreshAvailability,
@@ -163,9 +161,9 @@ export function ModalContent({
             <Button 
               className="bg-usc-cardinal hover:bg-usc-cardinal-dark"
               onClick={onComplete}
-              disabled={bookingInProgress && !bookingCompleted}
+              disabled={bookingInProgress}
             >
-              {bookingInProgress && !bookingCompleted ? (
+              {bookingInProgress ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Finalizing...

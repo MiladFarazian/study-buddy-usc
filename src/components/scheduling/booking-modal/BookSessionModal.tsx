@@ -37,7 +37,6 @@ function BookSessionModalContent({
     state,
     loading,
     bookingInProgress,
-    bookingCompleted,
     availableSlots,
     hasAvailability,
     errorMessage,
@@ -75,7 +74,6 @@ function BookSessionModalContent({
             step={state.bookingStep}
             loading={loading}
             bookingInProgress={bookingInProgress}
-            bookingCompleted={bookingCompleted}
             hasAvailability={hasAvailability}
             errorMessage={errorMessage}
             refreshAvailability={refreshAvailability}
