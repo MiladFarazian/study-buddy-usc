@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tutor } from "@/types/tutor";
 import { useBookSessionModal } from "./hooks/useBookSessionModal";
 import { ModalContent } from "./ModalContent";
-import { useScheduling, SchedulingProvider } from "@/contexts/SchedulingContext";
+import { useScheduling, SchedulingProvider, BookingStep } from "@/contexts/SchedulingContext";
 
 export interface BookSessionModalProps {
   isOpen: boolean;
@@ -63,8 +63,20 @@ function BookSessionModalContent({
 
   if (!isOpen) return null;
 
+  // Conditional close handler - prevent auto-close during confirmation
+  const handleDialogChange = (open: boolean) => {
+    // If trying to close and we're in confirmation step with confirmed booking, prevent it
+    if (!open && state.bookingStep === BookingStep.CONFIRMATION && isConfirmed) {
+      return; // Don't allow auto-close during confirmation
+    }
+    // Otherwise, allow normal close behavior
+    if (!open) {
+      handleClose();
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
+    <Dialog open={isOpen} onOpenChange={handleDialogChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{getStepTitle()}</DialogTitle>
