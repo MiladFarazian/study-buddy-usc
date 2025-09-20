@@ -37,6 +37,7 @@ function BookSessionModalContent({
     state,
     loading,
     bookingInProgress,
+    isConfirmed,
     availableSlots,
     hasAvailability,
     errorMessage,
@@ -74,6 +75,7 @@ function BookSessionModalContent({
             step={state.bookingStep}
             loading={loading}
             bookingInProgress={bookingInProgress}
+            isConfirmed={isConfirmed}
             hasAvailability={hasAvailability}
             errorMessage={errorMessage}
             refreshAvailability={refreshAvailability}
@@ -84,7 +86,7 @@ function BookSessionModalContent({
             onSelectSlot={handleSelectSlot}
             onBack={handleBack}
             onContinue={handleContinue}
-            onComplete={handleBookingComplete}
+            onComplete={handleClose}
             onPaymentComplete={handlePaymentComplete}
             sessionTimeRange={state.selectedTimeSlot ? {
               start: state.selectedTimeSlot.start,

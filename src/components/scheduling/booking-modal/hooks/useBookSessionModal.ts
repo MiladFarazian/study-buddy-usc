@@ -46,6 +46,7 @@ export function useBookSessionModal(
   
   // State for booking completion loading
   const [bookingInProgress, setBookingInProgress] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(false);
 
   // Ensure we set the tutor in context
   useEffect(() => {
@@ -66,6 +67,7 @@ export function useBookSessionModal(
       
       // Also reset the course in the scheduling context
       setCourse(null);
+      setIsConfirmed(false);
     }
   }, [isOpen, setCourse]);
 
@@ -351,7 +353,8 @@ export function useBookSessionModal(
       // Clear booking data
       localStorage.removeItem('currentBooking');
       
-      onClose();
+      // Set confirmed state instead of closing modal
+      setIsConfirmed(true);
     } catch (error) {
       console.error("[handleBookingComplete] Error finalizing booking:", error);
       toast.error("Booking confirmation failed");
@@ -386,6 +389,7 @@ export function useBookSessionModal(
     state,
     loading,
     bookingInProgress,
+    isConfirmed,
     availableSlots,
     hasAvailability,
     errorMessage,
