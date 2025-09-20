@@ -47,6 +47,20 @@ export async function getTutorAvailability(tutorId: string): Promise<WeeklyAvail
  */
 export async function updateTutorAvailability(tutorId: string, availability: WeeklyAvailability): Promise<boolean> {
   try {
+    // Validate all time slots are within reasonable hours (6 AM - 11 PM)
+    for (const [day, slots] of Object.entries(availability)) {
+      for (const slot of slots) {
+        const startHour = parseInt(slot.start.split(':')[0]);
+        const endHour = parseInt(slot.end.split(':')[0]);
+        const endMinute = parseInt(slot.end.split(':')[1]);
+        
+        if (startHour < 6 || endHour > 23 || (endHour === 23 && endMinute > 0)) {
+          console.error(`Invalid time slot: ${slot.start}-${slot.end} on ${day}. Hours must be between 6:00 AM and 11:00 PM.`);
+          return false;
+        }
+      }
+    }
+    
     // Convert the typed availability to the storage format
     const availabilityJson: WeeklyAvailabilityJson = {};
     
@@ -105,6 +119,13 @@ export function generateAvailableSlots(
     dayAvailability.forEach(timeSlot => {
       const startMinutes = convertTimeToMinutes(timeSlot.start);
       const endMinutes = convertTimeToMinutes(timeSlot.end);
+      
+      // Skip time slots outside reasonable hours (6 AM - 11 PM)
+      const startHour = Math.floor(startMinutes / 60);
+      const endHour = Math.floor(endMinutes / 60);
+      if (startHour < 6 || endHour > 23) {
+        return; // Skip this time slot
+      }
       
       // Generate 30-minute slots within the time window
       for (let minutes = startMinutes; minutes < endMinutes; minutes += 30) {

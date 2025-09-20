@@ -12,9 +12,9 @@ import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { WeeklyAvailability } from "@/lib/scheduling/types";
 
-// Generate time slots in 30-minute increments
-const TIME_SLOTS = Array.from({ length: 24 * 2 }, (_, i) => {
-  const hour = Math.floor(i / 2);
+// Generate time slots in 30-minute increments (6 AM - 11 PM only)
+const TIME_SLOTS = Array.from({ length: 17 * 2 }, (_, i) => {
+  const hour = Math.floor(i / 2) + 6; // Start at 6 AM
   const minute = (i % 2) * 30;
   return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
 });
@@ -52,7 +52,7 @@ export const TimeSlotForm: React.FC<TimeSlotFormProps> = ({
     <div className="mt-4">
       <h3 className="text-lg font-semibold capitalize">{selectedDay}</h3>
       <p className="text-sm text-muted-foreground mb-4">
-        Add your available time slots for this day.
+        Add your available time slots for this day. Hours are restricted to 6:00 AM - 11:00 PM for reasonable tutoring times.
       </p>
       
       <div className="flex flex-col md:flex-row gap-4">

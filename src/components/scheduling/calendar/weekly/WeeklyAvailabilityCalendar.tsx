@@ -47,7 +47,7 @@ export const WeeklyAvailabilityCalendar = ({
     setCurrentWeekStart(addDays(currentWeekStart, 7));
   };
 
-  const hours = Array.from({ length: 14 }, (_, i) => i + 8);
+  const hours = Array.from({ length: 18 }, (_, i) => i + 6); // 6 AM - 11 PM
   
   const { 
     isSelecting,

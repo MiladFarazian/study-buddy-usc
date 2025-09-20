@@ -40,6 +40,18 @@ export const AvailabilityCalendar = ({
       return;
     }
 
+    // Validate reasonable hours (6 AM - 11 PM)
+    const startHour = parseInt(selectedStart.split(':')[0]);
+    const endHour = parseInt(selectedEnd.split(':')[0]);
+    if (startHour < 6 || endHour > 23 || (endHour === 23 && selectedEnd !== "23:00")) {
+      toast({
+        title: "Invalid Hours",
+        description: "Tutoring hours must be between 6:00 AM and 11:00 PM.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Check for overlapping slots
     const daySlots = availability[selectedDay] || [];
     const overlapping = daySlots.some(slot => {
