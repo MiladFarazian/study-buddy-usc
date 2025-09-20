@@ -9,11 +9,11 @@ import { convertTimeToMinutes, convertMinutesToTime } from "./time-utils";
  */
 export async function getTutorAvailability(tutorId: string): Promise<WeeklyAvailability | null> {
   try {
-    // Query the database for tutor availability
+    // Query the tutors table for availability
     const { data, error } = await supabase
-      .from('tutor_availability')
-      .select('*')
-      .eq('tutor_id', tutorId)
+      .from('tutors')
+      .select('availability')
+      .eq('profile_id', tutorId)
       .single();
 
     if (error || !data) {
@@ -58,39 +58,14 @@ export async function updateTutorAvailability(tutorId: string, availability: Wee
       }));
     });
     
-    // First, check if a record already exists for this tutor
-    const { data: existingData, error: fetchError } = await supabase
-      .from('tutor_availability')
-      .select('id')
-      .eq('tutor_id', tutorId)
-      .maybeSingle();
-      
-    if (fetchError && fetchError.code !== 'PGRST116') {
-      console.error("Error checking for existing tutor availability:", fetchError);
-      return false;
-    }
-    
-    let result;
-    
-    if (existingData) {
-      // Update existing record
-      result = await supabase
-        .from('tutor_availability')
-        .update({
-          availability: availabilityJson,
-          updated_at: new Date().toISOString()
-        })
-        .eq('tutor_id', tutorId);
-    } else {
-      // Insert new record
-      result = await supabase
-        .from('tutor_availability')
-        .insert({
-          tutor_id: tutorId,
-          availability: availabilityJson,
-          updated_at: new Date().toISOString()
-        });
-    }
+    // Update the tutors table availability column
+    const result = await supabase
+      .from('tutors')
+      .update({
+        availability: availabilityJson,
+        updated_at: new Date().toISOString()
+      })
+      .eq('profile_id', tutorId);
 
     if (result.error) {
       console.error("Error updating tutor availability:", result.error);

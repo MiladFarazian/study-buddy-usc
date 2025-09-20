@@ -7,7 +7,7 @@ import { WeeklyAvailabilityCalendar } from './calendar';
 import { AvailabilityCalendar } from './AvailabilityCalendar';
 import { WeeklyAvailability } from '@/lib/scheduling/types';
 import { useToast } from '@/hooks/use-toast';
-import { updateTutorAvailability } from '@/lib/scheduling';
+import { updateTutorAvailability, getTutorAvailability } from '@/lib/scheduling';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -27,24 +27,26 @@ export const AvailabilitySettings = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load availability from profile if available
-    if (profile?.availability) {
-      // Type assertion to handle the conversion safely
-      const availabilityData = profile.availability as any;
-      if (typeof availabilityData === 'object' && !Array.isArray(availabilityData)) {
-        // Create a properly typed availability object
-        const weekDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-        const typedAvailability: WeeklyAvailability = {};
-        
-        weekDays.forEach(day => {
-          typedAvailability[day] = Array.isArray(availabilityData[day]) ? availabilityData[day] : [];
-        });
-        
-        setAvailability(typedAvailability);
+    const loadAvailability = async () => {
+      if (!user?.id) {
+        setLoading(false);
+        return;
       }
-    }
-    setLoading(false);
-  }, [profile]);
+
+      try {
+        const availabilityData = await getTutorAvailability(user.id);
+        if (availabilityData) {
+          setAvailability(availabilityData);
+        }
+      } catch (error) {
+        console.error('Error loading availability:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAvailability();
+  }, [user?.id]);
 
   const handleAvailabilityChange = (newAvailability: WeeklyAvailability) => {
     setAvailability(newAvailability);
