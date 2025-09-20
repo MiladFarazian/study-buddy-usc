@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { addDays, startOfDay } from "date-fns";
 import { Tutor } from "@/types/tutor";
@@ -203,25 +202,14 @@ export function useBookSessionModal(
       case BookingStep.PAYMENT:
         return "Payment";
       case BookingStep.CONFIRMATION:
-        return "Confirm Booking";
+        return "Session Confirmed";
       default:
         return "Book a Session";
     }
   };
   
-  // Handle payment completion
-  const handlePaymentComplete = useCallback((sessionId: string, paymentSuccess: boolean) => {
-    if (paymentSuccess) {
-      // Move to confirmation step
-      setState(prev => ({ ...prev, bookingStep: BookingStep.CONFIRMATION }));
-      dispatch({ type: 'SET_STEP', payload: BookingStep.CONFIRMATION });
-    } else {
-      toast.error("Payment failed. Please try again.");
-    }
-  }, [dispatch]);
-
-  // Handle booking completion (after confirmation)
-  const handleBookingComplete = useCallback(async () => {
+  // Handle booking completion (after confirmation) 
+  const handleBookingCompleteImpl = useCallback(async () => {
     console.log("SESSION CREATION STARTING - handleBookingComplete");
     console.log("[handleBookingComplete] Finalizing booking...");
     
@@ -355,24 +343,8 @@ export function useBookSessionModal(
         // Don't fail completely if payment record fails - session is created
       }
 
-      // Calculate start and end times for display
-      const startTime = new Date(selectedDate);
-      const [startHour, startMinute] = state.selectedTimeSlot!.start.split(':').map(Number);
-      startTime.setHours(startHour, startMinute, 0, 0);
-      
-      const endTime = new Date(startTime);
-      endTime.setMinutes(endTime.getMinutes() + state.selectedDuration);
-
-      // Show confirmation with session details
-      showConfirmation({
-        tutorName: tutor.name,
-        date: format(selectedDate, 'EEEE, MMMM d, yyyy'),
-        startTime: format(startTime, 'h:mm a'),
-        endTime: format(endTime, 'h:mm a'),
-        location: contextState.location || 'Location TBD',
-        courseName: state.selectedCourseId || undefined,
-        sessionType: contextState.sessionType || 'In Person'
-      });
+      // No longer showing the confirmation popup - just success message
+      // Session details are shown in the confirmation step instead
       
       toast.success("Your session has been booked and payment processed!");
       
@@ -386,7 +358,28 @@ export function useBookSessionModal(
     } finally {
       setBookingInProgress(false);
     }
-  }, [onClose, tutor, selectedDate, state, contextState, showConfirmation]);
+  }, [onClose, tutor, selectedDate, state, contextState]);
+
+  // Handle payment completion - auto-confirm after successful payment
+  const handlePaymentComplete = useCallback(async (sessionId: string, paymentSuccess: boolean) => {
+    if (paymentSuccess) {
+      // Auto-confirm the booking immediately after successful payment
+      setState(prev => ({ ...prev, bookingStep: BookingStep.CONFIRMATION }));
+      dispatch({ type: 'SET_STEP', payload: BookingStep.CONFIRMATION });
+      
+      // Auto-confirm by calling handleBookingComplete (defined below)
+      setTimeout(() => {
+        handleBookingCompleteImpl();
+      }, 100);
+    } else {
+      toast.error("Payment failed. Please try again.");
+    }
+  }, [dispatch, handleBookingCompleteImpl]);
+
+  // Create the public handleBookingComplete that calls the implementation
+  const handleBookingComplete = useCallback(async () => {
+    await handleBookingCompleteImpl();
+  }, [handleBookingCompleteImpl]);
 
   return {
     selectedDate,

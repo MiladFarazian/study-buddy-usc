@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useScheduling } from "@/contexts/SchedulingContext";
 import { formatDate, formatTime } from "@/lib/scheduling/time-utils";
@@ -189,10 +188,13 @@ export function ConfirmationStep() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-xl font-semibold">Session Summary</h3>
+      <div className="text-center">
+        <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+          <Check className="w-8 h-8 text-green-600" />
+        </div>
+        <h3 className="text-xl font-semibold text-green-700">Session Confirmed!</h3>
         <p className="text-sm text-muted-foreground mt-1">
-          Review your session details before confirming.
+          Your tutoring session has been successfully booked and paid for.
         </p>
       </div>
 
@@ -252,7 +254,7 @@ export function ConfirmationStep() {
           
           <div className="flex justify-between">
             <p className="font-medium">Session Price</p>
-            <p className="font-bold">{calculatePrice()}</p>
+            <p className="font-bold text-green-600">{calculatePrice()} paid</p>
           </div>
           
           {state.notes && (
@@ -266,6 +268,11 @@ export function ConfirmationStep() {
           )}
         </CardContent>
       </Card>
+      
+      <div className="text-center text-sm text-muted-foreground mb-3">
+        <p>📧 Confirmation email sent with session details</p>
+        <p className="mt-2">Add this session to your calendar:</p>
+      </div>
       
       <div className="flex flex-col sm:flex-row gap-3">
         <Button

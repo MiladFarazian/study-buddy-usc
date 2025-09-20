@@ -157,14 +157,7 @@ export function ModalContent({
         <>
           <ConfirmationStep />
           
-          <div className="flex justify-between mt-6 pt-4 border-t">
-            <Button 
-              variant="outline" 
-              onClick={onBack}
-              disabled={bookingInProgress}
-            >
-              Back
-            </Button>
+          <div className="flex justify-end mt-6 pt-4 border-t">
             <Button 
               className="bg-usc-cardinal hover:bg-usc-cardinal-dark"
               onClick={onComplete}
@@ -173,10 +166,10 @@ export function ModalContent({
               {bookingInProgress ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
+                  Finalizing...
                 </>
               ) : (
-                "Confirm Booking"
+                "Close"
               )}
             </Button>
           </div>
