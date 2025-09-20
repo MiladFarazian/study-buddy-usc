@@ -598,7 +598,6 @@ export type Database = {
       profiles: {
         Row: {
           approved_tutor: boolean | null
-          availability: Json | null
           avatar_url: string | null
           average_rating: number | null
           bio: string | null
@@ -622,7 +621,6 @@ export type Database = {
         }
         Insert: {
           approved_tutor?: boolean | null
-          availability?: Json | null
           avatar_url?: string | null
           average_rating?: number | null
           bio?: string | null
@@ -646,7 +644,6 @@ export type Database = {
         }
         Update: {
           approved_tutor?: boolean | null
-          availability?: Json | null
           avatar_url?: string | null
           average_rating?: number | null
           bio?: string | null
@@ -1000,30 +997,6 @@ export type Database = {
           id?: string
           is_current?: boolean | null
           name?: string
-        }
-        Relationships: []
-      }
-      tutor_availability: {
-        Row: {
-          availability: Json | null
-          created_at: string
-          id: string
-          tutor_id: string
-          updated_at: string
-        }
-        Insert: {
-          availability?: Json | null
-          created_at?: string
-          id?: string
-          tutor_id: string
-          updated_at?: string
-        }
-        Update: {
-          availability?: Json | null
-          created_at?: string
-          id?: string
-          tutor_id?: string
-          updated_at?: string
         }
         Relationships: []
       }
