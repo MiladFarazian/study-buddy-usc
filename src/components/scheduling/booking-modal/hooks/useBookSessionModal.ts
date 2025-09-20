@@ -46,6 +46,9 @@ export function useBookSessionModal(
   
   // State for booking completion loading
   const [bookingInProgress, setBookingInProgress] = useState(false);
+  
+  // State to track if booking has been completed (to prevent duplicate completion)
+  const [bookingCompleted, setBookingCompleted] = useState(false);
 
   // Ensure we set the tutor in context
   useEffect(() => {
@@ -183,8 +186,16 @@ export function useBookSessionModal(
   
   // Handle closing the modal
   const handleClose = () => {
+    setBookingCompleted(false); // Reset completion state when modal closes
     onClose();
   };
+  
+  // Reset booking completed state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setBookingCompleted(false);
+    }
+  }, [isOpen]);
   
   // Get the title for the current step
   const getStepTitle = (): string => {
@@ -351,7 +362,8 @@ export function useBookSessionModal(
       // Clear booking data
       localStorage.removeItem('currentBooking');
       
-      onClose();
+      // Mark booking as completed and keep modal open
+      setBookingCompleted(true);
     } catch (error) {
       console.error("[handleBookingComplete] Error finalizing booking:", error);
       toast.error("Booking confirmation failed");
@@ -376,16 +388,23 @@ export function useBookSessionModal(
     }
   }, [dispatch, handleBookingCompleteImpl]);
 
-  // Create the public handleBookingComplete that calls the implementation
+  // Create the public handleBookingComplete that handles both completion and closing
   const handleBookingComplete = useCallback(async () => {
-    await handleBookingCompleteImpl();
-  }, [handleBookingCompleteImpl]);
+    if (bookingCompleted) {
+      // If booking is already completed, just close the modal
+      onClose();
+    } else {
+      // Otherwise, complete the booking
+      await handleBookingCompleteImpl();
+    }
+  }, [bookingCompleted, onClose, handleBookingCompleteImpl]);
 
   return {
     selectedDate,
     state,
     loading,
     bookingInProgress,
+    bookingCompleted,
     availableSlots,
     hasAvailability,
     errorMessage,
