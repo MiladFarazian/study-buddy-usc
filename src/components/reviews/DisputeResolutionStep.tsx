@@ -6,6 +6,7 @@ import { Session } from "@/types/session";
 import { Tutor } from "@/types/tutor";
 import { AlertTriangle, MessageSquare, Clock, RefreshCw, Phone } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DisputeResolutionStepProps {
   session: Session;
@@ -64,13 +65,52 @@ export function DisputeResolutionStep({
     setIsSubmitting(true);
     
     try {
-      // Here you would typically submit the dispute to your backend
-      // For now, we'll just simulate the submission
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Prepare the no-show report data
+      const noShowData = {
+        reason: selectedReason,
+        additionalDetails: additionalDetails.trim() || null
+      };
+
+      // Update the session with the no-show report
+      const { error: updateError } = await supabase
+        .from('sessions')
+        .update({ 
+          no_show_report: JSON.stringify(noShowData)
+        })
+        .eq('id', session.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Send admin notification email
+      try {
+        await supabase.functions.invoke('send-notification-email', {
+          body: {
+            recipientEmail: 'admin@trojan-tutoring.com', // Replace with actual admin email
+            recipientName: 'Admin Team',
+            subject: `No-Show Report: Session ${session.id}`,
+            notificationType: 'no_show_report',
+            data: {
+              sessionId: session.id,
+              tutorName: `${tutor.firstName} ${tutor.lastName}`,
+              studentId: session.student_id,
+              startTime: session.start_time,
+              reason: selectedReason,
+              additionalDetails: additionalDetails.trim() || 'None provided',
+              courseId: session.course_id
+            }
+          }
+        });
+      } catch (emailError) {
+        console.error('Failed to send admin notification:', emailError);
+        // Don't fail the entire process if email fails
+      }
       
       toast.success("Dispute submitted successfully. Our team will review this within 24 hours.");
       onClose();
     } catch (error) {
+      console.error('Failed to submit dispute:', error);
       toast.error("Failed to submit dispute. Please try again.");
     } finally {
       setIsSubmitting(false);

@@ -726,6 +726,7 @@ export type Database = {
           end_time: string
           id: string
           location: string | null
+          no_show_report: string | null
           notes: string | null
           payment_status: string | null
           reminder_1h_sent_at: string | null
@@ -758,6 +759,7 @@ export type Database = {
           end_time: string
           id?: string
           location?: string | null
+          no_show_report?: string | null
           notes?: string | null
           payment_status?: string | null
           reminder_1h_sent_at?: string | null
@@ -790,6 +792,7 @@ export type Database = {
           end_time?: string
           id?: string
           location?: string | null
+          no_show_report?: string | null
           notes?: string | null
           payment_status?: string | null
           reminder_1h_sent_at?: string | null
