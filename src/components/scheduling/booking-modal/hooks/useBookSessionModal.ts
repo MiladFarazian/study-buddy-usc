@@ -15,7 +15,7 @@ import { dollarsToCents } from "@/lib/currency-utils";
 interface BookingState {
   bookingStep: BookingStep; 
   selectedTimeSlot: BookingSlot | null;
-  selectedDuration: number;
+  selectedDuration: number | null;
   selectedCourseId: string | null;
 }
 
@@ -30,7 +30,7 @@ export function useBookSessionModal(
   const [state, setState] = useState<BookingState>({
     bookingStep: BookingStep.SELECT_DATE_TIME,
     selectedTimeSlot: null,
-    selectedDuration: 60, // Default to 1 hour
+    selectedDuration: null, // No default selection - user must choose
     selectedCourseId: null
   });
   
@@ -61,7 +61,7 @@ export function useBookSessionModal(
       setState({
         bookingStep: BookingStep.SELECT_DATE_TIME,
         selectedTimeSlot: null,
-        selectedDuration: 60,
+        selectedDuration: null, // No default selection
         selectedCourseId: null
       });
       

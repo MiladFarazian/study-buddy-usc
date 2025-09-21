@@ -9,7 +9,7 @@ import { WeeklyAvailability } from "@/lib/scheduling/types/availability";
 import { validateDurationAgainstAvailability } from "@/lib/scheduling/duration-validation";
 
 interface SessionDurationSelectorProps {
-  selectedDuration: number;
+  selectedDuration: number | null;
   onDurationChange: (duration: number) => void;
   sessionTimeRange?: { start: string; end: string };
   calculatedCost?: number;
