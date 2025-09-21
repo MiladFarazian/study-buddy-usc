@@ -25,7 +25,7 @@ interface NotificationEmailRequest {
   recipientUserId?: string;
   recipientName: string;
   subject: string;
-  notificationType: 'session_reminder' | 'new_message' | 'resource_update' | 'platform_update' | 'session_booked' | 'session_cancellation' | 'session_reschedule' | 'admin_warning' | 'admin_suspension';
+  notificationType: 'session_reminder' | 'new_message' | 'resource_update' | 'platform_update' | 'session_booked' | 'session_cancellation' | 'session_reschedule' | 'admin_warning' | 'admin_suspension' | 'no_show_report' | 'session_cancelled_tutor_suspended';
   data?: Record<string, any>;
 }
 
@@ -168,6 +168,30 @@ serve(async (req) => {
         htmlContent = generateAdminSuspensionEmail({
           recipientName,
           reason: data?.reason || 'Multiple no-show reports'
+        });
+        break;
+      
+      case 'no_show_report':
+        htmlContent = generateNoShowReportEmail({
+          recipientName,
+          tutorName: data?.tutorName || 'Unknown Tutor',
+          sessionDate: data?.sessionDate || '',
+          startTime: data?.startTime || '',
+          courseName: data?.courseName || 'General tutoring',
+          reportReason: data?.reportReason || 'No-show incident'
+        });
+        break;
+      
+      case 'session_cancelled_tutor_suspended':
+        htmlContent = generateSessionCancelledTutorSuspendedEmail({
+          recipientName,
+          sessionDate: data?.sessionDate || '',
+          startTime: data?.startTime || '',
+          endTime: data?.endTime || '',
+          courseName: data?.courseName || 'General tutoring',
+          tutorName: data?.tutorName || 'Your tutor',
+          location: data?.location || 'Not specified',
+          sessionType: data?.sessionType || 'in_person'
         });
         break;
       
@@ -827,6 +851,156 @@ function generateAdminSuspensionEmail({
           </a>
         </div>
         <p>Sincerely,<br>USC Study Buddy Administration</p>
+      </div>
+      <!-- Enhanced footer -->
+      <div style="background-color: #f8f9fa; padding: 20px; text-align: center; border-radius: 0 0 5px 5px; border-top: 1px solid #ddd;">
+        <div style="margin-bottom: 15px;">
+          <a href="https://studybuddyusc.com" style="background-color: #990000; color: white; padding: 12px 24px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block;">Visit StudyBuddy USC</a>
+        </div>
+        <p style="margin: 0; color: #666; font-size: 12px;">&copy; 2025 USC Study Buddy. All rights reserved.</p>
+        <p style="margin: 5px 0 0 0; color: #999; font-size: 11px;">
+          <a href="https://studybuddyusc.com" style="color: #990000; text-decoration: none;">studybuddyusc.com</a> | 
+          The premier tutoring marketplace for USC students
+        </p>
+      </div>
+    </div>
+  `;
+}
+
+function generateNoShowReportEmail({
+  recipientName,
+  tutorName,
+  sessionDate,
+  startTime,
+  courseName,
+  reportReason
+}: {
+  recipientName: string,
+  tutorName: string,
+  sessionDate: string,
+  startTime: string,
+  courseName: string,
+  reportReason: string
+}): string {
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; color: #333;">
+      <!-- Header with branding -->
+      <div style="background-color: #f8f9fa; padding: 15px; text-align: center; border-radius: 5px 5px 0 0;">
+        <a href="https://studybuddyusc.com" style="text-decoration: none; color: #990000; font-size: 24px; font-weight: bold;">
+          🎓 StudyBuddy USC
+        </a>
+        <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">Admin Dashboard</p>
+      </div>
+      <!-- Main content -->
+      <div style="background-color: #ffc107; color: #212529; padding: 20px; text-align: center;">
+        <h1 style="margin: 0;">⚠️ No-Show Report</h1>
+      </div>
+      <div style="padding: 20px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 5px 5px;">
+        <p>Hello ${recipientName},</p>
+        <p>A no-show report has been submitted for review:</p>
+        
+        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 15px 0;">
+          <p><strong>Tutor:</strong> ${tutorName}</p>
+          <p><strong>Session Date:</strong> ${sessionDate}</p>
+          <p><strong>Start Time:</strong> ${startTime}</p>
+          <p><strong>Course:</strong> ${courseName}</p>
+          <p><strong>Report Reason:</strong> ${reportReason}</p>
+        </div>
+        
+        <p>Please review this report and take appropriate administrative action.</p>
+        
+        <div style="text-align: center; margin: 20px 0;">
+          <a href="https://studybuddyusc.com/admin" style="background-color: #990000; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+            Review in Admin Dashboard
+          </a>
+        </div>
+        
+        <p>This report requires your attention for maintaining platform quality.</p>
+      </div>
+      <!-- Enhanced footer -->
+      <div style="background-color: #f8f9fa; padding: 20px; text-align: center; border-radius: 0 0 5px 5px; border-top: 1px solid #ddd;">
+        <p style="margin: 0; color: #666; font-size: 12px;">&copy; 2025 USC Study Buddy. All rights reserved.</p>
+        <p style="margin: 5px 0 0 0; color: #999; font-size: 11px;">
+          <a href="https://studybuddyusc.com" style="color: #990000; text-decoration: none;">studybuddyusc.com</a> | 
+          Administrative System
+        </p>
+      </div>
+    </div>
+  `;
+}
+
+function generateSessionCancelledTutorSuspendedEmail({
+  recipientName,
+  sessionDate,
+  startTime,
+  endTime,
+  courseName,
+  tutorName,
+  location,
+  sessionType
+}: {
+  recipientName: string,
+  sessionDate: string,
+  startTime: string,
+  endTime: string,
+  courseName: string,
+  tutorName: string,
+  location: string,
+  sessionType: string
+}): string {
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; color: #333;">
+      <!-- Header with branding -->
+      <div style="background-color: #f8f9fa; padding: 15px; text-align: center; border-radius: 5px 5px 0 0;">
+        <a href="https://studybuddyusc.com" style="text-decoration: none; color: #990000; font-size: 24px; font-weight: bold;">
+          🎓 StudyBuddy USC
+        </a>
+        <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">Your Premier Tutoring Marketplace</p>
+      </div>
+      <!-- Main content -->
+      <div style="background-color: #dc3545; color: white; padding: 20px; text-align: center;">
+        <h1 style="margin: 0;">Session Cancelled</h1>
+      </div>
+      <div style="padding: 20px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 5px 5px;">
+        <p>Hello ${recipientName},</p>
+        <p>We sincerely apologize, but your scheduled tutoring session has been cancelled due to your tutor's account being temporarily suspended.</p>
+        
+        <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 5px; margin: 15px 0;">
+          <p><strong>Cancelled Session Details:</strong></p>
+          <p><strong>Tutor:</strong> ${tutorName}</p>
+          <p><strong>Date:</strong> ${sessionDate}</p>
+          <p><strong>Time:</strong> ${startTime} to ${endTime}</p>
+          <p><strong>Course:</strong> ${courseName}</p>
+          <p><strong>Location:</strong> ${location}</p>
+        </div>
+        
+        <div style="background-color: #d1ecf1; border: 1px solid #b8daff; padding: 15px; border-radius: 5px; margin: 15px 0;">
+          <p><strong>What happens next:</strong></p>
+          <p>• No payment will be charged for this cancelled session</p>
+          <p>• If you were already charged, you will receive a full refund within 3-5 business days</p>
+          <p>• You can book a new session with any available tutor immediately</p>
+        </div>
+        
+        <p>We understand this is inconvenient and apologize for any disruption to your studies. Our team maintains high standards to ensure the best tutoring experience for all students.</p>
+        
+        <div style="text-align: center; margin: 25px 0;">
+          <a href="https://studybuddyusc.com/tutors" style="background-color: #990000; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-right: 10px;">
+            Find New Tutor
+          </a>
+          <a href="https://studybuddyusc.com/schedule" style="background-color: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+            View Schedule
+          </a>
+        </div>
+        
+        <p>If you have any questions or need assistance finding a replacement tutor, please don't hesitate to contact our support team.</p>
+        
+        <div style="text-align: center; margin: 20px 0;">
+          <a href="mailto:admin@trojan-tutoring.com" style="color: #990000; text-decoration: underline; font-weight: bold;">
+            Contact Support: admin@trojan-tutoring.com
+          </a>
+        </div>
+        
+        <p>Thank you for your understanding and continued trust in USC Study Buddy.</p>
       </div>
       <!-- Enhanced footer -->
       <div style="background-color: #f8f9fa; padding: 20px; text-align: center; border-radius: 0 0 5px 5px; border-top: 1px solid #ddd;">
