@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, UserMinus, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 import { format } from "date-fns";
 
 interface NoShowReport {
@@ -37,7 +37,7 @@ export const NoShowReportsTable = ({ reports, onRefresh }: NoShowReportsTablePro
   const handleWarnTutor = async (report: NoShowReport) => {
     setActionLoading(report.id);
     try {
-      const { error } = await supabase.functions.invoke('send-notification-email', {
+      const { error } = await supabaseAdmin.functions.invoke('send-notification-email', {
         body: {
           type: 'tutor_warning',
           recipientEmail: `${report.tutor.first_name}@studybuddyusc.com`, // Placeholder email
@@ -69,7 +69,7 @@ export const NoShowReportsTable = ({ reports, onRefresh }: NoShowReportsTablePro
     setActionLoading(report.id);
     try {
       // Update tutor profile to mark as suspended (we'll use approved_tutor = false as suspension)
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('profiles')
         .update({ approved_tutor: false })
         .eq('id', report.tutor.id);
@@ -97,7 +97,7 @@ export const NoShowReportsTable = ({ reports, onRefresh }: NoShowReportsTablePro
     setActionLoading(report.id);
     try {
       // Clear the no_show_report field to mark as resolved
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('sessions')
         .update({ no_show_report: null })
         .eq('id', report.id);

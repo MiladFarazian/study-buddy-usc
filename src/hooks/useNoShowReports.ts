@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 import { useToast } from "@/hooks/use-toast";
 import { subDays } from "date-fns";
 
@@ -49,7 +49,10 @@ export const useNoShowReports = () => {
   const fetchNoShowReports = async () => {
     setLoading(true);
     try {
-      let query = supabase
+      console.log('🔍 Fetching no-show reports...');
+      
+      // Query sessions with no_show_report data
+      let query = supabaseAdmin
         .from('sessions')
         .select(`
           id,
@@ -59,16 +62,9 @@ export const useNoShowReports = () => {
           created_at,
           tutor_id,
           student_id
-        `);
-
-      // Filter by resolved/unresolved status
-      if (!showResolved) {
-        query = query.not('no_show_report', 'is', null);
-      } else {
-        // For showing resolved, we need a different approach since we clear the field
-        // For now, just show unresolved
-        query = query.not('no_show_report', 'is', null);
-      }
+        `)
+        .not('no_show_report', 'is', null)
+        .neq('no_show_report', '');
 
       // Apply date filter
       if (dateFilter !== 'all') {
@@ -78,9 +74,14 @@ export const useNoShowReports = () => {
       }
 
       const { data: sessionsData, error: sessionsError } = await query
-        .order('created_at', { ascending: false });
+        .order('start_time', { ascending: false });
 
-      if (sessionsError) throw sessionsError;
+      console.log('📊 Sessions query result:', { sessionsData, sessionsError });
+
+      if (sessionsError) {
+        console.error('❌ Sessions query error:', sessionsError);
+        throw sessionsError;
+      }
 
       if (!sessionsData || sessionsData.length === 0) {
         setReports([]);
@@ -97,15 +98,17 @@ export const useNoShowReports = () => {
       const studentIds = [...new Set(sessionsData.map(s => s.student_id))];
 
       const [tutorProfiles, studentProfiles] = await Promise.all([
-        supabase
+        supabaseAdmin
           .from('profiles')
           .select('id, first_name, last_name')
           .in('id', tutorIds),
-        supabase
+        supabaseAdmin
           .from('profiles')
           .select('id, first_name, last_name')
           .in('id', studentIds)
       ]);
+
+      console.log('👥 Profile query results:', { tutorProfiles, studentProfiles });
 
       if (tutorProfiles.error) throw tutorProfiles.error;
       if (studentProfiles.error) throw studentProfiles.error;
@@ -143,7 +146,7 @@ export const useNoShowReports = () => {
   const calculateSummaryStats = async (currentReports: NoShowReport[]) => {
     try {
       // Get all no-show reports for statistics (regardless of current filter)
-      const { data: allReportsData } = await supabase
+      const { data: allReportsData } = await supabaseAdmin
         .from('sessions')
         .select('tutor_id, created_at')
         .not('no_show_report', 'is', null);
@@ -170,7 +173,7 @@ export const useNoShowReports = () => {
         .map(([tutorId]) => tutorId);
 
       if (topTutorIds.length > 0) {
-        const { data: topTutorProfiles } = await supabase
+        const { data: topTutorProfiles } = await supabaseAdmin
           .from('profiles')
           .select('id, first_name, last_name')
           .in('id', topTutorIds);
