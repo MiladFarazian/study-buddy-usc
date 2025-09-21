@@ -42,6 +42,7 @@ function BookSessionModalContent({
     hasAvailability,
     errorMessage,
     refreshAvailability,
+    tutorAvailability,
     handleDateChange,
     handleSelectSlot,
     handleDurationChange,
@@ -111,6 +112,7 @@ function BookSessionModalContent({
             tutor={tutor}
             selectedCourseId={state.selectedCourseId}
             onCourseSelect={handleCourseChange}
+            tutorAvailability={tutorAvailability}
           />
         </div>
       </DialogContent>

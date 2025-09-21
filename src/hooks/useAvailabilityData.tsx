@@ -8,6 +8,7 @@ import {
   getTutorBookedSessions,
   generateAvailableSlots
 } from "@/lib/scheduling";
+import { WeeklyAvailability } from "@/lib/scheduling/types/availability";
 import { Tutor } from "@/types/tutor";
 
 export function useAvailabilityData(tutor: Tutor, startDate: Date) {
@@ -17,6 +18,7 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
   const [hasAvailability, setHasAvailability] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [fetchTrigger, setFetchTrigger] = useState<number>(0);
+  const [tutorAvailability, setTutorAvailability] = useState<WeeklyAvailability | null>(null);
   
   // Memoize these values to prevent unnecessary re-renders
   const tutorId = useMemo(() => tutor?.id, [tutor]);
@@ -43,9 +45,16 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
         console.log("No availability found for tutor:", tutorId);
         setHasAvailability(false);
         setErrorMessage("This tutor hasn't set their availability yet.");
+        setTutorAvailability(null);
         setLoading(false);
         return;
       }
+      
+      // Store the availability data for duration validation
+      setTutorAvailability(availability);
+      console.log("✅ Tutor availability data loaded for validation:", availability);
+      console.log("🔍 Phase 1 & 2 Test - Availability structure:", Object.keys(availability));
+      console.log("🔍 Phase 1 & 2 Test - Sample day slots:", availability.monday || availability.tuesday || "No weekday slots found");
       
       // Check if there's any actual availability set
       const hasAnySlots = Object.values(availability).some(daySlots => 
@@ -123,6 +132,7 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
     availableSlots, 
     hasAvailability, 
     errorMessage, 
-    refreshAvailability 
+    refreshAvailability,
+    tutorAvailability 
   };
 }

@@ -11,6 +11,7 @@ import { StudentInfoForm } from "./student-info/StudentInfoForm";
 import { PaymentStep } from "./PaymentStep";
 import { ConfirmationStep } from "./ConfirmationStep";
 import { BookingSlot } from "@/lib/scheduling/types";
+import { WeeklyAvailability } from "@/lib/scheduling/types/availability";
 import { Tutor } from "@/types/tutor";
 
 interface ModalContentProps {
@@ -37,6 +38,7 @@ interface ModalContentProps {
   tutor: Tutor;
   selectedCourseId: string | null;
   onCourseSelect: (courseId: string | null) => void;
+  tutorAvailability: WeeklyAvailability | null;
 }
 
 export function ModalContent({
@@ -62,8 +64,13 @@ export function ModalContent({
   calculatedCost,
   tutor,
   selectedCourseId,
-  onCourseSelect
+  onCourseSelect,
+  tutorAvailability
 }: ModalContentProps) {
+  // Add debugging log for Phase 1 & 2 testing
+  console.log("🔍 ModalContent - TutorAvailability data:", tutorAvailability);
+  console.log("🔍 ModalContent - Selected date:", selectedDate);
+  console.log("🔍 ModalContent - Selected slot:", selectedSlot);
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -105,7 +112,7 @@ export function ModalContent({
         />
       );
       
-    case BookingStep.SELECT_DURATION:
+     case BookingStep.SELECT_DURATION:
       return (
         <SessionDurationSelector
           selectedDuration={selectedDuration}
@@ -114,6 +121,9 @@ export function ModalContent({
           calculatedCost={calculatedCost}
           onBack={onBack}
           onContinue={onContinue}
+          tutorAvailability={tutorAvailability}
+          selectedDate={selectedDate}
+          selectedSlot={selectedSlot}
         />
       );
       

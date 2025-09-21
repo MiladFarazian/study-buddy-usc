@@ -93,7 +93,7 @@ export function useBookSessionModal(
   }, [state.selectedDuration, dispatch]);
   
   // Get available slots for the selected date
-  const { availableSlots, loading, errorMessage, refreshAvailability } = 
+  const { availableSlots, loading, errorMessage, refreshAvailability, tutorAvailability } = 
     useAvailabilityData(tutor, selectedDate);
   
   // Check if there's any availability
@@ -394,6 +394,7 @@ export function useBookSessionModal(
     hasAvailability,
     errorMessage,
     refreshAvailability,
+    tutorAvailability,
     handleDateChange,
     handleSelectSlot,
     handleDurationChange,

@@ -1,10 +1,12 @@
 
 import { useState } from "react";
-import { Clock } from "lucide-react";
+import { Clock, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { BookingSlot } from "@/lib/scheduling/types";
+import { WeeklyAvailability } from "@/lib/scheduling/types/availability";
+import { validateDurationAgainstAvailability } from "@/lib/scheduling/duration-validation";
 
 interface SessionDurationSelectorProps {
   selectedDuration: number;
@@ -20,6 +22,9 @@ interface SessionDurationSelectorProps {
   formatTimeForDisplay?: (time: string) => string;
   onBack?: () => void;
   onContinue?: () => void;
+  tutorAvailability?: WeeklyAvailability | null;
+  selectedDate?: Date;
+  selectedSlot?: BookingSlot | null;
 }
 
 export function SessionDurationSelector({
@@ -32,8 +37,16 @@ export function SessionDurationSelector({
   selectedStartTime,
   formatTimeForDisplay = (time) => time,
   onBack,
-  onContinue
+  onContinue,
+  tutorAvailability,
+  selectedDate,
+  selectedSlot
 }: SessionDurationSelectorProps) {
+  // Add debugging logs for Phase 1 & 2 testing
+  console.log("🔍 SessionDurationSelector - TutorAvailability:", tutorAvailability);
+  console.log("🔍 SessionDurationSelector - Selected date:", selectedDate);
+  console.log("🔍 SessionDurationSelector - Selected slot:", selectedSlot);
+  
   // Session duration options in minutes
   const durationOptions = [
     { value: 30, label: "30 min" },
@@ -41,6 +54,24 @@ export function SessionDurationSelector({
     { value: 90, label: "90 min" },
     { value: 120, label: "120 min" }
   ];
+
+  // Validation logic for Phase 2 testing
+  const isDurationValid = (durationMinutes: number) => {
+    if (!tutorAvailability || !selectedDate || !selectedSlot?.start) {
+      console.log(`🔍 Duration ${durationMinutes}min: Missing validation data`);
+      return true; // If data is missing, don't disable options
+    }
+    
+    const isValid = validateDurationAgainstAvailability(
+      selectedSlot.start,
+      durationMinutes,
+      selectedDate,
+      tutorAvailability
+    );
+    
+    console.log(`🔍 Duration ${durationMinutes}min: ${isValid ? "✅ Valid" : "❌ Invalid"}`);
+    return isValid;
+  };
 
   return (
     <div className="space-y-6">
@@ -52,22 +83,29 @@ export function SessionDurationSelector({
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {durationOptions.map((option) => (
-          <Button
-            key={option.value}
-            type="button"
-            onClick={() => onDurationChange(option.value)}
-            className={cn(
-              "h-auto py-4 flex flex-col items-center justify-center",
-              selectedDuration === option.value
-                ? "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark"
-                : "bg-white text-gray-800 border hover:bg-gray-100"
-            )}
-            variant={selectedDuration === option.value ? "default" : "outline"}
-          >
-            <span className="text-lg font-medium">{option.label}</span>
-          </Button>
-        ))}
+        {durationOptions.map((option) => {
+          const isValid = isDurationValid(option.value);
+          return (
+            <Button
+              key={option.value}
+              type="button"
+              onClick={() => onDurationChange(option.value)}
+              disabled={!isValid}
+              className={cn(
+                "h-auto py-4 flex flex-col items-center justify-center",
+                selectedDuration === option.value
+                  ? "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark"
+                  : isValid
+                  ? "bg-white text-gray-800 border hover:bg-gray-100"
+                  : "bg-gray-200 text-gray-400 border cursor-not-allowed"
+              )}
+              variant={selectedDuration === option.value ? "default" : "outline"}
+              title={!isValid ? "Duration extends beyond tutor's available hours" : undefined}
+            >
+              <span className="text-lg font-medium">{option.label}</span>
+            </Button>
+          );
+        })}
       </div>
 
       {onStartTimeChange && availableStartTimes.length > 0 && (
