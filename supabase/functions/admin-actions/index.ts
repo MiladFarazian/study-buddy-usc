@@ -41,13 +41,31 @@ const handler = async (req: Request): Promise<Response> => {
 
     switch (action) {
       case 'warn':
+        // Get tutor profile for email details
+        const { data: tutorProfile, error: tutorError } = await supabaseAdmin
+          .from('profiles')
+          .select('display_name, email')
+          .eq('id', tutorId)
+          .single();
+
+        if (tutorError || !tutorProfile) {
+          console.error('Error fetching tutor profile:', tutorError);
+          return new Response(JSON.stringify({ error: 'Failed to fetch tutor profile' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
         // Send warning email via send-notification-email function
         const { error: emailError } = await supabaseAdmin.functions.invoke('send-notification-email', {
           body: {
-            userId: tutorId,
+            recipientUserId: tutorId,
+            recipientName: tutorProfile.display_name || 'Tutor',
             subject: 'Warning: No-Show Report',
-            message: 'You have received a warning for a no-show report. Please ensure you attend all scheduled sessions or cancel in advance.',
-            type: 'warning'
+            notificationType: 'admin_warning',
+            data: {
+              reason: 'No-show report received'
+            }
           }
         });
 
@@ -63,6 +81,21 @@ const handler = async (req: Request): Promise<Response> => {
         break;
 
       case 'suspend':
+        // Get tutor profile for email details before suspension
+        const { data: suspendTutorProfile, error: suspendTutorError } = await supabaseAdmin
+          .from('profiles')
+          .select('display_name, email')
+          .eq('id', tutorId)
+          .single();
+
+        if (suspendTutorError || !suspendTutorProfile) {
+          console.error('Error fetching tutor profile for suspension:', suspendTutorError);
+          return new Response(JSON.stringify({ error: 'Failed to fetch tutor profile' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
         // Update tutor profile to suspend them
         const { error: suspendError } = await supabaseAdmin
           .from('profiles')
@@ -78,14 +111,22 @@ const handler = async (req: Request): Promise<Response> => {
         }
 
         // Also send suspension notification email
-        await supabaseAdmin.functions.invoke('send-notification-email', {
+        const { error: suspensionEmailError } = await supabaseAdmin.functions.invoke('send-notification-email', {
           body: {
-            userId: tutorId,
+            recipientUserId: tutorId,
+            recipientName: suspendTutorProfile.display_name || 'Tutor',
             subject: 'Account Suspended',
-            message: 'Your tutor account has been suspended due to no-show reports. Please contact support for more information.',
-            type: 'suspension'
+            notificationType: 'admin_suspension',
+            data: {
+              reason: 'Multiple no-show reports received'
+            }
           }
         });
+
+        if (suspensionEmailError) {
+          console.error('Error sending suspension email:', suspensionEmailError);
+          // Don't fail the entire operation if email fails - suspension should still complete
+        }
 
         console.log('Tutor suspended successfully');
         break;
