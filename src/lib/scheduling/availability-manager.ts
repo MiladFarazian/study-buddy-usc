@@ -95,6 +95,7 @@ export async function updateTutorAvailability(tutorId: string, availability: Wee
 
 /**
  * Generate available booking slots based on tutor's availability and booked sessions
+ * @deprecated Use generateSmartAvailableSlots from availability-utils.ts instead
  */
 export function generateAvailableSlots(
   availability: WeeklyAvailability,
@@ -102,74 +103,7 @@ export function generateAvailableSlots(
   startDate: Date,
   daysToGenerate: number
 ): BookingSlot[] {
-  const availableSlots: BookingSlot[] = [];
-  const weekDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  const now = new Date();
-  const bufferTime = addMinutes(now, 180); // 3-hour minimum booking buffer
-  
-  // Generate slots for the specified number of days
-  for (let i = 0; i < daysToGenerate; i++) {
-    const currentDate = addDays(startDate, i);
-    const dayOfWeek = weekDays[currentDate.getDay()];
-    
-    // Get available time slots for this day of the week
-    const dayAvailability = availability[dayOfWeek] || [];
-    
-    // For each available time slot in the day
-    dayAvailability.forEach(timeSlot => {
-      const startMinutes = convertTimeToMinutes(timeSlot.start);
-      const endMinutes = convertTimeToMinutes(timeSlot.end);
-      
-      // Skip time slots outside reasonable hours (6 AM - 11 PM)
-      const startHour = Math.floor(startMinutes / 60);
-      const endHour = Math.floor(endMinutes / 60);
-      if (startHour < 6 || endHour > 23) {
-        return; // Skip this time slot
-      }
-      
-      // Generate 30-minute slots within the time window
-      for (let minutes = startMinutes; minutes < endMinutes; minutes += 30) {
-        const slotStart = convertMinutesToTime(minutes);
-        const slotEnd = convertMinutesToTime(minutes + 30);
-        
-        // Create slot date/time for comparison
-        const slotStartTime = parse(slotStart, 'HH:mm', currentDate);
-        
-        // Skip if slot is in the past (including 3-hour buffer)
-        if (slotStartTime <= bufferTime) {
-          continue;
-        }
-        
-        // Create a slot
-        const slot: BookingSlot = {
-          day: currentDate,
-          start: slotStart,
-          end: slotEnd,
-          available: true,
-          tutorId: ''
-        };
-        
-        // Check if this slot overlaps with any booked session
-        bookedSessions.forEach(session => {
-          const sessionDate = new Date(session.date);
-          
-          // Only check sessions on the same day
-          if (sessionDate.toDateString() === currentDate.toDateString()) {
-            const sessionStartMinutes = convertTimeToMinutes(session.start);
-            const sessionEndMinutes = convertTimeToMinutes(session.end);
-            
-            // Check for overlap
-            if (minutes >= sessionStartMinutes && minutes < sessionEndMinutes) {
-              slot.available = false;
-            }
-          }
-        });
-        
-        // Add to available slots
-        availableSlots.push(slot);
-      }
-    });
-  }
-  
-  return availableSlots;
+  // Import the new function to maintain compatibility
+  const { generateSmartAvailableSlots } = require('./availability-utils');
+  return generateSmartAvailableSlots(availability, bookedSessions, startDate, daysToGenerate);
 }

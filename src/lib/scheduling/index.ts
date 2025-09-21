@@ -6,6 +6,7 @@ export * from './types';
 
 // Export managers
 export * from './availability-manager';
+export * from './availability-utils';
 export * from './session-manager';
 
 // Export utility functions
