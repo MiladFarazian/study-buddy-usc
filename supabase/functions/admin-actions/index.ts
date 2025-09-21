@@ -41,10 +41,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     switch (action) {
       case 'warn':
-        // Get tutor profile for email details
+        // Get tutor profile and email details
         const { data: tutorProfile, error: tutorError } = await supabaseAdmin
           .from('profiles')
-          .select('display_name, email')
+          .select('first_name, last_name')
           .eq('id', tutorId)
           .single();
 
@@ -56,11 +56,24 @@ const handler = async (req: Request): Promise<Response> => {
           });
         }
 
+        // Get email from auth.users
+        const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(tutorId);
+        
+        if (authError || !authUser) {
+          console.error('Error fetching tutor auth data:', authError);
+          return new Response(JSON.stringify({ error: 'Failed to fetch tutor email' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
         // Send warning email via send-notification-email function
+        const tutorName = [tutorProfile.first_name, tutorProfile.last_name].filter(Boolean).join(' ') || 'Tutor';
         const { error: emailError } = await supabaseAdmin.functions.invoke('send-notification-email', {
           body: {
             recipientUserId: tutorId,
-            recipientName: tutorProfile.display_name || 'Tutor',
+            recipientName: tutorName,
+            recipientEmail: authUser.user.email,
             subject: 'Warning: No-Show Report',
             notificationType: 'admin_warning',
             data: {
@@ -84,13 +97,24 @@ const handler = async (req: Request): Promise<Response> => {
         // Get tutor profile for email details before suspension
         const { data: suspendTutorProfile, error: suspendTutorError } = await supabaseAdmin
           .from('profiles')
-          .select('display_name, email')
+          .select('first_name, last_name')
           .eq('id', tutorId)
           .single();
 
         if (suspendTutorError || !suspendTutorProfile) {
           console.error('Error fetching tutor profile for suspension:', suspendTutorError);
           return new Response(JSON.stringify({ error: 'Failed to fetch tutor profile' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        // Get email from auth.users for suspension
+        const { data: suspendAuthUser, error: suspendAuthError } = await supabaseAdmin.auth.admin.getUserById(tutorId);
+        
+        if (suspendAuthError || !suspendAuthUser) {
+          console.error('Error fetching tutor auth data for suspension:', suspendAuthError);
+          return new Response(JSON.stringify({ error: 'Failed to fetch tutor email for suspension' }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
@@ -111,10 +135,12 @@ const handler = async (req: Request): Promise<Response> => {
         }
 
         // Also send suspension notification email
+        const suspendTutorName = [suspendTutorProfile.first_name, suspendTutorProfile.last_name].filter(Boolean).join(' ') || 'Tutor';
         const { error: suspensionEmailError } = await supabaseAdmin.functions.invoke('send-notification-email', {
           body: {
             recipientUserId: tutorId,
-            recipientName: suspendTutorProfile.display_name || 'Tutor',
+            recipientName: suspendTutorName,
+            recipientEmail: suspendAuthUser.user.email,
             subject: 'Account Suspended',
             notificationType: 'admin_suspension',
             data: {
