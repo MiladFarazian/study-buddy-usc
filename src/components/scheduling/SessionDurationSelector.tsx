@@ -1,26 +1,14 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Button } from "@/components/ui/button";
 import { DurationSelector } from "./DurationSelector";
 import { useScheduling } from '@/contexts/SchedulingContext';
 import { format } from 'date-fns';
 import { CalendarIcon, ClockIcon } from "lucide-react";
-import { WeeklyAvailability } from "@/lib/scheduling/types/availability";
-import { getTutorAvailability } from "@/lib/scheduling/availability-manager";
 
 export function SessionDurationSelector() {
   const { state, dispatch, calculatePrice, tutor, continueToNextStep, goToPreviousStep } = useScheduling();
   const { selectedDuration, selectedDate, selectedTimeSlot } = state;
-  const [tutorAvailability, setTutorAvailability] = useState<WeeklyAvailability | null>(null);
-
-  // Fetch tutor availability when component mounts
-  useEffect(() => {
-    if (tutor?.id) {
-      getTutorAvailability(tutor.id).then(availability => {
-        setTutorAvailability(availability);
-      });
-    }
-  }, [tutor?.id]);
   
   const durationOptions = [
     { minutes: 30, display: "30 minutes" },
@@ -56,9 +44,6 @@ export function SessionDurationSelector() {
         selectedDuration={selectedDuration}
         onSelectDuration={handleSelectDuration}
         hourlyRate={hourlyRate}
-        selectedStartTime={selectedTimeSlot?.start}
-        selectedDate={selectedDate}
-        tutorAvailability={tutorAvailability}
       />
       
       <div className="flex justify-between mt-8">

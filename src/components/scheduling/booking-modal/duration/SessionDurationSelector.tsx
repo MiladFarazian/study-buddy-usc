@@ -1,14 +1,10 @@
 
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { WeeklyAvailability } from "@/lib/scheduling/types/availability";
-import { validateDurationAgainstAvailability } from "@/lib/scheduling/duration-validation";
-import { getTutorAvailability } from "@/lib/scheduling/availability-manager";
 
 interface SessionDurationSelectorProps {
   selectedDuration: number;
@@ -24,9 +20,6 @@ interface SessionDurationSelectorProps {
   formatTimeForDisplay?: (time: string) => string;
   onBack?: () => void;
   onContinue?: () => void;
-  // New props for validation
-  selectedDate?: Date;
-  tutorId?: string;
 }
 
 export function SessionDurationSelector({
@@ -39,21 +32,8 @@ export function SessionDurationSelector({
   selectedStartTime,
   formatTimeForDisplay = (time) => time,
   onBack,
-  onContinue,
-  selectedDate,
-  tutorId
+  onContinue
 }: SessionDurationSelectorProps) {
-  const [tutorAvailability, setTutorAvailability] = useState<WeeklyAvailability | null>(null);
-
-  // Fetch tutor availability when component mounts
-  useEffect(() => {
-    if (tutorId) {
-      getTutorAvailability(tutorId).then(availability => {
-        setTutorAvailability(availability);
-      });
-    }
-  }, [tutorId]);
-
   // Session duration options in minutes
   const durationOptions = [
     { value: 30, label: "30 min" },
@@ -61,19 +41,6 @@ export function SessionDurationSelector({
     { value: 90, label: "90 min" },
     { value: 120, label: "120 min" }
   ];
-
-  // Check if a duration is valid
-  const isDurationValid = (minutes: number): boolean => {
-    if (!selectedStartTime || !selectedDate || !tutorAvailability) {
-      return true; // If we don't have the data, don't disable
-    }
-    return validateDurationAgainstAvailability(
-      selectedStartTime, 
-      minutes, 
-      selectedDate, 
-      tutorAvailability
-    );
-  };
 
   return (
     <div className="space-y-6">
@@ -85,42 +52,22 @@ export function SessionDurationSelector({
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <TooltipProvider>
-          {durationOptions.map((option) => {
-            const isValid = isDurationValid(option.value);
-            
-            const button = (
-              <Button
-                key={option.value}
-                type="button"
-                disabled={!isValid}
-                onClick={() => isValid && onDurationChange(option.value)}
-                className={cn(
-                  "h-auto py-4 flex flex-col items-center justify-center",
-                  selectedDuration === option.value && isValid
-                    ? "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark"
-                    : isValid
-                      ? "bg-white text-gray-800 border hover:bg-gray-100"
-                      : "bg-muted text-muted-foreground opacity-50 cursor-not-allowed"
-                )}
-                variant={selectedDuration === option.value && isValid ? "default" : "outline"}
-              >
-                <span className="text-lg font-medium">{option.label}</span>
-              </Button>
-            );
-
-            return !isValid ? (
-              <Tooltip key={option.value}>
-                <TooltipTrigger asChild>
-                  {button}
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Session would extend beyond tutor's available hours</p>
-                </TooltipContent>
-              </Tooltip>
-            ) : button;
-          })}
-        </TooltipProvider>
+        {durationOptions.map((option) => (
+          <Button
+            key={option.value}
+            type="button"
+            onClick={() => onDurationChange(option.value)}
+            className={cn(
+              "h-auto py-4 flex flex-col items-center justify-center",
+              selectedDuration === option.value
+                ? "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark"
+                : "bg-white text-gray-800 border hover:bg-gray-100"
+            )}
+            variant={selectedDuration === option.value ? "default" : "outline"}
+          >
+            <span className="text-lg font-medium">{option.label}</span>
+          </Button>
+        ))}
       </div>
 
       {onStartTimeChange && availableStartTimes.length > 0 && (
