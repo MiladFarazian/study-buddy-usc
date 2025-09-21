@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, UserMinus, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabaseAdmin } from "@/lib/supabase-admin";
+import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 
 interface NoShowReport {
@@ -37,14 +37,12 @@ export const NoShowReportsTable = ({ reports, onRefresh }: NoShowReportsTablePro
   const handleWarnTutor = async (report: NoShowReport) => {
     setActionLoading(report.id);
     try {
-      const { error } = await supabaseAdmin.functions.invoke('send-notification-email', {
+      const { error } = await supabase.functions.invoke('admin-actions', {
         body: {
-          type: 'tutor_warning',
-          recipientEmail: `${report.tutor.first_name}@studybuddyusc.com`, // Placeholder email
-          tutorName: `${report.tutor.first_name} ${report.tutor.last_name}`,
-          studentName: `${report.student.first_name} ${report.student.last_name}`,
-          sessionDate: format(new Date(report.start_time), "PPpp"),
-          reason: JSON.parse(report.no_show_report).reason
+          action: 'warn',
+          adminEmail: 'noah@studybuddyusc.com', // In production, get from admin auth context
+          sessionId: report.id,
+          tutorId: report.tutor.id
         }
       });
 
@@ -54,6 +52,8 @@ export const NoShowReportsTable = ({ reports, onRefresh }: NoShowReportsTablePro
         title: "Warning Sent",
         description: `Warning email sent to ${report.tutor.first_name} ${report.tutor.last_name}`,
       });
+      
+      onRefresh();
     } catch (error) {
       toast({
         title: "Error",
@@ -68,11 +68,14 @@ export const NoShowReportsTable = ({ reports, onRefresh }: NoShowReportsTablePro
   const handleSuspendTutor = async (report: NoShowReport) => {
     setActionLoading(report.id);
     try {
-      // Update tutor profile to mark as suspended (we'll use approved_tutor = false as suspension)
-      const { error } = await supabaseAdmin
-        .from('profiles')
-        .update({ approved_tutor: false })
-        .eq('id', report.tutor.id);
+      const { error } = await supabase.functions.invoke('admin-actions', {
+        body: {
+          action: 'suspend',
+          adminEmail: 'noah@studybuddyusc.com', // In production, get from admin auth context
+          sessionId: report.id,
+          tutorId: report.tutor.id
+        }
+      });
 
       if (error) throw error;
 
@@ -96,11 +99,14 @@ export const NoShowReportsTable = ({ reports, onRefresh }: NoShowReportsTablePro
   const handleDismissReport = async (report: NoShowReport) => {
     setActionLoading(report.id);
     try {
-      // Clear the no_show_report field to mark as resolved
-      const { error } = await supabaseAdmin
-        .from('sessions')
-        .update({ no_show_report: null })
-        .eq('id', report.id);
+      const { error } = await supabase.functions.invoke('admin-actions', {
+        body: {
+          action: 'dismiss',
+          adminEmail: 'noah@studybuddyusc.com', // In production, get from admin auth context
+          sessionId: report.id,
+          tutorId: report.tutor.id
+        }
+      });
 
       if (error) throw error;
 

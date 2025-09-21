@@ -3,21 +3,18 @@ import { Badge } from "@/components/ui/badge";
 
 interface NoShowSummaryStatsProps {
   totalReports: number;
-  topProblematicTutors: Array<{
+  topTutors: Array<{
     id: string;
     name: string;
-    reportCount: number;
+    count: number;
   }>;
-  recentActivity: {
-    last7Days: number;
-    last30Days: number;
-  };
+  recentReports: number;
 }
 
 export const NoShowSummaryStats = ({ 
   totalReports, 
-  topProblematicTutors, 
-  recentActivity 
+  topTutors, 
+  recentReports 
 }: NoShowSummaryStatsProps) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -44,12 +41,8 @@ export const NoShowSummaryStats = ({
         <CardContent>
           <div className="space-y-1">
             <div className="flex justify-between">
-              <span className="text-sm">Last 7 days:</span>
-              <Badge variant="secondary">{recentActivity.last7Days}</Badge>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm">Last 30 days:</span>
-              <Badge variant="secondary">{recentActivity.last30Days}</Badge>
+              <span className="text-sm">Recent reports:</span>
+              <Badge variant="secondary">{recentReports}</Badge>
             </div>
           </div>
         </CardContent>
@@ -63,12 +56,12 @@ export const NoShowSummaryStats = ({
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {topProblematicTutors.length > 0 ? (
-              topProblematicTutors.slice(0, 3).map((tutor, index) => (
+            {topTutors.length > 0 ? (
+              topTutors.slice(0, 3).map((tutor, index) => (
                 <div key={tutor.id} className="flex justify-between items-center text-sm">
                   <span className="truncate">{tutor.name}</span>
                   <Badge variant="destructive" className="ml-2">
-                    {tutor.reportCount}
+                    {tutor.count}
                   </Badge>
                 </div>
               ))

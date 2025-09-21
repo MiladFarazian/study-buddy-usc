@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabaseAdmin } from "@/lib/supabase-admin";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { subDays } from "date-fns";
 
@@ -23,23 +23,20 @@ interface NoShowReport {
 
 interface SummaryStats {
   totalReports: number;
-  topProblematicTutors: Array<{
+  topTutors: Array<{
     id: string;
     name: string;
-    reportCount: number;
+    count: number;
   }>;
-  recentActivity: {
-    last7Days: number;
-    last30Days: number;
-  };
+  recentReports: number;
 }
 
 export const useNoShowReports = () => {
   const [reports, setReports] = useState<NoShowReport[]>([]);
   const [summaryStats, setSummaryStats] = useState<SummaryStats>({
     totalReports: 0,
-    topProblematicTutors: [],
-    recentActivity: { last7Days: 0, last30Days: 0 }
+    topTutors: [],
+    recentReports: 0
   });
   const [loading, setLoading] = useState(true);
   const [dateFilter, setDateFilter] = useState<'7days' | '30days' | 'all'>('all');
@@ -49,87 +46,30 @@ export const useNoShowReports = () => {
   const fetchNoShowReports = async () => {
     setLoading(true);
     try {
-      console.log('🔍 Fetching no-show reports...');
+      console.log('🔍 Fetching no-show reports via edge function...');
       
-      // Query sessions with no_show_report data
-      let query = supabaseAdmin
-        .from('sessions')
-        .select(`
-          id,
-          start_time,
-          no_show_report,
-          course_id,
-          created_at,
-          tutor_id,
-          student_id
-        `)
-        .not('no_show_report', 'is', null)
-        .neq('no_show_report', '');
+      // Call admin edge function to fetch no-show reports
+      const { data, error } = await supabase.functions.invoke('admin-no-show-reports', {
+        body: {
+          adminEmail: 'noah@studybuddyusc.com', // In production, get from admin auth context
+          dateFilter: dateFilter === '7days' ? 'week' : dateFilter === '30days' ? 'month' : 'all',
+          showResolved
+        }
+      });
 
-      // Apply date filter
-      if (dateFilter !== 'all') {
-        const daysBack = dateFilter === '7days' ? 7 : 30;
-        const cutoffDate = subDays(new Date(), daysBack).toISOString();
-        query = query.gte('created_at', cutoffDate);
+      if (error) {
+        console.error('❌ Edge function error:', error);
+        throw error;
       }
 
-      const { data: sessionsData, error: sessionsError } = await query
-        .order('start_time', { ascending: false });
+      console.log('📊 Edge function result:', data);
 
-      console.log('📊 Sessions query result:', { sessionsData, sessionsError });
-
-      if (sessionsError) {
-        console.error('❌ Sessions query error:', sessionsError);
-        throw sessionsError;
-      }
-
-      if (!sessionsData || sessionsData.length === 0) {
-        setReports([]);
-        setSummaryStats({
-          totalReports: 0,
-          topProblematicTutors: [],
-          recentActivity: { last7Days: 0, last30Days: 0 }
-        });
-        return;
-      }
-
-      // Fetch tutor and student profiles
-      const tutorIds = [...new Set(sessionsData.map(s => s.tutor_id))];
-      const studentIds = [...new Set(sessionsData.map(s => s.student_id))];
-
-      const [tutorProfiles, studentProfiles] = await Promise.all([
-        supabaseAdmin
-          .from('profiles')
-          .select('id, first_name, last_name')
-          .in('id', tutorIds),
-        supabaseAdmin
-          .from('profiles')
-          .select('id, first_name, last_name')
-          .in('id', studentIds)
-      ]);
-
-      console.log('👥 Profile query results:', { tutorProfiles, studentProfiles });
-
-      if (tutorProfiles.error) throw tutorProfiles.error;
-      if (studentProfiles.error) throw studentProfiles.error;
-
-      // Create lookup maps
-      const tutorMap = new Map(tutorProfiles.data?.map(t => [t.id, t]) || []);
-      const studentMap = new Map(studentProfiles.data?.map(s => [s.id, s]) || []);
-
-      // Combine data
-      const reportsWithProfiles = sessionsData
-        .filter(session => tutorMap.has(session.tutor_id) && studentMap.has(session.student_id))
-        .map(session => ({
-          ...session,
-          tutor: tutorMap.get(session.tutor_id)!,
-          student: studentMap.get(session.student_id)!,
-        }));
-
-      setReports(reportsWithProfiles);
-
-      // Calculate summary stats
-      await calculateSummaryStats(reportsWithProfiles);
+      setReports(data?.reports || []);
+      setSummaryStats(data?.summaryStats || {
+        totalReports: 0,
+        topTutors: [],
+        recentReports: 0
+      });
 
     } catch (error) {
       console.error('Error fetching no-show reports:', error);
@@ -143,66 +83,7 @@ export const useNoShowReports = () => {
     }
   };
 
-  const calculateSummaryStats = async (currentReports: NoShowReport[]) => {
-    try {
-      // Get all no-show reports for statistics (regardless of current filter)
-      const { data: allReportsData } = await supabaseAdmin
-        .from('sessions')
-        .select('tutor_id, created_at')
-        .not('no_show_report', 'is', null);
-
-      const last7Days = subDays(new Date(), 7);
-      const last30Days = subDays(new Date(), 30);
-
-      const recentActivity = {
-        last7Days: allReportsData?.filter(r => new Date(r.created_at) >= last7Days).length || 0,
-        last30Days: allReportsData?.filter(r => new Date(r.created_at) >= last30Days).length || 0,
-      };
-
-      // Calculate tutor report counts
-      const tutorReportCounts = new Map<string, number>();
-      allReportsData?.forEach(report => {
-        const count = tutorReportCounts.get(report.tutor_id) || 0;
-        tutorReportCounts.set(report.tutor_id, count + 1);
-      });
-
-      // Get top problematic tutors
-      const topTutorIds = Array.from(tutorReportCounts.entries())
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 5)
-        .map(([tutorId]) => tutorId);
-
-      if (topTutorIds.length > 0) {
-        const { data: topTutorProfiles } = await supabaseAdmin
-          .from('profiles')
-          .select('id, first_name, last_name')
-          .in('id', topTutorIds);
-
-        const topProblematicTutors = topTutorIds.map(tutorId => {
-          const profile = topTutorProfiles?.find(p => p.id === tutorId);
-          return {
-            id: tutorId,
-            name: profile ? `${profile.first_name} ${profile.last_name}` : 'Unknown',
-            reportCount: tutorReportCounts.get(tutorId) || 0
-          };
-        });
-
-        setSummaryStats({
-          totalReports: currentReports.length,
-          topProblematicTutors,
-          recentActivity
-        });
-      } else {
-        setSummaryStats({
-          totalReports: currentReports.length,
-          topProblematicTutors: [],
-          recentActivity
-        });
-      }
-    } catch (error) {
-      console.error('Error calculating summary stats:', error);
-    }
-  };
+  // Summary stats are now calculated in the edge function
 
   useEffect(() => {
     fetchNoShowReports();
