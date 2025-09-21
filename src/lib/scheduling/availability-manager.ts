@@ -9,6 +9,19 @@ import { convertTimeToMinutes, convertMinutesToTime } from "./time-utils";
  */
 export async function getTutorAvailability(tutorId: string): Promise<WeeklyAvailability | null> {
   try {
+    // First check if tutor is approved
+    const { data: tutorProfile, error: profileError } = await supabase
+      .from('profiles')
+      .select('approved_tutor')
+      .eq('id', tutorId)
+      .eq('role', 'tutor')
+      .single();
+
+    if (profileError || !tutorProfile?.approved_tutor) {
+      console.log("Tutor not found or not approved:", tutorId);
+      return null;
+    }
+
     // Query the tutors table for availability
     const { data, error } = await supabase
       .from('tutors')

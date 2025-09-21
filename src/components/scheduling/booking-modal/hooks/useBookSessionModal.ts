@@ -239,6 +239,20 @@ export function useBookSessionModal(
 
       console.log("👤 User authenticated:", user.id);
 
+      // Verify tutor is still approved before creating session
+      const { data: tutorCheck, error: tutorError } = await supabase
+        .from('profiles')
+        .select('approved_tutor, role')
+        .eq('id', booking.tutorId)
+        .eq('role', 'tutor')
+        .single();
+
+      if (tutorError || !tutorCheck?.approved_tutor) {
+        console.error("❌ Tutor not approved or not found:", booking.tutorId);
+        toast.error("This tutor is no longer available for booking.");
+        return;
+      }
+
       // Create session record
       const { data: sessionData, error: sessionError } = await supabase
         .from('sessions')

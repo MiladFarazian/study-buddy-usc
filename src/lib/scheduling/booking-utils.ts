@@ -142,10 +142,10 @@ export async function createSessionBooking(
     console.log("✅ Database write successful - session should appear in schedule");
     
     // After successfully creating the session, send notification to tutor
-    // First, get the student and tutor details
+    // First, get the student and tutor details (only if tutor is approved)
     const [studentData, tutorData, courseData] = await Promise.all([
       supabase.from('profiles').select('first_name, last_name').eq('id', studentId).single(),
-      supabase.from('profiles').select('first_name, last_name').eq('id', tutorId).single(),
+      supabase.from('profiles').select('first_name, last_name').eq('id', tutorId).eq('approved_tutor', true).single(),
       courseId ? supabase.from('tutor_courses').select('course_title').eq('course_number', courseId).single() : null
     ]);
     

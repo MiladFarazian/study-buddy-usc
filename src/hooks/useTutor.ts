@@ -55,12 +55,13 @@ export function useTutor(id: string) {
 
     setLoading(true);
     try {
-      // Fetch tutor profile
+      // Fetch tutor profile (only approved tutors)
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', id)
         .eq('role', 'tutor')
+        .eq('approved_tutor', true)
         .single();
 
       if (error) {
