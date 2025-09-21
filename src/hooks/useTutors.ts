@@ -70,21 +70,22 @@ export function useTutors() {
       
       try {
         console.log("Fetching tutors...");
-        // Fetch tutors from the new tutors table with profile data
+        // Fetch tutors from the new tutors table with profile data (only approved)
         const { data: tutorData, error } = await supabase
           .from('tutors')
           .select(`
             *,
-            profiles:profile_id (
+            profiles:profile_id!inner (
               first_name,
               last_name,
               major,
               graduation_year,
               avatar_url,
-              tutor_courses_subjects
+              tutor_courses_subjects,
+              approved_tutor
             )
           `)
-          .eq('approved_tutor', true)
+          .eq('profiles.approved_tutor', true)
           .order('average_rating', { ascending: false }); // Order by rating so best tutors show first
 
         if (error) {
