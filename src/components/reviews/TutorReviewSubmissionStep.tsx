@@ -109,13 +109,50 @@ export function TutorReviewSubmissionStep({
       }
 
       console.log('🔄 Review submitted successfully:', data);
+      console.log('🔄 Now confirming session completion...');
       
-      toast({
-        title: "Review submitted successfully",
-        description: reviewData.student_showed_up 
-          ? "Thank you for your feedback!"
-          : "No-show has been recorded for payment processing.",
-      });
+      // Call session confirmation API to update tutor_confirmed/student_confirmed fields
+      try {
+        const { data: confirmationData, error: confirmationError } = await supabase.functions.invoke(
+          'confirm-session-complete',
+          {
+            body: { 
+              sessionId: session.id, 
+              userRole: 'tutor' 
+            }
+          }
+        );
+
+        if (confirmationError) {
+          console.error("🔄 Session confirmation failed:", confirmationError);
+          // Don't fail the entire process - the review was already saved successfully
+          toast({
+            title: "Review submitted successfully",
+            description: "Review saved, but there was an issue updating session status.",
+          });
+        } else {
+          console.log("🔄 Session confirmation successful:", confirmationData);
+          const bothConfirmed = confirmationData?.bothConfirmed;
+          
+          toast({
+            title: "Review submitted successfully",
+            description: reviewData.student_showed_up 
+              ? (bothConfirmed 
+                  ? "Thank you for your feedback! Payment has been released." 
+                  : "Thank you for your feedback! Waiting for student confirmation.")
+              : "No-show has been recorded for payment processing.",
+          });
+        }
+      } catch (confirmationError) {
+        console.error("🔄 Session confirmation error:", confirmationError);
+        // Don't fail the entire process
+        toast({
+          title: "Review submitted successfully",
+          description: reviewData.student_showed_up 
+            ? "Thank you for your feedback!"
+            : "No-show has been recorded for payment processing.",
+        });
+      }
 
       console.log('🔄 Calling onComplete callback...');
       onComplete();

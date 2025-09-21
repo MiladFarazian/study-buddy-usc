@@ -119,11 +119,47 @@ export function ReviewSubmissionStep({
         }
       }
 
-      console.log("✅ Review submitted successfully, calling onSubmitted callback");
-      toast({
-        title: "Review submitted successfully",
-        description: "Thank you for your feedback!",
-      });
+      console.log("✅ Review submitted successfully, now confirming session completion");
+      
+      // Call session confirmation API to update tutor_confirmed/student_confirmed fields
+      try {
+        const { data: confirmationData, error: confirmationError } = await supabase.functions.invoke(
+          'confirm-session-complete',
+          {
+            body: { 
+              sessionId: session.id, 
+              userRole: 'student' 
+            }
+          }
+        );
+
+        if (confirmationError) {
+          console.error("Session confirmation failed:", confirmationError);
+          // Don't fail the entire process - the review was already saved successfully
+          toast({
+            title: "Review submitted successfully",
+            description: "Review saved, but there was an issue updating session status.",
+          });
+        } else {
+          console.log("✅ Session confirmation successful:", confirmationData);
+          const bothConfirmed = confirmationData?.bothConfirmed;
+          
+          toast({
+            title: "Review submitted successfully",
+            description: bothConfirmed 
+              ? "Thank you for your feedback! Payment has been released." 
+              : "Thank you for your feedback! Waiting for tutor confirmation.",
+          });
+        }
+      } catch (confirmationError) {
+        console.error("Session confirmation error:", confirmationError);
+        // Don't fail the entire process
+        toast({
+          title: "Review submitted successfully", 
+          description: "Thank you for your feedback!",
+        });
+      }
+      
       onSubmitted();
     } catch (error) {
       console.error("Error submitting review:", error);
