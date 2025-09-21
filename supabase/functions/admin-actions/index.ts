@@ -120,22 +120,116 @@ const handler = async (req: Request): Promise<Response> => {
           });
         }
 
-        // Update tutor profile to suspend them
-        const { error: suspendError } = await supabaseAdmin
-          .from('profiles')
-          .update({ approved_tutor: false })
-          .eq('id', tutorId);
+        // First, query future scheduled sessions that will be cancelled
+        const { data: futureSessions, error: futureSessionsError } = await supabaseAdmin
+          .from('sessions')
+          .select(`
+            id,
+            start_time,
+            end_time,
+            student_id,
+            course_id,
+            profiles:student_id (
+              first_name,
+              last_name
+            )
+          `)
+          .eq('tutor_id', tutorId)
+          .eq('status', 'scheduled')
+          .gt('start_time', new Date().toISOString());
 
-        if (suspendError) {
-          console.error('Error suspending tutor:', suspendError);
-          return new Response(JSON.stringify({ error: 'Failed to suspend tutor' }), {
+        if (futureSessionsError) {
+          console.error('Error fetching future sessions:', futureSessionsError);
+          return new Response(JSON.stringify({ error: 'Failed to fetch future sessions' }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
 
-        // Also send suspension notification email
+        console.log(`Found ${futureSessions?.length || 0} future sessions to cancel`);
+
+        // Perform atomic operation: suspend tutor and cancel sessions
+        const { error: suspendError } = await supabaseAdmin.rpc('execute_sql', {
+          sql: `
+            BEGIN;
+            
+            -- Suspend the tutor
+            UPDATE profiles 
+            SET approved_tutor = false 
+            WHERE id = '${tutorId}';
+            
+            -- Cancel all future scheduled sessions
+            UPDATE sessions 
+            SET 
+              status = 'cancelled',
+              updated_at = NOW(),
+              notes = COALESCE(notes || ' | ', '') || 'Session cancelled due to tutor account suspension'
+            WHERE tutor_id = '${tutorId}' 
+              AND status = 'scheduled' 
+              AND start_time > NOW();
+            
+            COMMIT;
+          `
+        });
+
+        if (suspendError) {
+          console.error('Error in atomic suspension operation:', suspendError);
+          return new Response(JSON.stringify({ error: 'Failed to suspend tutor and cancel sessions' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        // Send notifications to affected students
+        let studentsNotified = 0;
         const suspendTutorName = [suspendTutorProfile.first_name, suspendTutorProfile.last_name].filter(Boolean).join(' ') || 'Tutor';
+        
+        if (futureSessions && futureSessions.length > 0) {
+          for (const session of futureSessions) {
+            try {
+              // Get student auth data for email
+              const { data: studentAuthUser, error: studentAuthError } = await supabaseAdmin.auth.admin.getUserById(session.student_id);
+              
+              if (studentAuthUser && !studentAuthError) {
+                const studentName = session.profiles ? 
+                  [session.profiles.first_name, session.profiles.last_name].filter(Boolean).join(' ') || 'Student' 
+                  : 'Student';
+                
+                const sessionDate = new Date(session.start_time).toLocaleDateString();
+                const sessionTime = new Date(session.start_time).toLocaleTimeString();
+                
+                // Send cancellation notification to student
+                const { error: studentEmailError } = await supabaseAdmin.functions.invoke('send-notification-email', {
+                  body: {
+                    recipientUserId: session.student_id,
+                    recipientName: studentName,
+                    recipientEmail: studentAuthUser.user.email,
+                    subject: 'Session Cancelled - Tutor Unavailable',
+                    notificationType: 'session_cancelled_tutor_suspended',
+                    data: {
+                      sessionId: session.id,
+                      sessionDate: sessionDate,
+                      sessionTime: sessionTime,
+                      tutorName: suspendTutorName,
+                      startTime: session.start_time,
+                      endTime: session.end_time
+                    }
+                  }
+                });
+
+                if (!studentEmailError) {
+                  studentsNotified++;
+                } else {
+                  console.error(`Failed to notify student ${session.student_id}:`, studentEmailError);
+                }
+              }
+            } catch (error) {
+              console.error(`Error notifying student for session ${session.id}:`, error);
+            }
+          }
+        }
+
+        // Send suspension notification email to tutor
         const { error: suspensionEmailError } = await supabaseAdmin.functions.invoke('send-notification-email', {
           body: {
             recipientUserId: tutorId,
@@ -144,17 +238,18 @@ const handler = async (req: Request): Promise<Response> => {
             subject: 'Account Suspended',
             notificationType: 'admin_suspension',
             data: {
-              reason: 'Multiple no-show reports received'
+              reason: 'Multiple no-show reports received',
+              sessionsCancelled: futureSessions?.length || 0
             }
           }
         });
 
         if (suspensionEmailError) {
           console.error('Error sending suspension email:', suspensionEmailError);
-          // Don't fail the entire operation if email fails - suspension should still complete
+          // Don't fail the entire operation if email fails
         }
 
-        console.log('Tutor suspended successfully');
+        console.log(`Tutor suspended successfully. Cancelled ${futureSessions?.length || 0} future sessions. Notified ${studentsNotified} students.`);
         break;
 
       case 'dismiss':
