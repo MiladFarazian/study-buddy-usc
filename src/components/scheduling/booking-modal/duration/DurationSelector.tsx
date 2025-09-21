@@ -140,6 +140,8 @@ export function DurationSelector({
         availableStartTimes={getAvailableStartTimes()}
         selectedStartTime={selectedStartTime}
         formatTimeForDisplay={formatTimeForDisplay}
+        selectedDate={typeof selectedSlot.day === 'string' ? new Date(selectedSlot.day) : selectedSlot.day}
+        tutorId={selectedSlot.tutorId}
       />
       
       <div className="mt-8 flex justify-between">
