@@ -12,9 +12,9 @@ import {
   createSessionBooking,
   createPaymentTransaction,
   getTutorAvailability, 
-  getTutorBookedSessions, 
-  generateAvailableSlots 
+  getTutorBookedSessions
 } from "@/lib/scheduling";
+import { generateSmartAvailableSlots } from "@/lib/scheduling/availability-utils";
 import { 
   DateSelector,
   TimeSelector,
@@ -85,7 +85,7 @@ export function NewBookingWizard({ tutor, onClose }: NewBookingWizardProps) {
       const today = new Date();
       const bookedSessions = await getTutorBookedSessions(tutor.id, today, addMinutes(today, 60 * 28));
       
-      const slots = generateAvailableSlots(availability, bookedSessions, today, 28);
+      const slots = generateSmartAvailableSlots(availability, bookedSessions, today, 28, 8);
       
       const slotsWithTutor = slots.map(slot => ({
         ...slot,
@@ -135,7 +135,7 @@ export function NewBookingWizard({ tutor, onClose }: NewBookingWizardProps) {
       
       const bookedSessions = await getTutorBookedSessions(tutor.id, startOfDay, endOfDay);
       
-      const slots = generateAvailableSlots(availability, bookedSessions, startOfDay, 1);
+      const slots = generateSmartAvailableSlots(availability, bookedSessions, startOfDay, 1, 8);
       
       const timeSlots: TimeSlot[] = slots
         .filter(slot => slot.available)
