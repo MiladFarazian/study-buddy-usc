@@ -733,9 +733,9 @@ export type Database = {
           session_type: string | null
           start_time: string
           status: Database["public"]["Enums"]["session_status"] | null
-          student_confirmed: boolean | null
+          student_confirmed: string | null
           student_id: string
-          tutor_confirmed: boolean | null
+          tutor_confirmed: string | null
           tutor_id: string
           updated_at: string
           zoom_created_at: string | null
@@ -765,9 +765,9 @@ export type Database = {
           session_type?: string | null
           start_time: string
           status?: Database["public"]["Enums"]["session_status"] | null
-          student_confirmed?: boolean | null
+          student_confirmed?: string | null
           student_id: string
-          tutor_confirmed?: boolean | null
+          tutor_confirmed?: string | null
           tutor_id: string
           updated_at?: string
           zoom_created_at?: string | null
@@ -797,9 +797,9 @@ export type Database = {
           session_type?: string | null
           start_time?: string
           status?: Database["public"]["Enums"]["session_status"] | null
-          student_confirmed?: boolean | null
+          student_confirmed?: string | null
           student_id?: string
-          tutor_confirmed?: boolean | null
+          tutor_confirmed?: string | null
           tutor_id?: string
           updated_at?: string
           zoom_created_at?: string | null

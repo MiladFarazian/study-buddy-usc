@@ -145,7 +145,9 @@ export async function getUserSessions(
       return {
         ...session,
         course: courseDetails,
-        session_type: sessionType
+        session_type: sessionType,
+        tutor_confirmed: session.tutor_confirmed as 'pending' | 'confirmed' | 'no_show',
+        student_confirmed: session.student_confirmed as 'pending' | 'confirmed' | 'no_show'
       };
     });
     

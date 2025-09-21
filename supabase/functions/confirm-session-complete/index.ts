@@ -111,8 +111,8 @@ serve(async (req) => {
 
     // Update the appropriate confirmation field
     const updateData = userRole === 'tutor' 
-      ? { tutor_confirmed: true } 
-      : { student_confirmed: true };
+      ? { tutor_confirmed: 'confirmed' } 
+      : { student_confirmed: 'confirmed' };
     
     logStep('Updating session confirmation', updateData);
     
@@ -153,7 +153,7 @@ serve(async (req) => {
     });
 
     // If both have confirmed, call the escrow processing function
-    if (updatedSession?.tutor_confirmed && updatedSession?.student_confirmed) {
+    if (updatedSession?.tutor_confirmed === 'confirmed' && updatedSession?.student_confirmed === 'confirmed') {
       logStep('Both parties confirmed - calling escrow processing function');
       
       try {
@@ -182,7 +182,7 @@ serve(async (req) => {
       });
     }
 
-    const bothConfirmed = Boolean(updatedSession?.tutor_confirmed && updatedSession?.student_confirmed);
+    const bothConfirmed = updatedSession?.tutor_confirmed === 'confirmed' && updatedSession?.student_confirmed === 'confirmed';
     logStep('Function completed successfully', { bothConfirmed });
 
     return new Response(JSON.stringify({ 

@@ -14,6 +14,8 @@ export interface Session {
   payment_status: string;
   created_at: string;
   updated_at: string;
+  tutor_confirmed?: 'pending' | 'confirmed' | 'no_show';
+  student_confirmed?: 'pending' | 'confirmed' | 'no_show';
   session_type?: SessionType;
   zoom_meeting_id?: string | null;
   zoom_join_url?: string | null;
