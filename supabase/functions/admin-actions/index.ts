@@ -148,37 +148,54 @@ const handler = async (req: Request): Promise<Response> => {
 
         console.log(`Found ${futureSessions?.length || 0} future sessions to cancel`);
 
-        // Perform atomic operation: suspend tutor and cancel sessions
-        const { error: suspendError } = await supabaseAdmin.rpc('execute_sql', {
-          sql: `
-            BEGIN;
-            
-            -- Suspend the tutor
-            UPDATE profiles 
-            SET approved_tutor = false 
-            WHERE id = '${tutorId}';
-            
-            -- Cancel all future scheduled sessions
-            UPDATE sessions 
-            SET 
-              status = 'cancelled',
-              updated_at = NOW(),
-              notes = COALESCE(notes || ' | ', '') || 'Session cancelled due to tutor account suspension'
-            WHERE tutor_id = '${tutorId}' 
-              AND status = 'scheduled' 
-              AND start_time > NOW();
-            
-            COMMIT;
-          `
-        });
+        // Step 1: Suspend the tutor
+        const { error: suspendError } = await supabaseAdmin
+          .from('profiles')
+          .update({ approved_tutor: false })
+          .eq('id', tutorId);
 
         if (suspendError) {
-          console.error('Error in atomic suspension operation:', suspendError);
-          return new Response(JSON.stringify({ error: 'Failed to suspend tutor and cancel sessions' }), {
+          console.error('Error suspending tutor:', suspendError);
+          return new Response(JSON.stringify({ error: 'Failed to suspend tutor' }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
+
+        console.log('Tutor suspended successfully');
+
+        // Step 2: Cancel all future scheduled sessions
+        const { error: cancelError } = await supabaseAdmin
+          .from('sessions')
+          .update({
+            status: 'cancelled',
+            updated_at: new Date().toISOString(),
+            notes: 'Session cancelled due to tutor account suspension'
+          })
+          .eq('tutor_id', tutorId)
+          .eq('status', 'scheduled')
+          .gt('start_time', new Date().toISOString());
+
+        if (cancelError) {
+          console.error('Error cancelling sessions:', cancelError);
+          
+          // If session cancellation fails, try to revert tutor suspension
+          const { error: revertError } = await supabaseAdmin
+            .from('profiles')
+            .update({ approved_tutor: true })
+            .eq('id', tutorId);
+          
+          if (revertError) {
+            console.error('Failed to revert tutor suspension after session cancel error:', revertError);
+          }
+          
+          return new Response(JSON.stringify({ error: 'Failed to cancel sessions, suspension reverted' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        console.log(`Successfully cancelled ${futureSessions?.length || 0} future sessions`);
 
         // Send notifications to affected students
         let studentsNotified = 0;
