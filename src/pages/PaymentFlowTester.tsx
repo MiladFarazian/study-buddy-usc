@@ -14,8 +14,8 @@ interface Session {
   start_time: string;
   end_time: string;
   status: string;
-  tutor_confirmed: 'pending' | 'confirmed' | 'no_show';
-  student_confirmed: 'pending' | 'confirmed' | 'no_show';
+  tutor_confirmed: boolean;
+  student_confirmed: boolean;
   completion_date: string | null;
   payment_status: string;
 }
@@ -108,11 +108,7 @@ const PaymentFlowTester = () => {
         .in('session_id', sessionIds);
 
       // Transform data to match existing structure
-      const sessions = paymentsData?.map(p => ({
-        ...p.sessions,
-        tutor_confirmed: p.sessions.tutor_confirmed as 'pending' | 'confirmed' | 'no_show',
-        student_confirmed: p.sessions.student_confirmed as 'pending' | 'confirmed' | 'no_show'
-      })).filter(Boolean) || [];
+      const sessions = paymentsData?.map(p => p.sessions).filter(Boolean) || [];
       
       setSessions(sessions);
       setPaymentTransactions(paymentsData || []);
@@ -479,20 +475,20 @@ const PaymentFlowTester = () => {
                         <div className="flex gap-2">
                           <Button
                             size="sm"
-                            variant={session.student_confirmed === 'confirmed' ? "default" : "outline"}
+                            variant={session.student_confirmed ? "default" : "outline"}
                             onClick={() => confirmSession(session.id, 'student')}
-                            disabled={session.student_confirmed === 'confirmed'}
+                            disabled={session.student_confirmed}
                           >
-                            {session.student_confirmed === 'confirmed' ? '✓ Student Confirmed' : 'Student Confirm'}
+                            {session.student_confirmed ? '✓ Student Confirmed' : 'Student Confirm'}
                           </Button>
                           
                           <Button
                             size="sm"
-                            variant={session.tutor_confirmed === 'confirmed' ? "default" : "outline"}
+                            variant={session.tutor_confirmed ? "default" : "outline"}
                             onClick={() => confirmSession(session.id, 'tutor')}
-                            disabled={session.tutor_confirmed === 'confirmed'}
+                            disabled={session.tutor_confirmed}
                           >
-                            {session.tutor_confirmed === 'confirmed' ? '✓ Tutor Confirmed' : 'Tutor Confirm'}
+                            {session.tutor_confirmed ? '✓ Tutor Confirmed' : 'Tutor Confirm'}
                           </Button>
                         </div>
                       </div>
