@@ -5,9 +5,9 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   BookingSlot,
   getTutorAvailability, 
-  getTutorBookedSessions
+  getTutorBookedSessions,
+  generateAvailableSlots
 } from "@/lib/scheduling";
-import { generateSmartAvailableSlots } from "@/lib/scheduling/availability-utils";
 import { Tutor } from "@/types/tutor";
 
 export function useAvailabilityData(tutor: Tutor, startDate: Date) {
@@ -49,8 +49,8 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
       const today = startOfDay(startDate);
       const bookedSessions = await getTutorBookedSessions(tutor.id, today, addDays(today, 28));
       
-      // Generate smart available slots (max 8 per day, hour boundaries)
-      const slots = generateSmartAvailableSlots(availability, bookedSessions, today, 28, 8);
+      // Generate available slots
+      const slots = generateAvailableSlots(availability, bookedSessions, today, 28);
       
       // Add tutor ID to each slot
       const slotsWithTutor = slots.map(slot => ({

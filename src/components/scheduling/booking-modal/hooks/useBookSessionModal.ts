@@ -99,23 +99,11 @@ export function useBookSessionModal(
   // Check if there's any availability
   const hasAvailability = availableSlots.length > 0;
   
-  // Handle date and time change together (for calendar-based selection)
-  const handleDateTimeChange = (date: Date, time: string) => {
+  // Handle date change
+  const handleDateChange = (date: Date) => {
     setSelectedDate(date);
-    
-    // Create a booking slot for the selected date/time
-    const bookingSlot: BookingSlot = {
-      day: date,
-      start: time,
-      end: `${(parseInt(time.split(':')[0]) + 1).toString().padStart(2, '0')}:00`,
-      available: true,
-      tutorId: tutor.id,
-      durationMinutes: 60
-    };
-    
-    setState(prev => ({ ...prev, selectedTimeSlot: bookingSlot }));
+    setState(prev => ({ ...prev, selectedTimeSlot: null }));
     dispatch({ type: 'SELECT_DATE', payload: date });
-    dispatch({ type: 'SELECT_TIME_SLOT', payload: bookingSlot });
   };
   
   // Handle slot selection
@@ -406,7 +394,7 @@ export function useBookSessionModal(
     hasAvailability,
     errorMessage,
     refreshAvailability,
-    handleDateChange: handleDateTimeChange,
+    handleDateChange,
     handleSelectSlot,
     handleDurationChange,
     handleCourseChange,

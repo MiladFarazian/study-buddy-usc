@@ -3,7 +3,6 @@ import React from 'react';
 import { BookingStep } from "@/contexts/SchedulingContext";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { CalendarDateTimeStep } from './CalendarDateTimeStep';
 import { DateTimeStep } from "./DateTimeStep";
 import { SessionDurationSelector } from "./duration/SessionDurationSelector";
 import { CourseSelector } from "./course/CourseSelector";
@@ -23,7 +22,7 @@ interface ModalContentProps {
   errorMessage?: string;
   refreshAvailability: () => void;
   selectedDate?: Date;
-  onDateChange: (date: Date, time?: string) => void;
+  onDateChange: (date: Date) => void;
   availableSlots: BookingSlot[];
   selectedSlot: BookingSlot | null;
   onSelectSlot: (slot: BookingSlot) => void;
@@ -95,13 +94,14 @@ export function ModalContent({
   switch (step) {
     case BookingStep.SELECT_DATE_TIME:
       return (
-        <CalendarDateTimeStep
-          tutor={tutor}
+        <DateTimeStep
           selectedDate={selectedDate}
-          selectedTime={selectedSlot?.start}
-          onDateTimeChange={onDateChange}
+          onDateChange={onDateChange}
+          availableSlots={availableSlots}
+          selectedSlot={selectedSlot}
+          onSelectSlot={onSelectSlot}
           onContinue={onContinue}
-          onBack={onBack}
+          isLoading={loading}
         />
       );
       
