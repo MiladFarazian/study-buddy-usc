@@ -42,7 +42,7 @@ function Calendar({
         ),
         day_selected: "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark focus:bg-usc-cardinal-dark",
         day_range_end: "day-range-end",
-        day_today: "text-accent-foreground ring-2 ring-usc-cardinal ring-inset rounded-md", // Circle highlight for today
+        day_today: "text-accent-foreground", // Removed background highlighting
         day_outside:
           "day-outside text-muted-foreground opacity-50",
         day_disabled: "text-muted-foreground opacity-50",

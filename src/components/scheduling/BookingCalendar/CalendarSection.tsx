@@ -55,7 +55,7 @@ export const CalendarSection = ({
           }}
           className="w-full pointer-events-auto"
           classNames={{
-            day_today: "ring-2 ring-usc-cardinal ring-inset rounded-md",
+            day_today: "bg-muted",
             day_selected: "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark focus:bg-usc-cardinal-dark",
             day_disabled: "text-muted-foreground opacity-50",
             months: "w-full",
