@@ -343,10 +343,7 @@ export async function cancelSessionBooking(sessionId: string): Promise<boolean> 
   try {
     // Use privileged edge function to avoid client-side RLS conflicts
     const resp = await supabase.functions.invoke('cancel-session', {
-      body: { 
-        session_id: sessionId,
-        cancellation_reason: "User cancelled session"
-      }
+      body: { session_id: sessionId }
     });
 
     if (resp.error) {
