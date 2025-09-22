@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { ProfileAvatarCard } from "@/components/profile-editor/ProfileAvatarCard";
@@ -9,18 +8,27 @@ import { useStudentProfile } from "@/hooks/useStudentProfile";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const ProfileSettings = () => {
   const { user, profile, updateProfile } = useAuth();
   const { toast } = useToast();
   
-  // State to track which profile view is active
-  const [activeTab, setActiveTab] = useState<'student' | 'tutor'>(profile?.role || 'student');
-  
-  // Always initialize both profile hooks
-  const tutorProfileHook = useTutorProfile(profile);
-  const studentProfileHook = useStudentProfile(profile);
+  const tutorProfileHook = useTutorProfile(profile?.role === 'tutor' ? profile : null);
+  const studentProfileHook = useStudentProfile(profile?.role === 'student' ? profile : null);
+
+  // Use the appropriate hook based on user role
+  const {
+    loading,
+    formData,
+    avatarUrl,
+    setAvatarUrl,
+    uploadingAvatar,
+    setUploadingAvatar,
+    avatarFile,
+    setAvatarFile,
+    handleInputChange,
+    handleProfileUpdate,
+  } = profile?.role === 'tutor' ? tutorProfileHook : studentProfileHook;
 
   if (!user || !profile) {
     return (
@@ -34,21 +42,6 @@ export const ProfileSettings = () => {
 
   const isTutor = profile.role === 'tutor';
   const isStudent = profile.role === 'student';
-
-  // Get the appropriate hook data based on active tab
-  const activeProfileHook = activeTab === 'tutor' ? tutorProfileHook : studentProfileHook;
-  const {
-    loading,
-    formData,
-    avatarUrl,
-    setAvatarUrl,
-    uploadingAvatar,
-    setUploadingAvatar,
-    avatarFile,
-    setAvatarFile,
-    handleInputChange,
-    handleProfileUpdate,
-  } = activeProfileHook;
 
   return (
     <div className="space-y-6">
@@ -83,72 +76,44 @@ export const ProfileSettings = () => {
         )}
       </Card>
 
-      {/* Profile Forms with Toggle */}
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'student' | 'tutor')}>
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="student">Student Profile</TabsTrigger>
-          <TabsTrigger value="tutor">Tutor Profile</TabsTrigger>
-        </TabsList>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2">
+          {isTutor ? (
+            <TutorProfileForm
+              formData={formData as any}
+              handleInputChange={handleInputChange}
+              loading={loading}
+              uploadingAvatar={uploadingAvatar}
+              handleProfileUpdate={handleProfileUpdate}
+              userEmail={user.email}
+              approvedTutor={profile.approved_tutor}
+            />
+          ) : (
+            <StudentProfileForm
+              formData={formData as any}
+              handleInputChange={handleInputChange}
+              loading={loading}
+              uploadingAvatar={uploadingAvatar}
+              handleProfileUpdate={handleProfileUpdate}
+              userEmail={user.email}
+            />
+          )}
+        </div>
         
-        <TabsContent value="student" className="mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
-              <StudentProfileForm
-                formData={studentProfileHook.formData as any}
-                handleInputChange={studentProfileHook.handleInputChange}
-                loading={studentProfileHook.loading}
-                uploadingAvatar={studentProfileHook.uploadingAvatar}
-                handleProfileUpdate={studentProfileHook.handleProfileUpdate}
-                userEmail={user.email}
-              />
-            </div>
-            
-            <div className="lg:col-span-1">
-              <ProfileAvatarCard 
-                avatarUrl={studentProfileHook.avatarUrl}
-                setAvatarUrl={studentProfileHook.setAvatarUrl}
-                setAvatarFile={studentProfileHook.setAvatarFile}
-                avatarFile={studentProfileHook.avatarFile}
-                loading={studentProfileHook.loading}
-                uploadingAvatar={studentProfileHook.uploadingAvatar}
-                firstName={studentProfileHook.formData.first_name}
-                userEmail={user?.email}
-                setUploadingAvatar={studentProfileHook.setUploadingAvatar}
-              />
-            </div>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="tutor" className="mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
-              <TutorProfileForm
-                formData={tutorProfileHook.formData as any}
-                handleInputChange={tutorProfileHook.handleInputChange}
-                loading={tutorProfileHook.loading}
-                uploadingAvatar={tutorProfileHook.uploadingAvatar}
-                handleProfileUpdate={tutorProfileHook.handleProfileUpdate}
-                userEmail={user.email}
-                approvedTutor={profile.approved_tutor}
-              />
-            </div>
-            
-            <div className="lg:col-span-1">
-              <ProfileAvatarCard 
-                avatarUrl={tutorProfileHook.avatarUrl}
-                setAvatarUrl={tutorProfileHook.setAvatarUrl}
-                setAvatarFile={tutorProfileHook.setAvatarFile}
-                avatarFile={tutorProfileHook.avatarFile}
-                loading={tutorProfileHook.loading}
-                uploadingAvatar={tutorProfileHook.uploadingAvatar}
-                firstName={tutorProfileHook.formData.first_name}
-                userEmail={user?.email}
-                setUploadingAvatar={tutorProfileHook.setUploadingAvatar}
-              />
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+        <div className="lg:col-span-1">
+          <ProfileAvatarCard 
+            avatarUrl={avatarUrl}
+            setAvatarUrl={setAvatarUrl}
+            setAvatarFile={setAvatarFile}
+            avatarFile={avatarFile}
+            loading={loading}
+            uploadingAvatar={uploadingAvatar}
+            firstName={formData.first_name}
+            userEmail={user?.email}
+            setUploadingAvatar={setUploadingAvatar}
+          />
+        </div>
+      </div>
     </div>
   );
 };
