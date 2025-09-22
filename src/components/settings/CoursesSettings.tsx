@@ -16,17 +16,31 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-export const CoursesSettings = () => {
+interface CoursesSettingsProps {
+  profileView?: 'student' | 'tutor';
+}
+
+export const CoursesSettings = ({ profileView }: CoursesSettingsProps) => {
   const { user, profile, updateProfile } = useAuth();
   const { toast } = useToast();
   const [removingCourse, setRemovingCourse] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
 
-  // Get the appropriate courses array based on role
+  // Determine which view to show - use prop if available, otherwise fall back to profile role
+  const currentView = profileView || profile?.role || 'student';
+  const isStudentView = currentView === 'student';
+  const isTutorView = currentView === 'tutor';
+
+  // Get the appropriate courses array based on profile view
   const getUserCourses = () => {
     if (!profile) return [];
-    return profile.subjects || [];
+    
+    if (isStudentView) {
+      return profile.student_courses || [];
+    } else {
+      return profile.tutor_courses_subjects || [];
+    }
   };
 
   const handleRemoveCourse = async (courseNumber: string) => {
@@ -36,13 +50,19 @@ export const CoursesSettings = () => {
       setRemovingCourse(courseNumber);
       await removeCourseFromProfile(user.id, courseNumber);
       
-      // Update local state
+      // Update local state based on current view
       if (profile && updateProfile) {
-        const updatedCourses = (profile.subjects || []).filter(
-          (subject) => subject !== courseNumber
-        );
-        
-        updateProfile({ ...profile, subjects: updatedCourses });
+        if (isStudentView) {
+          const updatedCourses = (profile.student_courses || []).filter(
+            (course) => course !== courseNumber
+          );
+          updateProfile({ ...profile, student_courses: updatedCourses });
+        } else {
+          const updatedCourses = (profile.tutor_courses_subjects || []).filter(
+            (subject) => subject !== courseNumber
+          );
+          updateProfile({ ...profile, tutor_courses_subjects: updatedCourses });
+        }
       }
       
       toast({
@@ -74,7 +94,7 @@ export const CoursesSettings = () => {
       <CardHeader>
         <CardTitle>My Courses</CardTitle>
         <CardDescription>
-          {profile?.role === 'tutor' 
+          {isTutorView
             ? "The courses you add here will appear to students when they book a tutoring session with you. Add courses that you're qualified to tutor."
             : "Add courses that you need help with to find matching tutors and get personalized recommendations."
           }
@@ -84,7 +104,7 @@ export const CoursesSettings = () => {
         {getUserCourses().length > 0 ? (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground mb-4">
-              {profile?.role === 'tutor' 
+              {isTutorView
                 ? "These are the courses you can tutor. They will be displayed to students during the booking process."
                 : "These are the courses you need help with. You'll see tutors who can help with these courses."
               }
@@ -117,7 +137,7 @@ export const CoursesSettings = () => {
         ) : (
           <div className="text-center py-6">
             <p className="text-sm text-muted-foreground mb-3">
-              {profile?.role === 'tutor' 
+              {isTutorView
                 ? "You haven't added any courses you can tutor yet. Add courses to make them available during booking."
                 : "You haven't added any courses you need help with yet. Add courses to find matching tutors."
               }
@@ -135,7 +155,7 @@ export const CoursesSettings = () => {
               <DialogTitle>Remove Course</DialogTitle>
               <DialogDescription>
                 Are you sure you want to remove {selectedCourse} from your profile? 
-                {profile?.role === 'tutor' && " This will also remove it from your tutor profile and it won't be available to select during booking."}
+                {isTutorView && " This will also remove it from your tutor profile and it won't be available to select during booking."}
               </DialogDescription>
             </DialogHeader>
             <div className="flex justify-end space-x-2">

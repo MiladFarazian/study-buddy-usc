@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ProfileAvatarCard } from "@/components/profile-editor/ProfileAvatarCard";
 import { StudentProfileForm } from "@/components/profile-editor/StudentProfileForm";
 import { TutorProfileForm } from "@/components/profile-editor/TutorProfileForm";
+import { CoursesSettings } from "./CoursesSettings";
 import { useTutorProfile } from "@/hooks/useTutorProfile";
 import { useStudentProfile } from "@/hooks/useStudentProfile";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -131,7 +132,7 @@ export const ProfileSettings = () => {
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-8">
           {isTutor ? (
             <TutorProfileForm
               formData={formData as any}
@@ -152,6 +153,9 @@ export const ProfileSettings = () => {
               userEmail={user.email}
             />
           )}
+          
+          {/* Course Settings Integration */}
+          <CoursesSettings profileView={profileView} />
         </div>
         
         <div className="lg:col-span-1">
