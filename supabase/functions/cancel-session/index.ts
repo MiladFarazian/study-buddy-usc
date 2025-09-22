@@ -1,12 +1,20 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import Stripe from 'https://esm.sh/stripe@14.21.0';
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY") || "";
 
 // Admin client (service role)
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+// Initialize Stripe
+const stripe = new Stripe(stripeSecretKey, {
+  apiVersion: '2023-10-16',
+  httpClient: Stripe.createFetchHttpClient(),
+});
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -70,12 +78,12 @@ serve(async (req) => {
 
     console.log('[cancel-session] Processing cancellation for session:', session_id, 'by user:', user.id);
 
-    // Fetch session details using admin client
+    // Fetch session details and payment data using admin client
     const { data: session, error: fetchError } = await supabaseAdmin
       .from('sessions')
       .select(`
         id, status, start_time, session_type, zoom_meeting_id,
-        student_id, tutor_id
+        student_id, tutor_id, stripe_payment_intent_id
       `)
       .eq('id', session_id)
       .maybeSingle();
@@ -94,6 +102,26 @@ serve(async (req) => {
         headers: { 'Content-Type': 'application/json', ...corsHeaders } 
       });
     }
+
+    // Fetch payment transaction data to get actual amount
+    const { data: paymentTransaction, error: paymentError } = await supabaseAdmin
+      .from('payment_transactions')
+      .select('amount, status')
+      .eq('session_id', session_id)
+      .eq('status', 'completed')
+      .maybeSingle();
+
+    if (paymentError) {
+      console.error('[cancel-session] Payment fetch error:', paymentError);
+      // Continue without payment data - might be an unpaid session
+    }
+
+    // Use actual payment amount or default to 0 if no payment found
+    const actualPaymentAmount = paymentTransaction?.amount || 0;
+    console.log('[cancel-session] Found payment amount:', actualPaymentAmount, 'cents');
+
+    // Check if session has valid payment data for refund processing
+    const hasValidPayment = actualPaymentAmount > 0 && session.stripe_payment_intent_id;
 
     // Determine user's role in this session
     let cancelled_by_role: 'student' | 'tutor';
@@ -142,14 +170,10 @@ serve(async (req) => {
 
     console.log('[cancel-session] Hours before session:', hoursBeforeSession);
 
-    // For now, we'll use a default payment amount of $50 (5000 cents) for refund calculation
-    // This will be replaced with actual payment data in the next iteration
-    const defaultPaymentAmount = 5000; // $50.00 in cents
-
-    // Calculate refund amounts using our database function
+    // Calculate refund amounts using actual payment data
     const { data: refundData, error: refundError } = await supabaseAdmin
       .rpc('calculate_refund_amounts', {
-        original_amount: defaultPaymentAmount,
+        original_amount: actualPaymentAmount,
         cancelled_by_role: cancelled_by_role,
         hours_before: hoursBeforeSession
       });
@@ -161,11 +185,43 @@ serve(async (req) => {
 
     let refundAmount = 0;
     let tutorPayout = 0;
+    let stripeRefundId = null;
+    let stripeError = null;
 
     if (refundData && refundData.length > 0) {
       refundAmount = refundData[0].student_refund;
       tutorPayout = refundData[0].tutor_payout;
       console.log('[cancel-session] Calculated refund amount:', refundAmount, 'tutor payout:', tutorPayout);
+    }
+
+    // Process Stripe refund if there's a valid payment and refund amount
+    if (hasValidPayment && refundAmount > 0) {
+      try {
+        console.log('[cancel-session] Processing Stripe refund for amount:', refundAmount, 'cents');
+        
+        const refund = await stripe.refunds.create({
+          payment_intent: session.stripe_payment_intent_id,
+          amount: refundAmount,
+          reason: 'requested_by_customer',
+          metadata: { 
+            session_id: session_id, 
+            cancelled_by: user.id,
+            cancelled_by_role: cancelled_by_role
+          }
+        });
+        
+        stripeRefundId = refund.id;
+        console.log('[cancel-session] Stripe refund created successfully:', refund.id);
+        
+      } catch (error: any) {
+        stripeError = error.message;
+        console.error('[cancel-session] Stripe refund failed:', error);
+        // Continue with database update even if Stripe fails
+      }
+    } else if (actualPaymentAmount === 0) {
+      console.log('[cancel-session] No payment found - skipping refund processing');
+    } else if (!session.stripe_payment_intent_id) {
+      console.log('[cancel-session] No payment intent ID - skipping refund processing');
     }
 
     // Try to delete Zoom meeting if present (best effort)
@@ -211,7 +267,12 @@ serve(async (req) => {
       refund_amount: refundAmount,
       tutor_payout: tutorPayout,
       hours_before_session: hoursBeforeSession,
-      message: 'Session cancelled successfully. Stripe refund processing will be added in the next step.'
+      message: hasValidPayment && refundAmount > 0 
+        ? `Session cancelled successfully. ${stripeRefundId ? 'Refund processed: ' + stripeRefundId : 'Refund failed: ' + stripeError}`
+        : 'Session cancelled successfully. No payment to refund.',
+      stripe_refund_id: stripeRefundId,
+      stripe_error: stripeError,
+      payment_amount: actualPaymentAmount
     }), { 
       status: 200, 
       headers: { 'Content-Type': 'application/json', ...corsHeaders } 
