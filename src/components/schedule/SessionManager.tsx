@@ -120,10 +120,10 @@ export const SessionManager = () => {
     navigate('/tutors');
   };
   
-  const handleCancelSession = async (sessionId: string) => {
+  const handleCancelSession = async (sessionId: string, reason?: string) => {
     try {
-      console.log("Cancelling session:", sessionId);
-      const ok = await cancelSessionBooking(sessionId);
+      console.log("Cancelling session:", sessionId, "with reason:", reason);
+      const ok = await cancelSessionBooking(sessionId, reason);
       if (!ok) throw new Error('Cancellation failed');
 
       setSessions(prev => 

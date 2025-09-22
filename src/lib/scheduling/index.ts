@@ -28,7 +28,9 @@ export {
   createPaymentTransaction,
   createPaymentIntent,
   processPaymentForSession,
-  createSessionBooking
+  createSessionBooking,
+  cancelSessionBooking,
+  rescheduleSessionBooking
 } from './booking-utils';
 
 // Explicitly export mapDateToDayOfWeek from time-utils
