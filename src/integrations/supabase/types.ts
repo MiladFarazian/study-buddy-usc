@@ -1256,6 +1256,17 @@ export type Database = {
         Args: { input_tutor_id: string }
         Returns: undefined
       }
+      calculate_refund_amounts: {
+        Args: {
+          cancelled_by_role: string
+          hours_before: number
+          original_amount: number
+        }
+        Returns: {
+          student_refund: number
+          tutor_payout: number
+        }[]
+      }
       check_column_exists: {
         Args: { column_name: string; table_name: string }
         Returns: boolean
