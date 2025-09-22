@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { ProfileAvatarCard } from "@/components/profile-editor/ProfileAvatarCard";
@@ -13,10 +14,13 @@ export const ProfileSettings = () => {
   const { user, profile, updateProfile } = useAuth();
   const { toast } = useToast();
   
-  const tutorProfileHook = useTutorProfile(profile?.role === 'tutor' ? profile : null);
-  const studentProfileHook = useStudentProfile(profile?.role === 'student' ? profile : null);
+  // Track current profile view (can be different from actual role)
+  const [profileView, setProfileView] = useState<'student' | 'tutor'>(profile?.role || 'student');
+  
+  const tutorProfileHook = useTutorProfile(profile);
+  const studentProfileHook = useStudentProfile(profile);
 
-  // Use the appropriate hook based on user role
+  // Use the appropriate hook based on profile view
   const {
     loading,
     formData,
@@ -28,7 +32,42 @@ export const ProfileSettings = () => {
     setAvatarFile,
     handleInputChange,
     handleProfileUpdate,
-  } = profile?.role === 'tutor' ? tutorProfileHook : studentProfileHook;
+  } = profileView === 'tutor' ? tutorProfileHook : studentProfileHook;
+
+  const handleRoleToggle = async (newRole: 'student' | 'tutor') => {
+    if (!updateProfile) return;
+    
+    try {
+      // Update profile view immediately for UI responsiveness
+      setProfileView(newRole);
+      
+      // Update role in database
+      const result = await updateProfile({ role: newRole });
+      
+      if (result.success) {
+        toast({
+          title: "Profile Updated",
+          description: `Successfully switched to ${newRole} profile`,
+        });
+      } else {
+        // Revert profile view if update failed
+        setProfileView(profile?.role || 'student');
+        toast({
+          title: "Error",
+          description: "Failed to update profile role",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      // Revert profile view if error occurred
+      setProfileView(profile?.role || 'student');
+      toast({
+        title: "Error",
+        description: "Failed to update profile role",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (!user || !profile) {
     return (
@@ -40,19 +79,34 @@ export const ProfileSettings = () => {
     );
   }
 
-  const isTutor = profile.role === 'tutor';
-  const isStudent = profile.role === 'student';
+  const isTutor = profileView === 'tutor';
+  const isStudent = profileView === 'student';
 
   return (
     <div className="space-y-6">
-      {/* Role Badge */}
+      {/* Profile View Toggle */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            Current Role
-            <Badge variant={isTutor ? "default" : "secondary"}>
-              {profile.role === 'tutor' ? 'Tutor' : 'Student'}
-            </Badge>
+          <CardTitle className="flex items-center gap-4">
+            Profile View
+            <div className="flex gap-2">
+              <Button
+                variant={isStudent ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleRoleToggle('student')}
+                disabled={loading}
+              >
+                Student
+              </Button>
+              <Button
+                variant={isTutor ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleRoleToggle('tutor')}
+                disabled={loading}
+              >
+                Tutor
+              </Button>
+            </div>
           </CardTitle>
           <CardDescription>
             {isTutor 
