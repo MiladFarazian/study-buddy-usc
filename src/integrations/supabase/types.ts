@@ -717,6 +717,9 @@ export type Database = {
           accepted_at: string | null
           actual_end_time: string | null
           actual_start_time: string | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by_user_id: string | null
           completion_date: string | null
           completion_method:
             | Database["public"]["Enums"]["completion_method"]
@@ -724,16 +727,19 @@ export type Database = {
           course_id: string | null
           created_at: string
           end_time: string
+          hours_before_session: number | null
           id: string
           location: string | null
           no_show_report: string | null
           notes: string | null
           payment_status: string | null
+          refund_amount: number | null
           reminder_1h_sent_at: string | null
           reminder_24h_sent_at: string | null
           session_type: string | null
           start_time: string
           status: Database["public"]["Enums"]["session_status"] | null
+          stripe_payment_intent_id: string | null
           student_confirmed: boolean | null
           student_first_name: string | null
           student_id: string
@@ -754,6 +760,9 @@ export type Database = {
           accepted_at?: string | null
           actual_end_time?: string | null
           actual_start_time?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by_user_id?: string | null
           completion_date?: string | null
           completion_method?:
             | Database["public"]["Enums"]["completion_method"]
@@ -761,16 +770,19 @@ export type Database = {
           course_id?: string | null
           created_at?: string
           end_time: string
+          hours_before_session?: number | null
           id?: string
           location?: string | null
           no_show_report?: string | null
           notes?: string | null
           payment_status?: string | null
+          refund_amount?: number | null
           reminder_1h_sent_at?: string | null
           reminder_24h_sent_at?: string | null
           session_type?: string | null
           start_time: string
           status?: Database["public"]["Enums"]["session_status"] | null
+          stripe_payment_intent_id?: string | null
           student_confirmed?: boolean | null
           student_first_name?: string | null
           student_id: string
@@ -791,6 +803,9 @@ export type Database = {
           accepted_at?: string | null
           actual_end_time?: string | null
           actual_start_time?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by_user_id?: string | null
           completion_date?: string | null
           completion_method?:
             | Database["public"]["Enums"]["completion_method"]
@@ -798,16 +813,19 @@ export type Database = {
           course_id?: string | null
           created_at?: string
           end_time?: string
+          hours_before_session?: number | null
           id?: string
           location?: string | null
           no_show_report?: string | null
           notes?: string | null
           payment_status?: string | null
+          refund_amount?: number | null
           reminder_1h_sent_at?: string | null
           reminder_24h_sent_at?: string | null
           session_type?: string | null
           start_time?: string
           status?: Database["public"]["Enums"]["session_status"] | null
+          stripe_payment_intent_id?: string | null
           student_confirmed?: boolean | null
           student_first_name?: string | null
           student_id?: string
@@ -825,6 +843,13 @@ export type Database = {
           zoom_updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "sessions_cancelled_by_user_id_fkey"
+            columns: ["cancelled_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sessions_student_id_fkey"
             columns: ["student_id"]
