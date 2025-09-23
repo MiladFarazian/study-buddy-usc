@@ -107,7 +107,8 @@ serve(async (req) => {
         .from('payment_transactions')
         .select('*')
         .eq('stripe_payment_intent_id', paymentIntent.id)
-        .eq('status', 'pending')
+        .in('status', ['pending', 'completed'])
+        .gte('created_at', new Date(Date.now() - 60000).toISOString())
         .limit(1);
 
       if (!intentIdError && transactionsByIntentId && transactionsByIntentId.length > 0) {
@@ -120,7 +121,8 @@ serve(async (req) => {
           .from('payment_transactions')
           .select('*')
           .eq('amount', paymentIntent.amount) // Both are now in cents
-          .eq('status', 'pending')
+          .in('status', ['pending', 'completed'])
+          .gte('created_at', new Date(Date.now() - 60000).toISOString())
           .order('created_at', { ascending: false })
           .limit(1);
         
