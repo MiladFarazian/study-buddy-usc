@@ -42,7 +42,7 @@ serve(async (req) => {
     const mode = getStripeMode(); // 'test' | 'live'
     console.log(`Creating checkout session in ${mode} mode`);
     
-    const { sessionId, amount, tutorName, studentName, sessionDate, sessionTime, userId } = await req.json();
+    const { sessionId, amount, tutorName, studentName, sessionDate, sessionTime, userId, tutorId, courseId } = await req.json();
 
     // Get appropriate Stripe key using explicit mode selector
     const stripeKey = getStripeKey(mode);
@@ -137,6 +137,7 @@ serve(async (req) => {
       .from('payment_transactions')
       .insert({
         student_id: userId,
+        tutor_id: tutorId,
         amount: Math.round(amount),
         status: 'pending',
         stripe_checkout_session_id: session.id,

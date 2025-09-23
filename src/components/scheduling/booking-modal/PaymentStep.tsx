@@ -57,6 +57,10 @@ export function PaymentStep({
     setMessage('Creating checkout session...');
 
     try {
+      // Get booking data from localStorage to include in payment
+      const bookingDataStr = localStorage.getItem('currentBooking');
+      const bookingData = bookingDataStr ? JSON.parse(bookingDataStr) : null;
+      
       const sessionId = `session_${Date.now()}_${tutor.id}`;
       const amount = calculatedCost ? Math.round(calculatedCost * 100) : 3300; // Convert to cents
       
@@ -73,6 +77,8 @@ export function PaymentStep({
           sessionDate,
           sessionTime,
           userId: user?.id,
+          tutorId: tutor.id,
+          courseId: bookingData?.courseId || null,
         },
       });
 
