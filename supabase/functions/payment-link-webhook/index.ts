@@ -82,18 +82,23 @@ serve(async (req) => {
         payment_status: session.payment_status,
       });
 
-      // Extract clean UUID from session ID (remove "session_" prefix and timestamp)
-      const rawSessionId = session.metadata?.sessionId;
-      const cleanSessionId = rawSessionId ? rawSessionId.replace(/^session_\d+_/, '') : null;
+      // Find payment transaction using Stripe checkout session ID
+      const { data: paymentTransaction, error: lookupError } = await supabaseAdmin
+        .from('payment_transactions')
+        .select('session_id')
+        .eq('stripe_checkout_session_id', session.id)
+        .single();
+
+      if (lookupError || !paymentTransaction?.session_id) {
+        console.error('Payment transaction not found for checkout session:', session.id, 'Error:', lookupError);
+        return new Response('Payment transaction not found', { status: 404 });
+      }
+
+      const sessionId = paymentTransaction.session_id;
       const paymentIntentId = session.payment_intent;
       
-      console.log('Extracted session ID:', { raw: rawSessionId, clean: cleanSessionId });
+      console.log('Found session ID from payment transaction:', sessionId);
       console.log('Payment intent ID:', paymentIntentId);
-
-      if (!cleanSessionId) {
-        console.error('No valid session ID found in metadata');
-        return new Response('Invalid session ID', { status: 400 });
-      }
 
       // Update payment transaction with amount in cents (Stripe already sends cents)
       const { error: updateError } = await supabaseAdmin
@@ -106,7 +111,7 @@ serve(async (req) => {
           payment_completed_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
-        .eq('session_id', cleanSessionId);
+        .eq('session_id', sessionId);
 
       if (updateError) {
         console.error('Error updating payment transaction:', updateError);
@@ -121,7 +126,7 @@ serve(async (req) => {
           stripe_payment_intent_id: paymentIntentId,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', cleanSessionId);
+        .eq('id', sessionId);
 
       if (sessionUpdateError) {
         console.error('Error updating session payment status:', sessionUpdateError);
@@ -162,7 +167,7 @@ serve(async (req) => {
           const { data: sessionData } = await supabaseAdmin
             .from('sessions')
             .select('student_id')
-            .eq('id', cleanSessionId)
+            .eq('id', sessionId)
             .single();
             
           if (sessionData?.student_id) {
@@ -180,7 +185,7 @@ serve(async (req) => {
         }
       }
 
-      console.log('Payment completed successfully for session:', session.metadata?.sessionId);
+      console.log('Payment completed successfully for session:', sessionId);
     }
 
     return new Response(JSON.stringify({ received: true }), {
