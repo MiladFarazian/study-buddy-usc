@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.200.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.23.0';
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno&bundle';
 
@@ -67,7 +67,7 @@ serve(async (req) => {
 
     let event;
     try {
-      event = await stripe.webhooks.constructEventAsync(
+      event = stripe.webhooks.constructEvent(
         body,
         signature,
         Deno.env.get('STRIPE_WEBHOOK_SECRET') || ''
