@@ -39,8 +39,7 @@ export function PaymentStep({
         
         // Continue to next step in booking flow
         setTimeout(() => {
-          // Use session ID from Stripe metadata (should be real UUID now)
-          const sessionId = event.data.sessionId;
+          const sessionId = event.data.sessionId || `session_${Date.now()}_${tutor.id}`;
           onContinue?.(sessionId, true);
         }, 1000);
       } else if (event.data.type === 'PAYMENT_CANCELED') {
@@ -51,38 +50,14 @@ export function PaymentStep({
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [onContinue]);
+  }, [onContinue, tutor.id]);
 
   const handlePaymentClick = async () => {
     setProcessing(true);
-    setMessage('Creating session...');
+    setMessage('Creating checkout session...');
 
     try {
-      // First create the actual session in the database
-      if (!selectedSlot?.startTime || !selectedSlot?.endTime) {
-        throw new Error('Invalid session time slot');
-      }
-
-      const { data: session, error: sessionError } = await supabase
-        .from('sessions')
-        .insert({
-          tutor_id: tutor.id,
-          student_id: user?.id,
-          start_time: selectedSlot.startTime.toISOString(),
-          end_time: selectedSlot.endTime.toISOString(),
-          status: 'scheduled',
-          payment_status: 'unpaid'
-        })
-        .select()
-        .single();
-
-      if (sessionError || !session) {
-        throw new Error('Failed to create session');
-      }
-
-      const sessionId = session.id; // Use the real session UUID
-      setMessage('Creating checkout session...');
-      
+      const sessionId = `session_${Date.now()}_${tutor.id}`;
       const amount = calculatedCost ? Math.round(calculatedCost * 100) : 3300; // Convert to cents
       
       // Format date and time for display
