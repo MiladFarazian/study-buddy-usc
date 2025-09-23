@@ -92,8 +92,10 @@ serve(async (req) => {
       // Extract clean UUID from session ID (remove "session_" prefix and timestamp)
       const rawSessionId = session.metadata?.sessionId;
       const cleanSessionId = rawSessionId ? rawSessionId.replace(/^session_\d+_/, '') : null;
+      const paymentIntentId = session.payment_intent;
       
       console.log('Extracted session ID:', { raw: rawSessionId, clean: cleanSessionId });
+      console.log('Payment intent ID:', paymentIntentId);
 
       if (!cleanSessionId) {
         console.error('No valid session ID found in metadata');
@@ -106,6 +108,7 @@ serve(async (req) => {
         .update({
           status: 'completed',
           stripe_checkout_session_id: session.id,
+          stripe_payment_intent_id: paymentIntentId,
           amount: session.amount_total, // Store Stripe amount directly (already in cents)
           payment_completed_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -122,6 +125,7 @@ serve(async (req) => {
         .from('sessions')
         .update({
           payment_status: 'paid',
+          stripe_payment_intent_id: paymentIntentId,
           updated_at: new Date().toISOString(),
         })
         .eq('id', cleanSessionId);
