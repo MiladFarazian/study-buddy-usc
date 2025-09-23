@@ -72,46 +72,52 @@ serve(async (req) => {
 
     console.log('Webhook event received:', event.type);
 
-    // Handle checkout.session.completed event
-    if (event.type === 'checkout.session.completed') {
-      const session = event.data.object as Stripe.Checkout.Session;
+    // Handle payment_intent.succeeded event
+    if (event.type === 'payment_intent.succeeded') {
+      const paymentIntent = event.data.object as Stripe.PaymentIntent;
       
-      console.log('Checkout session completed:', {
-        id: session.id,
-        metadata: session.metadata,
-        payment_status: session.payment_status,
+      console.log('Payment intent succeeded:', {
+        id: paymentIntent.id,
+        metadata: paymentIntent.metadata,
+        status: paymentIntent.status,
       });
 
-      // Find payment transaction using Stripe checkout session ID
-      const { data: paymentTransaction, error: lookupError } = await supabaseAdmin
-        .from('payment_transactions')
-        .select('session_id')
-        .eq('stripe_checkout_session_id', session.id)
-        .single();
+      // Extract session ID from metadata
+      const sessionId = paymentIntent.metadata?.sessionId?.replace(/^session_\d+_/, '') || null;
+      const paymentIntentId = paymentIntent.id;
+      
+      console.log('Session ID from metadata:', sessionId);
+      console.log('Payment intent ID:', paymentIntentId);
 
-      if (lookupError || !paymentTransaction?.session_id) {
-        console.error('Payment transaction not found for checkout session:', session.id, 'Error:', lookupError);
-        return new Response('Payment transaction not found', { status: 404 });
+      // First try to find by session_id from metadata
+      let sessionIdForUpdate = sessionId;
+
+      // If no session in metadata, try to find existing payment_transaction
+      if (!sessionIdForUpdate) {
+        const { data: existingTransaction } = await supabaseAdmin
+          .from('payment_transactions')
+          .select('session_id')
+          .eq('stripe_payment_intent_id', paymentIntentId)
+          .single();
+        sessionIdForUpdate = existingTransaction?.session_id;
       }
 
-      const sessionId = paymentTransaction.session_id;
-      const paymentIntentId = session.payment_intent;
-      
-      console.log('Found session ID from payment transaction:', sessionId);
-      console.log('Payment intent ID:', paymentIntentId);
+      if (!sessionIdForUpdate) {
+        console.error('Cannot find session ID for payment intent:', paymentIntentId);
+        return new Response('Session ID not found', { status: 404 });
+      }
 
       // Update payment transaction with amount in cents (Stripe already sends cents)
       const { error: updateError } = await supabaseAdmin
         .from('payment_transactions')
         .update({
           status: 'completed',
-          stripe_checkout_session_id: session.id,
           stripe_payment_intent_id: paymentIntentId,
-          amount: session.amount_total, // Store Stripe amount directly (already in cents)
+          amount: paymentIntent.amount, // Payment intent has amount directly
           payment_completed_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
-        .eq('session_id', sessionId);
+        .eq('session_id', sessionIdForUpdate);
 
       if (updateError) {
         console.error('Error updating payment transaction:', updateError);
@@ -126,66 +132,39 @@ serve(async (req) => {
           stripe_payment_intent_id: paymentIntentId,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', sessionId);
+        .eq('id', sessionIdForUpdate);
 
       if (sessionUpdateError) {
         console.error('Error updating session payment status:', sessionUpdateError);
       }
 
-      // PERMANENT FIX: Save customer ID to profile to prevent future fragmentation
-      const customerId = session.customer;
-      const customerEmail = session.customer_details?.email;
-      
-      if (customerId && customerEmail) {
-        console.log('Saving customer ID to profile:', { customerId, customerEmail });
+      // Update customer ID to profile if available
+      const customerId = paymentIntent.customer;
+      if (customerId) {
+        console.log('Attempting to save customer ID to profile:', customerId);
         
-        // Try to find user by email first
-        let userFound = false;
-        try {
-          const { data: users } = await supabaseAdmin.auth.admin.listUsers();
-          const matchingUser = users.users.find(u => u.email === customerEmail);
+        // Try to update profile via session's student_id
+        const { data: sessionData } = await supabaseAdmin
+          .from('sessions')
+          .select('student_id')
+          .eq('id', sessionIdForUpdate)
+          .single();
           
-          if (matchingUser) {
-            const { error: profileUpdateError } = await supabaseAdmin
-              .from('profiles')
-              .update({ stripe_customer_id: customerId })
-              .eq('id', matchingUser.id);
-              
-            if (!profileUpdateError) {
-              console.log('Successfully updated profile with customer ID via email');
-              userFound = true;
-            }
-          }
-        } catch (emailLookupError) {
-          console.warn('Email lookup failed:', emailLookupError);
-        }
-
-        if (!userFound) {
-          console.warn('Could not update profile with customer ID via email, trying student_id fallback');
-          
-          // Try alternative approach: update by matching the session's student_id
-          const { data: sessionData } = await supabaseAdmin
-            .from('sessions')
-            .select('student_id')
-            .eq('id', sessionId)
-            .single();
+        if (sessionData?.student_id) {
+          const { error: altUpdateError } = await supabaseAdmin
+            .from('profiles')
+            .update({ stripe_customer_id: customerId })
+            .eq('id', sessionData.student_id);
             
-          if (sessionData?.student_id) {
-            const { error: altUpdateError } = await supabaseAdmin
-              .from('profiles')
-              .update({ stripe_customer_id: customerId })
-              .eq('id', sessionData.student_id);
-              
-            if (altUpdateError) {
-              console.error('Failed to update profile via student_id:', altUpdateError);
-            } else {
-              console.log('Successfully updated profile via student_id');
-            }
+          if (altUpdateError) {
+            console.error('Failed to update profile with customer ID:', altUpdateError);
+          } else {
+            console.log('Successfully updated profile with customer ID');
           }
         }
       }
 
-      console.log('Payment completed successfully for session:', sessionId);
+      console.log('Payment completed successfully for session:', sessionIdForUpdate);
     }
 
     return new Response(JSON.stringify({ received: true }), {
