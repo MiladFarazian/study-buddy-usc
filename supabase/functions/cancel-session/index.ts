@@ -103,10 +103,10 @@ serve(async (req) => {
       });
     }
 
-    // Fetch payment transaction data to get actual amount
+    // Fetch payment transaction data to get actual amount and payment intent ID
     const { data: paymentTransaction, error: paymentError } = await supabaseAdmin
       .from('payment_transactions')
-      .select('amount, status')
+      .select('amount, status, stripe_payment_intent_id')
       .eq('session_id', session_id)
       .eq('status', 'completed')
       .maybeSingle();
@@ -118,10 +118,12 @@ serve(async (req) => {
 
     // Use actual payment amount or default to 0 if no payment found
     const actualPaymentAmount = paymentTransaction?.amount || 0;
+    const paymentIntentId = paymentTransaction?.stripe_payment_intent_id;
     console.log('[cancel-session] Found payment amount:', actualPaymentAmount, 'cents');
+    console.log('[cancel-session] Found payment intent ID:', paymentIntentId);
 
     // Check if session has valid payment data for refund processing
-    const hasValidPayment = actualPaymentAmount > 0 && session.stripe_payment_intent_id;
+    const hasValidPayment = actualPaymentAmount > 0 && paymentIntentId;
 
     // Determine user's role in this session
     let cancelled_by_role: 'student' | 'tutor';
@@ -200,7 +202,7 @@ serve(async (req) => {
         console.log('[cancel-session] Processing Stripe refund for amount:', refundAmount, 'cents');
         
         const refund = await stripe.refunds.create({
-          payment_intent: session.stripe_payment_intent_id,
+          payment_intent: paymentIntentId,
           amount: refundAmount,
           reason: 'requested_by_customer',
           metadata: { 
@@ -220,8 +222,8 @@ serve(async (req) => {
       }
     } else if (actualPaymentAmount === 0) {
       console.log('[cancel-session] No payment found - skipping refund processing');
-    } else if (!session.stripe_payment_intent_id) {
-      console.log('[cancel-session] No payment intent ID - skipping refund processing');
+    } else if (!paymentIntentId) {
+      console.log('[cancel-session] No payment intent ID found in payment_transactions - skipping refund processing');
     }
 
     // Try to delete Zoom meeting if present (best effort)
