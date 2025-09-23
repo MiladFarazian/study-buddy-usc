@@ -15,7 +15,7 @@ export default function PaymentSuccess() {
   const [creating, setCreating] = useState(false);
   
   const sessionId = searchParams.get('session_id');
-  const stripeSessionId = searchParams.get('session_id');
+  const stripeSessionId = searchParams.get('cs_id');
 
   // Note: Session creation now happens in handleBookingComplete function
   // This page is only reached when payment links redirect here (rare case)
@@ -93,7 +93,7 @@ export default function PaymentSuccess() {
             status: 'completed',
             payment_completed_at: new Date().toISOString(),
             environment: 'production',
-            stripe_checkout_session_id: sessionId
+            stripe_checkout_session_id: stripeSessionId
           }, { 
             onConflict: 'stripe_checkout_session_id'
           });

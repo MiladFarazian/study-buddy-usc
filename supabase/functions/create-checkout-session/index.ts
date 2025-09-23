@@ -110,8 +110,8 @@ serve(async (req) => {
         },
       ],
       mode: 'payment',
-      success_url: `${req.headers.get("origin")}/payment-success?session_id=${sessionId}`,
-      cancel_url: `${req.headers.get("origin")}/payment-canceled?session_id=${sessionId}`,
+      success_url: `${req.headers.get("origin")}/payment-success?cs_id={CHECKOUT_SESSION_ID}&booking_ref=${sessionId}`,
+      cancel_url: `${req.headers.get("origin")}/payment-canceled?booking_ref=${sessionId}`,
       metadata: {
         sessionId: sessionId,
         tutorName: tutorName,
@@ -136,12 +136,12 @@ serve(async (req) => {
     const { error: dbError } = await supabaseAdmin
       .from('payment_transactions')
       .insert({
-        session_id: sessionId,
         student_id: userId,
         amount: Math.round(amount),
         status: 'pending',
         stripe_checkout_session_id: session.id,
         environment: mode,
+        ...(existingCustomerId ? { stripe_customer_id: existingCustomerId } : {}),
       });
 
     if (dbError) {

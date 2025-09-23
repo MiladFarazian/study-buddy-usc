@@ -145,7 +145,6 @@ serve(async (req) => {
       const updateData: any = {
         status: 'completed',
         stripe_payment_intent_id: paymentIntent.id,
-        stripe_checkout_session_id: paymentIntent.id, // Keep existing for compatibility
         payment_completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
