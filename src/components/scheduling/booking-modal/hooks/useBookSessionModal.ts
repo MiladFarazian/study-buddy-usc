@@ -341,18 +341,18 @@ export function useBookSessionModal(
         // Don't fail the entire booking for email errors
       }
 
-      // Create payment transaction record
+      // Update existing payment transaction record with session linkage
       const { error: paymentError } = await supabase
         .from('payment_transactions')
-        .insert({
+        .update({
           session_id: sessionData.id,
-          student_id: user.id,
-          tutor_id: booking.tutorId,
-          amount: dollarsToCents(booking.totalAmount || 0),
           status: 'completed',
-          payment_completed_at: new Date().toISOString(),
-          environment: 'production'
-        });
+          payment_completed_at: new Date().toISOString()
+        })
+        .eq('student_id', user.id)
+        .eq('tutor_id', booking.tutorId)
+        .eq('amount', dollarsToCents(booking.totalAmount || 0))
+        .is('session_id', null);
 
       if (paymentError) {
         console.error("❌ Payment transaction error:", paymentError);
