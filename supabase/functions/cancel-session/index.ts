@@ -106,7 +106,7 @@ serve(async (req) => {
     // Fetch payment transaction data to get actual amount and payment intent ID
     const { data: paymentTransaction, error: paymentError } = await supabaseAdmin
       .from('payment_transactions')
-      .select('amount, status, stripe_payment_intent_id')
+      .select('amount, status, stripe_payment_intent_id, stripe_checkout_session_id')
       .eq('session_id', session_id)
       .eq('status', 'completed')
       .maybeSingle();
@@ -118,7 +118,32 @@ serve(async (req) => {
 
     // Use actual payment amount or default to 0 if no payment found
     const actualPaymentAmount = paymentTransaction?.amount || 0;
-    const paymentIntentId = paymentTransaction?.stripe_payment_intent_id;
+    let paymentIntentId = paymentTransaction?.stripe_payment_intent_id;
+    
+    // FALLBACK: If payment intent ID is missing, get it from Stripe checkout session
+    if (!paymentIntentId && paymentTransaction?.stripe_checkout_session_id) {
+      console.log('[cancel-session] Payment intent ID missing, retrieving from Stripe checkout session:', paymentTransaction.stripe_checkout_session_id);
+      
+      try {
+        const checkoutSession = await stripe.checkout.sessions.retrieve(paymentTransaction.stripe_checkout_session_id);
+        paymentIntentId = checkoutSession.payment_intent as string;
+        
+        console.log('[cancel-session] Retrieved payment intent from Stripe:', paymentIntentId);
+        
+        // Store the payment intent ID in database for future use
+        if (paymentIntentId) {
+          await supabaseAdmin
+            .from('payment_transactions')
+            .update({ stripe_payment_intent_id: paymentIntentId })
+            .eq('session_id', session_id);
+            
+          console.log('[cancel-session] Updated payment_transactions with payment intent ID');
+        }
+      } catch (stripeError) {
+        console.error('[cancel-session] Error retrieving payment intent from Stripe:', stripeError);
+      }
+    }
+    
     console.log('[cancel-session] Found payment amount:', actualPaymentAmount, 'cents');
     console.log('[cancel-session] Found payment intent ID:', paymentIntentId);
 
