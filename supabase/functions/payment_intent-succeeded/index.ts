@@ -200,17 +200,24 @@ serve(async (req) => {
 
       // Update session payment status if session exists
       if (transaction.session_id) {
+        console.log('Attempting to update session:', transaction.session_id, 'with payment intent:', paymentIntent.id);
+        
         const { error: sessionUpdateError } = await supabaseAdmin
           .from('sessions')
           .update({
             payment_status: 'paid',
+            stripe_payment_intent_id: paymentIntent.id,
             updated_at: new Date().toISOString(),
           })
           .eq('id', transaction.session_id);
 
         if (sessionUpdateError) {
-          console.error('Error updating session payment status:', sessionUpdateError);
+          console.error('Session update failed:', sessionUpdateError);
+        } else {
+          console.log('Session updated successfully with payment intent:', paymentIntent.id);
         }
+      } else {
+        console.log('No session_id found in transaction:', transaction.id);
       }
 
       console.log('Payment completed successfully for transaction:', transaction.id);
