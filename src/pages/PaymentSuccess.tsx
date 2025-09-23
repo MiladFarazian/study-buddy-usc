@@ -82,10 +82,10 @@ export default function PaymentSuccess() {
 
         console.log("✅ PaymentSuccess: Session created:", sessionData);
 
-        // Create payment transaction record
+        // Update existing payment transaction record or create if not found
         const { error: paymentError } = await supabase
           .from('payment_transactions')
-          .insert({
+          .upsert({
             session_id: sessionData.id,
             student_id: user.id,
             tutor_id: booking.tutorId,
@@ -94,6 +94,8 @@ export default function PaymentSuccess() {
             payment_completed_at: new Date().toISOString(),
             environment: 'production',
             stripe_checkout_session_id: sessionId
+          }, { 
+            onConflict: 'stripe_checkout_session_id'
           });
 
         if (paymentError) {

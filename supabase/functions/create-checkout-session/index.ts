@@ -131,7 +131,25 @@ serve(async (req) => {
 
     const session = await stripe.checkout.sessions.create(sessionConfig);
 
-    // Note: Invoices removed - using simple payment flow instead
+    // Create payment transaction record immediately with checkout session ID
+    console.log('Creating payment transaction record for session:', sessionId);
+    const { error: dbError } = await supabaseAdmin
+      .from('payment_transactions')
+      .insert({
+        session_id: sessionId,
+        student_id: userId,
+        amount: Math.round(amount),
+        status: 'pending',
+        stripe_checkout_session_id: session.id,
+        environment: mode,
+      });
+
+    if (dbError) {
+      console.error('Error creating payment transaction:', dbError);
+      // Don't fail the checkout creation, but log the error
+    } else {
+      console.log('Payment transaction created successfully');
+    }
 
     return new Response(
       JSON.stringify({ 
