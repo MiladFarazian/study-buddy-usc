@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 const cancellationReasons = [
   { value: "schedule_conflict", label: "Schedule conflict" },
@@ -24,10 +25,12 @@ export const CancelSessionDialog = ({
   onConfirmCancel 
 }: CancelSessionDialogProps) => {
   const [selectedReason, setSelectedReason] = useState<string>("");
+  const [otherReason, setOtherReason] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleCancel = () => {
     setSelectedReason("");
+    setOtherReason("");
     setShowDialog(false);
   };
 
@@ -36,8 +39,10 @@ export const CancelSessionDialog = ({
     
     setIsLoading(true);
     try {
-      await onConfirmCancel(selectedReason);
+      const reasonToSubmit = selectedReason === "other" ? otherReason : selectedReason;
+      await onConfirmCancel(reasonToSubmit);
       setSelectedReason("");
+      setOtherReason("");
       setShowDialog(false);
     } finally {
       setIsLoading(false);
@@ -71,6 +76,19 @@ export const CancelSessionDialog = ({
             </Select>
           </div>
           
+          {selectedReason === "other" && (
+            <div className="space-y-2">
+              <Label htmlFor="other-reason">Please specify your reason</Label>
+              <Textarea
+                id="other-reason"
+                placeholder="Enter your cancellation reason..."
+                value={otherReason}
+                onChange={(e) => setOtherReason(e.target.value)}
+                className="min-h-[80px]"
+              />
+            </div>
+          )}
+          
           <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
             <p className="font-medium mb-1">Refund Policy:</p>
             <p>Sessions cancelled more than 24 hours in advance receive a full refund. Later cancellations may incur fees.</p>
@@ -84,7 +102,11 @@ export const CancelSessionDialog = ({
           <Button 
             variant="destructive" 
             onClick={handleConfirm}
-            disabled={!selectedReason || isLoading}
+            disabled={
+              !selectedReason || 
+              (selectedReason === "other" && !otherReason.trim()) ||
+              isLoading
+            }
           >
             {isLoading ? "Cancelling..." : "Confirm Cancellation"}
           </Button>
