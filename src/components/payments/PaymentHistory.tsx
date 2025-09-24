@@ -24,6 +24,9 @@ interface PaymentTransaction {
     course_id: string | null;
     session_type: string;
     location: string | null;
+    refund_amount: number | null;
+    cancelled_at: string | null;
+    cancellation_reason: string | null;
   } | null;
   tutor?: {
     first_name: string | null;
@@ -52,7 +55,10 @@ export const PaymentHistory = () => {
             end_time,
             course_id,
             session_type,
-            location
+            location,
+            refund_amount,
+            cancelled_at,
+            cancellation_reason
           ),
           tutor:tutor_id (
             first_name,
@@ -102,7 +108,11 @@ export const PaymentHistory = () => {
     return format(new Date(dateString), 'MMM dd, yyyy h:mm a');
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string, isRefunded: boolean = false) => {
+    if (isRefunded) {
+      return 'bg-orange-100 text-orange-800 border-orange-200';
+    }
+    
     switch (status) {
       case 'completed':
       case 'paid':
@@ -118,6 +128,7 @@ export const PaymentHistory = () => {
   };
 
   const generateReceipt = (transaction: PaymentTransaction) => {
+    const isRefunded = transaction.sessions?.refund_amount && transaction.sessions.refund_amount > 0;
     const receiptContent = `
 TUTORING SESSION RECEIPT
 ========================
@@ -125,7 +136,7 @@ TUTORING SESSION RECEIPT
 Transaction ID: ${transaction.id}
 Date: ${formatDate(transaction.created_at)}
 Amount: ${formatAmount(transaction.amount)}
-Status: ${transaction.status.toUpperCase()}
+Status: ${transaction.status.toUpperCase()}${isRefunded ? ' - REFUNDED' : ''}
 
 ${transaction.tutor ? `Tutor: ${transaction.tutor.first_name} ${transaction.tutor.last_name}` : ''}
 ${transaction.sessions ? `Session: ${formatDateTime(transaction.sessions.start_time)}` : ''}
@@ -134,6 +145,10 @@ ${transaction.sessions?.session_type ? `Type: ${transaction.sessions.session_typ
 ${transaction.sessions?.location ? `Location: ${transaction.sessions.location}` : ''}
 
 Payment completed: ${transaction.payment_completed_at ? formatDateTime(transaction.payment_completed_at) : 'Pending'}
+${isRefunded ? `\nREFUND INFORMATION:
+Refund Amount: ${formatAmount(transaction.sessions.refund_amount)}
+Refund Date: ${formatDateTime(transaction.sessions.cancelled_at)}
+Reason: ${transaction.sessions.cancellation_reason || 'Not specified'}` : ''}
 Environment: ${transaction.environment === 'live' ? 'Production' : 'Test Mode'}
 
 Thank you for using our tutoring platform!
@@ -231,12 +246,21 @@ Thank you for using our tutoring platform!
                       <span className="font-medium">
                         {formatAmount(transaction.amount)}
                       </span>
-                      <Badge
-                        variant="secondary"
-                        className={getStatusColor(transaction.status)}
-                      >
-                        {transaction.status}
-                      </Badge>
+                      {transaction.sessions?.refund_amount && transaction.sessions.refund_amount > 0 ? (
+                        <Badge
+                          variant="secondary"
+                          className={getStatusColor(transaction.status, true)}
+                        >
+                          Refunded
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="secondary"
+                          className={getStatusColor(transaction.status)}
+                        >
+                          {transaction.status}
+                        </Badge>
+                      )}
                       {transaction.environment === 'test' && (
                         <Badge variant="outline" className="text-xs">
                           Test
@@ -261,6 +285,17 @@ Thank you for using our tutoring platform!
                       <div className="text-sm text-muted-foreground">
                         Session: {formatDateTime(transaction.sessions.start_time)}
                         {transaction.sessions.course_id && ` • ${transaction.sessions.course_id}`}
+                      </div>
+                    )}
+
+                    {transaction.sessions?.refund_amount && transaction.sessions.refund_amount > 0 && (
+                      <div className="text-sm text-orange-600 font-medium">
+                        Refunded: {formatAmount(transaction.sessions.refund_amount)} on {formatDate(transaction.sessions.cancelled_at || '')}
+                        {transaction.sessions.cancellation_reason && (
+                          <div className="text-xs text-muted-foreground">
+                            Reason: {transaction.sessions.cancellation_reason}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

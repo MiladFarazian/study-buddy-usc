@@ -25,9 +25,17 @@ interface EarningsData {
     status: string;
     session_id: string | null;
   }>;
+  recent_refunds: Array<{
+    refund_amount: number;
+    cancelled_at: string;
+    cancellation_reason: string | null;
+    original_amount: number;
+  }>;
   pending_amount: number;
   total_earned: number;
   this_month_earned: number;
+  total_refunds: number;
+  net_earnings: number;
 }
 
 export const TutorEarningsSummary: React.FC<TutorEarningsSummaryProps> = ({ user, accountStatus }) => {
@@ -64,8 +72,22 @@ export const TutorEarningsSummary: React.FC<TutorEarningsSummaryProps> = ({ user
         .order('created_at', { ascending: false })
         .limit(10);
 
-      if (paymentError || transferError) {
-        console.error('Error fetching data:', paymentError || transferError);
+      // Fetch refunded sessions that affected this tutor
+      const { data: refunds, error: refundError } = await supabase
+        .from('sessions')
+        .select(`
+          refund_amount,
+          cancelled_at,
+          cancellation_reason,
+          payment_transactions!inner(amount)
+        `)
+        .eq('tutor_id', user.id)
+        .gt('refund_amount', 0)
+        .order('cancelled_at', { ascending: false })
+        .limit(10);
+
+      if (paymentError || transferError || refundError) {
+        console.error('Error fetching data:', paymentError || transferError || refundError);
         toast({
           title: "Error",
           description: "Failed to load earnings data",
@@ -82,6 +104,17 @@ export const TutorEarningsSummary: React.FC<TutorEarningsSummaryProps> = ({ user
       const totalEarned = completedPayments.reduce((sum, p) => sum + p.amount, 0);
       const pendingAmount = pendingTransfers.reduce((sum, t) => sum + t.amount, 0);
       
+      // Calculate refund totals
+      const refundData = refunds?.map(r => ({
+        refund_amount: r.refund_amount || 0,
+        cancelled_at: r.cancelled_at || '',
+        cancellation_reason: r.cancellation_reason,
+        original_amount: r.payment_transactions?.[0]?.amount || 0
+      })) || [];
+      
+      const totalRefunds = refundData.reduce((sum, r) => sum + r.refund_amount, 0);
+      const netEarnings = totalEarned - totalRefunds;
+      
       // Calculate this month's earnings
       const thisMonth = new Date();
       thisMonth.setDate(1);
@@ -92,9 +125,12 @@ export const TutorEarningsSummary: React.FC<TutorEarningsSummaryProps> = ({ user
       setEarningsData({
         recent_payments: payments || [],
         recent_transfers: transfers || [],
+        recent_refunds: refundData,
         pending_amount: pendingAmount,
         total_earned: totalEarned,
-        this_month_earned: thisMonthEarned
+        this_month_earned: thisMonthEarned,
+        total_refunds: totalRefunds,
+        net_earnings: netEarnings
       });
     } catch (error) {
       console.error('Error fetching earnings:', error);
@@ -178,7 +214,7 @@ export const TutorEarningsSummary: React.FC<TutorEarningsSummaryProps> = ({ user
         ) : earningsData ? (
           <>
             {/* Summary Stats */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="text-center p-3 bg-muted/50 rounded-lg">
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -193,12 +229,22 @@ export const TutorEarningsSummary: React.FC<TutorEarningsSummaryProps> = ({ user
                 <div className="text-lg font-semibold">{formatAmount(earningsData.pending_amount)}</div>
                 <div className="text-xs text-muted-foreground">Pending</div>
               </div>
-              <div className="text-center p-3 bg-muted/50 rounded-lg">
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
                 <div className="flex items-center justify-center gap-1 mb-1">
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  <TrendingUp className="h-4 w-4 text-green-600" />
                 </div>
-                <div className="text-lg font-semibold">{formatAmount(earningsData.total_earned)}</div>
-                <div className="text-xs text-muted-foreground">Total Earned</div>
+                <div className="text-lg font-semibold text-green-800">{formatAmount(earningsData.net_earnings)}</div>
+                <div className="text-xs text-green-600">Net Earnings</div>
+              </div>
+              <div className="text-center p-3 bg-red-50 rounded-lg border border-red-200">
+                <div className="flex items-center justify-center gap-1 mb-1">
+                  <DollarSign className="h-4 w-4 text-red-600" />
+                </div>
+                <div className="text-lg font-semibold text-red-800">-{formatAmount(earningsData.total_refunds)}</div>
+                <div className="text-xs text-red-600">Total Refunds</div>
               </div>
             </div>
 
@@ -236,6 +282,33 @@ export const TutorEarningsSummary: React.FC<TutorEarningsSummaryProps> = ({ user
                         <span className="text-sm">{formatDate(transfer.created_at)}</span>
                       </div>
                       <span className="font-medium">{formatAmount(transfer.amount)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recent Refunds */}
+            {earningsData.recent_refunds.length > 0 && (
+              <div>
+                <h4 className="font-medium mb-2">Recent Refunds</h4>
+                <div className="space-y-2">
+                  {earningsData.recent_refunds.slice(0, 3).map((refund, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-red-50 border border-red-200 rounded">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="destructive" className="text-xs">
+                            Refunded
+                          </Badge>
+                          <span className="text-sm">{formatDate(refund.cancelled_at)}</span>
+                        </div>
+                        {refund.cancellation_reason && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {refund.cancellation_reason}
+                          </div>
+                        )}
+                      </div>
+                      <span className="font-medium text-red-600">-{formatAmount(refund.refund_amount)}</span>
                     </div>
                   ))}
                 </div>
