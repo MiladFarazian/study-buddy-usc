@@ -49,28 +49,18 @@ export const SessionItem = ({
       if (variant !== 'past' || !user?.id) return;
       
       try {
+        const { data } = await supabase
+          .from('student_reviews')
+          .select('review_id, student_showed_up, teaching_quality, tutor_showed_up')
+          .eq('session_id', session.id)
+          .maybeSingle();
+        
         if (isUserTutor) {
-          // Check if tutor has reviewed this student
-          const { data } = await supabase
-            .from('student_reviews')
-            .select('review_id, student_showed_up')
-            .eq('session_id', session.id)
-            .eq('tutor_id', user.id)
-            .maybeSingle();
-          
           // Tutor reviewed if record exists AND tutor fields are filled
           setHasExistingReview(data && data.student_showed_up !== null);
         } else {
-          // Check if student has reviewed this tutor
-          const { data } = await supabase
-            .from('student_reviews')
-            .select('review_id')
-            .eq('session_id', session.id)
-            .eq('student_id', user.id)
-            .maybeSingle();
-          
-          // Student reviewed if record exists
-          setHasExistingReview(!!data);
+          // Student reviewed if record exists AND student fields are filled
+          setHasExistingReview(data && data.tutor_showed_up !== null && data.teaching_quality !== null);
         }
       } catch (error) {
         console.error('Error checking existing review:', error);
@@ -269,8 +259,8 @@ export const SessionItem = ({
                         }
                       : {
                           id: session.student_id,
-                          first_name: '',
-                          last_name: '',
+                          first_name: session.student_first_name || '',
+                          last_name: session.student_last_name || '',
                           avatar_url: '',
                           role: 'student' as const,
                           approved_tutor: false,
@@ -309,9 +299,9 @@ export const SessionItem = ({
                         }
                       : {
                           id: session.tutor_id,
-                          name: '',
-                          firstName: '',
-                          lastName: '',
+                          name: `${session.tutor_first_name || ''} ${session.tutor_last_name || ''}`.trim(),
+                          firstName: session.tutor_first_name || '',
+                          lastName: session.tutor_last_name || '',
                           field: '',
                           rating: 0,
                           hourlyRate: 0,

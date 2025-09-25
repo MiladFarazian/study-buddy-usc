@@ -63,10 +63,10 @@ export function ReviewSubmissionStep({
     console.log("✅ Authentication verified, submitting review...");
 
     try {
-      // Insert the detailed review into student_reviews table
+      // Upsert the detailed review into student_reviews table
       const { error: studentReviewError } = await supabase
         .from('student_reviews')
-        .insert({
+        .upsert({
           session_id: session.id,
           student_id: user.id,
           tutor_id: tutor.id,
@@ -83,7 +83,9 @@ export function ReviewSubmissionStep({
           felt_judged: reviewData.feltJudged,
           comfortable_asking_questions: reviewData.comfortableAskingQuestions,
           would_book_again: reviewData.wouldBookAgain
-        });
+        }, { 
+          onConflict: 'session_id'
+        })
 
       if (studentReviewError) {
         console.error("Error submitting student review:", studentReviewError);
