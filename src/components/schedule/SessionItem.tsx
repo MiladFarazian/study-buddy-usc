@@ -238,46 +238,89 @@ export const SessionItem = ({
               <Button 
                 variant="outline" 
                 size="sm"
+                type="button"
                 onClick={() => {
-                  if (isUserTutor && session.student) {
-                     const studentProfile: Profile = {
-                       id: session.student.id,
-                       first_name: session.student.first_name || '',
-                       last_name: session.student.last_name || '',
-                       avatar_url: session.student.avatar_url || '',
-                        approved_tutor: false,
-                        stripe_customer_id: null,
-                        average_rating: null,
-                        bio: null,
-                        student_bio: null,
-                      tutor_bio: null,
-                      student_courses: null,
-                      tutor_courses_subjects: null,
-                      created_at: new Date().toISOString(),
-                      graduation_year: null,
-                      hourly_rate: null,
-                      major: null,
-                      role: 'student' as const,
-                      stripe_connect_id: null,
-                      stripe_connect_onboarding_complete: false,
-                      subjects: null,
-                      updated_at: new Date().toISOString()
-                    };
+                  console.log('Review button clicked', { isUserTutor, sessionId: session.id });
+                  
+                  if (isUserTutor) {
+                    const studentProfile: Profile = session.student
+                      ? {
+                          id: session.student.id,
+                          first_name: session.student.first_name || '',
+                          last_name: session.student.last_name || '',
+                          avatar_url: session.student.avatar_url || '',
+                          role: 'student' as const,
+                          approved_tutor: false,
+                          stripe_customer_id: null,
+                          average_rating: null,
+                          bio: null,
+                          student_bio: null,
+                          tutor_bio: null,
+                          student_courses: null,
+                          tutor_courses_subjects: null,
+                          created_at: new Date().toISOString(),
+                          graduation_year: null,
+                          hourly_rate: null,
+                          major: null,
+                          stripe_connect_id: null,
+                          stripe_connect_onboarding_complete: false,
+                          subjects: null,
+                          updated_at: new Date().toISOString()
+                        }
+                      : {
+                          id: session.student_id,
+                          first_name: '',
+                          last_name: '',
+                          avatar_url: '',
+                          role: 'student' as const,
+                          approved_tutor: false,
+                          stripe_customer_id: null,
+                          average_rating: null,
+                          bio: null,
+                          student_bio: null,
+                          tutor_bio: null,
+                          student_courses: null,
+                          tutor_courses_subjects: null,
+                          created_at: new Date().toISOString(),
+                          graduation_year: null,
+                          hourly_rate: null,
+                          major: null,
+                          stripe_connect_id: null,
+                          stripe_connect_onboarding_complete: false,
+                          subjects: null,
+                          updated_at: new Date().toISOString()
+                        };
+                    console.log('Using student profile for review:', studentProfile);
                     startTutorReview(session, studentProfile);
-                  } else if (!isUserTutor && session.tutor) {
-                    const tutorData: Tutor = {
-                      id: session.tutor.id,
-                      name: `${session.tutor.first_name || ''} ${session.tutor.last_name || ''}`.trim(),
-                      firstName: session.tutor.first_name || '',
-                      lastName: session.tutor.last_name || '',
-                      field: '',
-                      rating: 0,
-                      hourlyRate: 0,
-                      subjects: [],
-                      imageUrl: session.tutor.avatar_url || '',
-                      bio: '',
-                      graduationYear: '',
-                    };
+                  } else {
+                    const tutorData: Tutor = session.tutor
+                      ? {
+                          id: session.tutor.id,
+                          name: `${session.tutor.first_name || ''} ${session.tutor.last_name || ''}`.trim(),
+                          firstName: session.tutor.first_name || '',
+                          lastName: session.tutor.last_name || '',
+                          field: '',
+                          rating: 0,
+                          hourlyRate: 0,
+                          subjects: [],
+                          imageUrl: session.tutor.avatar_url || '',
+                          bio: '',
+                          graduationYear: ''
+                        }
+                      : {
+                          id: session.tutor_id,
+                          name: '',
+                          firstName: '',
+                          lastName: '',
+                          field: '',
+                          rating: 0,
+                          hourlyRate: 0,
+                          subjects: [],
+                          imageUrl: '',
+                          bio: '',
+                          graduationYear: ''
+                        };
+                    console.log('Using tutor profile for review:', tutorData);
                     startStudentReview(session, tutorData);
                   }
                 }}
