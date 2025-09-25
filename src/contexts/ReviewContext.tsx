@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { Session } from '@/types/session';
 import { Profile } from '@/integrations/supabase/types-extension';
 import { TutorReviewStep, TutorReviewData } from '@/components/reviews/TutorReviewModal';
@@ -28,26 +28,63 @@ const ReviewContext = createContext<ReviewContextType | undefined>(undefined);
 export function ReviewProvider({ children }: { children: ReactNode }) {
   const [activeReview, setActiveReview] = useState<ActiveReview | null>(null);
 
+  // Debug logging for activeReview state changes
+  useEffect(() => {
+    console.log('🔍 [ReviewContext] activeReview state changed:', activeReview);
+    if (activeReview) {
+      console.log('🔍 [ReviewContext] activeReview details:', {
+        id: activeReview.id,
+        type: activeReview.type,
+        sessionId: activeReview.session?.id,
+        hasStudent: !!activeReview.student,
+        hasTutor: !!activeReview.tutor,
+        currentStep: activeReview.currentStep
+      });
+    }
+  }, [activeReview]);
+
   const startTutorReview = (session: Session, student: Profile) => {
-    setActiveReview({
+    console.log('🔍 [ReviewContext] startTutorReview called with:', {
+      sessionId: session?.id,
+      studentId: student?.id,
+      studentName: `${student?.first_name} ${student?.last_name}`,
+      session: session,
+      student: student
+    });
+
+    const newActiveReview = {
       id: `tutor-${session.id}`,
-      type: 'tutor',
+      type: 'tutor' as const,
       session,
       student,
       currentStep: TutorReviewStep.SHOW_UP_VERIFICATION,
       reviewData: { student_showed_up: true }
-    });
+    };
+
+    console.log('🔍 [ReviewContext] Setting activeReview to:', newActiveReview);
+    setActiveReview(newActiveReview);
   };
 
   const startStudentReview = (session: Session, tutor: any) => {
-    setActiveReview({
+    console.log('🔍 [ReviewContext] startStudentReview called with:', {
+      sessionId: session?.id,
+      tutorId: tutor?.id,
+      tutorName: `${tutor?.first_name} ${tutor?.last_name}`,
+      session: session,
+      tutor: tutor
+    });
+
+    const newActiveReview = {
       id: `student-${session.id}`,
-      type: 'student',
+      type: 'student' as const,
       session,
       tutor,
       currentStep: 'show_up_verification',
       reviewData: { tutor_showed_up: true }
-    });
+    };
+
+    console.log('🔍 [ReviewContext] Setting activeReview to:', newActiveReview);
+    setActiveReview(newActiveReview);
   };
 
   const updateReviewStep = (step: TutorReviewStep | string) => {
