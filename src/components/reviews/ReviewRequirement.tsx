@@ -6,6 +6,7 @@ import { TutorReviewModal } from "./TutorReviewModal";
 import { Session } from "@/types/session";
 import { Profile } from "@/integrations/supabase/types-extension";
 import { Tutor } from "@/types/tutor";
+import { useToast } from "@/hooks/use-toast";
 
 interface PendingReview {
   session: Session;
@@ -14,6 +15,7 @@ interface PendingReview {
 
 export function ReviewRequirement() {
   const { user, profile } = useAuthState();
+  const { toast } = useToast();
   const [pendingReviews, setPendingReviews] = useState<PendingReview[]>([]);
   const [currentReview, setCurrentReview] = useState<PendingReview | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -189,19 +191,28 @@ export function ReviewRequirement() {
     }
   };
 
-  const handleReviewComplete = () => {
+  const handleReviewComplete = async () => {
     // Remove the completed review from pending list
     const updatedPending = pendingReviews.filter(review => 
       review.session.id !== currentReview?.session.id
     );
     setPendingReviews(updatedPending);
     
-    // Show the next pending review if any exist
+    // Show post-review notification if more reviews exist
     if (updatedPending.length > 0) {
+      showRemainingReviewsNotification(updatedPending.length);
       setCurrentReview(updatedPending[0]);
     } else {
       setCurrentReview(null);
     }
+  };
+
+  const showRemainingReviewsNotification = (remainingCount: number) => {
+    toast({
+      title: "Review submitted!",
+      description: `You have ${remainingCount} more review${remainingCount > 1 ? 's' : ''} to complete.`,
+      duration: 5000,
+    });
   };
 
   const handleReviewClose = () => {
