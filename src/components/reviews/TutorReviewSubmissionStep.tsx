@@ -84,9 +84,7 @@ export function TutorReviewSubmissionStep({
 
       const { data, error } = await supabase
         .from('student_reviews')
-        .upsert(submissionData, { 
-          onConflict: 'session_id'
-        })
+        .upsert(submissionData)
         .select();
 
       if (error) {

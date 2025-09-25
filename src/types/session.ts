@@ -19,6 +19,10 @@ export interface Session {
   zoom_join_url?: string | null;
   zoom_start_url?: string | null;
   zoom_password?: string | null;
+  student_first_name?: string | null;
+  student_last_name?: string | null;
+  tutor_first_name?: string | null;
+  tutor_last_name?: string | null;
   tutor?: {
     id: string;
     first_name: string | null;

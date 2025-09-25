@@ -83,9 +83,7 @@ export function ReviewSubmissionStep({
           felt_judged: reviewData.feltJudged,
           comfortable_asking_questions: reviewData.comfortableAskingQuestions,
           would_book_again: reviewData.wouldBookAgain
-        }, { 
-          onConflict: 'session_id'
-        })
+        });
 
       if (studentReviewError) {
         console.error("Error submitting student review:", studentReviewError);
