@@ -72,14 +72,32 @@ export function ReviewRequirement() {
     if (sessionAge < oneHour) return false;
     
     // 4. CHECK IF REVIEW ALREADY EXISTS (critical!)
-    const { data: existingReview } = await supabase
-      .from('student_reviews')
-      .select('review_id')
-      .eq('session_id', session.id)
-      .eq(profile?.role === 'student' ? 'student_id' : 'tutor_id', user.id)
-      .maybeSingle();
-    
-    if (existingReview) return false; // Already reviewed
+    if (profile?.role === 'student') {
+      // For students: check if they already reviewed this session
+      const { data: existingStudentReview } = await supabase
+        .from('student_reviews')
+        .select('review_id')
+        .eq('session_id', session.id)
+        .eq('student_id', user.id)
+        .maybeSingle();
+        
+      if (existingStudentReview) {
+        return false; // Student already reviewed - don't show popup
+      }
+    } else if (profile?.role === 'tutor') {
+      // For tutors: check if they already completed their review portion
+      const { data: existingTutorReview } = await supabase
+        .from('student_reviews')
+        .select('review_id, student_showed_up, came_prepared')
+        .eq('session_id', session.id)
+        .eq('tutor_id', user.id)
+        .maybeSingle();
+        
+      // If tutor review exists and has tutor-specific fields filled
+      if (existingTutorReview && existingTutorReview.student_showed_up !== null) {
+        return false; // Tutor already reviewed
+      }
+    }
     
     return true; // OK to show review modal
   };
