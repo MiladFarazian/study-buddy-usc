@@ -49,28 +49,36 @@ export const SessionItem = ({
       if (variant !== 'past' || !user?.id) return;
       
       try {
-        const { data, error } = await supabase
-          .from('student_reviews')
-          .select('session_id')
-          .eq('session_id', session.id)
-          .eq('tutor_id', session.tutor_id)
-          .eq('student_id', session.student_id)
-          .limit(1)
-          .maybeSingle();
-
-        if (error && error.code !== 'PGRST116') {
-          console.error('Error checking existing review:', error);
-          return;
+        if (isUserTutor) {
+          // Check if tutor has reviewed this student
+          const { data } = await supabase
+            .from('student_reviews')
+            .select('review_id, student_showed_up')
+            .eq('session_id', session.id)
+            .eq('tutor_id', user.id)
+            .maybeSingle();
+          
+          // Tutor reviewed if record exists AND tutor fields are filled
+          setHasExistingReview(data && data.student_showed_up !== null);
+        } else {
+          // Check if student has reviewed this tutor
+          const { data } = await supabase
+            .from('student_reviews')
+            .select('review_id')
+            .eq('session_id', session.id)
+            .eq('student_id', user.id)
+            .maybeSingle();
+          
+          // Student reviewed if record exists
+          setHasExistingReview(!!data);
         }
-
-        setHasExistingReview(!!data);
       } catch (error) {
         console.error('Error checking existing review:', error);
       }
     };
 
     checkExistingReview();
-  }, [variant, session.id, session.tutor_id, session.student_id, user?.id]);
+  }, [variant, session.id, user?.id, isUserTutor]);
 
   const getBadge = () => {
     switch (variant) {
