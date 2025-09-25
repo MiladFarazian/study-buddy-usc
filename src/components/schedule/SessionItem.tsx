@@ -238,7 +238,10 @@ export const SessionItem = ({
               <Button 
                 variant="outline" 
                 size="sm"
+                style={{ pointerEvents: 'auto', zIndex: 9999, position: 'relative' }}
                 onClick={() => {
+                  alert('CLICK DETECTED!'); // This should show popup if click works
+                  console.log('Button clicked - handler fired');
                   if (isUserTutor && session.student) {
                      const studentProfile: Profile = {
                        id: session.student.id,
