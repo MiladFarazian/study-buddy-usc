@@ -118,7 +118,7 @@ export function ReviewRequirement() {
         `)
         .eq('status', 'completed')
         .or(`student_id.eq.${user.id},tutor_id.eq.${user.id}`)
-        .order('updated_at', { ascending: false });
+        .order('start_time', { ascending: false });
 
       if (sessionsError) throw sessionsError;
 
