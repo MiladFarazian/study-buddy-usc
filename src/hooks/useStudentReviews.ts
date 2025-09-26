@@ -39,7 +39,9 @@ export const useStudentReviews = () => {
       setError(null);
       
       console.log('🔍 Fetching reviews...');
-      console.log('🔍 Auth session:', await supabase.auth.getSession());
+      supabase.auth.getSession()
+        .then((s) => console.log('🔍 Auth session:', s))
+        .catch((e) => console.error('🔍 Auth session error:', e));
 
       // Test 1: Try basic student_reviews query first
       console.log('🔍 Testing basic student_reviews query...');

@@ -17,6 +17,7 @@ interface ReviewsTableProps {
 
 export const ReviewsTable = ({ onRefresh }: ReviewsTableProps) => {
   const { reviews, loading, error, refetch } = useStudentReviews();
+  console.log('[Admin ReviewsTable] loading:', loading, 'count:', reviews.length, 'error:', error);
   const [searchTerm, setSearchTerm] = useState("");
   const [ratingFilter, setRatingFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
