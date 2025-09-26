@@ -1,11 +1,4 @@
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import ReviewCard from "./ReviewCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -239,7 +232,7 @@ export const ReviewsTable = ({ onRefresh }: ReviewsTableProps) => {
         </div>
       </div>
 
-      {/* Reviews Table */}
+      {/* Reviews Cards */}
       {filteredReviews.length === 0 ? (
         <Card>
           <CardContent className="text-center py-12">
@@ -248,102 +241,11 @@ export const ReviewsTable = ({ onRefresh }: ReviewsTableProps) => {
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <CardContent className="p-0">
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[100px]">Session</TableHead>
-                    <TableHead>Student</TableHead>
-                    <TableHead>Tutor</TableHead>
-                    <TableHead>Teaching Quality</TableHead>
-                    <TableHead>Engagement</TableHead>
-                    <TableHead>Stress Impact</TableHead>
-                    <TableHead>Attendance</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredReviews.map((review) => (
-                    <TableRow key={review.review_id}>
-                      <TableCell className="font-mono text-xs">
-                        {review.session_id.slice(-8)}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {formatName(review.student_first_name, review.student_last_name)}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {formatName(review.tutor_first_name, review.tutor_last_name)}
-                      </TableCell>
-                      <TableCell>
-                        {review.teaching_quality ? (
-                          <div className="flex items-center gap-2">
-                            <StarRating rating={review.teaching_quality} showValue={false} className="scale-75" />
-                            <span className="text-sm font-medium">
-                              {review.teaching_quality}/5
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">Not rated</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {review.engagement_level ? (
-                          <div className="flex items-center gap-1">
-                            <StarRating rating={review.engagement_level} showValue={false} className="scale-75" />
-                            <span className="text-sm">{review.engagement_level}/5</span>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {review.stress_before !== null && review.stress_after !== null ? (
-                          <div className="flex items-center gap-1">
-                            <span className="text-sm">
-                              {review.stress_before} → {review.stress_after}
-                            </span>
-                            <div className="ml-1">
-                              {getStressReduction(review.stress_before, review.stress_after)}
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">No data</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-2 text-xs">
-                            <span className="text-muted-foreground">S:</span>
-                            {getAttendanceStatus(review.student_showed_up)}
-                          </div>
-                          <div className="flex items-center gap-2 text-xs">
-                            <span className="text-muted-foreground">T:</span>
-                            {getAttendanceStatus(review.tutor_showed_up)}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {getCompletionStatus(review)}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {format(new Date(review.created_at), 'MMM d, yyyy')}
-                      </TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          {filteredReviews.map((review) => (
+            <ReviewCard key={review.review_id} review={review} />
+          ))}
+        </div>
       )}
     </div>
   );
