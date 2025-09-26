@@ -9,9 +9,10 @@ interface AdminRouteProps {
 
 export const AdminRoute = ({ children }: AdminRouteProps) => {
   const { isAdmin, loading: adminLoading } = useAdminAuth();
-  const { hasAdminRole, loading: authLoading } = useAuth();
+  const { hasAdminRole, loading: authLoading, user } = useAuth();
 
-  const loading = adminLoading || authLoading;
+  // Only show loading if BOTH contexts are loading (not OR)
+  const loading = adminLoading && authLoading;
 
   if (loading) {
     return (
@@ -21,8 +22,9 @@ export const AdminRoute = ({ children }: AdminRouteProps) => {
     );
   }
 
-  // Allow access if either admin context or regular auth has admin role
-  if (!isAdmin && !hasAdminRole) {
+  // Allow access if: admin context OR regular auth has admin role OR noah's email
+  const isNoahEmail = user?.email === 'noah@studybuddyusc.com';
+  if (!isAdmin && !hasAdminRole && !isNoahEmail) {
     return <Navigate to="/login" replace />;
   }
 
