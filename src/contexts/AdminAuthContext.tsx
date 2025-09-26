@@ -25,12 +25,22 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if admin is already logged in
-    const adminSession = localStorage.getItem('adminSession');
-    if (adminSession === 'true') {
-      setIsAdmin(true);
-    }
-    setLoading(false);
+    const checkAuthState = async () => {
+      // Check both localStorage AND Supabase session
+      const adminSession = localStorage.getItem('adminSession');
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (adminSession === 'true' && session?.user?.email === ADMIN_CREDENTIALS.email) {
+        setIsAdmin(true);
+      } else {
+        // Clear localStorage if Supabase session is invalid
+        localStorage.removeItem('adminSession');
+        setIsAdmin(false);
+      }
+      setLoading(false);
+    };
+    
+    checkAuthState();
   }, []);
 
   const adminLogin = async (email: string, password: string): Promise<boolean> => {
