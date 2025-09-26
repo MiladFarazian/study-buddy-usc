@@ -34,74 +34,101 @@ export const useStudentReviews = () => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchReviews = useCallback(async () => {
-    console.log('[useStudentReviews] fetch start');
-    setLoading(true);
-    setError(null);
-
-    let finished = false;
-    const watchdog = setTimeout(() => {
-      if (!finished) {
-        console.warn('[useStudentReviews] fetch timeout watchdog fired, forcing loading=false');
-        setLoading(false);
-      }
-    }, 8000);
-
     try {
-      console.log('[useStudentReviews] querying student_reviews...');
-      const { data: reviewsData, error: reviewsError } = await supabase
+      setLoading(true);
+      setError(null);
+      
+      console.log('🔍 Fetching reviews...');
+      console.log('🔍 Auth session:', await supabase.auth.getSession());
+
+      // Test 1: Try basic student_reviews query first
+      console.log('🔍 Testing basic student_reviews query...');
+      const { data: basicData, error: basicError } = await supabase
         .from('student_reviews')
         .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100);
-      console.log('[useStudentReviews] student_reviews result', { err: reviewsError, count: reviewsData?.length });
+        .limit(5);
+      
+      console.log('🔍 Basic query results:', { data: basicData, error: basicError, count: basicData?.length || 0 });
 
-      if (reviewsError) {
-        console.error('Error fetching student_reviews:', reviewsError);
-        setError(reviewsError.message);
-        setReviews([]);
-      } else if (!reviewsData || reviewsData.length === 0) {
-        console.log('[useStudentReviews] no reviews found');
-        setReviews([]);
-      } else {
-        const sessionIds = Array.from(new Set((reviewsData || []).map((r: any) => r.session_id).filter(Boolean)));
-        console.log('[useStudentReviews] fetching sessions for ids:', sessionIds.length);
-        let sessionsById: Record<string, any> = {};
+      // Test 2: Try basic sessions query
+      console.log('🔍 Testing basic sessions query...');
+      const { data: sessionsData, error: sessionsError } = await supabase
+        .from('sessions')
+        .select('id, student_first_name, student_last_name, tutor_first_name, tutor_last_name')
+        .limit(5);
+      
+      console.log('🔍 Sessions query results:', { data: sessionsData, error: sessionsError, count: sessionsData?.length || 0 });
 
-        if (sessionIds.length > 0) {
-          const { data: sessionsData, error: sessionsError } = await supabase
+      // Test 3: Try the JOIN query
+      console.log('🔍 Testing JOIN query...');
+      const { data, error: fetchError } = await supabase
+        .from('student_reviews')
+        .select(`
+          *,
+          sessions (
+            student_first_name,
+            student_last_name,
+            tutor_first_name,
+            tutor_last_name
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      console.log('🔍 JOIN query results:', { data, error: fetchError, count: data?.length || 0 });
+
+      if (fetchError) {
+        console.error('🔍 Error fetching reviews:', fetchError);
+        setError(fetchError.message);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        console.log('🔍 No data returned from JOIN query, trying fallback approach...');
+        
+        // Fallback: Use separate queries if JOIN fails
+        if (basicData && basicData.length > 0) {
+          console.log('🔍 Using fallback approach with separate queries...');
+          const sessionIds = basicData.map(r => r.session_id);
+          const { data: sessions } = await supabase
             .from('sessions')
             .select('id, student_first_name, student_last_name, tutor_first_name, tutor_last_name')
             .in('id', sessionIds);
-          console.log('[useStudentReviews] sessions result', { err: sessionsError, count: sessionsData?.length });
 
-          if (sessionsError) {
-            console.warn('Sessions fetch failed, proceeding without names:', sessionsError.message);
-          } else {
-            sessionsById = Object.fromEntries((sessionsData || []).map((s: any) => [s.id, s]));
-          }
+          const transformedData: StudentReviewWithNames[] = basicData.map((review: any) => {
+            const session = sessions?.find(s => s.id === review.session_id);
+            return {
+              ...review,
+              student_first_name: session?.student_first_name || null,
+              student_last_name: session?.student_last_name || null,
+              tutor_first_name: session?.tutor_first_name || null,
+              tutor_last_name: session?.tutor_last_name || null,
+            };
+          });
+
+          console.log('🔍 Fallback data prepared:', transformedData.length, 'reviews');
+          setReviews(transformedData);
+          return;
         }
-
-        const merged: StudentReviewWithNames[] = (reviewsData || []).map((review: any) => {
-          const s = sessionsById[review.session_id] || {};
-          return {
-            ...review,
-            student_first_name: s.student_first_name ?? null,
-            student_last_name: s.student_last_name ?? null,
-            tutor_first_name: s.tutor_first_name ?? null,
-            tutor_last_name: s.tutor_last_name ?? null,
-          } as StudentReviewWithNames;
-        });
-        console.log('[useStudentReviews] merged count', merged.length);
-        setReviews(merged);
+        
+        setReviews([]);
+        return;
       }
+
+      // Transform the data to flatten the sessions join
+      const transformedData: StudentReviewWithNames[] = data.map((review: any) => ({
+        ...review,
+        student_first_name: review.sessions?.student_first_name || null,
+        student_last_name: review.sessions?.student_last_name || null,
+        tutor_first_name: review.sessions?.tutor_first_name || null,
+        tutor_last_name: review.sessions?.tutor_last_name || null,
+      }));
+
+      console.log('🔍 Final transformed data:', transformedData.length, 'reviews');
+      setReviews(transformedData);
     } catch (err) {
-      console.error('Error in fetchReviews:', err);
+      console.error('🔍 Error in fetchReviews:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
-      setReviews([]);
     } finally {
-      clearTimeout(watchdog);
-      finished = true;
-      console.log('[useStudentReviews] fetch end, setting loading=false');
       setLoading(false);
     }
   }, []);
