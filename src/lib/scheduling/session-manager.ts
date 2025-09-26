@@ -66,24 +66,10 @@ export async function getUserSessions(
   try {
     console.log("Getting sessions for user:", userId);
     
-    // Single optimized query with all joins
+    // Single query - name fields are already in sessions table via triggers
     const { data: sessions, error } = await supabase
       .from('sessions')
-      .select(`
-        *,
-        tutor:profiles!sessions_tutor_id_fkey (
-          id, 
-          first_name, 
-          last_name, 
-          avatar_url
-        ),
-        student:profiles!sessions_student_id_fkey (
-          id, 
-          first_name, 
-          last_name, 
-          avatar_url
-        )
-      `)
+      .select('*')
       .or(`tutor_id.eq.${userId},student_id.eq.${userId}`)
       .order('start_time', { ascending: true });
     
@@ -141,11 +127,28 @@ export async function getUserSessions(
       
       const sessionType = session.session_type === 'virtual' ? 
         SessionType.VIRTUAL : SessionType.IN_PERSON;
+
+      // Create tutor and student objects from the direct name fields
+      const tutor = session.tutor_first_name || session.tutor_last_name ? {
+        id: session.tutor_id,
+        first_name: session.tutor_first_name,
+        last_name: session.tutor_last_name,
+        avatar_url: null
+      } : null;
+
+      const student = session.student_first_name || session.student_last_name ? {
+        id: session.student_id,
+        first_name: session.student_first_name,
+        last_name: session.student_last_name,
+        avatar_url: null
+      } : null;
       
       return {
         ...session,
         course: courseDetails,
-        session_type: sessionType
+        session_type: sessionType,
+        tutor,
+        student
       };
     });
     
