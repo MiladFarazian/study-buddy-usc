@@ -25,12 +25,28 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if admin is already logged in
-    const adminSession = localStorage.getItem('adminSession');
-    if (adminSession === 'true') {
-      setIsAdmin(true);
-    }
-    setLoading(false);
+    const validateAdminSession = async () => {
+      const adminSession = localStorage.getItem('adminSession');
+      
+      if (adminSession === 'true') {
+        // Validate that Supabase session is still active
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (session && !error) {
+          // Valid session exists, user is still authenticated
+          setIsAdmin(true);
+        } else {
+          // Session is invalid, clear localStorage and force re-authentication
+          console.log('Admin session expired, clearing localStorage');
+          localStorage.removeItem('adminSession');
+          setIsAdmin(false);
+        }
+      }
+      
+      setLoading(false);
+    };
+
+    validateAdminSession();
   }, []);
 
   const adminLogin = async (email: string, password: string): Promise<boolean> => {
