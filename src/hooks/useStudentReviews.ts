@@ -30,6 +30,7 @@ export const useStudentReviews = () => {
       setLoading(true);
       setError(null);
 
+      // Use PostgREST syntax with explicit column selection
       const { data, error: fetchError } = await supabase
         .from('student_reviews')
         .select(`
@@ -44,13 +45,7 @@ export const useStudentReviews = () => {
           student_showed_up,
           written_feedback,
           created_at,
-          updated_at,
-          sessions!inner(
-            student_first_name,
-            student_last_name,
-            tutor_first_name,
-            tutor_last_name
-          )
+          updated_at
         `)
         .order('created_at', { ascending: false });
 
@@ -60,14 +55,41 @@ export const useStudentReviews = () => {
         return;
       }
 
-      // Transform the data to flatten the sessions join
-      const transformedData: StudentReviewWithNames[] = data?.map((review: any) => ({
-        ...review,
-        student_first_name: review.sessions?.student_first_name || null,
-        student_last_name: review.sessions?.student_last_name || null,
-        tutor_first_name: review.sessions?.tutor_first_name || null,
-        tutor_last_name: review.sessions?.tutor_last_name || null,
-      })) || [];
+      if (!data) {
+        setReviews([]);
+        return;
+      }
+
+      // Now fetch session data for each review
+      const sessionIds = data.map(review => review.session_id);
+      const { data: sessionsData, error: sessionsError } = await supabase
+        .from('sessions')
+        .select('id, student_first_name, student_last_name, tutor_first_name, tutor_last_name')
+        .in('id', sessionIds);
+
+      if (sessionsError) {
+        console.error('Error fetching sessions:', sessionsError);
+        setError(sessionsError.message);
+        return;
+      }
+
+      // Create a map of session data
+      const sessionMap = new Map();
+      sessionsData?.forEach(session => {
+        sessionMap.set(session.id, session);
+      });
+
+      // Transform the data to include session names
+      const transformedData: StudentReviewWithNames[] = data.map((review: any) => {
+        const session = sessionMap.get(review.session_id);
+        return {
+          ...review,
+          student_first_name: session?.student_first_name || null,
+          student_last_name: session?.student_last_name || null,
+          tutor_first_name: session?.tutor_first_name || null,
+          tutor_last_name: session?.tutor_last_name || null,
+        };
+      });
 
       setReviews(transformedData);
     } catch (err) {
