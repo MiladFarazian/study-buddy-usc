@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import StarRating from "@/components/ui/StarRating";
-import { StudentReviewWithNames } from "@/hooks/useStudentReviews";
+import type { StudentReviewWithNames } from "@/hooks/useStudentReviews";
 import { format } from "date-fns";
 
 interface ReviewCardProps {

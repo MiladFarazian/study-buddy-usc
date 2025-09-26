@@ -5,8 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import StarRating from "@/components/ui/StarRating";
-import { useStudentReviews, StudentReviewWithNames } from "@/hooks/useStudentReviews";
+import { useStudentReviews } from "@/hooks/useStudentReviews";
+import type { StudentReviewWithNames } from "@/hooks/useStudentReviews";
 import { format } from "date-fns";
 import { useState, useMemo } from "react";
 import { Search, Filter, RefreshCw, Eye } from "lucide-react";
@@ -17,7 +17,7 @@ interface ReviewsTableProps {
 
 export const ReviewsTable = ({ onRefresh }: ReviewsTableProps) => {
   const { reviews, loading, error, refetch } = useStudentReviews();
-  console.log('[Admin ReviewsTable] loading:', loading, 'count:', reviews.length, 'error:', error);
+  console.log('[Admin ReviewsTable] loading:', loading, 'count:', reviews?.length ?? -1, 'error:', error);
   const [searchTerm, setSearchTerm] = useState("");
   const [ratingFilter, setRatingFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
