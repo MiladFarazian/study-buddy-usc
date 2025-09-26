@@ -1,87 +1,116 @@
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { useSessionReviews, SessionReviewData } from "@/hooks/useSessionReviews";
-import { SessionReviewCard } from "./SessionReviewCard";
+import StarRating from "@/components/ui/StarRating";
+import { useStudentReviews, StudentReviewWithNames } from "@/hooks/useStudentReviews";
 import { format } from "date-fns";
 import { useState, useMemo } from "react";
-import { Search, Filter, RefreshCw } from "lucide-react";
+import { Search, Filter, RefreshCw, Eye } from "lucide-react";
 
 interface ReviewsTableProps {
   onRefresh?: () => void;
 }
 
 export const ReviewsTable = ({ onRefresh }: ReviewsTableProps) => {
-  const { sessionReviews, loading, error, refetch } = useSessionReviews();
+  const { reviews, loading, error, refetch } = useStudentReviews();
   const [searchTerm, setSearchTerm] = useState("");
   const [ratingFilter, setRatingFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateRange, setDateRange] = useState("all");
-
-  // Debug logging
-  console.log('🔍 ReviewsTable Debug:', {
-    sessionReviews: sessionReviews,
-    loading: loading,
-    error: error,
-    sessionReviewsLength: sessionReviews.length
-  });
 
   const formatName = (firstName: string | null, lastName: string | null) => {
     if (!firstName && !lastName) return "Unknown";
     return `${firstName || ""} ${lastName || ""}`.trim();
   };
 
-  const getCompletionStatus = (sessionData: SessionReviewData) => {
-    const hasStudentReview = sessionData.student_review?.teaching_quality !== null;
-    const hasTutorReview = sessionData.tutor_review?.engagement_level !== null;
+  const getAttendanceStatus = (showedUp: boolean | null) => {
+    if (showedUp === null) return <Badge variant="secondary">Unknown</Badge>;
+    return showedUp ? (
+      <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
+        Present
+      </Badge>
+    ) : (
+      <Badge variant="destructive">Absent</Badge>
+    );
+  };
+
+  const getCompletionStatus = (review: StudentReviewWithNames) => {
+    const hasTeachingQuality = review.teaching_quality !== null;
+    const hasWrittenFeedback = review.written_feedback && review.written_feedback.trim().length > 0;
+    const hasStressData = review.stress_before !== null && review.stress_after !== null;
     
-    if (hasStudentReview && hasTutorReview) {
-      return "complete";
-    } else if (hasStudentReview || hasTutorReview) {
-      return "partial";
+    if (hasTeachingQuality && hasWrittenFeedback && hasStressData) {
+      return <Badge variant="default" className="bg-green-100 text-green-800">Complete</Badge>;
+    } else if (hasTeachingQuality || hasWrittenFeedback) {
+      return <Badge variant="secondary">Partial</Badge>;
     } else {
-      return "incomplete";
+      return <Badge variant="destructive">Incomplete</Badge>;
     }
   };
 
-  // Filter session reviews based on search and filters
-  const filteredSessionReviews = useMemo(() => {
-    let filtered = sessionReviews;
+  const getStressReduction = (before: number | null, after: number | null) => {
+    if (before === null || after === null) return "No data";
+    const reduction = before - after;
+    const color = reduction > 0 ? 'text-green-600' : reduction < 0 ? 'text-red-600' : 'text-gray-600';
+    return (
+      <span className={color}>
+        {reduction > 0 ? '+' : ''}{reduction}
+      </span>
+    );
+  };
+
+  // Filter reviews based on search and filters
+  const filteredReviews = useMemo(() => {
+    let filtered = reviews;
 
     // Search filter
     if (searchTerm) {
-      filtered = filtered.filter(sessionData => {
-        const studentName = formatName(sessionData.student_first_name, sessionData.student_last_name).toLowerCase();
-        const tutorName = formatName(sessionData.tutor_first_name, sessionData.tutor_last_name).toLowerCase();
-        const studentFeedback = (sessionData.student_review?.written_feedback || '').toLowerCase();
-        const tutorFeedback = (sessionData.tutor_review?.tutor_feedback || '').toLowerCase();
-        const courseId = (sessionData.course_id || '').toLowerCase();
+      filtered = filtered.filter(review => {
+        const studentName = formatName(review.student_first_name, review.student_last_name).toLowerCase();
+        const tutorName = formatName(review.tutor_first_name, review.tutor_last_name).toLowerCase();
+        const feedback = (review.written_feedback || '').toLowerCase();
         const search = searchTerm.toLowerCase();
         
         return studentName.includes(search) || 
                tutorName.includes(search) || 
-               studentFeedback.includes(search) ||
-               tutorFeedback.includes(search) ||
-               courseId.includes(search);
+               feedback.includes(search);
       });
     }
 
-    // Rating filter - based on teaching quality from student reviews
+    // Rating filter
     if (ratingFilter !== "all") {
       const minRating = parseInt(ratingFilter);
-      filtered = filtered.filter(sessionData => 
-        sessionData.student_review?.teaching_quality !== null && 
-        sessionData.student_review.teaching_quality >= minRating
+      filtered = filtered.filter(review => 
+        review.teaching_quality !== null && review.teaching_quality >= minRating
       );
     }
 
     // Status filter
     if (statusFilter !== "all") {
-      filtered = filtered.filter(sessionData => {
-        const completionStatus = getCompletionStatus(sessionData);
-        return completionStatus === statusFilter;
+      filtered = filtered.filter(review => {
+        const hasTeachingQuality = review.teaching_quality !== null;
+        const hasWrittenFeedback = review.written_feedback && review.written_feedback.trim().length > 0;
+        const hasStressData = review.stress_before !== null && review.stress_after !== null;
+        
+        if (statusFilter === "complete") {
+          return hasTeachingQuality && hasWrittenFeedback && hasStressData;
+        } else if (statusFilter === "partial") {
+          return (hasTeachingQuality || hasWrittenFeedback) && !(hasTeachingQuality && hasWrittenFeedback && hasStressData);
+        } else if (statusFilter === "incomplete") {
+          return !hasTeachingQuality && !hasWrittenFeedback;
+        }
+        return true;
       });
     }
 
@@ -91,12 +120,12 @@ export const ReviewsTable = ({ onRefresh }: ReviewsTableProps) => {
       const daysAgo = dateRange === "7days" ? 7 : dateRange === "30days" ? 30 : 0;
       if (daysAgo > 0) {
         const cutoffDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
-        filtered = filtered.filter(sessionData => new Date(sessionData.session_date) >= cutoffDate);
+        filtered = filtered.filter(review => new Date(review.created_at) >= cutoffDate);
       }
     }
 
     return filtered;
-  }, [sessionReviews, searchTerm, ratingFilter, statusFilter, dateRange]);
+  }, [reviews, searchTerm, ratingFilter, statusFilter, dateRange]);
 
   const handleRefresh = () => {
     refetch();
@@ -136,12 +165,12 @@ export const ReviewsTable = ({ onRefresh }: ReviewsTableProps) => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="search">Search Sessions</Label>
+              <Label htmlFor="search">Search Reviews</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="search"
-                  placeholder="Student, tutor, course, or feedback..."
+                  placeholder="Student, tutor, or feedback..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -173,10 +202,10 @@ export const ReviewsTable = ({ onRefresh }: ReviewsTableProps) => {
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Sessions</SelectItem>
+                  <SelectItem value="all">All Reviews</SelectItem>
                   <SelectItem value="complete">Complete Reviews</SelectItem>
                   <SelectItem value="partial">Partial Reviews</SelectItem>
-                  <SelectItem value="incomplete">No Reviews</SelectItem>
+                  <SelectItem value="incomplete">Incomplete Reviews</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -206,27 +235,115 @@ export const ReviewsTable = ({ onRefresh }: ReviewsTableProps) => {
       {/* Results Summary */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
-          Showing {filteredSessionReviews.length} of {sessionReviews.length} sessions with reviews
+          Showing {filteredReviews.length} of {reviews.length} reviews
         </div>
       </div>
 
-      {/* Session Review Cards */}
-      {filteredSessionReviews.length === 0 ? (
+      {/* Reviews Table */}
+      {filteredReviews.length === 0 ? (
         <Card>
           <CardContent className="text-center py-12">
-            <p className="text-muted-foreground text-lg">No sessions match your current filters.</p>
+            <p className="text-muted-foreground text-lg">No reviews match your current filters.</p>
             <p className="text-sm text-muted-foreground mt-2">Try adjusting your search criteria.</p>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {filteredSessionReviews.map((sessionData) => (
-            <SessionReviewCard 
-              key={sessionData.session_id} 
-              sessionData={sessionData}
-            />
-          ))}
-        </div>
+        <Card>
+          <CardContent className="p-0">
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[100px]">Session</TableHead>
+                    <TableHead>Student</TableHead>
+                    <TableHead>Tutor</TableHead>
+                    <TableHead>Teaching Quality</TableHead>
+                    <TableHead>Engagement</TableHead>
+                    <TableHead>Stress Impact</TableHead>
+                    <TableHead>Attendance</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredReviews.map((review) => (
+                    <TableRow key={review.review_id}>
+                      <TableCell className="font-mono text-xs">
+                        {review.session_id.slice(-8)}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {formatName(review.student_first_name, review.student_last_name)}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {formatName(review.tutor_first_name, review.tutor_last_name)}
+                      </TableCell>
+                      <TableCell>
+                        {review.teaching_quality ? (
+                          <div className="flex items-center gap-2">
+                            <StarRating rating={review.teaching_quality} showValue={false} className="scale-75" />
+                            <span className="text-sm font-medium">
+                              {review.teaching_quality}/5
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">Not rated</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {review.engagement_level ? (
+                          <div className="flex items-center gap-1">
+                            <StarRating rating={review.engagement_level} showValue={false} className="scale-75" />
+                            <span className="text-sm">{review.engagement_level}/5</span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {review.stress_before !== null && review.stress_after !== null ? (
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm">
+                              {review.stress_before} → {review.stress_after}
+                            </span>
+                            <div className="ml-1">
+                              {getStressReduction(review.stress_before, review.stress_after)}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">No data</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="text-muted-foreground">S:</span>
+                            {getAttendanceStatus(review.student_showed_up)}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="text-muted-foreground">T:</span>
+                            {getAttendanceStatus(review.tutor_showed_up)}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {getCompletionStatus(review)}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {format(new Date(review.created_at), 'MMM d, yyyy')}
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
