@@ -1,15 +1,16 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AdminAuthContextType {
   isAdmin: boolean;
-  adminLogin: (email: string, password: string) => boolean;
+  adminLogin: (email: string, password: string) => Promise<boolean>;
   adminLogout: () => void;
   loading: boolean;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType>({
   isAdmin: false,
-  adminLogin: () => false,
+  adminLogin: async () => false,
   adminLogout: () => {},
   loading: false,
 });
@@ -32,18 +33,27 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, []);
 
-  const adminLogin = (email: string, password: string): boolean => {
+  const adminLogin = async (email: string, password: string): Promise<boolean> => {
     if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
-      setIsAdmin(true);
-      localStorage.setItem('adminSession', 'true');
-      return true;
+      // Sign in to Supabase to get proper authenticated session
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (!error) {
+        setIsAdmin(true);
+        localStorage.setItem('adminSession', 'true');
+        return true;
+      }
     }
     return false;
   };
 
-  const adminLogout = () => {
+  const adminLogout = async () => {
     setIsAdmin(false);
     localStorage.removeItem('adminSession');
+    await supabase.auth.signOut();
   };
 
   return (
