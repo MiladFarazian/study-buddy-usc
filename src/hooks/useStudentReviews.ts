@@ -34,63 +34,74 @@ export const useStudentReviews = () => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchReviews = useCallback(async () => {
+    console.log('[useStudentReviews] fetch start');
     setLoading(true);
     setError(null);
+
+    let finished = false;
+    const watchdog = setTimeout(() => {
+      if (!finished) {
+        console.warn('[useStudentReviews] fetch timeout watchdog fired, forcing loading=false');
+        setLoading(false);
+      }
+    }, 8000);
+
     try {
-      // Step 1: fetch latest student reviews (simple, reliable)
+      console.log('[useStudentReviews] querying student_reviews...');
       const { data: reviewsData, error: reviewsError } = await supabase
         .from('student_reviews')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(100);
+      console.log('[useStudentReviews] student_reviews result', { err: reviewsError, count: reviewsData?.length });
 
       if (reviewsError) {
         console.error('Error fetching student_reviews:', reviewsError);
         setError(reviewsError.message);
         setReviews([]);
-        return;
-      }
-
-      if (!reviewsData || reviewsData.length === 0) {
+      } else if (!reviewsData || reviewsData.length === 0) {
+        console.log('[useStudentReviews] no reviews found');
         setReviews([]);
-        return;
-      }
+      } else {
+        const sessionIds = Array.from(new Set((reviewsData || []).map((r: any) => r.session_id).filter(Boolean)));
+        console.log('[useStudentReviews] fetching sessions for ids:', sessionIds.length);
+        let sessionsById: Record<string, any> = {};
 
-      // Step 2: fetch session names for these reviews
-      const sessionIds = Array.from(new Set((reviewsData || []).map((r: any) => r.session_id).filter(Boolean)));
-      let sessionsById: Record<string, any> = {};
+        if (sessionIds.length > 0) {
+          const { data: sessionsData, error: sessionsError } = await supabase
+            .from('sessions')
+            .select('id, student_first_name, student_last_name, tutor_first_name, tutor_last_name')
+            .in('id', sessionIds);
+          console.log('[useStudentReviews] sessions result', { err: sessionsError, count: sessionsData?.length });
 
-      if (sessionIds.length > 0) {
-        const { data: sessionsData, error: sessionsError } = await supabase
-          .from('sessions')
-          .select('id, student_first_name, student_last_name, tutor_first_name, tutor_last_name')
-          .in('id', sessionIds);
-
-        if (sessionsError) {
-          console.warn('Sessions fetch failed, proceeding without names:', sessionsError.message);
-        } else {
-          sessionsById = Object.fromEntries((sessionsData || []).map((s: any) => [s.id, s]));
+          if (sessionsError) {
+            console.warn('Sessions fetch failed, proceeding without names:', sessionsError.message);
+          } else {
+            sessionsById = Object.fromEntries((sessionsData || []).map((s: any) => [s.id, s]));
+          }
         }
+
+        const merged: StudentReviewWithNames[] = (reviewsData || []).map((review: any) => {
+          const s = sessionsById[review.session_id] || {};
+          return {
+            ...review,
+            student_first_name: s.student_first_name ?? null,
+            student_last_name: s.student_last_name ?? null,
+            tutor_first_name: s.tutor_first_name ?? null,
+            tutor_last_name: s.tutor_last_name ?? null,
+          } as StudentReviewWithNames;
+        });
+        console.log('[useStudentReviews] merged count', merged.length);
+        setReviews(merged);
       }
-
-      // Step 3: merge and set
-      const merged: StudentReviewWithNames[] = (reviewsData || []).map((review: any) => {
-        const s = sessionsById[review.session_id] || {};
-        return {
-          ...review,
-          student_first_name: s.student_first_name ?? null,
-          student_last_name: s.student_last_name ?? null,
-          tutor_first_name: s.tutor_first_name ?? null,
-          tutor_last_name: s.tutor_last_name ?? null,
-        } as StudentReviewWithNames;
-      });
-
-      setReviews(merged);
     } catch (err) {
       console.error('Error in fetchReviews:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
       setReviews([]);
     } finally {
+      clearTimeout(watchdog);
+      finished = true;
+      console.log('[useStudentReviews] fetch end, setting loading=false');
       setLoading(false);
     }
   }, []);
