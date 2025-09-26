@@ -1,34 +1,33 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAdminAuth } from "@/contexts/AdminAuthContext";
 import { toast } from "sonner";
 
 const AdminLogin = () => {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState("noah@studybuddyusc.com");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
+  const { adminLogin, isAdminAuthenticated } = useAdminAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAdminAuthenticated) {
+      navigate('/admin');
+    }
+  }, [isAdminAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (email !== "noah@studybuddyusc.com") {
-      toast.error("Access denied");
-      return;
-    }
-
     setLoading(true);
     try {
-      const { error } = await signIn(email, password);
-      if (error) {
-        toast.error(error.message);
-      } else {
-        navigate('/admin');
+      const success = await adminLogin(email, password);
+      if (!success) {
+        toast.error("Invalid admin credentials");
       }
     } catch (error) {
       toast.error("Login failed");
@@ -55,7 +54,7 @@ const AdminLogin = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                placeholder="noah@studybuddyusc.com"
+                disabled
               />
             </div>
             <div>

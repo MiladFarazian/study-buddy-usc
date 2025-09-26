@@ -1,4 +1,4 @@
-import { useAuth } from "@/contexts/AuthContext";
+import { useAdminAuth } from "@/contexts/AdminAuthContext";
 import { Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 
@@ -7,7 +7,7 @@ interface AdminGuardProps {
 }
 
 export const AdminGuard = ({ children }: AdminGuardProps) => {
-  const { user, loading } = useAuth();
+  const { isAdminAuthenticated, loading } = useAdminAuth();
 
   if (loading) {
     return (
@@ -17,9 +17,7 @@ export const AdminGuard = ({ children }: AdminGuardProps) => {
     );
   }
 
-  const isAdmin = user?.email === 'noah@studybuddyusc.com';
-  
-  if (!isAdmin) {
+  if (!isAdminAuthenticated) {
     return <Navigate to="/admin/login" replace />;
   }
 
