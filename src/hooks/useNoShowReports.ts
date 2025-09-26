@@ -46,33 +46,77 @@ export const useNoShowReports = () => {
   const fetchNoShowReports = async () => {
     setLoading(true);
     try {
-      console.log('🔍 Fetching no-show reports via edge function...');
-      
-      // Call admin edge function to fetch no-show reports
-      const { data, error } = await supabase.functions.invoke('admin-no-show-reports', {
-        body: {
-          adminEmail: 'noah@studybuddyusc.com', // In production, get from admin auth context
-          dateFilter: dateFilter === '7days' ? 'week' : dateFilter === '30days' ? 'month' : 'all',
-          showResolved
-        }
-      });
+      console.log('🔍 Fetching no-show reports directly from DB...');
 
-      if (error) {
-        console.error('❌ Edge function error:', error);
-        throw error;
+      // Build base query for sessions with a no_show_report
+      let query = supabase
+        .from('sessions')
+        .select(`
+          id,
+          start_time,
+          no_show_report,
+          course_id,
+          created_at,
+          tutor_id,
+          student_id,
+          tutor_first_name,
+          tutor_last_name,
+          student_first_name,
+          student_last_name
+        `)
+        .not('no_show_report', 'is', null)
+        .order('created_at', { ascending: false });
+
+      // Apply date filter if needed
+      if (dateFilter !== 'all') {
+        const days = dateFilter === '7days' ? 7 : 30;
+        const fromIso = subDays(new Date(), days).toISOString();
+        query = query.gte('created_at', fromIso);
       }
 
-      console.log('📊 Edge function result:', data);
+      const { data, error } = await query;
+      if (error) throw error;
 
-      setReports(data?.reports || []);
-      setSummaryStats(data?.summaryStats || {
-        totalReports: 0,
-        topTutors: [],
-        recentReports: 0
-      });
+      // Map to previously expected shape (with nested tutor/student)
+      const mapped = (data as any[] | null)?.map((r: any) => ({
+        id: r.id,
+        start_time: r.start_time,
+        no_show_report: r.no_show_report,
+        course_id: r.course_id,
+        created_at: r.created_at,
+        tutor: {
+          id: r.tutor_id,
+          first_name: r.tutor_first_name || '',
+          last_name: r.tutor_last_name || '',
+        },
+        student: {
+          id: r.student_id,
+          first_name: r.student_first_name || '',
+          last_name: r.student_last_name || '',
+        },
+      })) ?? [];
 
+      setReports(mapped);
+
+      // Compute simple summary stats
+      const totalReports = mapped.length;
+      const recentReports = mapped.filter((r) => new Date(r.created_at) >= subDays(new Date(), 7)).length;
+
+      const tutorCounts = new Map<string, { id: string; name: string; count: number }>();
+      for (const r of mapped) {
+        const key = r.tutor.id;
+        const name = `${r.tutor.first_name} ${r.tutor.last_name}`.trim();
+        const entry = tutorCounts.get(key) || { id: key, name, count: 0 };
+        entry.count += 1;
+        tutorCounts.set(key, entry);
+      }
+      const topTutors = Array.from(tutorCounts.values())
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 3);
+
+      setSummaryStats({ totalReports, topTutors, recentReports });
     } catch (error) {
-      console.error('Error fetching no-show reports:', error);
+      console.error('Error fetching no-show reports (direct DB):', error);
       toast({
         title: "Error",
         description: "Failed to fetch no-show reports",
