@@ -20,6 +20,14 @@ export const ReviewsTable = ({ onRefresh }: ReviewsTableProps) => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateRange, setDateRange] = useState("all");
 
+  // Debug logging
+  console.log('🔍 ReviewsTable Debug:', {
+    sessionReviews: sessionReviews,
+    loading: loading,
+    error: error,
+    sessionReviewsLength: sessionReviews.length
+  });
+
   const formatName = (firstName: string | null, lastName: string | null) => {
     if (!firstName && !lastName) return "Unknown";
     return `${firstName || ""} ${lastName || ""}`.trim();

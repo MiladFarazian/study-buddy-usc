@@ -58,6 +58,7 @@ export const useSessionReviews = () => {
       setError(null);
       
       console.log('🔍 Fetching session-centric reviews...');
+      console.log('🔍 Auth session:', await supabase.auth.getSession());
 
       // Fetch all sessions with their associated reviews
       const { data: sessions, error: sessionsError } = await supabase
@@ -78,10 +79,12 @@ export const useSessionReviews = () => {
         .order('start_time', { ascending: false });
 
       if (sessionsError) {
-        console.error('Error fetching sessions:', sessionsError);
+        console.error('🔍 Error fetching sessions:', sessionsError);
         setError(sessionsError.message);
         return;
       }
+
+      console.log('🔍 Sessions fetched:', sessions?.length || 0, 'sessions');
 
       if (!sessions || sessions.length === 0) {
         setSessionReviews([]);
@@ -94,10 +97,12 @@ export const useSessionReviews = () => {
         .select('*');
 
       if (reviewsError) {
-        console.error('Error fetching reviews:', reviewsError);
+        console.error('🔍 Error fetching reviews:', reviewsError);
         setError(reviewsError.message);
         return;
       }
+
+      console.log('🔍 Student reviews fetched:', studentReviews?.length || 0, 'reviews');
 
       // Transform the data to session-centric format
       const transformedData: SessionReviewData[] = sessions.map(session => {
