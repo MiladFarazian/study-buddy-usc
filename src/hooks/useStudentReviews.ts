@@ -37,8 +37,30 @@ export const useStudentReviews = () => {
     try {
       setLoading(true);
       setError(null);
+      
+      console.log('🔍 Fetching reviews...');
+      console.log('🔍 Auth session:', await supabase.auth.getSession());
 
-      // Try a direct join query approach
+      // Test 1: Try basic student_reviews query first
+      console.log('🔍 Testing basic student_reviews query...');
+      const { data: basicData, error: basicError } = await supabase
+        .from('student_reviews')
+        .select('*')
+        .limit(5);
+      
+      console.log('🔍 Basic query results:', { data: basicData, error: basicError, count: basicData?.length || 0 });
+
+      // Test 2: Try basic sessions query
+      console.log('🔍 Testing basic sessions query...');
+      const { data: sessionsData, error: sessionsError } = await supabase
+        .from('sessions')
+        .select('id, student_first_name, student_last_name, tutor_first_name, tutor_last_name')
+        .limit(5);
+      
+      console.log('🔍 Sessions query results:', { data: sessionsData, error: sessionsError, count: sessionsData?.length || 0 });
+
+      // Test 3: Try the JOIN query
+      console.log('🔍 Testing JOIN query...');
       const { data, error: fetchError } = await supabase
         .from('student_reviews')
         .select(`
@@ -52,13 +74,42 @@ export const useStudentReviews = () => {
         `)
         .order('created_at', { ascending: false });
 
+      console.log('🔍 JOIN query results:', { data, error: fetchError, count: data?.length || 0 });
+
       if (fetchError) {
-        console.error('Error fetching reviews:', fetchError);
+        console.error('🔍 Error fetching reviews:', fetchError);
         setError(fetchError.message);
         return;
       }
 
-      if (!data) {
+      if (!data || data.length === 0) {
+        console.log('🔍 No data returned from JOIN query, trying fallback approach...');
+        
+        // Fallback: Use separate queries if JOIN fails
+        if (basicData && basicData.length > 0) {
+          console.log('🔍 Using fallback approach with separate queries...');
+          const sessionIds = basicData.map(r => r.session_id);
+          const { data: sessions } = await supabase
+            .from('sessions')
+            .select('id, student_first_name, student_last_name, tutor_first_name, tutor_last_name')
+            .in('id', sessionIds);
+
+          const transformedData: StudentReviewWithNames[] = basicData.map((review: any) => {
+            const session = sessions?.find(s => s.id === review.session_id);
+            return {
+              ...review,
+              student_first_name: session?.student_first_name || null,
+              student_last_name: session?.student_last_name || null,
+              tutor_first_name: session?.tutor_first_name || null,
+              tutor_last_name: session?.tutor_last_name || null,
+            };
+          });
+
+          console.log('🔍 Fallback data prepared:', transformedData.length, 'reviews');
+          setReviews(transformedData);
+          return;
+        }
+        
         setReviews([]);
         return;
       }
@@ -72,9 +123,10 @@ export const useStudentReviews = () => {
         tutor_last_name: review.sessions?.tutor_last_name || null,
       }));
 
+      console.log('🔍 Final transformed data:', transformedData.length, 'reviews');
       setReviews(transformedData);
     } catch (err) {
-      console.error('Error in fetchReviews:', err);
+      console.error('🔍 Error in fetchReviews:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
