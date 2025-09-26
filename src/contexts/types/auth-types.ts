@@ -12,6 +12,7 @@ export type AuthContextType = {
   isStudent: boolean;
   isTutor: boolean;
   isProfileComplete: boolean;
+  hasAdminRole: boolean;
   updateProfile: (data: Partial<Profile>) => Promise<{ success: boolean; error: any | null }>;
 };
 

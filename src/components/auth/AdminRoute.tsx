@@ -1,4 +1,5 @@
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 
@@ -7,7 +8,10 @@ interface AdminRouteProps {
 }
 
 export const AdminRoute = ({ children }: AdminRouteProps) => {
-  const { isAdmin, loading } = useAdminAuth();
+  const { isAdmin, loading: adminLoading } = useAdminAuth();
+  const { hasAdminRole, loading: authLoading } = useAuth();
+
+  const loading = adminLoading || authLoading;
 
   if (loading) {
     return (
@@ -17,7 +21,8 @@ export const AdminRoute = ({ children }: AdminRouteProps) => {
     );
   }
 
-  if (!isAdmin) {
+  // Allow access if either admin context or regular auth has admin role
+  if (!isAdmin && !hasAdminRole) {
     return <Navigate to="/login" replace />;
   }
 

@@ -6,12 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
+import { useAdminRedirect } from "@/hooks/useAdminRedirect";
 import { Navigate, Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
 const Login = () => {
-  const { signIn, user, loading } = useAuth();
+  const { signIn, user, loading, hasAdminRole } = useAuth();
   const { adminLogin } = useAdminAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
@@ -19,6 +20,9 @@ const Login = () => {
   const [adminPassword, setAdminPassword] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
+  
+  // Use the admin redirect hook
+  useAdminRedirect();
   
   // Get the page user was trying to access
   const from = location.state?.from?.pathname || "/";
@@ -40,8 +44,12 @@ const Login = () => {
   }, []);
 
   if (user) {
-    // Redirect to the page they were trying to access, or home
-    return <Navigate to={from} replace />;
+    // Admin users are handled by useAdminRedirect hook
+    // For non-admin users, redirect to the page they were trying to access, or home
+    if (!hasAdminRole) {
+      return <Navigate to={from} replace />;
+    }
+    // Let useAdminRedirect handle admin users
   }
 
   const handleGoogleSignIn = async () => {

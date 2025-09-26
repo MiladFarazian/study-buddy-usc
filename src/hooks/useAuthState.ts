@@ -9,6 +9,7 @@ export const useAuthState = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasAdminRole, setHasAdminRole] = useState(false);
   const { profile, updateProfile } = useAuthProfile(user?.id);
 
   useEffect(() => {
@@ -29,6 +30,26 @@ export const useAuthState = () => {
         if (mounted) {
           setSession(session);
           setUser(session?.user ?? null);
+          
+          // Check for admin role on initial load
+          if (session?.user) {
+            try {
+              const { data: adminRole } = await supabase
+                .from('user_roles')
+                .select('role')
+                .eq('user_id', session.user.id)
+                .eq('role', 'admin')
+                .single();
+              
+              setHasAdminRole(!!adminRole);
+              console.log('🔐 Initial admin role check:', { hasAdminRole: !!adminRole });
+            } catch (error) {
+              console.log('🔐 No admin role found on initial load:', error);
+              setHasAdminRole(false);
+            }
+          } else {
+            setHasAdminRole(false);
+          }
         }
       } catch (error) {
         console.error('🔐 Auth initialization error:', error);
@@ -48,6 +69,26 @@ export const useAuthState = () => {
         if (mounted) {
           setSession(session);
           setUser(session?.user ?? null);
+          
+          // Check for admin role when user logs in
+          if (session?.user) {
+            try {
+              const { data: adminRole } = await supabase
+                .from('user_roles')
+                .select('role')
+                .eq('user_id', session.user.id)
+                .eq('role', 'admin')
+                .single();
+              
+              setHasAdminRole(!!adminRole);
+              console.log('🔐 Admin role check:', { hasAdminRole: !!adminRole });
+            } catch (error) {
+              console.log('🔐 No admin role found or error checking:', error);
+              setHasAdminRole(false);
+            }
+          } else {
+            setHasAdminRole(false);
+          }
         }
       }
     );
@@ -101,6 +142,7 @@ export const useAuthState = () => {
     isStudent,
     isTutor,
     isProfileComplete,
+    hasAdminRole,
     updateProfile
   };
 };
