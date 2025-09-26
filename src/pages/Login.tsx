@@ -68,12 +68,12 @@ const Login = () => {
     }
   };
 
-  const handleAdminLogin = (e: React.FormEvent) => {
+  const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
     try {
-      const success = adminLogin(adminEmail, adminPassword);
+      const success = await adminLogin(adminEmail, adminPassword);
       if (success) {
         navigate('/admin');
       } else {
