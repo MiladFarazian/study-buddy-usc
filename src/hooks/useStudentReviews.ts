@@ -43,23 +43,31 @@ export const useStudentReviews = () => {
         .then((s) => console.log('🔍 Auth session:', s))
         .catch((e) => console.error('🔍 Auth session error:', e));
 
-      // Test 1: Try basic student_reviews query first
+      // Test 1: Try basic student_reviews query first (non-blocking debug)
       console.log('🔍 Testing basic student_reviews query...');
-      const { data: basicData, error: basicError } = await supabase
+      supabase
         .from('student_reviews')
         .select('*')
-        .limit(5);
-      
-      console.log('🔍 Basic query results:', { data: basicData, error: basicError, count: basicData?.length || 0 });
+        .limit(5)
+        .then(
+          ({ data: basicData, error: basicError }) => {
+            console.log('🔍 Basic query results:', { data: basicData, error: basicError, count: basicData?.length || 0 });
+          },
+          (e) => console.error('🔍 Basic query failed:', e)
+        );
 
-      // Test 2: Try basic sessions query
+      // Test 2: Try basic sessions query (non-blocking debug)
       console.log('🔍 Testing basic sessions query...');
-      const { data: sessionsData, error: sessionsError } = await supabase
+      supabase
         .from('sessions')
         .select('id, student_first_name, student_last_name, tutor_first_name, tutor_last_name')
-        .limit(5);
-      
-      console.log('🔍 Sessions query results:', { data: sessionsData, error: sessionsError, count: sessionsData?.length || 0 });
+        .limit(5)
+        .then(
+          ({ data: sessionsData, error: sessionsError }) => {
+            console.log('🔍 Sessions query results:', { data: sessionsData, error: sessionsError, count: sessionsData?.length || 0 });
+          },
+          (e) => console.error('🔍 Sessions query failed:', e)
+        );
 
       // Test 3: Try the JOIN query
       console.log('🔍 Testing JOIN query...');
@@ -88,29 +96,39 @@ export const useStudentReviews = () => {
         console.log('🔍 No data returned from JOIN query, trying fallback approach...');
         
         // Fallback: Use separate queries if JOIN fails
-        if (basicData && basicData.length > 0) {
-          console.log('🔍 Using fallback approach with separate queries...');
-          const sessionIds = basicData.map(r => r.session_id);
-          const { data: sessions } = await supabase
-            .from('sessions')
-            .select('id, student_first_name, student_last_name, tutor_first_name, tutor_last_name')
-            .in('id', sessionIds);
+        console.log('🔍 Using fallback approach with separate queries...');
+        const { data: basicData2, error: basicErr2 } = await supabase
+          .from('student_reviews')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(50);
 
-          const transformedData: StudentReviewWithNames[] = basicData.map((review: any) => {
-            const session = sessions?.find(s => s.id === review.session_id);
-            return {
-              ...review,
-              student_first_name: session?.student_first_name || null,
-              student_last_name: session?.student_last_name || null,
-              tutor_first_name: session?.tutor_first_name || null,
-              tutor_last_name: session?.tutor_last_name || null,
-            };
-          });
-
-          console.log('🔍 Fallback data prepared:', transformedData.length, 'reviews');
-          setReviews(transformedData);
+        if (basicErr2) {
+          console.error('🔍 Fallback basic query error:', basicErr2);
+          setReviews([]);
           return;
         }
+
+        const sessionIds = (basicData2 || []).map((r: any) => r.session_id).filter(Boolean);
+        const { data: sessions } = await supabase
+          .from('sessions')
+          .select('id, student_first_name, student_last_name, tutor_first_name, tutor_last_name')
+          .in('id', sessionIds);
+
+        const transformedDataFallback: StudentReviewWithNames[] = (basicData2 || []).map((review: any) => {
+          const session = sessions?.find((s: any) => s.id === review.session_id);
+          return {
+            ...review,
+            student_first_name: session?.student_first_name || null,
+            student_last_name: session?.student_last_name || null,
+            tutor_first_name: session?.tutor_first_name || null,
+            tutor_last_name: session?.tutor_last_name || null,
+          };
+        });
+
+        console.log('🔍 Fallback data prepared:', transformedDataFallback.length, 'reviews');
+        setReviews(transformedDataFallback);
+        return;
         
         setReviews([]);
         return;
