@@ -18,6 +18,14 @@ export interface StudentReviewWithNames {
   written_feedback: string | null;
   created_at: string;
   updated_at: string;
+  // Additional review fields from the database
+  engagement_level: number | null;
+  subject_clarity: number | null;
+  respectful: number | null;
+  came_prepared: number | null;
+  motivation_effort: number | null;
+  would_book_again: boolean | null;
+  tutor_feedback: string | null;
 }
 
 export const useStudentReviews = () => {
