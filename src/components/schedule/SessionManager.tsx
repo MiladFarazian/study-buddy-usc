@@ -53,8 +53,8 @@ export const SessionManager = () => {
   useEffect(() => {
     if (!user) return;
     
-    // Subscribe to changes in the sessions table for this user
-    const subscription = supabase
+    // DISABLED WebSocket subscription to diagnose loading issues
+    /* const subscription = supabase
       .channel('sessions-changes')
       .on(
         'postgres_changes',
@@ -113,7 +113,7 @@ export const SessionManager = () => {
     
     return () => {
       supabase.removeChannel(subscription);
-    };
+    }; */
   }, [user]);
   
   const handleBookNewSession = () => {

@@ -31,7 +31,8 @@ export function ReviewRequirement() {
   useEffect(() => {
     if (!user) return;
 
-    const channel = supabase
+    // DISABLED WebSocket subscription to diagnose loading issues
+    /* const channel = supabase
       .channel('session-status-changes')
       .on(
         'postgres_changes',
@@ -55,7 +56,7 @@ export function ReviewRequirement() {
 
     return () => {
       supabase.removeChannel(channel);
-    };
+    }; */
   }, [user]);
 
   // Helper function to validate if review should be shown

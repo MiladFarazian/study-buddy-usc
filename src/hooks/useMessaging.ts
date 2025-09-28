@@ -123,8 +123,8 @@ export function useMessaging() {
 
     fetchConversations();
 
-    // Subscribe to changes in conversations
-    const channel = supabase
+    // DISABLED WebSocket subscription to diagnose loading issues
+    /* const channel = supabase
       .channel("conversations-channel")
       .on(
         "postgres_changes",
@@ -138,10 +138,10 @@ export function useMessaging() {
           fetchConversations();
         }
       )
-      .subscribe();
+      .subscribe(); */
 
     return () => {
-      supabase.removeChannel(channel);
+      // supabase.removeChannel(channel);
     };
   }, [user, toast]);
 
@@ -195,8 +195,8 @@ export function useMessaging() {
 
     fetchMessages();
 
-    // Subscribe to new messages
-    const channel = supabase
+    // DISABLED WebSocket subscription to diagnose loading issues
+    /* const channel = supabase
       .channel(`messages-${currentConversation.id}`)
       .on(
         "postgres_changes",
@@ -220,10 +220,10 @@ export function useMessaging() {
           }
         }
       )
-      .subscribe();
+      .subscribe(); */
 
     return () => {
-      supabase.removeChannel(channel);
+      // supabase.removeChannel(channel);
     };
   }, [currentConversation, user, toast]);
 
