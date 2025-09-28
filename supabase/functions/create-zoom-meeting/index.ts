@@ -126,7 +126,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error in create-zoom-meeting:", error);
     return new Response(
-      JSON.stringify({ error: "Internal Server Error", details: (error as any)?.message || 'Unknown error' }),
+      JSON.stringify({ error: "Internal Server Error", details: error.message }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }

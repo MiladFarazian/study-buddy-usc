@@ -12,7 +12,6 @@ import { useReview } from "@/contexts/ReviewContext";
 import { Tutor } from "@/types/tutor";
 import { Profile } from "@/integrations/supabase/types-extension";
 import { supabase } from "@/integrations/supabase/client";
-import { SessionReviewContent } from "./SessionReviewContent";
 
 interface SessionItemProps {
   session: Session;
@@ -222,7 +221,9 @@ export const SessionItem = ({
           )}
           {variant === 'past' && (
             hasExistingReview ? (
-              <SessionReviewContent sessionId={session.id} />
+              <span className="text-sm text-gray-500 px-3 py-2">
+                Review Completed
+              </span>
             ) : (
               <Button 
                 variant="outline" 

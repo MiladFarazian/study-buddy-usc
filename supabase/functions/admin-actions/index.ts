@@ -208,14 +208,9 @@ const handler = async (req: Request): Promise<Response> => {
               const { data: studentAuthUser, error: studentAuthError } = await supabaseAdmin.auth.admin.getUserById(session.student_id);
               
               if (studentAuthUser && !studentAuthError) {
-                let studentName = 'Student';
-                if (session.profiles) {
-                  if (Array.isArray(session.profiles) && session.profiles[0]) {
-                    studentName = [session.profiles[0].first_name, session.profiles[0].last_name].filter(Boolean).join(' ') || 'Student';
-                  } else if (!Array.isArray(session.profiles) && (session.profiles as any).first_name) {
-                    studentName = [(session.profiles as any).first_name, (session.profiles as any).last_name].filter(Boolean).join(' ') || 'Student';
-                  }
-                }
+                const studentName = session.profiles ? 
+                  [session.profiles.first_name, session.profiles.last_name].filter(Boolean).join(' ') || 'Student' 
+                  : 'Student';
                 
                 const sessionDate = new Date(session.start_time).toLocaleDateString();
                 const sessionTime = new Date(session.start_time).toLocaleTimeString();

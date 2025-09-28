@@ -116,8 +116,7 @@ export function useNotifications() {
 
     fetchNotifications();
 
-    // DISABLED WebSocket subscription to diagnose loading issues
-    /* const channel = supabase
+    const channel = supabase
       .channel('notification-changes')
       .on(
         'postgres_changes',
@@ -139,10 +138,10 @@ export function useNotifications() {
           });
         }
       )
-      .subscribe(); */
+      .subscribe();
 
     return () => {
-      // supabase.removeChannel(channel);
+      supabase.removeChannel(channel);
     };
   }, [user, toast]);
 

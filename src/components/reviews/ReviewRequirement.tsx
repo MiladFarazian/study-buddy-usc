@@ -31,8 +31,7 @@ export function ReviewRequirement() {
   useEffect(() => {
     if (!user) return;
 
-    // DISABLED WebSocket subscription to diagnose loading issues
-    /* const channel = supabase
+    const channel = supabase
       .channel('session-status-changes')
       .on(
         'postgres_changes',
@@ -40,7 +39,7 @@ export function ReviewRequirement() {
           event: 'UPDATE',
           schema: 'public',
           table: 'sessions',
-          filter: `or=(student_id.eq.${user.id},tutor_id.eq.${user.id})`
+          filter: `student_id=eq.${user.id},tutor_id=eq.${user.id}`
         },
         (payload) => {
           // When a session status changes, check for new pending reviews after delay
@@ -56,7 +55,7 @@ export function ReviewRequirement() {
 
     return () => {
       supabase.removeChannel(channel);
-    }; */
+    };
   }, [user]);
 
   // Helper function to validate if review should be shown

@@ -1233,24 +1233,6 @@ export type Database = {
           },
         ]
       }
-      user_roles: {
-        Row: {
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Insert: {
-          id?: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Update: {
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       platform_revenue: {
@@ -1293,13 +1275,6 @@ export type Database = {
         Args: { sql: string }
         Returns: undefined
       }
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
       list_term_tables: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -1313,7 +1288,6 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user"
       badge_type:
         | "founding_tutor"
         | "weekly_streak"
@@ -1460,7 +1434,6 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "moderator", "user"],
       badge_type: [
         "founding_tutor",
         "weekly_streak",

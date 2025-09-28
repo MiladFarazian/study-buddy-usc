@@ -61,8 +61,8 @@ export function NotificationsDropdown() {
 
     fetchNotifications();
 
-    // DISABLED WebSocket subscription to diagnose loading issues
-    /* const channel = supabase
+    // Set up real-time subscription for new notifications
+    const channel = supabase
       .channel('schema-db-changes')
       .on(
         'postgres_changes',
@@ -83,10 +83,10 @@ export function NotificationsDropdown() {
           });
         }
       )
-      .subscribe(); */
+      .subscribe();
 
     return () => {
-      // supabase.removeChannel(channel);
+      supabase.removeChannel(channel);
     };
   }, [user, toast]);
 

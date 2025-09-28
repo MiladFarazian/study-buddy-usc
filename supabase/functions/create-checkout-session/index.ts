@@ -163,11 +163,11 @@ serve(async (req) => {
       }
     );
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error creating checkout session:', error);
     return new Response(
       JSON.stringify({ 
-        error: (error as any)?.message || 'Failed to create checkout session' 
+        error: error.message || 'Failed to create checkout session' 
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

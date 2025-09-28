@@ -18,14 +18,6 @@ export interface StudentReviewWithNames {
   written_feedback: string | null;
   created_at: string;
   updated_at: string;
-  // Additional review fields from the database
-  engagement_level: number | null;
-  subject_clarity: number | null;
-  respectful: number | null;
-  came_prepared: number | null;
-  motivation_effort: number | null;
-  would_book_again: boolean | null;
-  tutor_feedback: string | null;
 }
 
 export const useStudentReviews = () => {
@@ -37,96 +29,71 @@ export const useStudentReviews = () => {
     try {
       setLoading(true);
       setError(null);
-      
-      console.log('🔍 Fetching reviews...');
-      console.log('🔍 Auth session:', await supabase.auth.getSession());
 
-      // Test 1: Try basic student_reviews query first
-      console.log('🔍 Testing basic student_reviews query...');
-      const { data: basicData, error: basicError } = await supabase
-        .from('student_reviews')
-        .select('*')
-        .limit(5);
-      
-      console.log('🔍 Basic query results:', { data: basicData, error: basicError, count: basicData?.length || 0 });
-
-      // Test 2: Try basic sessions query
-      console.log('🔍 Testing basic sessions query...');
-      const { data: sessionsData, error: sessionsError } = await supabase
-        .from('sessions')
-        .select('id, student_first_name, student_last_name, tutor_first_name, tutor_last_name')
-        .limit(5);
-      
-      console.log('🔍 Sessions query results:', { data: sessionsData, error: sessionsError, count: sessionsData?.length || 0 });
-
-      // Test 3: Try the JOIN query
-      console.log('🔍 Testing JOIN query...');
+      // Use PostgREST syntax with explicit column selection
       const { data, error: fetchError } = await supabase
         .from('student_reviews')
         .select(`
-          *,
-          sessions (
-            student_first_name,
-            student_last_name,
-            tutor_first_name,
-            tutor_last_name
-          )
+          review_id,
+          session_id,
+          student_id,
+          tutor_id,
+          teaching_quality,
+          stress_before,
+          stress_after,
+          tutor_showed_up,
+          student_showed_up,
+          written_feedback,
+          created_at,
+          updated_at
         `)
         .order('created_at', { ascending: false });
 
-      console.log('🔍 JOIN query results:', { data, error: fetchError, count: data?.length || 0 });
-
       if (fetchError) {
-        console.error('🔍 Error fetching reviews:', fetchError);
+        console.error('Error fetching reviews:', fetchError);
         setError(fetchError.message);
         return;
       }
 
-      if (!data || data.length === 0) {
-        console.log('🔍 No data returned from JOIN query, trying fallback approach...');
-        
-        // Fallback: Use separate queries if JOIN fails
-        if (basicData && basicData.length > 0) {
-          console.log('🔍 Using fallback approach with separate queries...');
-          const sessionIds = basicData.map(r => r.session_id);
-          const { data: sessions } = await supabase
-            .from('sessions')
-            .select('id, student_first_name, student_last_name, tutor_first_name, tutor_last_name')
-            .in('id', sessionIds);
-
-          const transformedData: StudentReviewWithNames[] = basicData.map((review: any) => {
-            const session = sessions?.find(s => s.id === review.session_id);
-            return {
-              ...review,
-              student_first_name: session?.student_first_name || null,
-              student_last_name: session?.student_last_name || null,
-              tutor_first_name: session?.tutor_first_name || null,
-              tutor_last_name: session?.tutor_last_name || null,
-            };
-          });
-
-          console.log('🔍 Fallback data prepared:', transformedData.length, 'reviews');
-          setReviews(transformedData);
-          return;
-        }
-        
+      if (!data) {
         setReviews([]);
         return;
       }
 
-      // Transform the data to flatten the sessions join
-      const transformedData: StudentReviewWithNames[] = data.map((review: any) => ({
-        ...review,
-        student_first_name: review.sessions?.student_first_name || null,
-        student_last_name: review.sessions?.student_last_name || null,
-        tutor_first_name: review.sessions?.tutor_first_name || null,
-        tutor_last_name: review.sessions?.tutor_last_name || null,
-      }));
+      // Now fetch session data for each review
+      const sessionIds = data.map(review => review.session_id);
+      const { data: sessionsData, error: sessionsError } = await supabase
+        .from('sessions')
+        .select('id, student_first_name, student_last_name, tutor_first_name, tutor_last_name')
+        .in('id', sessionIds);
 
-      console.log('🔍 Final transformed data:', transformedData.length, 'reviews');
+      if (sessionsError) {
+        console.error('Error fetching sessions:', sessionsError);
+        setError(sessionsError.message);
+        return;
+      }
+
+      // Create a map of session data
+      const sessionMap = new Map();
+      sessionsData?.forEach(session => {
+        sessionMap.set(session.id, session);
+      });
+
+      // Transform the data to include session names
+      const transformedData: StudentReviewWithNames[] = data.map((review: any) => {
+        const session = sessionMap.get(review.session_id);
+        return {
+          ...review,
+          student_first_name: session?.student_first_name || null,
+          student_last_name: session?.student_last_name || null,
+          tutor_first_name: session?.tutor_first_name || null,
+          tutor_last_name: session?.tutor_last_name || null,
+        };
+      });
+
       setReviews(transformedData);
     } catch (err) {
-      console.error('🔍 Error in fetchReviews:', err);
+      console.error('Error in fetchReviews:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);

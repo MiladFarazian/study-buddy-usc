@@ -2,12 +2,12 @@ import { useAdminAuth } from "@/contexts/AdminAuthContext";
 import { Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 
-interface AdminGuardProps {
+interface AdminRouteProps {
   children: React.ReactNode;
 }
 
-export const AdminGuard = ({ children }: AdminGuardProps) => {
-  const { isAdminAuthenticated, loading } = useAdminAuth();
+export const AdminRoute = ({ children }: AdminRouteProps) => {
+  const { isAdmin, loading } = useAdminAuth();
 
   if (loading) {
     return (
@@ -17,8 +17,8 @@ export const AdminGuard = ({ children }: AdminGuardProps) => {
     );
   }
 
-  if (!isAdminAuthenticated) {
-    return <Navigate to="/admin/login" replace />;
+  if (!isAdmin) {
+    return <Navigate to="/login" replace />;
   }
 
   return <>{children}</>;
