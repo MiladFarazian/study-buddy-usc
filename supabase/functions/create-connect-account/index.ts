@@ -48,13 +48,13 @@ serve(async (req) => {
   console.log('🔍 MISSING_TARGET_VAR:', !stripeKeys.includes('STRIPE_CONNECT_SECRET_KEY'));
   
   // Track function instance for debugging
-  if (!globalThis.createConnectDebugId) {
-    globalThis.createConnectDebugId = Math.random().toString(36).substring(7);
-    globalThis.createConnectStartTime = Date.now();
-    console.log('🔍 CREATE_CONNECT_INSTANCE:', globalThis.createConnectDebugId);
+  if (!(globalThis as any).createConnectDebugId) {
+    (globalThis as any).createConnectDebugId = Math.random().toString(36).substring(7);
+    (globalThis as any).createConnectStartTime = Date.now();
+    console.log('🔍 CREATE_CONNECT_INSTANCE:', (globalThis as any).createConnectDebugId);
   }
   
-  const uptimeMs = Date.now() - globalThis.createConnectStartTime;
+  const uptimeMs = Date.now() - (globalThis as any).createConnectStartTime;
   console.log('🔍 FUNCTION_UPTIME:', Math.round(uptimeMs / 60000) + ' minutes');
   // === STRIPE_CONNECT_SECRET_KEY INVESTIGATION END ===
   
@@ -204,7 +204,7 @@ serve(async (req) => {
           }
         } catch (retrieveError) {
           // If the account doesn't exist anymore, we'll create a new one
-          if (retrieveError.code === 'resource_missing') {
+          if ((retrieveError as any)?.code === 'resource_missing') {
             console.log("Stripe account no longer exists, will create a new one");
             throw new Error('Account needs recreation');
           }
@@ -320,7 +320,7 @@ serve(async (req) => {
     console.error('Error creating Connect account:', error);
     return new Response(JSON.stringify({ 
       error: 'Error creating Connect account', 
-      details: error.message 
+      details: (error as any)?.message || 'Unknown error' 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

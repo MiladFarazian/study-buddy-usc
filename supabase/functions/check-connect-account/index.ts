@@ -354,14 +354,14 @@ serve(async (req) => {
       });
       
       // Sanity check mode vs account livemode
-      if (mode === 'test' && account.livemode) {
+      if (mode === 'test' && (account as any).livemode) {
         throw new Error('Misconfig: test mode with a live connect account id');
       }
-      if (mode === 'live' && !account.livemode) {
+      if (mode === 'live' && !(account as any).livemode) {
         throw new Error('Misconfig: live mode with a test connect account id');
       }
       
-      const onboardingComplete = account.details_submitted && account.payouts_enabled;
+      const onboardingComplete = (account as any).details_submitted && (account as any).payouts_enabled;
       
       // Update onboarding status in the profile if needed
       if (onboardingComplete !== profile[onboardingCompleteField]) {
@@ -378,24 +378,24 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         has_account: true,
         account_id: profile[connectIdField],
-        details_submitted: account.details_submitted,
-        charges_enabled: account.charges_enabled,
-        payouts_enabled: account.payouts_enabled,
+        details_submitted: (account as any).details_submitted,
+        charges_enabled: (account as any).charges_enabled,
+        payouts_enabled: (account as any).payouts_enabled,
         needs_onboarding: !onboardingComplete,
         environment: mode
       }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
-    } catch (stripeError) {
+    } catch (stripeError: any) {
       console.error("Error retrieving Stripe account after retries:", stripeError);
       
       // Handle rate limiting specifically
-      if (stripeError.code === 'rate_limit') {
+      if (stripeError?.code === 'rate_limit') {
         return new Response(JSON.stringify({ 
           error: 'Rate limited by Stripe', 
           details: 'Too many requests, please try again later',
-          retry_after: stripeError.headers?.['retry-after'] || 60
+          retry_after: stripeError?.headers?.['retry-after'] || 60
         }), {
           status: 429,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -403,7 +403,7 @@ serve(async (req) => {
       }
       
       // If the account doesn't exist or was deleted
-      if (stripeError.code === 'resource_missing') {
+      if (stripeError?.code === 'resource_missing') {
         console.log(`Stripe account no longer exists in ${mode} mode, resetting profile`);
         // Reset the Connect ID in the profile for this mode
         const resetFields: any = { updated_at: new Date().toISOString() };
@@ -428,7 +428,7 @@ serve(async (req) => {
       }
       
       // Handle authentication/permission errors
-      if (stripeError.type === 'StripePermissionError' || stripeError.type === 'StripeAuthenticationError') {
+      if (stripeError?.type === 'StripePermissionError' || stripeError?.type === 'StripeAuthenticationError') {
         return new Response(JSON.stringify({ 
           error: 'Stripe authentication error', 
           details: 'Invalid Stripe credentials configuration'
@@ -459,11 +459,11 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Unexpected error in check-connect-account:', error);
     return new Response(JSON.stringify({ 
       error: 'Unexpected error checking Connect account',
-      details: error.message
+      details: error?.message || 'Unknown error'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
 
         // If none have payment history, fall back to first non-guest existing customer
         if (!foundCustomerId) {
-          const nonGuestCustomer = candidates.data.find(c => !c.id.startsWith('gcus_'));
+          const nonGuestCustomer = candidates.data.find((c: any) => !c.id.startsWith('gcus_'));
           if (nonGuestCustomer) {
             foundCustomerId = nonGuestCustomer.id;
             console.log('No customer with payment history found; using first non-guest customer:', foundCustomerId);
@@ -222,7 +222,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: 'Failed to create portal session',
-        details: error.message 
+        details: (error as any)?.message || 'Unknown error' 
       }),
       {
         status: 500,
