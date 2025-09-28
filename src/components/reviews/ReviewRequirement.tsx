@@ -39,7 +39,7 @@ export function ReviewRequirement() {
           event: 'UPDATE',
           schema: 'public',
           table: 'sessions',
-          filter: `student_id=eq.${user.id},tutor_id=eq.${user.id}`
+          filter: `or=(student_id.eq.${user.id},tutor_id.eq.${user.id})`
         },
         (payload) => {
           // When a session status changes, check for new pending reviews after delay
