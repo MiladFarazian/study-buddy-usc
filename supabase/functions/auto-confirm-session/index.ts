@@ -36,7 +36,8 @@ serve(async (req) => {
         sessionId = parsed.sessionId;
       }
     } catch (parseError) {
-      logStep('ERROR: Failed to parse request body', { error: parseError.message });
+      const errorMsg = parseError instanceof Error ? parseError.message : 'Unknown parsing error';
+      logStep('ERROR: Failed to parse request body', { error: errorMsg });
       return new Response(JSON.stringify({ error: 'Invalid JSON in request body' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -274,10 +275,11 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
-    logStep('ERROR: Auto-confirm function failed', { error: error.message });
+  } catch (error: any) {
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
+    logStep('ERROR: Auto-confirm function failed', { error: errorMsg });
     console.error('Error in auto-confirm:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: errorMsg }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });

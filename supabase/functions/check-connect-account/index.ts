@@ -3,6 +3,14 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.23.0';
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno&bundle';
 
+// Type declaration for globalThis to fix TypeScript errors
+declare global {
+  var functionInstanceId: string;
+  var functionStartTime: number;
+  var secretFirstSeen: string;
+  var envStabilityTracker: any;
+}
+
 // Force redeploy - fix STRIPE_CONNECT_SECRET_KEY environment binding
 
 const corsHeaders = {
@@ -25,16 +33,16 @@ const retryStripeOperation = async <T>(
       const duration = Date.now() - startTime;
       console.log(`${operationName} completed in ${duration}ms (attempt ${attempt + 1})`);
       return result;
-    } catch (error) {
+    } catch (error: any) {
       const isLastAttempt = attempt === maxRetries - 1;
-      const isRetryableError = error.type === 'StripeConnectionError' || 
-                              error.code === 'rate_limit' ||
-                              (error.message && error.message.includes('runMicrotasks'));
+      const isRetryableError = error?.type === 'StripeConnectionError' || 
+                              error?.code === 'rate_limit' ||
+                              (error?.message && error.message.includes('runMicrotasks'));
       
       console.log(`${operationName} attempt ${attempt + 1} failed:`, {
-        error: error.message,
-        type: error.type,
-        code: error.code,
+        error: error?.message || 'Unknown error',
+        type: error?.type,
+        code: error?.code,
         retryable: isRetryableError,
         isLastAttempt
       });
@@ -90,7 +98,7 @@ serve(async (req) => {
   Deno.env.get = function(key) {
     const value = originalGet.call(this, key);
     if (key === 'STRIPE_CONNECT_SECRET_KEY') {
-      const stack = new Error().stack.split('\n')[2];
+      const stack = new Error().stack?.split('\n')[2] || 'unknown location';
       console.log(`SECRET_ACCESS_TRACE: ${key} = ${value ? 'EXISTS' : 'MISSING'} called from: ${stack}`);
     }
     return value;
@@ -113,7 +121,7 @@ serve(async (req) => {
     console.log(`SECRET_LIFECYCLE: First access at ${timestamp}`);
   }
 
-  const timeSinceFirst = new Date() - new Date(globalThis.secretFirstSeen);
+  const timeSinceFirst = new Date().getTime() - new Date(globalThis.secretFirstSeen).getTime();
   console.log(`SECRET_LIFECYCLE: ${Math.round(timeSinceFirst / 60000)} minutes since first access`);
   console.log(`INSTANCE_TRACKING: ID=${globalThis.functionInstanceId} | uptime=${Date.now() - globalThis.functionStartTime}ms`);
 
@@ -176,7 +184,7 @@ serve(async (req) => {
     
     Object.keys(envSnapshot.stripeSecrets).forEach(secretName => {
       const wasAvailable = previousSnapshot.stripeSecrets[secretName];
-      const isAvailable = envSnapshot.stripeSecrets[secretName];
+      const isAvailable = (envSnapshot.stripeSecrets as any)[secretName];
       
       if (wasAvailable && !isAvailable) {
         console.error('🚨 SECRET_DEGRADATION:', {
@@ -340,9 +348,9 @@ serve(async (req) => {
       );
       
       console.log("Account retrieved successfully:", {
-        details_submitted: account.details_submitted,
-        charges_enabled: account.charges_enabled,
-        payouts_enabled: account.payouts_enabled
+        details_submitted: (account as any).details_submitted,
+        charges_enabled: (account as any).charges_enabled,
+        payouts_enabled: (account as any).payouts_enabled
       });
       
       // Sanity check mode vs account livemode
