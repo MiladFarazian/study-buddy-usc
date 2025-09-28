@@ -2,7 +2,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Session } from "@/types/session";
-import { CalendarDays, Clock, User, MapPin, GraduationCap, BookOpen, Calendar } from "lucide-react";
+import { CalendarDays, Clock, User, MapPin, GraduationCap, BookOpen, Calendar, Star } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import { SessionCalendarDialog } from "./SessionCalendarDialog";
@@ -12,6 +12,7 @@ import { useReview } from "@/contexts/ReviewContext";
 import { Tutor } from "@/types/tutor";
 import { Profile } from "@/integrations/supabase/types-extension";
 import { supabase } from "@/integrations/supabase/client";
+import { useSessionReviews } from "@/hooks/useSessionReviews";
 
 interface SessionItemProps {
   session: Session;
@@ -37,6 +38,10 @@ export const SessionItem = ({
   const [showCalendarDialog, setShowCalendarDialog] = useState(false);
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const [hasExistingReview, setHasExistingReview] = useState(false);
+  
+  // Fetch review data for past sessions
+  const { reviewsData } = useSessionReviews(variant === 'past' ? [session.id] : []);
+  const reviewData = reviewsData.get(session.id);
 
   const isUserTutor = user?.id === session.tutor_id;
   const roleStyleClass = isUserTutor 
@@ -129,6 +134,23 @@ export const SessionItem = ({
     );
   };
 
+  const renderStarRating = (rating: number | null) => {
+    if (!rating) return null;
+    return (
+      <div className="flex items-center gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Star
+            key={star}
+            className={`h-3 w-3 ${
+              star <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
+            }`}
+          />
+        ))}
+        <span className="text-xs text-muted-foreground ml-1">({rating}/5)</span>
+      </div>
+    );
+  };
+
   return (
     <div className={`border rounded-lg p-4 hover:shadow-sm transition-shadow ${roleStyleClass}`}>
       <div className="flex flex-col space-y-4">
@@ -186,6 +208,33 @@ export const SessionItem = ({
                   </div>
                 )}
               </div>
+
+              {/* Review Data Display for Past Sessions */}
+              {variant === 'past' && reviewData && (
+                <div className="mt-3 p-3 bg-muted/30 rounded-md border">
+                  <div className="text-xs font-medium text-muted-foreground mb-2">Session Review</div>
+                  <div className="space-y-2">
+                    {reviewData.teaching_quality && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">Teaching Quality:</span>
+                        {renderStarRating(reviewData.teaching_quality)}
+                      </div>
+                    )}
+                    {reviewData.engagement_level && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">Engagement Level:</span>
+                        {renderStarRating(reviewData.engagement_level)}
+                      </div>
+                    )}
+                    {reviewData.written_feedback && (
+                      <div className="text-xs text-muted-foreground">
+                        <div className="font-medium mb-1">Feedback:</div>
+                        <div className="italic text-foreground/80">"{reviewData.written_feedback}"</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
