@@ -2,6 +2,7 @@
 import { useEffect } from "react";
 import { RouterProvider, createBrowserRouter, Outlet } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { AdminAuthProvider } from "./contexts/AdminAuthContext";
 import { SessionBookingProvider } from "./contexts/SessionBookingContext";
 import { ReviewProvider } from "./contexts/ReviewContext";
 import { GlobalReviewModal } from "./components/reviews/GlobalReviewModal";
@@ -15,7 +16,6 @@ import Index from "./pages/Index";
 import Profile from "./pages/Profile";
 import TutorDashboard from "./pages/TutorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
-import AdminLogin from "./pages/AdminLogin";
 import EmailVerification from "./pages/EmailVerification";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -25,7 +25,7 @@ import TutorProfile from "./pages/TutorProfile";
 import TutorProfilePage from "./pages/TutorProfile/TutorProfilePage";
 import NotFound from "./pages/NotFound";
 import PrivateRoute from "./components/auth/PrivateRoute";
-import { AdminGuard } from "./components/admin/AdminGuard";
+import { AdminRoute } from "./components/auth/AdminRoute";
 import { RoleGuard } from "./components/auth/RoleGuard";
 
 import Schedule from "./pages/Schedule";
@@ -103,11 +103,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/admin",
-        element: <AdminGuard><AdminDashboard /></AdminGuard>
-      },
-      {
-        path: "/admin/login",
-        element: <AdminLogin />
+        element: <AdminRoute><AdminDashboard /></AdminRoute>
       },
       {
         path: "/courses",
@@ -238,16 +234,18 @@ function App() {
 
   return (
     <>
-      <AuthProvider>
-        <ReviewProvider>
-          <SessionBookingProvider>
-            <RouterProvider router={router} />
-            <ReviewRequirement />
-            <GlobalReviewModal />
-            <Toaster />
-          </SessionBookingProvider>
-        </ReviewProvider>
-      </AuthProvider>
+      <AdminAuthProvider>
+        <AuthProvider>
+          <ReviewProvider>
+            <SessionBookingProvider>
+              <RouterProvider router={router} />
+              <ReviewRequirement />
+              <GlobalReviewModal />
+              <Toaster />
+            </SessionBookingProvider>
+          </ReviewProvider>
+        </AuthProvider>
+      </AdminAuthProvider>
     </>
   );
 }
