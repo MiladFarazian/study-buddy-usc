@@ -16,6 +16,7 @@ import Index from "./pages/Index";
 import Profile from "./pages/Profile";
 import TutorDashboard from "./pages/TutorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminLogin from "./pages/AdminLogin";
 import EmailVerification from "./pages/EmailVerification";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -25,7 +26,7 @@ import TutorProfile from "./pages/TutorProfile";
 import TutorProfilePage from "./pages/TutorProfile/TutorProfilePage";
 import NotFound from "./pages/NotFound";
 import PrivateRoute from "./components/auth/PrivateRoute";
-import { AdminRoute } from "./components/auth/AdminRoute";
+import { AdminGuard } from "./components/admin/AdminGuard";
 import { RoleGuard } from "./components/auth/RoleGuard";
 
 import Schedule from "./pages/Schedule";
@@ -103,7 +104,11 @@ const router = createBrowserRouter([
       },
       {
         path: "/admin",
-        element: <AdminRoute><AdminDashboard /></AdminRoute>
+        element: <AdminGuard><AdminDashboard /></AdminGuard>
+      },
+      {
+        path: "/admin/login",
+        element: <AdminLogin />
       },
       {
         path: "/courses",

@@ -2,79 +2,79 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { supabase } from "@/integrations/supabase/client";
 
 interface AdminAuthContextType {
-  isAdmin: boolean;
+  isAdminAuthenticated: boolean;
   adminLogin: (email: string, password: string) => Promise<boolean>;
-  adminLogout: () => void;
+  adminLogout: () => Promise<void>;
   loading: boolean;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType>({
-  isAdmin: false,
+  isAdminAuthenticated: false,
   adminLogin: async () => false,
-  adminLogout: () => {},
+  adminLogout: async () => {},
   loading: false,
 });
 
-const ADMIN_CREDENTIALS = {
-  email: "noah@studybuddyusc.com",
-  password: "StudyBuddy9!"
-};
+const ADMIN_EMAIL = "noah@studybuddyusc.com";
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const validateAdminSession = async () => {
-      const adminSession = localStorage.getItem('adminSession');
-      
-      if (adminSession === 'true') {
-        // Validate that Supabase session is still active
-        const { data: { session }, error } = await supabase.auth.getSession();
+    const checkAdminAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
         
-        if (session && !error) {
-          // Valid session exists, user is still authenticated
-          setIsAdmin(true);
-        } else {
-          // Session is invalid, clear localStorage and force re-authentication
-          console.log('Admin session expired, clearing localStorage');
-          localStorage.removeItem('adminSession');
-          setIsAdmin(false);
+        if (session?.user?.email === ADMIN_EMAIL) {
+          const adminSession = localStorage.getItem('adminSession');
+          if (adminSession === 'true') {
+            setIsAdminAuthenticated(true);
+          }
         }
+      } catch (error) {
+        console.error('Admin auth check error:', error);
+        localStorage.removeItem('adminSession');
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
     };
 
-    validateAdminSession();
+    checkAdminAuth();
   }, []);
 
   const adminLogin = async (email: string, password: string): Promise<boolean> => {
-    if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
-      // Sign in to Supabase to get proper authenticated session
-      const { error } = await supabase.auth.signInWithPassword({
+    if (email !== ADMIN_EMAIL) {
+      return false;
+    }
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
-      if (!error) {
-        setIsAdmin(true);
+      if (!error && data.user?.email === ADMIN_EMAIL) {
+        setIsAdminAuthenticated(true);
         localStorage.setItem('adminSession', 'true');
         return true;
       }
+    } catch (error) {
+      console.error('Admin login error:', error);
     }
+    
     return false;
   };
 
   const adminLogout = async () => {
-    setIsAdmin(false);
+    setIsAdminAuthenticated(false);
     localStorage.removeItem('adminSession');
     await supabase.auth.signOut();
   };
 
   return (
     <AdminAuthContext.Provider value={{
-      isAdmin,
+      isAdminAuthenticated,
       adminLogin,
       adminLogout,
       loading,
