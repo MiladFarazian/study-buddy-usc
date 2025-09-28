@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { serve } from "https://deno.land/std@0.177.1/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 
