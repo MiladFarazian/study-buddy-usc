@@ -26,31 +26,24 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const validateAdminSession = async () => {
-      try {
-        const adminSession = localStorage.getItem('adminSession');
+      const adminSession = localStorage.getItem('adminSession');
+      
+      if (adminSession === 'true') {
+        // Validate that Supabase session is still active
+        const { data: { session }, error } = await supabase.auth.getSession();
         
-        if (adminSession === 'true') {
-          // Validate that Supabase session is still active
-          const { data: { session }, error } = await supabase.auth.getSession();
-          
-          if (session && !error && session.user?.email === ADMIN_CREDENTIALS.email) {
-            // Valid session exists, user is still authenticated
-            setIsAdmin(true);
-          } else {
-            // Session is invalid, clear localStorage and force re-authentication
-            console.log('Admin session expired, clearing localStorage');
-            localStorage.removeItem('adminSession');
-            setIsAdmin(false);
-          }
+        if (session && !error) {
+          // Valid session exists, user is still authenticated
+          setIsAdmin(true);
+        } else {
+          // Session is invalid, clear localStorage and force re-authentication
+          console.log('Admin session expired, clearing localStorage');
+          localStorage.removeItem('adminSession');
+          setIsAdmin(false);
         }
-      } catch (error) {
-        console.error('Admin session validation error:', error);
-        localStorage.removeItem('adminSession');
-        setIsAdmin(false);
-      } finally {
-        // Always set loading to false to prevent infinite loading
-        setLoading(false);
       }
+      
+      setLoading(false);
     };
 
     validateAdminSession();
