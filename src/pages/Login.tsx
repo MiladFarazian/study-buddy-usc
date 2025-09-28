@@ -2,17 +2,14 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
-const ADMIN_EMAIL = "noah@studybuddyusc.com";
-
 const Login = () => {
-  const { signIn, user, loading, signOut } = useAuth();
+  const { signIn, user, loading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
   
   // Get the page user was trying to access
   const from = location.state?.from?.pathname || "/";
@@ -33,23 +30,7 @@ const Login = () => {
     }
   }, []);
 
-  // Block admin email from regular login
-  useEffect(() => {
-    if (user?.email === ADMIN_EMAIL) {
-      const blockAdminAccess = async () => {
-        await signOut();
-        toast({
-          title: "Access Restricted",
-          description: "Admin users must use the dedicated admin login",
-          variant: "destructive",
-        });
-        navigate('/admin/login');
-      };
-      blockAdminAccess();
-    }
-  }, [user, signOut, navigate]);
-
-  if (user && user.email !== ADMIN_EMAIL) {
+  if (user) {
     return <Navigate to={from} replace />;
   }
 

@@ -2,7 +2,6 @@
 import { useEffect } from "react";
 import { RouterProvider, createBrowserRouter, Outlet } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
-import { AdminAuthProvider } from "./contexts/AdminAuthContext";
 import { SessionBookingProvider } from "./contexts/SessionBookingContext";
 import { ReviewProvider } from "./contexts/ReviewContext";
 import { GlobalReviewModal } from "./components/reviews/GlobalReviewModal";
@@ -239,18 +238,16 @@ function App() {
 
   return (
     <>
-      <AdminAuthProvider>
-        <AuthProvider>
-          <ReviewProvider>
-            <SessionBookingProvider>
-              <RouterProvider router={router} />
-              <ReviewRequirement />
-              <GlobalReviewModal />
-              <Toaster />
-            </SessionBookingProvider>
-          </ReviewProvider>
-        </AuthProvider>
-      </AdminAuthProvider>
+      <AuthProvider>
+        <ReviewProvider>
+          <SessionBookingProvider>
+            <RouterProvider router={router} />
+            <ReviewRequirement />
+            <GlobalReviewModal />
+            <Toaster />
+          </SessionBookingProvider>
+        </ReviewProvider>
+      </AuthProvider>
     </>
   );
 }
