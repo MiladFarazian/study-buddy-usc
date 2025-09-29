@@ -1,8 +1,10 @@
 
 import { Loader2 } from "lucide-react";
+import { useMemo } from "react";
 import { Session } from "@/types/session";
 import { SessionItem } from "./SessionItem";
 import { EmptySessionState } from "./EmptySessionState";
+import { useSessionReviews } from "@/hooks/useSessionReviews";
 
 interface SessionListContentProps {
   sessions: Session[];
@@ -27,6 +29,13 @@ export const SessionListContent = ({
   variant,
   emptyMessage
 }: SessionListContentProps) => {
+  // Batch fetch review data for past sessions only
+  const sessionIds = useMemo(() => 
+    variant === 'past' ? sessions.map(s => s.id) : [], 
+    [sessions, variant]
+  );
+  
+  const { reviewsData } = useSessionReviews(sessionIds);
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -58,6 +67,7 @@ export const SessionListContent = ({
           calculateDuration={calculateDuration}
           variant={variant}
           onBookSession={onBookSession}
+          reviewData={reviewsData.get(session.id)}
         />
       ))}
     </div>

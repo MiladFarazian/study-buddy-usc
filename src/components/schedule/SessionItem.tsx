@@ -12,7 +12,7 @@ import { useReview } from "@/contexts/ReviewContext";
 import { Tutor } from "@/types/tutor";
 import { Profile } from "@/integrations/supabase/types-extension";
 import { supabase } from "@/integrations/supabase/client";
-import { useSessionReviews } from "@/hooks/useSessionReviews";
+import { SessionReviewData } from "@/hooks/useSessionReviews";
 
 interface SessionItemProps {
   session: Session;
@@ -22,6 +22,7 @@ interface SessionItemProps {
   calculateDuration: (startTime: string, endTime: string) => number;
   variant: 'upcoming' | 'past' | 'cancelled';
   onBookSession?: () => void;
+  reviewData?: SessionReviewData;
 }
 
 export const SessionItem = ({ 
@@ -31,17 +32,14 @@ export const SessionItem = ({
   formatSessionDate, 
   calculateDuration,
   variant,
-  onBookSession
+  onBookSession,
+  reviewData
 }: SessionItemProps) => {
   const { user, isTutor } = useAuth();
   const { startTutorReview, startStudentReview } = useReview();
   const [showCalendarDialog, setShowCalendarDialog] = useState(false);
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const [hasExistingReview, setHasExistingReview] = useState(false);
-  
-  // Fetch review data for past sessions
-  const { reviewsData } = useSessionReviews(variant === 'past' ? [session.id] : []);
-  const reviewData = reviewsData.get(session.id);
 
   const isUserTutor = user?.id === session.tutor_id;
   const roleStyleClass = isUserTutor 

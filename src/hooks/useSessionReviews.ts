@@ -12,8 +12,13 @@ export const useSessionReviews = (sessionIds: string[]) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Create stable dependency key to prevent infinite re-renders
+    const idsKey = JSON.stringify([...new Set(sessionIds)].sort());
+    
     const fetchReviews = async () => {
-      if (sessionIds.length === 0) {
+      const stableIds = JSON.parse(idsKey);
+      
+      if (stableIds.length === 0) {
         setLoading(false);
         return;
       }
@@ -22,7 +27,7 @@ export const useSessionReviews = (sessionIds: string[]) => {
         const { data, error } = await supabase
           .from('student_reviews')
           .select('session_id, teaching_quality, engagement_level, written_feedback')
-          .in('session_id', sessionIds);
+          .in('session_id', stableIds);
 
         if (error) {
           console.error('Error fetching session reviews:', error);
@@ -47,7 +52,7 @@ export const useSessionReviews = (sessionIds: string[]) => {
     };
 
     fetchReviews();
-  }, [sessionIds]);
+  }, [JSON.stringify([...new Set(sessionIds)].sort())]);
 
   return { reviewsData, loading };
 };
