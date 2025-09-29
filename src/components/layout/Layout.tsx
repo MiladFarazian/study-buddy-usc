@@ -16,7 +16,7 @@ const Layout = ({ children }: LayoutProps) => {
   const { loading } = useAuth();
   
   return (
-    <div className="flex flex-col min-h-screen max-w-full overflow-hidden">
+    <div className="flex flex-col min-h-screen max-w-full overflow-x-hidden">
       <NavBar />
       <div className="flex flex-1 w-full pt-16">
         {!isMobile && <Sidebar />}
