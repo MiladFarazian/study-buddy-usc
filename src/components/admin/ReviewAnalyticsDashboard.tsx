@@ -8,6 +8,46 @@ interface ReviewAnalyticsDashboardProps {
 }
 
 export const ReviewAnalyticsDashboard = ({ reviews, loading }: ReviewAnalyticsDashboardProps) => {
+  const calculateAverage = (data: StudentReviewWithNames[], field: keyof StudentReviewWithNames) => {
+    const validValues = data
+      .map(item => item[field])
+      .filter(value => value !== null && value !== undefined && typeof value === 'number') as number[];
+    
+    if (validValues.length === 0) return { average: 0, count: 0 };
+    
+    return {
+      average: Number((validValues.reduce((sum, val) => sum + val, 0) / validValues.length).toFixed(2)),
+      count: validValues.length
+    };
+  };
+
+  const calculateStressReduction = (data: StudentReviewWithNames[]) => {
+    const validPairs = data
+      .filter(item => item.stress_before !== null && item.stress_after !== null)
+      .map(item => (item.stress_before! - item.stress_after!));
+    
+    if (validPairs.length === 0) return { average: 0, count: 0 };
+    
+    return {
+      average: Number((validPairs.reduce((sum, val) => sum + val, 0) / validPairs.length).toFixed(2)),
+      count: validPairs.length
+    };
+  };
+
+  const calculatePercentage = (data: StudentReviewWithNames[], field: keyof StudentReviewWithNames) => {
+    const validValues = data
+      .map(item => item[field])
+      .filter(value => value !== null && value !== undefined && typeof value === 'boolean') as boolean[];
+    
+    if (validValues.length === 0) return { percentage: 0, count: 0 };
+    
+    const trueCount = validValues.filter(val => val).length;
+    return {
+      percentage: Number(((trueCount / validValues.length) * 100).toFixed(1)),
+      count: validValues.length
+    };
+  };
+
   const analytics = useMemo(() => {
     const defaultMetrics = {
       teachingQuality: { average: 0, count: 0 },
@@ -65,46 +105,6 @@ export const ReviewAnalyticsDashboard = ({ reviews, loading }: ReviewAnalyticsDa
       totalReviews: reviews.length
     };
   }, [reviews]);
-
-  const calculateAverage = (data: StudentReviewWithNames[], field: keyof StudentReviewWithNames) => {
-    const validValues = data
-      .map(item => item[field])
-      .filter(value => value !== null && value !== undefined && typeof value === 'number') as number[];
-    
-    if (validValues.length === 0) return { average: 0, count: 0 };
-    
-    return {
-      average: Number((validValues.reduce((sum, val) => sum + val, 0) / validValues.length).toFixed(2)),
-      count: validValues.length
-    };
-  };
-
-  const calculateStressReduction = (data: StudentReviewWithNames[]) => {
-    const validPairs = data
-      .filter(item => item.stress_before !== null && item.stress_after !== null)
-      .map(item => (item.stress_before! - item.stress_after!));
-    
-    if (validPairs.length === 0) return { average: 0, count: 0 };
-    
-    return {
-      average: Number((validPairs.reduce((sum, val) => sum + val, 0) / validPairs.length).toFixed(2)),
-      count: validPairs.length
-    };
-  };
-
-  const calculatePercentage = (data: StudentReviewWithNames[], field: keyof StudentReviewWithNames) => {
-    const validValues = data
-      .map(item => item[field])
-      .filter(value => value !== null && value !== undefined && typeof value === 'boolean') as boolean[];
-    
-    if (validValues.length === 0) return { percentage: 0, count: 0 };
-    
-    const trueCount = validValues.filter(val => val).length;
-    return {
-      percentage: Number(((trueCount / validValues.length) * 100).toFixed(1)),
-      count: validValues.length
-    };
-  };
 
   if (loading) {
     return (
