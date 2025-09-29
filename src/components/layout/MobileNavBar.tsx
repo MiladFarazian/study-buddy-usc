@@ -62,7 +62,7 @@ const MobileNavBar = () => {
     },
   ];
 
-  const isProfileActive = location.pathname.startsWith("/profile");
+  const isProfileActive = location.pathname.startsWith("/settings/profile");
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 md:hidden">
@@ -97,7 +97,7 @@ const MobileNavBar = () => {
         })}
         
         <Link
-          to="/profile"
+          to="/settings/profile"
           className={cn(
             "flex flex-col items-center justify-center py-2 px-3 text-xs",
             isProfileActive ? "text-usc-cardinal" : "text-gray-600"

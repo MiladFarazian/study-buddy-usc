@@ -13,7 +13,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import DevLogin from "./pages/DevLogin";
 import Index from "./pages/Index";
-import Profile from "./pages/Profile";
+
 import TutorDashboard from "./pages/TutorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import EmailVerification from "./pages/EmailVerification";
@@ -96,7 +96,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/profile",
-        element: <PrivateRoute><RoleGuard allowedRoles={['student']}><Profile /></RoleGuard></PrivateRoute>
+        element: <Navigate to="/settings/profile" replace />
       },
       {
         path: "/tutor-dashboard",

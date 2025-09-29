@@ -32,7 +32,7 @@ export const RoleGuard = ({
         navigate(redirectTo);
       } else {
         // Default redirects based on role
-        const defaultRedirect = profile.role === 'tutor' ? '/tutor-dashboard' : '/profile';
+        const defaultRedirect = profile.role === 'tutor' ? '/tutor-dashboard' : '/settings/profile';
         navigate(defaultRedirect);
       }
     }
