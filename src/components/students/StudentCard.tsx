@@ -3,8 +3,8 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, GraduationCap, Clock, UserMinus } from "lucide-react";
-import { format } from "date-fns";
+import { GraduationCap, Clock, UserMinus } from "lucide-react";
+import MessageButton from "@/components/messaging/MessageButton";
 import { Student } from "@/hooks/useTutorStudents";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { 
@@ -55,7 +55,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, onRemove }) => {
             </div>
           </div>
           
-          <div className={`grid grid-cols-${isMobile ? "1" : "2"} gap-2 md:gap-4 py-1 md:py-2`}>
+          <div className="flex flex-col gap-2 py-1 md:py-2">
             <div className="flex items-center">
               <GraduationCap className="h-4 w-4 text-gray-500 mr-2" />
               <span className="text-xs md:text-sm text-gray-500">
@@ -63,27 +63,20 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, onRemove }) => {
               </span>
             </div>
             <div className="flex items-center">
-              <Calendar className="h-4 w-4 text-gray-500 mr-2" />
+              <Clock className="h-4 w-4 text-gray-500 mr-2" />
               <span className="text-xs md:text-sm text-gray-500">
-                Joined {format(new Date(student.joined), "MMM d, yyyy")}
+                {student.sessions || 0} sessions completed
               </span>
             </div>
           </div>
           
-          <div className="flex items-center py-1">
-            <Clock className="h-4 w-4 text-gray-500 mr-2" />
-            <span className="text-xs md:text-sm text-gray-500">
-              {student.sessions || 0} sessions completed
-            </span>
-          </div>
-          
           <div className="flex gap-2 mt-1 md:mt-2">
-            <Button 
-              className="w-full bg-usc-cardinal hover:bg-usc-cardinal-dark text-sm md:text-base"
-              disabled
-            >
-              Schedule Session
-            </Button>
+            <MessageButton 
+              recipient={{ id: student.id, first_name: student.name.split(' ')[0], last_name: student.name.split(' ')[1] || '' } as any}
+              className="flex-1"
+              variant="default"
+              size={isMobile ? "sm" : "default"}
+            />
             
             <AlertDialog>
               <AlertDialogTrigger asChild>
