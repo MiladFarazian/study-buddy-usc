@@ -68,7 +68,7 @@ export const useTutorStudents = () => {
         const studentIds = Array.from(studentMap.keys());
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, first_name, last_name, major, graduation_year, avatar_url')
+          .select('id, first_name, last_name, major, graduation_year, avatar_url, email')
           .in('id', studentIds);
         
         if (profilesError) throw profilesError;
@@ -87,6 +87,7 @@ export const useTutorStudents = () => {
               major: profile.major,
               graduationYear: profile.graduation_year,
               avatarUrl: profile.avatar_url,
+              email: profile.email,
               joined: studentInfo.firstSession,
               sessions: studentInfo.count,
             };
@@ -126,7 +127,7 @@ export const useTutorStudents = () => {
       // Refresh the student list
       const { data, error: fetchError } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, major, graduation_year, avatar_url, created_at')
+        .select('id, first_name, last_name, major, graduation_year, avatar_url, email, created_at')
         .eq('id', studentId)
         .single();
         
@@ -140,6 +141,7 @@ export const useTutorStudents = () => {
         major: data.major,
         graduationYear: data.graduation_year,
         avatarUrl: data.avatar_url,
+        email: data.email,
         joined: new Date().toISOString(),
         sessions: 0,
       };

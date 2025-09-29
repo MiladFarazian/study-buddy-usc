@@ -602,6 +602,7 @@ export type Database = {
           average_rating: number | null
           bio: string | null
           created_at: string
+          email: string | null
           first_name: string | null
           graduation_year: string | null
           hourly_rate: number | null
@@ -625,6 +626,7 @@ export type Database = {
           average_rating?: number | null
           bio?: string | null
           created_at?: string
+          email?: string | null
           first_name?: string | null
           graduation_year?: string | null
           hourly_rate?: number | null
@@ -648,6 +650,7 @@ export type Database = {
           average_rating?: number | null
           bio?: string | null
           created_at?: string
+          email?: string | null
           first_name?: string | null
           graduation_year?: string | null
           hourly_rate?: number | null
