@@ -30,33 +30,25 @@ export const useTutorStudents = () => {
       try {
         setLoading(true);
         
-        // Fetch all completed sessions with student profiles
-        const { data: sessionData, error } = await supabase
+        // Step 1: Fetch all completed sessions for this tutor
+        const { data: sessionData, error: sessionError } = await supabase
           .from('sessions')
-          .select(`
-            student_id,
-            created_at,
-            profiles!sessions_student_id_fkey (
-              id,
-              first_name,
-              last_name,
-              major,
-              graduation_year,
-              avatar_url
-            )
-          `)
+          .select('student_id, created_at')
           .eq('tutor_id', user.id)
           .eq('status', 'completed')
           .order('created_at', { ascending: false });
         
-        if (error) throw error;
+        if (sessionError) throw sessionError;
+        
+        if (!sessionData || sessionData.length === 0) {
+          setStudents([]);
+          return;
+        }
         
         // Group by student and count sessions
-        const studentMap = new Map<string, { profile: any, firstSession: string, count: number }>();
+        const studentMap = new Map<string, { firstSession: string, count: number }>();
         
-        (sessionData || []).forEach(session => {
-          if (!session.profiles) return;
-          
+        sessionData.forEach(session => {
           const existing = studentMap.get(session.student_id);
           if (existing) {
             existing.count++;
@@ -66,27 +58,41 @@ export const useTutorStudents = () => {
             }
           } else {
             studentMap.set(session.student_id, {
-              profile: session.profiles,
               firstSession: session.created_at,
               count: 1
             });
           }
         });
         
-        // Transform to Student type
-        const mappedStudents: Student[] = Array.from(studentMap.values())
-          .map(({ profile, firstSession, count }) => ({
-            id: profile.id,
-            name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
-            firstName: profile.first_name,
-            lastName: profile.last_name,
-            major: profile.major,
-            graduationYear: profile.graduation_year,
-            avatarUrl: profile.avatar_url,
-            joined: firstSession,
-            sessions: count,
-          }))
-          .sort((a, b) => b.sessions - a.sessions);
+        // Step 2: Fetch profiles for all unique student IDs
+        const studentIds = Array.from(studentMap.keys());
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, major, graduation_year, avatar_url')
+          .in('id', studentIds);
+        
+        if (profilesError) throw profilesError;
+        
+        // Step 3: Combine the data
+        const mappedStudents: Student[] = (profilesData || [])
+          .map(profile => {
+            const studentInfo = studentMap.get(profile.id);
+            if (!studentInfo) return null;
+            
+            return {
+              id: profile.id,
+              name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
+              firstName: profile.first_name,
+              lastName: profile.last_name,
+              major: profile.major,
+              graduationYear: profile.graduation_year,
+              avatarUrl: profile.avatar_url,
+              joined: studentInfo.firstSession,
+              sessions: studentInfo.count,
+            };
+          })
+          .filter(student => student !== null)
+          .sort((a, b) => (b.sessions || 0) - (a.sessions || 0));
         
         setStudents(mappedStudents);
       } catch (error) {
