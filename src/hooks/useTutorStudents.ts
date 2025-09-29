@@ -54,8 +54,8 @@ export const useTutorStudents = () => {
         if (error) throw error;
         
         // Transform data into the Student type, filtering out any null profiles
-        const mappedStudents: Student[] = data
-          .filter(item => {
+        const mappedStudents: Student[] = (data || [])
+          .filter((item): item is typeof item & { profiles: NonNullable<typeof item.profiles> } => {
             if (!item.profiles) {
               console.warn('Skipping student with null profile:', item.student_id);
               return false;
