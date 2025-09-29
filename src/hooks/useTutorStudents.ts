@@ -53,6 +53,27 @@ export const useTutorStudents = () => {
         
         if (error) throw error;
         
+        // Fetch completed session counts for all students
+        const studentIds = (data || []).map(item => item.student_id);
+        const { data: sessionCounts, error: sessionError } = await supabase
+          .from('sessions')
+          .select('student_id')
+          .eq('tutor_id', user.id)
+          .eq('status', 'completed')
+          .in('student_id', studentIds);
+        
+        if (sessionError) {
+          console.error('Error fetching session counts:', sessionError);
+        }
+        
+        // Count sessions per student
+        const sessionCountMap = new Map<string, number>();
+        (sessionCounts || []).forEach(session => {
+          const count = sessionCountMap.get(session.student_id) || 0;
+          sessionCountMap.set(session.student_id, count + 1);
+        });
+        
+        
         // Transform data into the Student type, filtering out any null profiles
         const mappedStudents: Student[] = (data || [])
           .filter((item): item is typeof item & { profiles: NonNullable<typeof item.profiles> } => {
@@ -71,7 +92,7 @@ export const useTutorStudents = () => {
             graduationYear: item.profiles.graduation_year,
             avatarUrl: item.profiles.avatar_url,
             joined: item.created_at,
-            sessions: 0, // Will be implemented later
+            sessions: sessionCountMap.get(item.profiles.id) || 0,
           }));
         
         setStudents(mappedStudents);

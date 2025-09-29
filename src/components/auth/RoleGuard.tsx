@@ -20,20 +20,20 @@ export const RoleGuard = ({
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Don't redirect while still loading
     if (loading) return;
     
-    if (!profile) {
-      navigate('/login');
-      return;
-    }
+    // Don't redirect if profile is not loaded yet
+    if (!profile) return;
 
+    // Only redirect if user has wrong role
     if (!allowedRoles.includes(profile.role)) {
       if (redirectTo) {
-        navigate(redirectTo);
+        navigate(redirectTo, { replace: true });
       } else {
         // Default redirects based on role
         const defaultRedirect = profile.role === 'tutor' ? '/tutor-dashboard' : '/settings/profile';
-        navigate(defaultRedirect);
+        navigate(defaultRedirect, { replace: true });
       }
     }
   }, [profile, loading, navigate, allowedRoles, redirectTo]);
