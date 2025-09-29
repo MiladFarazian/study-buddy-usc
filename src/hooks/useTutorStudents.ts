@@ -53,18 +53,26 @@ export const useTutorStudents = () => {
         
         if (error) throw error;
         
-        // Transform data into the Student type
-        const mappedStudents: Student[] = data.map((item) => ({
-          id: item.profiles.id,
-          name: `${item.profiles.first_name || ''} ${item.profiles.last_name || ''}`.trim(),
-          firstName: item.profiles.first_name,
-          lastName: item.profiles.last_name,
-          major: item.profiles.major,
-          graduationYear: item.profiles.graduation_year,
-          avatarUrl: item.profiles.avatar_url,
-          joined: item.created_at,
-          sessions: 0, // Will be implemented later
-        }));
+        // Transform data into the Student type, filtering out any null profiles
+        const mappedStudents: Student[] = data
+          .filter(item => {
+            if (!item.profiles) {
+              console.warn('Skipping student with null profile:', item.student_id);
+              return false;
+            }
+            return true;
+          })
+          .map((item) => ({
+            id: item.profiles.id,
+            name: `${item.profiles.first_name || ''} ${item.profiles.last_name || ''}`.trim(),
+            firstName: item.profiles.first_name,
+            lastName: item.profiles.last_name,
+            major: item.profiles.major,
+            graduationYear: item.profiles.graduation_year,
+            avatarUrl: item.profiles.avatar_url,
+            joined: item.created_at,
+            sessions: 0, // Will be implemented later
+          }));
         
         setStudents(mappedStudents);
       } catch (error) {
