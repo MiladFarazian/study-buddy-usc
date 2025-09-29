@@ -162,7 +162,6 @@ export function ReviewSubmissionStep({
         });
       }
       
-      onSubmitted();
     } catch (error) {
       console.error("Error submitting review:", error);
       toast({
@@ -171,6 +170,7 @@ export function ReviewSubmissionStep({
         variant: "destructive",
       });
     } finally {
+      onSubmitted();
       setIsSubmitting(false);
     }
   };

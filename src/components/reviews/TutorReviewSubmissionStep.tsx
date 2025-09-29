@@ -156,8 +156,6 @@ export function TutorReviewSubmissionStep({
         });
       }
 
-      console.log('🔄 Calling onComplete callback...');
-      onComplete();
       
     } catch (error: any) {
       console.error('🔄 Unexpected error:', error);
@@ -167,6 +165,8 @@ export function TutorReviewSubmissionStep({
         variant: "destructive",
       });
     } finally {
+      console.log('🔄 Calling onComplete callback to close modal...');
+      onComplete();
       console.log('🔄 Setting isSubmitting to false');
       setIsSubmitting(false);
     }
