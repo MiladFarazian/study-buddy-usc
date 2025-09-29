@@ -30,70 +30,63 @@ export const useTutorStudents = () => {
       try {
         setLoading(true);
         
-        // Fetch tutor-student assignments and join with profile data
-        // Explicitly specify which profile we're referring to with profiles!student_id
-        const { data, error } = await supabase
-          .from('tutor_students')
+        // Fetch all completed sessions with student profiles
+        const { data: sessionData, error } = await supabase
+          .from('sessions')
           .select(`
-            id,
             student_id,
             created_at,
-            profiles!student_id(
+            profiles!sessions_student_id_fkey (
               id,
               first_name,
               last_name,
               major,
               graduation_year,
-              avatar_url,
-              created_at
+              avatar_url
             )
           `)
           .eq('tutor_id', user.id)
-          .eq('active', true);
+          .eq('status', 'completed')
+          .order('created_at', { ascending: false });
         
         if (error) throw error;
         
-        // Fetch completed session counts for all students
-        const studentIds = (data || []).map(item => item.student_id);
-        const { data: sessionCounts, error: sessionError } = await supabase
-          .from('sessions')
-          .select('student_id')
-          .eq('tutor_id', user.id)
-          .eq('status', 'completed')
-          .in('student_id', studentIds);
+        // Group by student and count sessions
+        const studentMap = new Map<string, { profile: any, firstSession: string, count: number }>();
         
-        if (sessionError) {
-          console.error('Error fetching session counts:', sessionError);
-        }
-        
-        // Count sessions per student
-        const sessionCountMap = new Map<string, number>();
-        (sessionCounts || []).forEach(session => {
-          const count = sessionCountMap.get(session.student_id) || 0;
-          sessionCountMap.set(session.student_id, count + 1);
+        (sessionData || []).forEach(session => {
+          if (!session.profiles) return;
+          
+          const existing = studentMap.get(session.student_id);
+          if (existing) {
+            existing.count++;
+            // Keep the earliest session date
+            if (session.created_at < existing.firstSession) {
+              existing.firstSession = session.created_at;
+            }
+          } else {
+            studentMap.set(session.student_id, {
+              profile: session.profiles,
+              firstSession: session.created_at,
+              count: 1
+            });
+          }
         });
         
-        
-        // Transform data into the Student type, filtering out any null profiles
-        const mappedStudents: Student[] = (data || [])
-          .filter((item): item is typeof item & { profiles: NonNullable<typeof item.profiles> } => {
-            if (!item.profiles) {
-              console.warn('Skipping student with null profile:', item.student_id);
-              return false;
-            }
-            return true;
-          })
-          .map((item) => ({
-            id: item.profiles.id,
-            name: `${item.profiles.first_name || ''} ${item.profiles.last_name || ''}`.trim(),
-            firstName: item.profiles.first_name,
-            lastName: item.profiles.last_name,
-            major: item.profiles.major,
-            graduationYear: item.profiles.graduation_year,
-            avatarUrl: item.profiles.avatar_url,
-            joined: item.created_at,
-            sessions: sessionCountMap.get(item.profiles.id) || 0,
-          }));
+        // Transform to Student type
+        const mappedStudents: Student[] = Array.from(studentMap.values())
+          .map(({ profile, firstSession, count }) => ({
+            id: profile.id,
+            name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
+            firstName: profile.first_name,
+            lastName: profile.last_name,
+            major: profile.major,
+            graduationYear: profile.graduation_year,
+            avatarUrl: profile.avatar_url,
+            joined: firstSession,
+            sessions: count,
+          }))
+          .sort((a, b) => b.sessions - a.sessions);
         
         setStudents(mappedStudents);
       } catch (error) {
