@@ -20,7 +20,7 @@ const Layout = ({ children }: LayoutProps) => {
       <NavBar />
       <div className="flex flex-1 w-full overflow-hidden pt-16">
         {!isMobile && <Sidebar />}
-        <main className={`flex-1 ${isMobile ? 'px-3 py-3 pb-20' : 'px-4 md:px-6 lg:px-8 py-6'} overflow-x-hidden`}>
+        <main className={`flex-1 ${isMobile ? 'px-3 py-3 pb-20' : 'px-4 md:px-6 lg:px-8 py-6'} overflow-x-hidden overflow-y-auto`}>
           <div className="max-w-full">
             {children}
           </div>
