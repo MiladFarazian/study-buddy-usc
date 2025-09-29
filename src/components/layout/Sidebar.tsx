@@ -105,7 +105,7 @@ const Sidebar = () => {
   const filteredItems = sidebarItems.filter(item => item.showWhen);
   
   return (
-    <div className="sticky top-16 h-[calc(100vh-4rem)] w-64 bg-white text-usc-cardinal border-r border-gray-200 hidden md:block overflow-y-auto">
+    <div className="min-h-screen w-64 bg-white text-usc-cardinal border-r border-gray-200 hidden md:block">
       <nav className="p-4 space-y-2">
         {isInitializing ? (
           <>
