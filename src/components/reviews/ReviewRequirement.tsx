@@ -198,12 +198,12 @@ export function ReviewRequirement() {
     );
     setPendingReviews(updatedPending);
     
+    // Close the modal (don't auto-queue next review)
+    setCurrentReview(null);
+    
     // Show post-review notification if more reviews exist
     if (updatedPending.length > 0) {
       showRemainingReviewsNotification(updatedPending.length);
-      setCurrentReview(updatedPending[0]);
-    } else {
-      setCurrentReview(null);
     }
   };
 
