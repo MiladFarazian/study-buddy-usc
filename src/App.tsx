@@ -26,6 +26,7 @@ import TutorProfilePage from "./pages/TutorProfile/TutorProfilePage";
 import NotFound from "./pages/NotFound";
 import PrivateRoute from "./components/auth/PrivateRoute";
 import { AdminRoute } from "./components/auth/AdminRoute";
+import { AdminLayout } from "./components/layout/AdminLayout";
 import { RoleGuard } from "./components/auth/RoleGuard";
 
 import Schedule from "./pages/Schedule";
@@ -103,7 +104,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/admin",
-        element: <AdminRoute><AdminDashboard /></AdminRoute>
+        element: <AdminRoute><AdminLayout><AdminDashboard /></AdminLayout></AdminRoute>
       },
       {
         path: "/courses",
