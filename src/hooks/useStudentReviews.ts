@@ -10,12 +10,27 @@ export interface StudentReviewWithNames {
   student_last_name: string | null;
   tutor_first_name: string | null;
   tutor_last_name: string | null;
+  // Student fields
   teaching_quality: number | null;
+  subject_clarity: number | null;
+  engagement_level: number | null;
   stress_before: number | null;
   stress_after: number | null;
-  tutor_showed_up: boolean;
-  student_showed_up: boolean | null;
+  confidence_improvement: number | null;
+  emotional_support: number | null;
+  learning_anxiety_reduction: number | null;
+  overall_wellbeing_impact: number | null;
+  felt_judged: boolean | null;
+  comfortable_asking_questions: string | null;
+  would_book_again: boolean | null;
   written_feedback: string | null;
+  student_showed_up: boolean | null;
+  // Tutor fields
+  came_prepared: number | null;
+  respectful: number | null;
+  motivation_effort: number | null;
+  tutor_feedback: string | null;
+  tutor_showed_up: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -30,7 +45,7 @@ export const useStudentReviews = () => {
       setLoading(true);
       setError(null);
 
-      // Use PostgREST syntax with explicit column selection
+      // Use PostgREST syntax with explicit column selection - fetch ALL fields
       const { data, error: fetchError } = await supabase
         .from('student_reviews')
         .select(`
@@ -39,11 +54,24 @@ export const useStudentReviews = () => {
           student_id,
           tutor_id,
           teaching_quality,
+          subject_clarity,
+          engagement_level,
           stress_before,
           stress_after,
-          tutor_showed_up,
-          student_showed_up,
+          confidence_improvement,
+          emotional_support,
+          learning_anxiety_reduction,
+          overall_wellbeing_impact,
+          felt_judged,
+          comfortable_asking_questions,
+          would_book_again,
           written_feedback,
+          student_showed_up,
+          came_prepared,
+          respectful,
+          motivation_effort,
+          tutor_feedback,
+          tutor_showed_up,
           created_at,
           updated_at
         `)
