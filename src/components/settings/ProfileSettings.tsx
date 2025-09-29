@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { ProfileAvatarCard } from "@/components/profile-editor/ProfileAvatarCard";
@@ -15,8 +15,19 @@ export const ProfileSettings = () => {
   const { user, profile, updateProfile } = useAuth();
   const { toast } = useToast();
   
-  // Track current profile view (can be different from actual role)
-  const [profileView, setProfileView] = useState<'student' | 'tutor'>(profile?.role || 'student');
+  // Track current profile view with localStorage persistence
+  const [profileView, setProfileView] = useState<'student' | 'tutor'>(() => {
+    const saved = localStorage.getItem('profileView');
+    if (saved === 'student' || saved === 'tutor') return saved;
+    return profile?.role || 'student';
+  });
+
+  // Sync with profile.role when it loads (for first-time users)
+  useEffect(() => {
+    if (profile?.role && !localStorage.getItem('profileView')) {
+      setProfileView(profile.role);
+    }
+  }, [profile?.role]);
   
   const tutorProfileHook = useTutorProfile(profile);
   const studentProfileHook = useStudentProfile(profile);
@@ -39,6 +50,9 @@ export const ProfileSettings = () => {
     if (!updateProfile) return;
     
     try {
+      // Save to localStorage for persistence
+      localStorage.setItem('profileView', newRole);
+      
       // Update profile view immediately for UI responsiveness
       setProfileView(newRole);
       
