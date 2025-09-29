@@ -7,7 +7,8 @@ import { Link } from "react-router-dom";
 import { Tutor } from "@/types/tutor";
 import StarRating from "./StarRating";
 import { useTutorBadges } from "@/hooks/useTutorBadges";
-import { getBadgeConfig } from "@/lib/badgeConfig";
+import { sortBadgesByRarity } from "@/lib/badgeConfig";
+import { BadgeIcon } from "@/components/ui/BadgeIcon";
 
 interface TutorCardMobileProps {
   tutor: Tutor;
@@ -39,26 +40,34 @@ const TutorCardMobile = ({ tutor, getInitials, highlightedCourses = [] }: TutorC
                 <MapPin className="h-3 w-3 text-gray-500 mr-1 flex-shrink-0" />
                 <p className="text-gray-600 text-xs truncate">USC Campus</p>
               </div>
-              <div className="flex items-center justify-between mt-1">
-                {tutor.rating > 0 && <StarRating rating={tutor.rating} />}
-                {earnedBadges.length > 0 && (
-                  <div className="flex items-center gap-1">
-                    {earnedBadges.slice(0, 2).map(badge => {
-                      const config = getBadgeConfig(badge.badge_type);
-                      return (
-                        <span key={badge.id} className="text-xs" title={config?.name}>
-                          {config?.icon}
-                        </span>
-                      );
-                    })}
-                    {earnedBadges.length > 2 && (
-                      <span className="text-xs text-gray-400">+{earnedBadges.length - 2}</span>
-                    )}
-                  </div>
+              {tutor.rating > 0 && (
+                <div className="mt-1">
+                  <StarRating rating={tutor.rating} />
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {earnedBadges.length > 0 && (
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-gray-600">Achievements</span>
+              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-1">
+                {sortBadgesByRarity(earnedBadges).slice(0, 5).map(badge => (
+                  <BadgeIcon 
+                    key={badge.id} 
+                    badgeType={badge.badge_type}
+                    size="sm"
+                    showTooltip={true}
+                  />
+                ))}
+                {earnedBadges.length > 5 && (
+                  <span className="text-xs text-gray-500 font-medium ml-1 flex-shrink-0">
+                    +{earnedBadges.length - 5}
+                  </span>
                 )}
               </div>
             </div>
-          </div>
+          )}
           
           <div className="space-y-3">
             <div className="flex items-center justify-between py-1 border-b">

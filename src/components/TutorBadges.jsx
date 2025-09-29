@@ -15,7 +15,8 @@ const TutorBadges = ({
   tutorId, 
   earnedBadges = [], 
   progressData = {}, 
-  showProgress = true 
+  showProgress = true,
+  showOnlyEarned = false
 }) => {
   // Get all badge types and organize them by status
   const allBadgeTypes = Object.keys(BADGE_CONFIG);
@@ -35,8 +36,13 @@ const TutorBadges = ({
     };
   });
 
+  // Filter badges based on showOnlyEarned prop
+  const filteredBadges = showOnlyEarned 
+    ? badges.filter(badge => badge.isEarned)
+    : badges;
+
   // Sort badges by rarity and earned status
-  const sortedBadges = badges.sort((a, b) => {
+  const sortedBadges = filteredBadges.sort((a, b) => {
     if (a.isEarned !== b.isEarned) return b.isEarned - a.isEarned;
     return sortBadges([{ type: a.type }, { type: b.type }]);
   });

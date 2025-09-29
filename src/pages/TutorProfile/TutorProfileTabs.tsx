@@ -78,16 +78,19 @@ const AboutTabContent = ({ tutor, reviews, getInitials, refreshReviews }: AboutT
       <TutorBioSection bio={tutor.bio} />
       <TutorEducationSection field={tutor.field} graduationYear={tutor.graduationYear} />
       
-      {/* Badges Section */}
-      <div>
-        <h3 className="text-lg font-semibold mb-4">Achievements</h3>
-        <TutorBadges 
-          tutorId={tutor.id}
-          earnedBadges={earnedBadges}
-          progressData={progressData}
-          showProgress={true}
-        />
-      </div>
+      {/* Badges Section - Only show earned badges for student view */}
+      {earnedBadges.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Achievements</h3>
+          <TutorBadges 
+            tutorId={tutor.id}
+            earnedBadges={earnedBadges}
+            progressData={progressData}
+            showProgress={false}
+            showOnlyEarned={true}
+          />
+        </div>
+      )}
       
       {/* Reviews Section */}
       <TutorReviewsSection 

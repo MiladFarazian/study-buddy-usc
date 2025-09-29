@@ -369,3 +369,23 @@ export const sortBadges = (badges) => {
     return configA.name.localeCompare(configB.name);
   });
 };
+
+/**
+ * Sort earned badges by rarity for display on tutor cards
+ * @param {Array} earnedBadges - Array of earned badge objects
+ * @returns {Array} Sorted array by rarity (legendary → epic → rare → common)
+ */
+export const sortBadgesByRarity = (earnedBadges) => {
+  return earnedBadges.sort((a, b) => {
+    const configA = getBadgeConfig(a.badge_type || a.type);
+    const configB = getBadgeConfig(b.badge_type || b.type);
+    
+    if (!configA || !configB) return 0;
+    
+    const rarityA = BADGE_RARITIES[configA.rarity]?.weight || 0;
+    const rarityB = BADGE_RARITIES[configB.rarity]?.weight || 0;
+    
+    // Sort by rarity weight descending (legendary = 4, epic = 3, rare = 2, common = 1)
+    return rarityB - rarityA;
+  });
+};
