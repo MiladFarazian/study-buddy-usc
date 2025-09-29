@@ -27,14 +27,15 @@ const retryStripeOperation = async <T>(
       return result;
     } catch (error) {
       const isLastAttempt = attempt === maxRetries - 1;
-      const isRetryableError = error.type === 'StripeConnectionError' || 
-                              error.code === 'rate_limit' ||
-                              (error.message && error.message.includes('runMicrotasks'));
+      const err = error as any;
+      const isRetryableError = err.type === 'StripeConnectionError' || 
+                              err.code === 'rate_limit' ||
+                              (err.message && err.message.includes('runMicrotasks'));
       
       console.log(`${operationName} attempt ${attempt + 1} failed:`, {
-        error: error.message,
-        type: error.type,
-        code: error.code,
+        error: err.message,
+        type: err.type,
+        code: err.code,
         retryable: isRetryableError,
         isLastAttempt
       });
@@ -90,7 +91,7 @@ serve(async (req) => {
   Deno.env.get = function(key) {
     const value = originalGet.call(this, key);
     if (key === 'STRIPE_CONNECT_SECRET_KEY') {
-      const stack = new Error().stack.split('\n')[2];
+      const stack = new Error().stack?.split('\n')[2] || 'unknown';
       console.log(`SECRET_ACCESS_TRACE: ${key} = ${value ? 'EXISTS' : 'MISSING'} called from: ${stack}`);
     }
     return value;
@@ -106,16 +107,17 @@ serve(async (req) => {
   console.log(`SECRET_TRACKING: ${timestamp} | exists: ${secretExists} | length: ${secretLength}`);
 
   // Track function instance lifecycle
-  if (!globalThis.functionInstanceId) {
-    globalThis.functionInstanceId = Math.random().toString(36);
-    globalThis.functionStartTime = Date.now();
-    globalThis.secretFirstSeen = timestamp;
+  const global = globalThis as any;
+  if (!global.functionInstanceId) {
+    global.functionInstanceId = Math.random().toString(36);
+    global.functionStartTime = Date.now();
+    global.secretFirstSeen = timestamp;
     console.log(`SECRET_LIFECYCLE: First access at ${timestamp}`);
   }
 
-  const timeSinceFirst = new Date() - new Date(globalThis.secretFirstSeen);
+  const timeSinceFirst = new Date().getTime() - new Date(global.secretFirstSeen).getTime();
   console.log(`SECRET_LIFECYCLE: ${Math.round(timeSinceFirst / 60000)} minutes since first access`);
-  console.log(`INSTANCE_TRACKING: ID=${globalThis.functionInstanceId} | uptime=${Date.now() - globalThis.functionStartTime}ms`);
+  console.log(`INSTANCE_TRACKING: ID=${global.functionInstanceId} | uptime=${Date.now() - global.functionStartTime}ms`);
 
   // Log all STRIPE environment variables
   const allEnvKeys = Object.keys(Deno.env.toObject());
@@ -125,15 +127,16 @@ serve(async (req) => {
   
   // === ENVIRONMENT STABILITY MONITORING START ===
   // Track environment variable stability over multiple function calls
-  if (!globalThis.envStabilityTracker) {
-    globalThis.envStabilityTracker = {
+  const global2 = globalThis as any;
+  if (!global2.envStabilityTracker) {
+    global2.envStabilityTracker = {
       functionInstanceId: Math.random().toString(36).substring(7),
       functionStartTime: Date.now(),
       secretAccessLog: [],
       environmentSnapshots: []
     };
     console.log('🔍 ENV_STABILITY: Initialized tracker', {
-      instanceId: globalThis.envStabilityTracker.functionInstanceId
+      instanceId: global2.envStabilityTracker.functionInstanceId
     });
   }
   
@@ -141,7 +144,7 @@ serve(async (req) => {
   const currentTime = Date.now();
   const envSnapshot = {
     timestamp: currentTime,
-    uptimeMs: currentTime - globalThis.envStabilityTracker.functionStartTime,
+    uptimeMs: currentTime - global2.envStabilityTracker.functionStartTime,
     stripeSecrets: {
       STRIPE_CONNECT_SECRET_KEY: !!Deno.env.get('STRIPE_CONNECT_SECRET_KEY'),
       STRIPE_CONNECT_LIVE_SECRET_KEY: !!Deno.env.get('STRIPE_CONNECT_LIVE_SECRET_KEY'),
@@ -151,32 +154,32 @@ serve(async (req) => {
     }
   };
   
-  globalThis.envStabilityTracker.environmentSnapshots.push(envSnapshot);
+  global2.envStabilityTracker.environmentSnapshots.push(envSnapshot);
   
   // Keep only last 50 snapshots to prevent memory issues
-  if (globalThis.envStabilityTracker.environmentSnapshots.length > 50) {
-    globalThis.envStabilityTracker.environmentSnapshots = 
-      globalThis.envStabilityTracker.environmentSnapshots.slice(-50);
+  if (global2.envStabilityTracker.environmentSnapshots.length > 50) {
+    global2.envStabilityTracker.environmentSnapshots = 
+      global2.envStabilityTracker.environmentSnapshots.slice(-50);
   }
   
   // Log stability analysis
   const uptimeMinutes = Math.round(envSnapshot.uptimeMs / 60000);
   console.log('🔍 ENV_STABILITY:', {
     uptimeMinutes,
-    snapshotCount: globalThis.envStabilityTracker.environmentSnapshots.length,
+    snapshotCount: global2.envStabilityTracker.environmentSnapshots.length,
     currentSecretState: envSnapshot.stripeSecrets,
     criticalMissing: !envSnapshot.stripeSecrets.STRIPE_CONNECT_SECRET_KEY
   });
   
   // Check for degradation patterns
-  if (globalThis.envStabilityTracker.environmentSnapshots.length > 1) {
-    const previousSnapshot = globalThis.envStabilityTracker.environmentSnapshots[
-      globalThis.envStabilityTracker.environmentSnapshots.length - 2
+  if (global2.envStabilityTracker.environmentSnapshots.length > 1) {
+    const previousSnapshot = global2.envStabilityTracker.environmentSnapshots[
+      global2.envStabilityTracker.environmentSnapshots.length - 2
     ];
     
     Object.keys(envSnapshot.stripeSecrets).forEach(secretName => {
-      const wasAvailable = previousSnapshot.stripeSecrets[secretName];
-      const isAvailable = envSnapshot.stripeSecrets[secretName];
+      const wasAvailable = (previousSnapshot.stripeSecrets as any)[secretName];
+      const isAvailable = (envSnapshot.stripeSecrets as any)[secretName];
       
       if (wasAvailable && !isAvailable) {
         console.error('🚨 SECRET_DEGRADATION:', {
@@ -339,21 +342,22 @@ serve(async (req) => {
         'stripe.accounts.retrieve'
       );
       
+      const acc = account as any;
       console.log("Account retrieved successfully:", {
-        details_submitted: account.details_submitted,
-        charges_enabled: account.charges_enabled,
-        payouts_enabled: account.payouts_enabled
+        details_submitted: acc.details_submitted,
+        charges_enabled: acc.charges_enabled,
+        payouts_enabled: acc.payouts_enabled
       });
       
       // Sanity check mode vs account livemode
-      if (mode === 'test' && account.livemode) {
+      if (mode === 'test' && acc.livemode) {
         throw new Error('Misconfig: test mode with a live connect account id');
       }
-      if (mode === 'live' && !account.livemode) {
+      if (mode === 'live' && !acc.livemode) {
         throw new Error('Misconfig: live mode with a test connect account id');
       }
       
-      const onboardingComplete = account.details_submitted && account.payouts_enabled;
+      const onboardingComplete = acc.details_submitted && acc.payouts_enabled;
       
       // Update onboarding status in the profile if needed
       if (onboardingComplete !== profile[onboardingCompleteField]) {
@@ -370,9 +374,9 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         has_account: true,
         account_id: profile[connectIdField],
-        details_submitted: account.details_submitted,
-        charges_enabled: account.charges_enabled,
-        payouts_enabled: account.payouts_enabled,
+        details_submitted: acc.details_submitted,
+        charges_enabled: acc.charges_enabled,
+        payouts_enabled: acc.payouts_enabled,
         needs_onboarding: !onboardingComplete,
         environment: mode
       }), {
@@ -381,13 +385,14 @@ serve(async (req) => {
       });
     } catch (stripeError) {
       console.error("Error retrieving Stripe account after retries:", stripeError);
+      const strErr = stripeError as any;
       
       // Handle rate limiting specifically
-      if (stripeError.code === 'rate_limit') {
+      if (strErr.code === 'rate_limit') {
         return new Response(JSON.stringify({ 
           error: 'Rate limited by Stripe', 
           details: 'Too many requests, please try again later',
-          retry_after: stripeError.headers?.['retry-after'] || 60
+          retry_after: strErr.headers?.['retry-after'] || 60
         }), {
           status: 429,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -395,7 +400,7 @@ serve(async (req) => {
       }
       
       // If the account doesn't exist or was deleted
-      if (stripeError.code === 'resource_missing') {
+      if (strErr.code === 'resource_missing') {
         console.log(`Stripe account no longer exists in ${mode} mode, resetting profile`);
         // Reset the Connect ID in the profile for this mode
         const resetFields: any = { updated_at: new Date().toISOString() };
@@ -420,7 +425,7 @@ serve(async (req) => {
       }
       
       // Handle authentication/permission errors
-      if (stripeError.type === 'StripePermissionError' || stripeError.type === 'StripeAuthenticationError') {
+      if (strErr.type === 'StripePermissionError' || strErr.type === 'StripeAuthenticationError') {
         return new Response(JSON.stringify({ 
           error: 'Stripe authentication error', 
           details: 'Invalid Stripe credentials configuration'
@@ -431,7 +436,7 @@ serve(async (req) => {
       }
       
       // Handle connection errors that might be temporary
-      if (stripeError.type === 'StripeConnectionError') {
+      if (strErr.type === 'StripeConnectionError') {
         return new Response(JSON.stringify({ 
           error: 'Stripe connection error', 
           details: 'Temporary connection issue, please try again'
@@ -444,8 +449,8 @@ serve(async (req) => {
       // For other Stripe errors
       return new Response(JSON.stringify({ 
         error: 'Error retrieving Stripe account', 
-        details: stripeError.message,
-        type: stripeError.type || 'unknown'
+        details: strErr.message,
+        type: strErr.type || 'unknown'
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -453,9 +458,10 @@ serve(async (req) => {
     }
   } catch (error) {
     console.error('Unexpected error in check-connect-account:', error);
+    const err2 = error as any;
     return new Response(JSON.stringify({ 
       error: 'Unexpected error checking Connect account',
-      details: error.message
+      details: err2.message
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
