@@ -192,7 +192,7 @@ async function runAllChecks(tutorId, progress) {
   if (checkSuccessChampion(progress)) results.add('student_success_champion');
 
   // Streak & response
-  if (checkStreakBadge(progress)) results.add('weekly_tutoring_streak');
+  if (checkStreakBadge(progress)) results.add('weekly_streak');
   if (checkQuickResponder(progress)) results.add('quick_responder');
 
   // Verification

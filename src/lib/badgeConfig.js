@@ -16,7 +16,7 @@ export const BADGE_CONFIG = {
     rarity: "legendary"
   },
 
-  weekly_tutoring_streak: {
+  weekly_streak: {
     name: "Weekly tutoring streak (2 week streak)",
     description: "Completed sessions for 2+ consecutive weeks",
     icon: "🔥",
