@@ -187,7 +187,7 @@ const ProgressIndicator = ({ badgeType, progress, config }) => {
     );
   }
 
-  if (badgeType === 'weekly_tutoring_streak') {
+  if (badgeType === 'weekly_streak') {
     return (
       <div className="space-y-1">
         <div className="flex items-center justify-center text-xs text-muted-foreground">
@@ -235,7 +235,7 @@ const DetailedProgress = ({ badgeType, progress }) => {
     return `Current rating: ${progress.current?.toFixed(1)} stars (need ${progress.target})`;
   }
   
-  if (badgeType === 'weekly_tutoring_streak') {
+  if (badgeType === 'weekly_streak') {
     return `Current streak: ${progress.current} weeks (need ${progress.target})`;
   }
   

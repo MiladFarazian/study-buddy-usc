@@ -71,7 +71,7 @@ export function BadgeProgressOverview({ earnedBadges, progressData }: BadgeProgr
     { name: 'Session Milestones', badges: ['over_50_sessions', 'over_100_sessions'] },
     { name: 'Performance', badges: ['top_rated', 'superstar'] },
     { name: 'Student Success', badges: ['student_success_champion'] },
-    { name: 'Consistency', badges: ['weekly_tutoring_streak'] },
+    { name: 'Consistency', badges: ['weekly_streak'] },
     { name: 'Responsiveness', badges: ['quick_responder'] },
     { name: 'Special', badges: ['founding_tutor'] }
   ];
