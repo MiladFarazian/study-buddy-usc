@@ -48,13 +48,14 @@ serve(async (req) => {
   console.log('🔍 MISSING_TARGET_VAR:', !stripeKeys.includes('STRIPE_CONNECT_SECRET_KEY'));
   
   // Track function instance for debugging
-  if (!globalThis.createConnectDebugId) {
-    globalThis.createConnectDebugId = Math.random().toString(36).substring(7);
-    globalThis.createConnectStartTime = Date.now();
-    console.log('🔍 CREATE_CONNECT_INSTANCE:', globalThis.createConnectDebugId);
+  const global3 = globalThis as any;
+  if (!global3.createConnectDebugId) {
+    global3.createConnectDebugId = Math.random().toString(36).substring(7);
+    global3.createConnectStartTime = Date.now();
+    console.log('🔍 CREATE_CONNECT_INSTANCE:', global3.createConnectDebugId);
   }
   
-  const uptimeMs = Date.now() - globalThis.createConnectStartTime;
+  const uptimeMs = Date.now() - global3.createConnectStartTime;
   console.log('🔍 FUNCTION_UPTIME:', Math.round(uptimeMs / 60000) + ' minutes');
   // === STRIPE_CONNECT_SECRET_KEY INVESTIGATION END ===
   
@@ -203,8 +204,9 @@ serve(async (req) => {
             throw new Error('Misconfig: live mode with a test connect account id');
           }
         } catch (retrieveError) {
+          const retErr = retrieveError as any;
           // If the account doesn't exist anymore, we'll create a new one
-          if (retrieveError.code === 'resource_missing') {
+          if (retErr.code === 'resource_missing') {
             console.log("Stripe account no longer exists, will create a new one");
             throw new Error('Account needs recreation');
           }
@@ -317,10 +319,11 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   } catch (error) {
+    const err = error as any;
     console.error('Error creating Connect account:', error);
     return new Response(JSON.stringify({ 
       error: 'Error creating Connect account', 
-      details: error.message 
+      details: err.message
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

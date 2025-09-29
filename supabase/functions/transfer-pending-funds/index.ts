@@ -210,10 +210,11 @@ serve(async (req) => {
           environment: mode
         });
       } catch (error) {
+        const err = error as any;
         console.error(`Error processing transfer ${transfer.id}:`, error);
         results.push({
           pendingTransferId: transfer.id,
-          error: error.message,
+          error: err.message,
           status: 'failed',
           environment: mode
         });
@@ -230,8 +231,9 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   } catch (error) {
+    const err = error as any;
     console.error('Error processing transfers:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });

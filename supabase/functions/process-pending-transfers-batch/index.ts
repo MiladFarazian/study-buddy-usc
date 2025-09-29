@@ -146,12 +146,12 @@ async function processTransferBatch(
         amount: transferAmountCents,
         currency: 'usd',
         destination: tutorProfile.stripe_connect_id,
-        transfer_group: transfer.transfer_group || `session_${transfer.session_id}`,
+        transfer_group: (transfer as any).transfer_group || `session_${transfer.session_id}`,
         metadata: {
           session_id: transfer.session_id,
           tutor_id: transfer.tutor_id,
           student_id: transfer.student_id,
-          payment_transaction_id: transfer.payment_transaction_id,
+          payment_transaction_id: (transfer as any).payment_transaction_id,
           pending_transfer_id: transfer.id,
           environment: mode
         },
@@ -309,7 +309,7 @@ async function sendAdminNotifications(supabase: any): Promise<number> {
     console.log(`[TRANSFER-PROCESSOR] Found ${failedTransfers.length} failed transfers, sending admin notification`);
     
     // Prepare notification email content
-    const transferDetails = failedTransfers.map(t => 
+    const transferDetails = failedTransfers.map((t: any) => 
       `Transfer ID: ${t.id}\nTutor ID: ${t.tutor_id}\nAmount: ${t.amount}¢\nRetry Count: ${t.retry_count}\nLast Retry: ${t.last_retry_at}\n`
     ).join('\n---\n');
     
@@ -342,7 +342,7 @@ async function sendAdminNotifications(supabase: any): Promise<number> {
     const { error: updateError } = await supabase
       .from('pending_transfers')
       .update({ status: 'failed_permanent' })
-      .in('id', failedTransfers.map(t => t.id));
+      .in('id', failedTransfers.map((t: any) => t.id));
     
     if (updateError) {
       console.error('[TRANSFER-PROCESSOR] Error updating failed transfer status:', updateError);

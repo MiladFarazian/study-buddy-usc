@@ -78,7 +78,8 @@ serve(async (req) => {
       await updateBadgeProgress(supabaseAdmin, session);
       logStep('Badge progress updated successfully');
     } catch (badgeError) {
-      logStep('ERROR: Badge progress update failed', { error: badgeError.message });
+      const err = badgeError as any;
+      logStep('ERROR: Badge progress update failed', { error: err.message });
       // Continue execution - don't fail the entire function
     }
 
@@ -87,7 +88,8 @@ serve(async (req) => {
       await awardBadges(supabaseAdmin, session.tutor_id);
       logStep('Badge awarding completed successfully');
     } catch (badgeError) {
-      logStep('ERROR: Badge awarding failed', { error: badgeError.message });
+      const err = badgeError as any;
+      logStep('ERROR: Badge awarding failed', { error: err.message });
       // Continue execution - don't fail the entire function
     }
 
@@ -101,11 +103,12 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    logStep('ERROR: Badge processing failed', { error: error.message });
+    const err = error as any;
+    logStep('ERROR: Badge processing failed', { error: err.message });
     console.error('Error processing badges:', error);
     return new Response(JSON.stringify({ 
       error: 'Badge processing failed',
-      details: error.message,
+      details: err.message,
       badgesProcessed: false
     }), {
       status: 500,
@@ -211,7 +214,8 @@ async function awardBadges(supabaseAdmin: any, tutorId: string) {
 
     logStep('Badges awarded successfully for tutor', { tutorId });
   } catch (error) {
-    logStep('ERROR: Exception during badge awarding', { error: error.message });
+    const err = error as any;
+    logStep('ERROR: Exception during badge awarding', { error: err.message });
     throw error;
   }
 }

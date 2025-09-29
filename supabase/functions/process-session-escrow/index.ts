@@ -162,9 +162,10 @@ serve(async (req) => {
       });
     }
   } catch (error) {
-    logStep('ERROR: Escrow processing failed', { error: error.message });
+    const err = error as any;
+    logStep('ERROR: Escrow processing failed', { error: err.message });
     console.error('Error processing escrow:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
@@ -245,8 +246,9 @@ async function processPayment(supabaseAdmin: any, sessionId: string, paymentData
         logStep('Badge processing completed successfully', badgeResult);
       }
     } catch (badgeException) {
+      const err = badgeException as any;
       logStep('WARNING: Badge processing threw exception but payment completed', { 
-        error: badgeException.message 
+        error: err.message
       });
     }
     

@@ -210,11 +210,12 @@ serve(async (req) => {
     });
     
   } catch (error) {
+    const err = error as any;
     console.error('💥 DIAGNOSTICS_ERROR:', error);
     
     return new Response(JSON.stringify({ 
       error: 'Diagnostics failed',
-      details: error.message,
+      details: err.message,
       timestamp: new Date().toISOString()
     }), {
       status: 500,

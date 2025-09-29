@@ -165,10 +165,11 @@ serve(async (req) => {
       });
 
     } catch (stripeError) {
+      const strErr = stripeError as any;
       console.error("Error creating login link:", stripeError);
       
       // Handle account not found
-      if (stripeError.code === 'resource_missing') {
+      if (strErr.code === 'resource_missing') {
         return new Response(JSON.stringify({ 
           error: 'Stripe account no longer exists',
           details: 'Please set up your Stripe Connect account again'
@@ -179,7 +180,7 @@ serve(async (req) => {
       }
       
       // Handle authentication/permission errors
-      if (stripeError.type === 'StripePermissionError' || stripeError.type === 'StripeAuthenticationError') {
+      if (strErr.type === 'StripePermissionError' || strErr.type === 'StripeAuthenticationError') {
         return new Response(JSON.stringify({ 
           error: 'Stripe authentication error', 
           details: 'Invalid Stripe credentials configuration'
@@ -192,18 +193,19 @@ serve(async (req) => {
       // For other Stripe errors
       return new Response(JSON.stringify({ 
         error: 'Error creating dashboard link', 
-        details: stripeError.message,
-        type: stripeError.type || 'unknown'
+        details: strErr.message,
+        type: strErr.type || 'unknown'
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
   } catch (error) {
+    const err = error as any;
     console.error('Unexpected error in create-tutor-dashboard-link:', error);
     return new Response(JSON.stringify({ 
       error: 'Unexpected error creating dashboard link',
-      details: error.message
+      details: err.message
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

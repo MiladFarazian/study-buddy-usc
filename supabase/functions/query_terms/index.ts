@@ -91,10 +91,11 @@ serve(async (req) => {
     );
     
   } catch (error) {
+    const err = error as any;
     console.error('Error:', error);
     
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: err.message }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }

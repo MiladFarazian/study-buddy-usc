@@ -197,11 +197,12 @@ serve(async (req) => {
     });
 
   } catch (error) {
+    const err = error as any;
     console.error('💥 MONITOR_ERROR:', error);
     
     return new Response(JSON.stringify({
       error: 'Monitoring failed',
-      details: error.message,
+      details: err.message,
       timestamp: new Date().toISOString()
     }), {
       status: 500,

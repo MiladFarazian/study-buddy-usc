@@ -124,13 +124,14 @@ serve(async (req) => {
           });
         }
       } catch (stripeError) {
+        const strErr = stripeError as any;
         console.error(`Stripe error for transaction ${transaction.id}:`, stripeError);
         errorCount++;
         results.push({
           transactionId: transaction.id,
           paymentIntentId: transaction.stripe_payment_intent_id,
           success: false,
-          error: stripeError.message
+          error: strErr.message
         });
       }
     }
@@ -153,11 +154,12 @@ serve(async (req) => {
     );
 
   } catch (error) {
+    const err = error as any;
     console.error('Migration error:', error);
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message,
+        error: err.message,
         message: 'Failed to migrate customer IDs'
       }),
       {

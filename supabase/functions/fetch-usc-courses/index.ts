@@ -35,16 +35,16 @@ const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // milliseconds
 
 // Helper function to retry fetches
-async function fetchWithRetry(url: string, options = {}, maxRetries = MAX_RETRIES): Promise<Response> {
+async function fetchWithRetry(url: string, options: any = {}, maxRetries = MAX_RETRIES): Promise<Response> {
   let lastError;
   
   for (let i = 0; i < maxRetries; i++) {
     try {
       console.log(`Attempt ${i+1}: Fetching ${url}`);
       const response = await fetch(url, {
-        ...options,
+        ...(options || {}),
         headers: {
-          ...options?.headers,
+          ...(options?.headers || {}),
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
       });
@@ -64,8 +64,9 @@ async function fetchWithRetry(url: string, options = {}, maxRetries = MAX_RETRIE
       lastError = new Error(`Request failed with status ${response.status}`);
       console.log(`Error fetching ${url}: ${response.status}. Retrying...`);
     } catch (error) {
+      const err = error as any;
       lastError = error;
-      console.log(`Exception fetching ${url}: ${error.message}. Retrying...`);
+      console.log(`Exception fetching ${url}: ${err.message}. Retrying...`);
     }
     
     // Wait before retrying

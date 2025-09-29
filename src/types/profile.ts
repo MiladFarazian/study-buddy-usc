@@ -3,6 +3,7 @@ export interface Profile {
   id: string;
   first_name?: string | null;
   last_name?: string | null;
+  email?: string | null;
   major?: string | null;
   graduation_year?: string | null;
   avatar_url?: string | null;

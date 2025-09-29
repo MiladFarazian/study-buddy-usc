@@ -111,10 +111,11 @@ serve(async (req) => {
     });
 
   } catch (error) {
+    const err = error as any;
     console.error('Stripe diagnostics error:', error);
     return new Response(JSON.stringify({ 
       error: 'Diagnostics failed',
-      details: error.message 
+      details: err.message
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

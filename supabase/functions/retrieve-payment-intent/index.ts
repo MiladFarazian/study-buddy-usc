@@ -109,15 +109,16 @@ serve(async (req) => {
         }
       );
     } catch (stripeError) {
+      const strErr = stripeError as any;
       console.error('Stripe API error:', stripeError);
       
       // Handle rate limiting errors specially
-      if (stripeError.code === 'rate_limit') {
+      if (strErr.code === 'rate_limit') {
         return new Response(
           JSON.stringify({ 
             error: 'Stripe rate limit exceeded. Please try again in a moment.',
             code: 'rate_limited',
-            details: stripeError.message
+            details: strErr.message
           }),
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -129,7 +130,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           error: 'Stripe API error. Please check your Stripe configuration and try again.',
-          details: stripeError.message
+          details: strErr.message
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -138,9 +139,10 @@ serve(async (req) => {
       );
     }
   } catch (error) {
+    const err = error as any;
     console.error('Error processing request:', error);
     return new Response(
-      JSON.stringify({ error: error.message || 'Failed to retrieve payment intent' }),
+      JSON.stringify({ error: err.message || 'Failed to retrieve payment intent' }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,

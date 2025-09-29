@@ -85,12 +85,13 @@ serve(async (req) => {
       }
     );
   } catch (error) {
+    const err = error as any;
     console.error("Error in get-stripe-config:", error);
     return new Response(
       JSON.stringify({ 
         error: 'Failed to retrieve Stripe configuration',
         code: 'server_error',
-        details: error.message
+        details: err.message
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

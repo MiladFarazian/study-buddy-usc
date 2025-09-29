@@ -222,7 +222,8 @@ serve(async (req) => {
     });
 
   } catch (error) {
+    const err = error as any;
     console.error('Webhook error:', error);
-    return new Response(`Webhook Error: ${error.message}`, { status: 500 });
+    return new Response(`Webhook Error: ${err.message}`, { status: 500 });
   }
 });

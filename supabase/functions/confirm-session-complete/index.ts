@@ -172,7 +172,8 @@ serve(async (req) => {
           logStep('Escrow processing completed successfully', escrowResult);
         }
       } catch (error) {
-        logStep('ERROR: Exception calling escrow function', { error: error.message });
+        const err = error as any;
+        logStep('ERROR: Exception calling escrow function', { error: err.message });
         // Don't fail the entire confirmation process
       }
     } else {
@@ -197,9 +198,10 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    logStep('ERROR: Function failed', { error: error.message });
+    const err = error as any;
+    logStep('ERROR: Function failed', { error: err.message });
     console.error('Error confirming session:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });

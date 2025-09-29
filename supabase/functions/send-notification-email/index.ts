@@ -208,7 +208,7 @@ serve(async (req) => {
       to: [toEmail],
       subject,
       html: htmlContent,
-      reply_to: REPLY_TO,
+      replyTo: REPLY_TO,
     });
 
     if (sendError) {
@@ -224,11 +224,12 @@ serve(async (req) => {
           to: [toEmail],
           subject,
           html: htmlContent,
-          reply_to: REPLY_TO,
+          replyTo: REPLY_TO,
         });
         if (retry.error) {
+          const retryErr = retry.error as any;
           console.error("[send-notification-email] Fallback send failed", { from: fallbackFrom, error: retry.error });
-          throw new Error(retry.error.error || retry.error.message || "Email send failed");
+          throw new Error(retryErr.error || retryErr.message || "Email send failed");
         }
         console.log("[send-notification-email] Email sent with fallback domain", { id: retry.data?.id, from: fallbackFrom });
         return new Response(JSON.stringify({ success: true, id: retry.data?.id, from: fallbackFrom }), {
@@ -257,12 +258,13 @@ serve(async (req) => {
       },
     });
   } catch (error) {
+    const err = error as any;
     console.error("Error sending notification email:", error);
     
     return new Response(
       JSON.stringify({ 
         success: false,
-        error: error.message || "An unknown error occurred" 
+        error: err.message || "An unknown error occurred"
       }),
       {
         status: 500,

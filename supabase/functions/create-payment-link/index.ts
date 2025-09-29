@@ -130,8 +130,9 @@ serve(async (req) => {
     });
 
   } catch (error) {
+    const err = error as any;
     console.error('Error creating payment link:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });

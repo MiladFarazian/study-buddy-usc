@@ -152,14 +152,15 @@ serve(async (req) => {
             zoomMeetingId: session.zoom_meeting_id,
             zoomPassword: session.zoom_password
           }),
-          reply_to: REPLY_TO,
+          replyTo: REPLY_TO,
         });
 
         console.log("Tutor email sent successfully:", tutorEmailResponse);
-        results.push({ recipient: 'tutor', id: tutorEmailResponse.id });
+        results.push({ recipient: 'tutor', id: (tutorEmailResponse as any).id });
       } catch (error) {
+        const err = error as any;
         console.error("Error sending tutor email:", error);
-        results.push({ recipient: 'tutor', error: error.message || 'Unknown error' });
+        results.push({ recipient: 'tutor', error: err.message || 'Unknown error' });
       }
     } else {
       console.log("Tutor has disabled session notifications");
@@ -189,14 +190,15 @@ serve(async (req) => {
             zoomMeetingId: session.zoom_meeting_id,
             zoomPassword: session.zoom_password
           }),
-          reply_to: REPLY_TO,
+          replyTo: REPLY_TO,
         });
 
         console.log("Student email sent successfully:", studentEmailResponse);
-        results.push({ recipient: 'student', id: studentEmailResponse.id });
+        results.push({ recipient: 'student', id: (studentEmailResponse as any).id });
       } catch (error) {
+        const err = error as any;
         console.error("Error sending student email:", error);
-        results.push({ recipient: 'student', error: error.message || 'Unknown error' });
+        results.push({ recipient: 'student', error: err.message || 'Unknown error' });
       }
     } else {
       console.log("Student has disabled session notifications");
@@ -214,11 +216,12 @@ serve(async (req) => {
       },
     });
   } catch (error) {
+    const err = error as any;
     console.error("Error sending emails:", error);
     return new Response(
       JSON.stringify({ 
         success: false,
-        error: error.message || "An unknown error occurred" 
+        error: err.message || "An unknown error occurred"
       }),
       {
         status: 500,
