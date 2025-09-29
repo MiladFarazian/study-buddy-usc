@@ -41,7 +41,7 @@ const TutorDashboard = () => {
       await removeCourseFromProfile(user.id, courseNumber);
       toast({ title: "Course removed", description: `${courseNumber} has been removed from your profile` });
       if (profile && updateProfile) {
-        updateProfile({ ...profile, subjects: (profile.subjects || []).filter((s: string) => s !== courseNumber) });
+        updateProfile({ ...profile, tutor_courses_subjects: (profile.tutor_courses_subjects || []).filter((s: string) => s !== courseNumber) });
       }
     } catch (error) {
       console.error("Failed to remove course:", error);
@@ -101,9 +101,9 @@ const TutorDashboard = () => {
               <CardTitle className="text-lg">My Courses</CardTitle>
             </CardHeader>
             <CardContent>
-              {profile?.subjects && profile.subjects.length > 0 ? (
+              {profile?.tutor_courses_subjects && profile.tutor_courses_subjects.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
-                  {profile.subjects.map((course) => (
+                  {profile.tutor_courses_subjects.map((course) => (
                     <div key={course} className="relative inline-flex">
                       <Badge variant="secondary" className="pr-8 py-2">
                         {course}

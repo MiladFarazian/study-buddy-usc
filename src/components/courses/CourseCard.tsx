@@ -24,8 +24,12 @@ const CourseCard = ({ course }: CourseCardProps) => {
   const { toast } = useToast();
   const [isAdding, setIsAdding] = useState(false);
   const [isAdded, setIsAdded] = useState(() => {
-    if (!profile?.subjects) return false;
-    return profile.subjects.includes(course.course_number);
+    if (!profile) return false;
+    if (profile.role === 'tutor') {
+      return profile.tutor_courses_subjects?.includes(course.course_number) || false;
+    } else {
+      return profile.student_courses?.includes(course.course_number) || false;
+    }
   });
   
   // Get the course number and title
