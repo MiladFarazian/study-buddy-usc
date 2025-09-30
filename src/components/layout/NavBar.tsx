@@ -11,9 +11,13 @@ import { NotificationsDropdown } from "@/components/notifications/NotificationsD
 
 const NavBar = () => {
   let user = null;
+  let isStudent = false;
+  let isTutor = false;
   try {
     const auth = useAuth();
     user = auth.user;
+    isStudent = auth.isStudent;
+    isTutor = auth.isTutor;
   } catch (error) {
     console.error("Auth context not available:", error);
   }
@@ -44,6 +48,11 @@ const NavBar = () => {
             <span className="font-bold text-xl">
               <span className="text-usc-cardinal">Study</span>
               <span className="text-usc-gold">Buddy</span>
+              {user && (isStudent || isTutor) && (
+                <span className="text-usc-cardinal ml-2">
+                  {isTutor ? "Tutor" : "Student"}
+                </span>
+              )}
             </span>
           </Link>
         </div>
