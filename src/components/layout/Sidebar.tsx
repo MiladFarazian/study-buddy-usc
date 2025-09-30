@@ -8,7 +8,6 @@ import {
   MessageSquare, 
   Settings, 
   Users,
-  CreditCard,
   Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -92,12 +91,6 @@ const Sidebar = () => {
       title: "Settings",
       icon: Settings,
       path: "/settings",
-      showWhen: !!user // Only for authenticated users
-    },
-    {
-      title: "Payment Tester",
-      icon: CreditCard,
-      path: "/payment-flow-tester",
       showWhen: !!user // Only for authenticated users
     }
   ];

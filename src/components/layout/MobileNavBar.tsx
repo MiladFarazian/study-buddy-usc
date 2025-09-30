@@ -9,8 +9,7 @@ import {
   MessageSquare,
   FileText,
   BarChart,
-  Settings,
-  CreditCard
+  Settings
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -86,12 +85,6 @@ const MobileNavBar = () => {
       title: "Settings",
       icon: Settings,
       path: "/settings",
-      showWhen: !!user
-    },
-    {
-      title: "Payment Tester",
-      icon: CreditCard,
-      path: "/payment-flow-tester",
       showWhen: !!user
     }
   ];
