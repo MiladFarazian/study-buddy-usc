@@ -83,12 +83,13 @@ const BadgeCard = ({
 }) => {
   const styles = getBadgeStyles(badgeType);
   const rarityBadgeStyles = getRarityBadgeStyles(config.rarity);
+  const [open, setOpen] = React.useState(false);
 
   const hasProgress = progress && typeof progress.current === 'number' && typeof progress.target === 'number' && progress.target > 0 && progress.current > 0;
  
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
+    <Tooltip open={open} onOpenChange={setOpen}>
+      <TooltipTrigger asChild onClick={() => isMobile && setOpen(!open)}>
         <Card 
           className={`
             relative cursor-default bg-white dark:bg-gray-900
