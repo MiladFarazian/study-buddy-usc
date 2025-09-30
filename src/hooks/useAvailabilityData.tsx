@@ -20,9 +20,11 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
   const [fetchTrigger, setFetchTrigger] = useState<number>(0);
   const [tutorAvailability, setTutorAvailability] = useState<WeeklyAvailability | null>(null);
   
-  // Memoize these values to prevent unnecessary re-renders
+  // Memoize tutor ID to prevent unnecessary re-renders
   const tutorId = useMemo(() => tutor?.id, [tutor]);
-  const memoizedStartDate = useMemo(() => startOfDay(startDate).toISOString(), [startDate]);
+  
+  // Always fetch from today forward (fixed window) to prevent earlier days from disappearing
+  const windowStart = useMemo(() => startOfDay(new Date()), []);
 
   const loadAvailability = useCallback(async () => {
     if (!tutorId) {
@@ -36,7 +38,7 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
     setLoading(true);
     
     try {
-      console.log(`Loading availability for tutor: ${tutorId} (starting at ${memoizedStartDate})`);
+      console.log(`Loading availability for tutor: ${tutorId} (window starts at ${windowStart.toISOString()})`);
       
       // Get tutor's availability settings
       const availability = await getTutorAvailability(tutorId);
@@ -69,12 +71,11 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
         return;
       }
       
-      // Get tutor's booked sessions
-      const today = new Date(memoizedStartDate);
-      const bookedSessions = await getTutorBookedSessions(tutorId, today, addDays(today, 28));
+      // Get tutor's booked sessions (always from windowStart, not selected date)
+      const bookedSessions = await getTutorBookedSessions(tutorId, windowStart, addDays(windowStart, 28));
       
-      // Generate available slots
-      const slots = generateAvailableSlots(availability, bookedSessions, today, 28);
+      // Generate available slots (always from windowStart, not selected date)
+      const slots = generateAvailableSlots(availability, bookedSessions, windowStart, 28);
       
       // Add tutor ID to each slot
       const slotsWithTutor = slots.map(slot => ({
@@ -104,7 +105,7 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
     } finally {
       setLoading(false);
     }
-  }, [tutorId, memoizedStartDate, toast]);
+  }, [tutorId, windowStart, toast]);
 
   // Use effect with proper dependencies
   useEffect(() => {
@@ -121,7 +122,7 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
     return () => {
       isMounted = false;
     };
-  }, [tutorId, memoizedStartDate, fetchTrigger, loadAvailability]);
+  }, [tutorId, windowStart, fetchTrigger, loadAvailability]);
 
   const refreshAvailability = useCallback(() => {
     setFetchTrigger(prev => prev + 1);
