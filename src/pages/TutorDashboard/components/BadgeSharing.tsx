@@ -71,13 +71,15 @@ export function BadgeSharing({ earnedBadges }: BadgeSharingProps) {
 
     switch (config.rarity) {
       case 'legendary':
-        return 'from-yellow-400 via-orange-500 to-red-500';
+        return 'from-red-700 to-red-900';
       case 'epic':
-        return 'from-purple-400 via-pink-500 to-indigo-500';
+        return 'from-amber-400 to-amber-600';
       case 'rare':
-        return 'from-blue-400 via-indigo-500 to-purple-500';
+        return 'from-slate-400 to-slate-600';
+      case 'uncommon':
+        return 'from-purple-500 to-purple-700';
       default:
-        return 'from-gray-400 to-gray-600';
+        return 'from-sky-300 to-sky-400';
     }
   };
 
@@ -112,7 +114,7 @@ export function BadgeSharing({ earnedBadges }: BadgeSharingProps) {
           <CardTitle>Select a Badge to Share</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {earnedBadges.map((badge) => {
               const config = BADGE_CONFIG[badge.badge_type];
               if (!config) return null;
@@ -124,27 +126,26 @@ export function BadgeSharing({ earnedBadges }: BadgeSharingProps) {
                   key={badge.id}
                   onClick={() => setSelectedBadge(badge.badge_type)}
                   className={`
-                    p-4 rounded-lg border-2 transition-all
+                    p-6 rounded-lg bg-white dark:bg-gray-900 transition-all
                     ${isSelected 
-                      ? 'border-primary bg-primary/5 scale-105' 
-                      : 'border-muted hover:border-muted-foreground/50 hover:scale-102'
+                      ? 'ring-2 ring-primary shadow-lg scale-105' 
+                      : 'hover:shadow-md hover:scale-102'
                     }
                   `}
                 >
                   <div className={`
-                    w-16 h-16 mx-auto mb-3 rounded-full 
+                    w-20 h-20 mx-auto mb-4 rounded-full 
                     bg-gradient-to-br ${getRarityGradient(badge.badge_type)}
-                    flex items-center justify-center text-2xl text-white shadow-lg
+                    flex items-center justify-center text-3xl text-white shadow-md
                   `}>
                     {config.icon}
                   </div>
-                  <h3 className="font-medium text-sm text-center">{config.name}</h3>
-                  <Badge 
-                    variant="outline" 
-                    className="mt-2 text-xs"
-                  >
+                  <h3 className="font-semibold text-sm text-center mb-2 line-clamp-2 min-h-[2.5rem]">
+                    {config.name.split(':')[0]}
+                  </h3>
+                  <div className="text-xs text-muted-foreground text-center">
                     {config.rarity}
-                  </Badge>
+                  </div>
                 </button>
               );
             })}

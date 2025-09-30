@@ -77,47 +77,52 @@ const BadgeCard = ({
   showProgress 
 }) => {
   const styles = getBadgeStyles(badgeType);
-  const rarityStyles = getRarityStyles(config.rarity);
+  const rarityBadgeStyles = getRarityBadgeStyles(config.rarity);
 
   const hasProgress = progress && typeof progress.current === 'number' && typeof progress.target === 'number' && progress.target > 0 && progress.current > 0;
-  const stateLabel = isEarned ? 'Earned' : hasProgress ? 'In Progress' : 'Locked';
-  const stateClass = isEarned 
-    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-    : hasProgress 
-      ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
-      : 'bg-muted text-muted-foreground';
  
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <Card 
           className={`
-            relative cursor-default
+            relative cursor-default bg-white dark:bg-gray-900
             ${isEarned ? 'shadow-md' : 'opacity-60'}
-            ${rarityStyles.border}
-            ${isEarned ? rarityStyles.bg : ''}
           `}
         >
-          <CardContent className="p-4 text-center">
-            {/* Badge Icon */}
+          <CardContent className="p-6 text-center">
+            {/* Status and Rarity Labels */}
+            <div className="absolute top-3 left-3 flex items-center gap-2">
+              {isEarned && (
+                <span className="text-xs font-medium px-2 py-1 rounded bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200">
+                  Earned
+                </span>
+              )}
+              <span className={`text-xs font-medium px-2 py-1 rounded ${rarityBadgeStyles}`}>
+                {config.rarity}
+              </span>
+            </div>
+
+            {/* Badge Icon - Circular */}
             <div className={`
-              text-4xl mb-2 transition-all duration-300
-              ${isEarned ? '' : 'grayscale'}
+              w-20 h-20 mx-auto mb-4 mt-6 rounded-full flex items-center justify-center text-3xl
+              ${isEarned ? '' : 'grayscale opacity-50'}
+              ${getRarityCircleStyles(config.rarity)}
             `}>
-              {isEarned ? config.icon : <Lock className="w-8 h-8 mx-auto text-muted-foreground" />}
+              {isEarned ? config.icon : <Lock className="w-8 h-8 text-muted-foreground" />}
             </div>
 
             {/* Badge Name */}
             <div className={`
-              text-sm font-semibold mb-1 line-clamp-2
+              text-sm font-semibold mb-2 line-clamp-2 min-h-[2.5rem]
               ${isEarned ? 'text-foreground' : 'text-muted-foreground'}
             `}>
-              {config.name.split(':')[0]} {/* Show first part before colon */}
+              {config.name.split(':')[0]}
             </div>
 
             {/* Progress Indicator */}
             {showProgress && !isEarned && progress && (
-              <div className="mt-2">
+              <div className="mt-3">
                 <ProgressIndicator 
                   badgeType={badgeType}
                   progress={progress}
@@ -125,22 +130,6 @@ const BadgeCard = ({
                 />
               </div>
             )}
-
-            {/* State Indicator */}
-            <div className={`
-              absolute -top-1 -left-1 px-2 py-0.5 text-xs rounded-full
-              ${stateClass}
-            `}>
-              {stateLabel}
-            </div>
-
-            {/* Rarity Indicator */}
-            <div className={`
-              absolute -top-1 -right-1 px-2 py-0.5 text-xs rounded-full
-              ${rarityStyles.tag}
-            `}>
-              {config.rarity}
-            </div>
 
           </CardContent>
         </Card>
@@ -286,6 +275,30 @@ const formatCriterion = (key, value) => {
   return formatMap[key] || `${key}: ${value}`;
 };
 
+const getRarityBadgeStyles = (rarity) => {
+  const styles = {
+    common: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+    uncommon: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
+    rare: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+    epic: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300',
+    legendary: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+  };
+  
+  return styles[rarity] || styles.common;
+};
+
+const getRarityCircleStyles = (rarity) => {
+  const styles = {
+    common: 'bg-gradient-to-br from-[#E0F2FE] to-[#BAE6FD] border-2 border-[#E5E7EB]',
+    uncommon: 'bg-gradient-to-br from-[#A855F7] to-[#7C3AED] border-2 border-purple-400 shadow-md',
+    rare: 'bg-gradient-to-br from-[#94A3B8] to-[#64748B] border-2 border-slate-400 shadow-md',
+    epic: 'bg-gradient-to-br from-[#F59E0B] to-[#D97706] border-[3px] border-amber-400 shadow-lg',
+    legendary: 'bg-[#990000] border-[3px] border-[#FFD700] shadow-xl'
+  };
+  
+  return styles[rarity] || styles.common;
+};
+
 const getRarityStyles = (rarity) => {
   const styles = {
     common: {
@@ -293,20 +306,25 @@ const getRarityStyles = (rarity) => {
       bg: 'bg-muted/40',
       tag: 'bg-muted text-muted-foreground'
     },
-    rare: {
-      border: 'border-2 border-blue-300 dark:border-blue-700',
-      bg: 'bg-blue-50 dark:bg-blue-950/30',
-      tag: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-    },
-    epic: {
+    uncommon: {
       border: 'border-2 border-purple-300 dark:border-purple-700',
       bg: 'bg-purple-50 dark:bg-purple-950/30',
       tag: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
     },
-    legendary: {
-      border: 'border-4 border-amber-300 dark:border-amber-600',
+    rare: {
+      border: 'border-2 border-slate-300 dark:border-slate-700',
+      bg: 'bg-slate-50 dark:bg-slate-950/30',
+      tag: 'bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200'
+    },
+    epic: {
+      border: 'border-2 border-amber-300 dark:border-amber-700',
       bg: 'bg-amber-50 dark:bg-amber-950/30',
-      tag: 'bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 dark:from-amber-900 dark:to-yellow-900 dark:text-amber-200'
+      tag: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
+    },
+    legendary: {
+      border: 'border-4 border-red-300 dark:border-red-600',
+      bg: 'bg-red-50 dark:bg-red-950/30',
+      tag: 'bg-gradient-to-r from-red-100 to-yellow-100 text-red-800 dark:from-red-900 dark:to-yellow-900 dark:text-red-200'
     }
   };
   
