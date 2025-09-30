@@ -10,6 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Lock, Star, Calendar, Clock, TrendingUp } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const TutorBadges = ({ 
   tutorId, 
@@ -18,6 +19,8 @@ const TutorBadges = ({
   showProgress = true,
   showOnlyEarned = false
 }) => {
+  const isMobile = useIsMobile();
+  
   // Get all badge types and organize them by status
   const allBadgeTypes = Object.keys(BADGE_CONFIG);
   const earnedBadgeTypes = earnedBadges.map(badge => badge.badge_type || badge.type);
@@ -60,6 +63,7 @@ const TutorBadges = ({
               meetsRequirements={meetsRequirements}
               progress={progress}
               showProgress={showProgress}
+              isMobile={isMobile}
             />
           ))}
         </div>
@@ -74,7 +78,8 @@ const BadgeCard = ({
   isEarned, 
   meetsRequirements, 
   progress, 
-  showProgress 
+  showProgress,
+  isMobile 
 }) => {
   const styles = getBadgeStyles(badgeType);
   const rarityBadgeStyles = getRarityBadgeStyles(config.rarity);
@@ -91,17 +96,19 @@ const BadgeCard = ({
           `}
         >
           <CardContent className="p-6 text-center">
-            {/* Status and Rarity Labels */}
-            <div className="absolute top-3 left-3 flex items-center gap-2">
-              {isEarned && (
-                <span className="text-xs font-medium px-2 py-1 rounded bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200">
-                  Earned
+            {/* Status and Rarity Labels - Hidden on mobile */}
+            {!isMobile && (
+              <div className="absolute top-3 left-3 flex items-center gap-2">
+                {isEarned && (
+                  <span className="text-xs font-medium px-2 py-1 rounded bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200">
+                    Earned
+                  </span>
+                )}
+                <span className={`text-xs font-medium px-2 py-1 rounded ${rarityBadgeStyles}`}>
+                  {config.rarity}
                 </span>
-              )}
-              <span className={`text-xs font-medium px-2 py-1 rounded ${rarityBadgeStyles}`}>
-                {config.rarity}
-              </span>
-            </div>
+              </div>
+            )}
 
             {/* Badge Icon - Circular */}
             <div className={`
