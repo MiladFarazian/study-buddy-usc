@@ -36,7 +36,7 @@ export const BADGE_CONFIG = {
       min_sessions: 10
     },
     color: "yellow",
-    rarity: "rare"
+    rarity: "uncommon"
   },
 
   over_50_sessions: {
@@ -47,7 +47,7 @@ export const BADGE_CONFIG = {
       min_sessions: 50
     },
     color: "blue",
-    rarity: "rare"
+    rarity: "uncommon"
   },
 
   over_100_sessions: {
@@ -70,7 +70,7 @@ export const BADGE_CONFIG = {
       min_sessions: 15
     },
     color: "green",
-    rarity: "rare"
+    rarity: "uncommon"
   },
 
   quick_responder: {
@@ -82,7 +82,7 @@ export const BADGE_CONFIG = {
       min_bookings: 20
     },
     color: "cyan",
-    rarity: "common"
+    rarity: "uncommon"
   },
 
   industry_professional: {
@@ -131,19 +131,24 @@ export const BADGE_RARITIES = {
     weight: 1,
     borderStyle: "border-2"
   },
+  uncommon: {
+    label: "Uncommon",
+    weight: 2,
+    borderStyle: "border-2"
+  },
   rare: {
     label: "Rare", 
-    weight: 2,
+    weight: 3,
     borderStyle: "border-2 border-dashed"
   },
   epic: {
     label: "Epic",
-    weight: 3,
+    weight: 4,
     borderStyle: "border-4 border-double"
   },
   legendary: {
     label: "Legendary",
-    weight: 4,
+    weight: 5,
     borderStyle: "border-4 border-double animate-pulse"
   }
 };

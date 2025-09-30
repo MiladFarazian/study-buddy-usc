@@ -11,29 +11,43 @@ interface BadgeIconProps {
 }
 
 const sizeClasses = {
-  sm: 'w-6 h-6 text-xs',
-  md: 'w-8 h-8 text-sm',
-  lg: 'w-12 h-12 text-lg'
+  sm: 'w-8 h-8 text-base',
+  md: 'w-10 h-10 text-lg',
+  lg: 'w-14 h-14 text-2xl'
 };
 
-const colorGradients = {
-  purple: 'bg-gradient-to-br from-purple-400 to-purple-600',
-  orange: 'bg-gradient-to-br from-orange-400 to-red-500',
-  yellow: 'bg-gradient-to-br from-yellow-300 to-yellow-500',
-  blue: 'bg-gradient-to-br from-blue-400 to-cyan-500',
-  indigo: 'bg-gradient-to-br from-indigo-400 to-purple-600',
-  green: 'bg-gradient-to-br from-green-400 to-emerald-500',
-  cyan: 'bg-gradient-to-br from-cyan-400 to-blue-400',
-  gray: 'bg-gradient-to-br from-gray-400 to-gray-600',
-  violet: 'bg-gradient-to-br from-violet-400 to-purple-500',
-  pink: 'bg-gradient-to-br from-pink-400 via-purple-400 to-indigo-500'
-};
-
-const rarityEffects = {
-  common: '',
-  rare: 'shadow-md ring-1 ring-white/50',
-  epic: 'shadow-lg ring-2 ring-white/60',
-  legendary: 'shadow-xl ring-2 ring-yellow-300/80 animate-pulse'
+// Rarity-specific visual designs
+const rarityStyles = {
+  common: {
+    bg: 'bg-[#E0F2FE]',
+    border: 'border border-[#E5E7EB]',
+    icon: 'text-white',
+    shadow: ''
+  },
+  uncommon: {
+    bg: 'bg-gradient-to-br from-[#A855F7] to-[#7C3AED]',
+    border: 'border-2 border-purple-400',
+    icon: 'text-white',
+    shadow: 'shadow-sm'
+  },
+  rare: {
+    bg: 'bg-gradient-to-br from-[#94A3B8] to-[#64748B]',
+    border: 'border-2 border-slate-400',
+    icon: 'text-white drop-shadow-md',
+    shadow: 'shadow-md'
+  },
+  epic: {
+    bg: 'bg-gradient-to-br from-[#F59E0B] to-[#D97706]',
+    border: 'border-[3px] border-amber-400',
+    icon: 'text-white drop-shadow-lg',
+    shadow: 'shadow-lg shadow-amber-500/30'
+  },
+  legendary: {
+    bg: 'bg-[#990000]',
+    border: 'border-[3px] border-[#FFD700]',
+    icon: 'text-[#FFD700]',
+    shadow: 'shadow-xl shadow-red-900/40'
+  }
 };
 
 export const BadgeIcon: React.FC<BadgeIconProps> = ({ 
@@ -46,22 +60,21 @@ export const BadgeIcon: React.FC<BadgeIconProps> = ({
   
   if (!config) return null;
 
-  const gradient = colorGradients[config.color as keyof typeof colorGradients] || colorGradients.gray;
-  const rarityEffect = rarityEffects[config.rarity as keyof typeof rarityEffects] || '';
-  const rarityWeight = BADGE_RARITIES[config.rarity as keyof typeof BADGE_RARITIES]?.weight || 1;
+  const styles = rarityStyles[config.rarity as keyof typeof rarityStyles] || rarityStyles.common;
 
   const badgeContent = (
     <div
       className={cn(
-        'rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 hover:scale-110',
-        gradient,
-        rarityEffect,
+        'rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 hover:scale-110',
+        styles.bg,
+        styles.border,
+        styles.shadow,
         sizeClasses[size],
         className
       )}
       title={!showTooltip ? config.name : undefined}
     >
-      <span className="drop-shadow-sm">{config.icon}</span>
+      <span className={styles.icon}>{config.icon}</span>
     </div>
   );
 
@@ -85,10 +98,11 @@ export const BadgeIcon: React.FC<BadgeIconProps> = ({
               <span className="font-semibold">{config.name.split(':')[0]}</span>
               <span className={cn(
                 "text-xs px-2 py-0.5 rounded-full font-medium",
-                config.rarity === 'legendary' && "bg-gradient-to-r from-yellow-300 to-amber-400 text-amber-900",
-                config.rarity === 'epic' && "bg-purple-200 text-purple-900",
-                config.rarity === 'rare' && "bg-blue-200 text-blue-900",
-                config.rarity === 'common' && "bg-gray-200 text-gray-700"
+                config.rarity === 'legendary' && "bg-gradient-to-r from-red-600 to-red-800 text-yellow-300",
+                config.rarity === 'epic' && "bg-gradient-to-r from-amber-500 to-amber-600 text-white",
+                config.rarity === 'rare' && "bg-gradient-to-r from-slate-400 to-slate-500 text-white",
+                config.rarity === 'uncommon' && "bg-gradient-to-r from-purple-500 to-purple-600 text-white",
+                config.rarity === 'common' && "bg-sky-200 text-sky-900"
               )}>
                 {config.rarity}
               </span>
