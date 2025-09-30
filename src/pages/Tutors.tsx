@@ -3,14 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, Filter, Loader2, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Filter, Loader2, X } from "lucide-react";
 import TutorCard from "@/components/ui/TutorCard";
 import { useTutors } from "@/hooks/useTutors";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
-import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { getTutorStudentCourses } from "@/lib/tutor-student-utils";
 
 const Tutors = () => {
@@ -83,21 +81,6 @@ const Tutors = () => {
     setSelectedSubject("all");
   };
 
-  // Horizontal scroll controls for student course tutors section
-  const scrollLeft = () => {
-    const container = document.getElementById('student-tutors-scroll-container');
-    if (container) {
-      container.scrollBy({ left: -300, behavior: 'smooth' });
-    }
-  };
-
-  const scrollRight = () => {
-    const container = document.getElementById('student-tutors-scroll-container');
-    if (container) {
-      container.scrollBy({ left: 300, behavior: 'smooth' });
-    }
-  };
-
   const renderFilterSection = () => (
     <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-1 md:grid-cols-3 gap-4 md:gap-6'}`}>
       <div className="relative">
@@ -158,109 +141,6 @@ const Tutors = () => {
     </div>
   );
 
-  const renderStudentCourseTutorsSection = () => {
-    if (!isLoggedIn || (loadingStudentTutors && !hasMatchingTutors)) {
-      return null;
-    }
-
-    // Get the appropriate title based on user role
-    const sectionTitle = isTutor 
-      ? "Tutors for Your Learning Needs" 
-      : "Tutors for Your Courses";
-
-    // Get appropriate empty state message based on user role
-    const noCoursesMessage = isTutor
-      ? "No courses added to 'Courses I Need Help With'. Add courses to see matched tutors."
-      : "No courses found in your profile. Add courses to see matched tutors.";
-    
-    const noTutorsMessage = isTutor
-      ? "No tutors found for courses you need help with. Explore all available tutors below."
-      : "No tutors found for your courses. Explore all available tutors below.";
-
-    if (!hasStudentCourses) {
-      return (
-        <div className="mt-6 mb-8">
-          <h2 className="text-lg md:text-xl font-semibold mb-3">{sectionTitle}</h2>
-          <Card className="bg-slate-50">
-            <CardContent className="p-4 md:p-6 text-center">
-              <p className="text-sm md:text-base text-muted-foreground">
-                {noCoursesMessage}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      );
-    }
-
-    if (!hasMatchingTutors) {
-      return (
-        <div className="mt-6 mb-8">
-          <h2 className="text-lg md:text-xl font-semibold mb-3">{sectionTitle}</h2>
-          <Card className="bg-slate-50">
-            <CardContent className="p-4 md:p-6 text-center">
-              <p className="text-sm md:text-base text-muted-foreground">
-                {noTutorsMessage}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      );
-    }
-
-    const displayTutors = studentCourseTutors.slice(0, 10);
-
-    return (
-      <div className="mt-6 mb-8 animate-fade-in">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg md:text-xl font-semibold">{sectionTitle}</h2>
-          <Button 
-            variant="ghost" 
-            className="text-usc-cardinal"
-            onClick={() => setShowOnlyForMyCourses(true)}
-          >
-            View All
-          </Button>
-        </div>
-        
-        <div className="relative">
-          {displayTutors.length > 3 && (
-            <>
-              <Button 
-                variant="outline" 
-                size="icon" 
-                className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-white shadow-md rounded-full h-8 w-8 md:h-10 md:w-10"
-                onClick={scrollLeft}
-              >
-                <ChevronLeft className="h-4 w-4 md:h-5 md:w-5" />
-              </Button>
-              <Button 
-                variant="outline" 
-                size="icon" 
-                className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-white shadow-md rounded-full h-8 w-8 md:h-10 md:w-10"
-                onClick={scrollRight}
-              >
-                <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
-              </Button>
-            </>
-          )}
-          
-          <ScrollArea className="w-full">
-            <div 
-              id="student-tutors-scroll-container"
-              className="flex space-x-4 py-2 px-1 overflow-x-auto hide-scrollbar"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-            >
-              {displayTutors.map((tutor) => (
-                <div key={tutor.id} className="flex-shrink-0 w-[280px] md:w-[320px]">
-                  <TutorCard tutor={tutor} highlightedCourses={studentCourses} />
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="py-4 md:py-6 px-4 md:px-6">
@@ -316,9 +196,6 @@ const Tutors = () => {
         </Card>
       )}
 
-      {/* Personalized tutors section for student/tutor courses */}
-      {renderStudentCourseTutorsSection()}
-
       {/* Show filter toggle if matching tutors exist */}
       {hasMatchingTutors && (
         <div className="flex items-center justify-end space-x-2 mb-4">
@@ -331,11 +208,6 @@ const Tutors = () => {
             {isTutor ? "Show for my learning needs" : "Show for my courses"}
           </span>
         </div>
-      )}
-
-      {/* Main separator between sections */}
-      {hasMatchingTutors && (
-        <Separator className="my-6" />
       )}
 
       {/* Main tutors section heading */}
