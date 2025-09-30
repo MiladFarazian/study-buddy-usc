@@ -130,7 +130,7 @@ export const ProfileSettings = () => {
             }
           </CardDescription>
         </CardHeader>
-        {!isTutor && (
+        {!isTutor && !profile.approved_tutor && (
           <CardContent>
             <Button asChild variant="outline">
               <a 
