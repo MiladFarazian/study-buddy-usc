@@ -49,11 +49,8 @@ import AuthCallback from "./pages/AuthCallback";
 import BookingCalendly from "./pages/BookingCalendly";
 import Analytics from "./pages/Analytics";
 import BadgesDashboard from "./pages/TutorDashboard/BadgesDashboard";
-import StripeTestInterface from "./pages/StripeTestInterface";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCanceled from "./pages/PaymentCanceled";
-import PaymentFlowTester from "./pages/PaymentFlowTester";
-import { TransferTest } from "./pages/TransferTest";
 
 const router = createBrowserRouter([
   {
@@ -201,24 +198,12 @@ const router = createBrowserRouter([
         element: <PrivateRoute><RoleGuard allowedRoles={['tutor']}><BadgesDashboard /></RoleGuard></PrivateRoute>
       },
       {
-        path: "/stripe-test",
-        element: <PrivateRoute><StripeTestInterface /></PrivateRoute>
-      },
-      {
         path: "/payment-success",
         element: <PaymentSuccess />
       },
       {
         path: "/payment-canceled", 
         element: <PaymentCanceled />
-      },
-      {
-        path: "/payment-flow-tester",
-        element: <PrivateRoute><PaymentFlowTester /></PrivateRoute>
-      },
-      {
-        path: "/transfer-test",
-        element: <TransferTest />
       },
       {
         path: "*",
