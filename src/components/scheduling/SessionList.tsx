@@ -10,7 +10,7 @@ import { CancelSessionDialog } from "@/components/schedule/CancelSessionDialog";
 interface SessionListProps {
   sessions: Session[];
   loading: boolean;
-  onCancelSession: (sessionId: string, reason?: string) => void;
+  onCancelSession: (sessionId: string, reason?: string) => Promise<void>;
   onBookSession: () => void;
 }
 
@@ -91,12 +91,17 @@ export const SessionList = ({ sessions, loading, onCancelSession, onBookSession 
     setShowDialog(true);
   };
   
-  const confirmCancelSession = (reason: string) => {
+  const confirmCancelSession = async (reason: string) => {
     if (!selectedSessionId) return;
     console.log('[UI] Confirming cancellation for session:', selectedSessionId, 'with reason:', reason);
-    onCancelSession(selectedSessionId, reason);
-    setShowDialog(false);
-    setSelectedSessionId(null);
+    try {
+      await onCancelSession(selectedSessionId, reason);
+      setShowDialog(false);
+      setSelectedSessionId(null);
+    } catch (error) {
+      console.error('[UI] Error cancelling session:', error);
+      // Dialog stays open on error so user can retry
+    }
   };
   return (
     <>

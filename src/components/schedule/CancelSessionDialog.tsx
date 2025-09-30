@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Loader2 } from "lucide-react";
 
 const cancellationReasons = [
   { value: "schedule_conflict", label: "Schedule conflict" },
@@ -108,7 +109,14 @@ export const CancelSessionDialog = ({
               isLoading
             }
           >
-            {isLoading ? "Cancelling..." : "Confirm Cancellation"}
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Cancelling...
+              </>
+            ) : (
+              "Confirm Cancellation"
+            )}
           </Button>
         </div>
       </DialogContent>
