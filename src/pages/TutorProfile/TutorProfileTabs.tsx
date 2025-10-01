@@ -12,7 +12,7 @@ import { TutorReviewsSection } from "@/components/tutor/TutorReviewsSection";
 import { TutorBadges } from "@/components/TutorBadges";
 import { useTutorBadges } from "@/hooks/useTutorBadges";
 import { useAuth } from "@/contexts/AuthContext";
-import { getTutorStudentCourses, getMutualCourses } from "@/lib/tutor-student-utils";
+import { getTutorStudentCourses } from "@/lib/tutor-student-utils";
 
 interface TutorProfileTabsProps {
   tutor: Tutor;
@@ -31,7 +31,6 @@ export const TutorProfileTabs = ({
 }: TutorProfileTabsProps) => {
   const { profile, user } = useAuth();
   const [studentCourses, setStudentCourses] = useState<string[]>([]);
-  const [mutualCourses, setMutualCourses] = useState<string[]>([]);
 
   // Fetch student courses for highlighting
   useEffect(() => {
@@ -59,21 +58,6 @@ export const TutorProfileTabs = ({
     fetchStudentCourses();
   }, [profile, user]);
 
-  // Fetch mutual courses
-  useEffect(() => {
-    const fetchMutualCourses = async () => {
-      if (!studentCourses.length) {
-        setMutualCourses([]);
-        return;
-      }
-
-      const mutual = await getMutualCourses(studentCourses, tutor.id);
-      setMutualCourses(mutual);
-    };
-
-    fetchMutualCourses();
-  }, [studentCourses, tutor.id]);
-
   return (
     <Tabs defaultValue="about" className="w-full">
       <TabsList className="w-full grid grid-cols-3 mb-6">
@@ -89,11 +73,7 @@ export const TutorProfileTabs = ({
           </TabsContent>
           
           <TabsContent value="subjects" className="mt-0">
-            <TutorSubjectsSection 
-              subjects={tutor.subjects} 
-              highlightedCourses={studentCourses}
-              mutualCourses={mutualCourses}
-            />
+            <TutorSubjectsSection subjects={tutor.subjects} highlightedCourses={studentCourses} />
           </TabsContent>
           
           <TabsContent value="availability" className="mt-0">

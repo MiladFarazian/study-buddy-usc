@@ -9,13 +9,12 @@ import { useTutors } from "@/hooks/useTutors";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { Switch } from "@/components/ui/switch";
-import { getTutorStudentCourses, getMutualCoursesForTutors } from "@/lib/tutor-student-utils";
+import { getTutorStudentCourses } from "@/lib/tutor-student-utils";
 import { searchTutors, filterTutorsBySubject } from "@/lib/search-utils";
 
 const Tutors = () => {
   const { tutors, loading, studentCourseTutors, loadingStudentTutors } = useTutors();
   const [studentCourses, setStudentCourses] = useState<string[]>([]);
-  const [mutualCoursesMap, setMutualCoursesMap] = useState<Map<string, string[]>>(new Map());
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
@@ -50,22 +49,6 @@ const Tutors = () => {
 
     fetchStudentCourses();
   }, [profile, user]);
-
-  // Effect to fetch mutual courses for all tutors
-  useEffect(() => {
-    const fetchMutualCourses = async () => {
-      if (!studentCourses.length || !tutors.length) {
-        setMutualCoursesMap(new Map());
-        return;
-      }
-
-      const tutorIds = tutors.map(t => t.id);
-      const mutualMap = await getMutualCoursesForTutors(studentCourses, tutorIds);
-      setMutualCoursesMap(mutualMap);
-    };
-
-    fetchMutualCourses();
-  }, [studentCourses, tutors]);
 
   // Check if user is logged in and is a student or tutor
   const isLoggedIn = profile !== null;
@@ -251,8 +234,7 @@ const Tutors = () => {
             <div key={tutor.id} className="w-full">
               <TutorCard 
                 tutor={tutor} 
-                highlightedCourses={hasStudentCourses ? studentCourses : undefined}
-                mutualCourses={mutualCoursesMap.get(tutor.id) || []}
+                highlightedCourses={hasStudentCourses ? studentCourses : undefined} 
               />
             </div>
           ))}
