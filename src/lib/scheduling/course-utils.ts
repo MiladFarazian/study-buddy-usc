@@ -15,6 +15,7 @@ export async function fetchCourseDetails(courseId: string) {
       .from('courses-20251')
       .select('Course number, Course title, Instructor')
       .eq('Course number', courseId)
+      .limit(1)
       .maybeSingle();
     
     if (!error && courseData) {
@@ -40,6 +41,7 @@ export async function fetchCourseDetails(courseId: string) {
       .from('courses-20252')
       .select('Course number, Course title, Instructor')
       .eq('Course number', courseId)
+      .limit(1)
       .maybeSingle();
     
     if (!error && courseData) {
@@ -65,6 +67,7 @@ export async function fetchCourseDetails(courseId: string) {
       .from('courses-20253')
       .select('Course number, Course title, Instructor')
       .eq('Course number', courseId)
+      .limit(1)
       .maybeSingle();
     
     if (!error && courseData) {
