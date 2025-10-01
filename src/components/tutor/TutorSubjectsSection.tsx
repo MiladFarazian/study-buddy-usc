@@ -23,7 +23,7 @@ export const TutorSubjectsSection = ({ subjects, matchByCourse = {} }: TutorSubj
     <div>
       <h2 className="text-xl font-semibold mb-4">Subjects</h2>
       <div className="flex flex-wrap gap-2">
-        <TooltipProvider>
+        <TooltipProvider delayDuration={200}>
           {sortedSubjects.map((subject) => {
             const matchType = matchByCourse[subject.code] || 'none';
             const isExactMatch = matchType === 'exact';
