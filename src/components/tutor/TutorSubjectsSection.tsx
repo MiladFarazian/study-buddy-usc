@@ -1,8 +1,8 @@
-
 import { Badge } from "@/components/ui/badge";
 import { Subject } from "@/types/tutor";
-import { MatchBadge } from "@/components/ui/MatchBadge";
 import { MatchType } from "@/lib/instructor-matching-utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Check } from "lucide-react";
 
 interface TutorSubjectsSectionProps {
   subjects: Subject[];
@@ -23,20 +23,45 @@ export const TutorSubjectsSection = ({ subjects, matchByCourse = {} }: TutorSubj
     <div>
       <h2 className="text-xl font-semibold mb-4">Subjects</h2>
       <div className="flex flex-wrap gap-2">
-        {sortedSubjects.map((subject) => {
-          const matchType = matchByCourse[subject.code] || 'none';
-          return (
-            <div key={subject.code} className="flex items-center gap-1.5">
+        <TooltipProvider>
+          {sortedSubjects.map((subject) => {
+            const matchType = matchByCourse[subject.code] || 'none';
+            const isExactMatch = matchType === 'exact';
+            const isCourseMatch = matchType === 'course-only';
+            const hasMatch = isExactMatch || isCourseMatch;
+            
+            const badge = (
               <Badge
                 variant="secondary"
-                className="text-sm py-1 px-3"
+                className={`text-sm py-1.5 px-3 ${
+                  isExactMatch 
+                    ? "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600" 
+                    : isCourseMatch
+                    ? "bg-usc-cardinal hover:bg-usc-cardinal-dark text-white border-usc-cardinal"
+                    : "bg-secondary text-secondary-foreground"
+                }`}
               >
-                {subject.code} - {subject.name}
+                {subject.code}
+                {hasMatch && <Check className="w-4 h-4 ml-1.5 inline" />}
               </Badge>
-              <MatchBadge matchType={matchType} size="sm" />
-            </div>
-          );
-        })}
+            );
+
+            if (!hasMatch) {
+              return <div key={subject.code}>{badge}</div>;
+            }
+
+            return (
+              <Tooltip key={subject.code}>
+                <TooltipTrigger asChild>
+                  {badge}
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isExactMatch ? "Matching course and instructor" : "Matching course"}</p>
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
+        </TooltipProvider>
       </div>
     </div>
   );
