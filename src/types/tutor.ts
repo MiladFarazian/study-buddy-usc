@@ -2,6 +2,7 @@
 export interface Subject {
   code: string;
   name: string;
+  instructor?: string;
 }
 
 export interface Tutor {
