@@ -96,33 +96,31 @@ const BadgeCard = ({
             ${isEarned ? 'shadow-md' : 'opacity-60'}
           `}
         >
-          <CardContent className="p-6 text-center">
-            {/* Status and Rarity Labels - Hidden on mobile */}
-            {!isMobile && (
-              <div className="absolute top-3 left-3 flex items-center gap-2">
-                {isEarned && (
-                  <span className="text-xs font-medium px-2 py-1 rounded bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200">
-                    Earned
-                  </span>
-                )}
-                <span className={`text-xs font-medium px-2 py-1 rounded ${rarityBadgeStyles}`}>
-                  {config.rarity}
+          <CardContent className="p-4 lg:p-6 text-center flex flex-col items-center justify-center">
+            {/* Status and Rarity Labels - Hidden until large screens */}
+            <div className="hidden xl:flex absolute top-3 left-3 items-center gap-2">
+              {isEarned && (
+                <span className="text-xs font-medium px-2 py-1 rounded bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200">
+                  Earned
                 </span>
-              </div>
-            )}
+              )}
+              <span className={`text-xs font-medium px-2 py-1 rounded ${rarityBadgeStyles}`}>
+                {config.rarity}
+              </span>
+            </div>
 
-            {/* Badge Icon - Circular */}
+            {/* Badge Icon - Circular and centered */}
             <div className={`
-              w-20 h-20 mx-auto mb-4 mt-6 rounded-full flex items-center justify-center text-3xl
+              w-16 h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center text-2xl lg:text-3xl
               ${isEarned ? '' : 'grayscale opacity-50'}
               ${getRarityCircleStyles(config.rarity)}
             `}>
-              {isEarned ? config.icon : <Lock className="w-8 h-8 text-muted-foreground" />}
+              {isEarned ? config.icon : <Lock className="w-6 h-6 lg:w-8 lg:h-8 text-muted-foreground" />}
             </div>
 
-            {/* Badge Name */}
+            {/* Badge Name - Hidden until medium screens */}
             <div className={`
-              text-sm font-semibold mb-2 line-clamp-2 min-h-[2.5rem]
+              hidden md:block text-sm font-semibold mt-3 line-clamp-2 min-h-0 md:min-h-[2.5rem]
               ${isEarned ? 'text-foreground' : 'text-muted-foreground'}
             `}>
               {config.name.split(':')[0]}
