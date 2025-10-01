@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tutor, Subject } from "@/types/tutor";
 import { useAuth } from "@/contexts/AuthContext";
 import { getTutorStudentCourses } from "@/lib/tutor-student-utils";
-import { findMatchingTutorsWithInstructor, MatchResult } from "@/lib/instructor-matching-utils";
 
 export function useTutors() {
   const [tutors, setTutors] = useState<Tutor[]>([]);
@@ -14,7 +13,6 @@ export function useTutors() {
 
   const [studentCourseTutors, setStudentCourseTutors] = useState<Tutor[]>([]);
   const [loadingStudentTutors, setLoadingStudentTutors] = useState(false);
-  const [matchResults, setMatchResults] = useState<MatchResult[]>([]);
 
   // Function to extract course numbers from student profile or tutor's "need help with" courses
   const getStudentCourses = async (): Promise<string[]> => {
@@ -142,24 +140,11 @@ export function useTutors() {
 
         setTutors(processedTutors);
         
-        // If profile exists, find matching tutors with instructor-based matching
-        if (profile && user?.id) {
+        // If profile exists, find matching tutors
+        if (profile) {
           setLoadingStudentTutors(true);
-          
-          // Use new instructor-based matching
-          const instructorMatches = await findMatchingTutorsWithInstructor(user.id);
-          setMatchResults(instructorMatches);
-          
-          // Filter tutors to only include those with matches, sorted by match score
-          const matchedTutorIds = new Set(instructorMatches.map(m => m.tutorId));
-          const matchingTutors = processedTutors
-            .filter(t => matchedTutorIds.has(t.id))
-            .sort((a, b) => {
-              const matchA = instructorMatches.find(m => m.tutorId === a.id);
-              const matchB = instructorMatches.find(m => m.tutorId === b.id);
-              return (matchB?.matchScore || 0) - (matchA?.matchScore || 0);
-            });
-          
+          const studentCourses = await getStudentCourses();
+          const matchingTutors = findMatchingTutors(processedTutors, studentCourses);
           setStudentCourseTutors(matchingTutors);
           setLoadingStudentTutors(false);
         }
@@ -181,7 +166,6 @@ export function useTutors() {
     loading, 
     error, 
     studentCourseTutors, 
-    loadingStudentTutors,
-    matchResults 
+    loadingStudentTutors 
   };
 }

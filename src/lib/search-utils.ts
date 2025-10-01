@@ -24,7 +24,7 @@ interface SearchScore {
 }
 
 /**
- * Multi-tier search scoring system with instructor support
+ * Multi-tier search scoring system
  */
 export const searchTutors = (tutors: Tutor[], searchQuery: string): Tutor[] => {
   if (!searchQuery || searchQuery.trim() === "") {
@@ -42,7 +42,6 @@ export const searchTutors = (tutors: Tutor[], searchQuery: string): Tutor[] => {
     const tutorSubjects = tutor.subjects.map(s => ({
       code: normalizeText(s.code),
       name: normalizeText(s.name),
-      instructor: normalizeText(s.instructor || ''),
     }));
 
     // TIER 1: Exact matches (highest priority) - 1000 points
@@ -55,22 +54,14 @@ export const searchTutors = (tutors: Tutor[], searchQuery: string): Tutor[] => {
     // TIER 2: Direct substring matches - 500 points
     if (tutorName.includes(normalizedQuery)) score += 500;
     if (tutorField.includes(normalizedQuery)) score += 500;
-    if (tutorSubjects.some(s => 
-      s.code.includes(normalizedQuery) || 
-      s.name.includes(normalizedQuery) ||
-      s.instructor.includes(normalizedQuery)
-    )) {
+    if (tutorSubjects.some(s => s.code.includes(normalizedQuery) || s.name.includes(normalizedQuery))) {
       score += 500;
     }
 
     // TIER 3: Tokenized matches (all tokens present in any order) - 300 points per token
     const nameTokens = tokenize(tutor.name);
     const fieldTokens = tokenize(tutor.field);
-    const subjectTokens = tutorSubjects.flatMap(s => [
-      ...tokenize(s.code), 
-      ...tokenize(s.name),
-      ...(s.instructor ? tokenize(s.instructor) : [])
-    ]);
+    const subjectTokens = tutorSubjects.flatMap(s => [...tokenize(s.code), ...tokenize(s.name)]);
     
     for (const queryToken of queryTokens) {
       // Check name tokens
