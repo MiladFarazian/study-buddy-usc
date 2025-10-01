@@ -46,17 +46,19 @@ export const TutorSubjectsSection = ({ subjects, matchByCourse = {} }: TutorSubj
               </Badge>
             );
 
-            if (!hasMatch) {
-              return <div key={subject.code}>{badge}</div>;
-            }
-
             return (
               <Tooltip key={subject.code}>
                 <TooltipTrigger asChild>
                   {badge}
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>{isExactMatch ? "Matching course and instructor" : "Matching course"}</p>
+                  <p>
+                    {isExactMatch 
+                      ? "Matching course and instructor" 
+                      : isCourseMatch 
+                      ? "Matching course" 
+                      : subject.name}
+                  </p>
                 </TooltipContent>
               </Tooltip>
             );
