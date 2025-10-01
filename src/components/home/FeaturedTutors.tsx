@@ -5,15 +5,48 @@ import TutorCard from "@/components/ui/TutorCard";
 import { useTutors } from "@/hooks/useTutors";
 import { Loader2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/contexts/AuthContext";
+import { useState, useEffect } from "react";
+import { getTutorStudentCourses } from "@/lib/tutor-student-utils";
 
 const FeaturedTutors = () => {
   const tutorsData = useTutors();
   const { tutors, loading } = tutorsData;
   const isMobile = useIsMobile();
+  const { profile, user } = useAuth();
+  const [studentCourses, setStudentCourses] = useState<string[]>([]);
+
+  // Fetch student courses for highlighting
+  useEffect(() => {
+    const fetchStudentCourses = async () => {
+      if (!profile) {
+        setStudentCourses([]);
+        return;
+      }
+      
+      if (profile.student_courses && Array.isArray(profile.student_courses)) {
+        setStudentCourses(profile.student_courses);
+      } else if (profile.role === 'tutor' && user) {
+        try {
+          const tutorStudentCourses = await getTutorStudentCourses(user.id);
+          setStudentCourses(tutorStudentCourses.map((course: any) => course.course_number));
+        } catch (err) {
+          console.error("Error fetching tutor student courses:", err);
+          setStudentCourses([]);
+        }
+      } else {
+        setStudentCourses([]);
+      }
+    };
+
+    fetchStudentCourses();
+  }, [profile, user]);
 
   const featuredTutors = [...tutors]
     .sort((a, b) => b.rating - a.rating)
     .slice(0, isMobile ? 2 : 3);
+
+  const hasStudentCourses = studentCourses.length > 0;
 
   return (
     <div className="mt-8 md:mt-12 container px-4 md:px-6 relative">
@@ -48,7 +81,10 @@ const FeaturedTutors = () => {
           <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 transition-all duration-300">
             {featuredTutors.map((tutor) => (
               <div key={tutor.id} className="w-full">
-                <TutorCard tutor={tutor} />
+                <TutorCard 
+                  tutor={tutor}
+                  highlightedCourses={hasStudentCourses ? studentCourses : undefined}
+                />
               </div>
             ))}
           </div>

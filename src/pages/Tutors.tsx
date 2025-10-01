@@ -30,9 +30,11 @@ const Tutors = () => {
         return;
       }
       
-      if (profile.subjects && Array.isArray(profile.subjects)) {
-        setStudentCourses(profile.subjects);
+      // For students, use student_courses from profile
+      if (profile.student_courses && Array.isArray(profile.student_courses)) {
+        setStudentCourses(profile.student_courses);
       } else if (profile.role === 'tutor' && user) {
+        // For tutors, get their learning needs from tutor_student_courses
         try {
           const tutorStudentCourses = await getTutorStudentCourses(user.id);
           setStudentCourses(tutorStudentCourses.map((course: any) => course.course_number));
@@ -232,7 +234,7 @@ const Tutors = () => {
             <div key={tutor.id} className="w-full">
               <TutorCard 
                 tutor={tutor} 
-                highlightedCourses={showOnlyForMyCourses && hasMatchingTutors ? studentCourses : undefined} 
+                highlightedCourses={hasStudentCourses ? studentCourses : undefined} 
               />
             </div>
           ))}
