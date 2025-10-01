@@ -7,7 +7,7 @@ import { Loader2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
-import { getTutorStudentCourses } from "@/lib/tutor-student-utils";
+import { getTutorStudentCourses, getMutualCoursesForTutors } from "@/lib/tutor-student-utils";
 
 const FeaturedTutors = () => {
   const tutorsData = useTutors();
@@ -15,6 +15,7 @@ const FeaturedTutors = () => {
   const isMobile = useIsMobile();
   const { profile, user } = useAuth();
   const [studentCourses, setStudentCourses] = useState<string[]>([]);
+  const [mutualCoursesMap, setMutualCoursesMap] = useState<Map<string, string[]>>(new Map());
 
   // Fetch student courses for highlighting
   useEffect(() => {
@@ -41,6 +42,22 @@ const FeaturedTutors = () => {
 
     fetchStudentCourses();
   }, [profile, user]);
+
+  // Fetch mutual courses
+  useEffect(() => {
+    const fetchMutualCourses = async () => {
+      if (!studentCourses.length || !tutors.length) {
+        setMutualCoursesMap(new Map());
+        return;
+      }
+
+      const tutorIds = tutors.map(t => t.id);
+      const mutualMap = await getMutualCoursesForTutors(studentCourses, tutorIds);
+      setMutualCoursesMap(mutualMap);
+    };
+
+    fetchMutualCourses();
+  }, [studentCourses, tutors]);
 
   const featuredTutors = [...tutors]
     .sort((a, b) => b.rating - a.rating)
@@ -84,6 +101,7 @@ const FeaturedTutors = () => {
                 <TutorCard 
                   tutor={tutor}
                   highlightedCourses={hasStudentCourses ? studentCourses : undefined}
+                  mutualCourses={mutualCoursesMap.get(tutor.id) || []}
                 />
               </div>
             ))}

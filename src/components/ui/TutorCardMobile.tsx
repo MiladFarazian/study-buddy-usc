@@ -14,17 +14,27 @@ interface TutorCardMobileProps {
   tutor: Tutor;
   getInitials: (name: string) => string;
   highlightedCourses?: string[];
+  mutualCourses?: string[];
 }
 
-const TutorCardMobile = ({ tutor, getInitials, highlightedCourses = [] }: TutorCardMobileProps) => {
+const TutorCardMobile = ({ tutor, getInitials, highlightedCourses = [], mutualCourses = [] }: TutorCardMobileProps) => {
   const { earnedBadges } = useTutorBadges(tutor.id);
   
-  // Sort subjects to show matching courses first
+  // Sort subjects to show matching courses first (mutual courses prioritized)
   const sortedSubjects = [...tutor.subjects].sort((a, b) => {
-    const aMatches = highlightedCourses.includes(a.code);
-    const bMatches = highlightedCourses.includes(b.code);
-    if (aMatches && !bMatches) return -1;
-    if (!aMatches && bMatches) return 1;
+    const aMutual = mutualCourses.includes(a.code);
+    const bMutual = mutualCourses.includes(b.code);
+    const aHighlighted = highlightedCourses.includes(a.code);
+    const bHighlighted = highlightedCourses.includes(b.code);
+    
+    // Mutual courses first
+    if (aMutual && !bMutual) return -1;
+    if (!aMutual && bMutual) return 1;
+    
+    // Then highlighted courses
+    if (aHighlighted && !bHighlighted) return -1;
+    if (!aHighlighted && bHighlighted) return 1;
+    
     return 0;
   });
   
@@ -91,19 +101,22 @@ const TutorCardMobile = ({ tutor, getInitials, highlightedCourses = [] }: TutorC
               <h4 className="font-medium text-xs mb-1">Available for:</h4>
               <div className="flex flex-nowrap overflow-hidden gap-1">
                 {sortedSubjects.slice(0, 2).map((subject) => {
+                  const isMutual = mutualCourses.includes(subject.code);
                   const isHighlighted = highlightedCourses.includes(subject.code);
                   return (
                     <Badge
                       key={subject.code}
                       variant="outline"
                       className={`${
-                        isHighlighted 
-                          ? "bg-usc-cardinal text-white border-usc-cardinal font-semibold" 
-                          : "bg-red-50 hover:bg-red-100 text-usc-cardinal border-red-100"
+                        isMutual
+                          ? "bg-green-600 text-white border-green-600 font-semibold" 
+                          : isHighlighted 
+                            ? "bg-usc-cardinal text-white border-usc-cardinal font-semibold" 
+                            : "bg-red-50 hover:bg-red-100 text-usc-cardinal border-red-100"
                       } text-xs py-0 h-5 flex-shrink-0`}
                     >
                       {subject.code}
-                      {isHighlighted && <span className="ml-1">✓</span>}
+                      {(isMutual || isHighlighted) && <span className="ml-1">✓</span>}
                     </Badge>
                   );
                 })}

@@ -7,9 +7,10 @@ import TutorCardDesktop from "./TutorCardDesktop";
 interface TutorCardProps {
   tutor: Tutor;
   highlightedCourses?: string[]; // Courses to highlight as matching
+  mutualCourses?: string[]; // Courses where both you and tutor selected it
 }
 
-const TutorCard = ({ tutor, highlightedCourses }: TutorCardProps) => {
+const TutorCard = ({ tutor, highlightedCourses, mutualCourses = [] }: TutorCardProps) => {
   const isMobile = useIsMobile();
   
   const getInitials = (name: string) => {
@@ -21,10 +22,10 @@ const TutorCard = ({ tutor, highlightedCourses }: TutorCardProps) => {
 
   // Render appropriate card based on screen size
   if (isMobile) {
-    return <TutorCardMobile tutor={tutor} getInitials={getInitials} highlightedCourses={highlightedCourses} />;
+    return <TutorCardMobile tutor={tutor} getInitials={getInitials} highlightedCourses={highlightedCourses} mutualCourses={mutualCourses} />;
   }
 
-  return <TutorCardDesktop tutor={tutor} getInitials={getInitials} highlightedCourses={highlightedCourses} />;
+  return <TutorCardDesktop tutor={tutor} getInitials={getInitials} highlightedCourses={highlightedCourses} mutualCourses={mutualCourses} />;
 };
 
 export default TutorCard;
