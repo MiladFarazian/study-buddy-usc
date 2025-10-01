@@ -83,7 +83,7 @@ export const BadgeIcon: React.FC<BadgeIconProps> = ({
   }
 
   return (
-    <TooltipProvider delayDuration={100}>
+    <TooltipProvider delayDuration={200}>
       <Tooltip>
         <TooltipTrigger asChild>
           {badgeContent}
