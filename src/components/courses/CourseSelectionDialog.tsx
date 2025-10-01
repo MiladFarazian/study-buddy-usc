@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,10 +11,18 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { addCourseToProfile } from "@/lib/course-utils";
 import { addTutorStudentCourse } from "@/lib/tutor-student-utils";
+import { fetchCourseDetails } from "@/lib/scheduling/course-utils";
 import { Book, BookOpen } from "lucide-react";
 
 export interface CourseSelectionDialogProps {
@@ -22,6 +30,7 @@ export interface CourseSelectionDialogProps {
   onClose: () => void;
   courseNumber: string;
   courseTitle: string;
+  instructor?: string | null;
   onSuccess: () => void;
 }
 
@@ -30,12 +39,48 @@ export const CourseSelectionDialog = ({
   onClose,
   courseNumber,
   courseTitle,
+  instructor: propInstructor,
   onSuccess,
 }: CourseSelectionDialogProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [selection, setSelection] = useState<"tutor" | "student">("tutor");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [instructors, setInstructors] = useState<string[]>([]);
+  const [selectedInstructor, setSelectedInstructor] = useState<string>("");
+  const [loadingInstructors, setLoadingInstructors] = useState(false);
+
+  // Fetch course details including instructors when dialog opens
+  useEffect(() => {
+    if (isOpen && courseNumber) {
+      const loadInstructors = async () => {
+        setLoadingInstructors(true);
+        try {
+          const courseDetails = await fetchCourseDetails(courseNumber);
+          if (courseDetails?.instructor) {
+            const instructorList = courseDetails.instructor
+              .split(',')
+              .map(i => i.trim())
+              .filter(Boolean);
+            setInstructors(instructorList);
+            setSelectedInstructor(instructorList[0] || "");
+          } else if (propInstructor) {
+            const instructorList = propInstructor
+              .split(',')
+              .map(i => i.trim())
+              .filter(Boolean);
+            setInstructors(instructorList);
+            setSelectedInstructor(instructorList[0] || "");
+          }
+        } catch (error) {
+          console.error("Error fetching instructors:", error);
+        } finally {
+          setLoadingInstructors(false);
+        }
+      };
+      loadInstructors();
+    }
+  }, [isOpen, courseNumber, propInstructor]);
 
   const handleSubmit = async () => {
     if (!user) return;
@@ -47,17 +92,17 @@ export const CourseSelectionDialog = ({
     try {
       if (selection === "tutor") {
         // Add as a course the user can tutor
-        await addCourseToProfile(user.id, courseNumber);
+        await addCourseToProfile(user.id, courseNumber, selectedInstructor || undefined);
         toast({
           title: "Course added as tutor subject",
-          description: `${courseNumber} has been added to your courses to tutor.`,
+          description: `${courseNumber} has been added to your courses to tutor${selectedInstructor ? ` with instructor ${selectedInstructor}` : ''}.`,
         });
       } else {
-        // Add as a course the user needs help with (using the role-based course-utils function)
-        await addCourseToProfile(user.id, courseNumber);
+        // Add as a course the user needs help with
+        await addTutorStudentCourse(user.id, courseNumber, selectedInstructor || undefined);
         toast({
           title: "Course added for help",
-          description: `${courseNumber} has been added to courses you need help with.`,
+          description: `${courseNumber} has been added to courses you need help with${selectedInstructor ? ` with instructor ${selectedInstructor}` : ''}.`,
         });
       }
 
@@ -85,7 +130,29 @@ export const CourseSelectionDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="py-4">
+        <div className="py-4 space-y-4">
+          {instructors.length > 0 && (
+            <div className="space-y-2">
+              <Label>Select Instructor</Label>
+              <Select 
+                value={selectedInstructor} 
+                onValueChange={setSelectedInstructor}
+                disabled={loadingInstructors}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select instructor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {instructors.map((instructor, index) => (
+                    <SelectItem key={index} value={instructor}>
+                      {instructor}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          
           <RadioGroup
             value={selection}
             onValueChange={(value: "tutor" | "student") => setSelection(value)}

@@ -6,7 +6,7 @@ import { fetchCourseDetails } from "@/lib/scheduling/course-utils";
 /**
  * Add a course to a user's profile based on their role
  */
-export async function addCourseToProfile(userId: string, courseNumber: string) {
+export async function addCourseToProfile(userId: string, courseNumber: string, instructor?: string) {
   // First get current profile data
   const { data: profile, error: fetchError } = await supabase
     .from("profiles")
@@ -37,6 +37,7 @@ export async function addCourseToProfile(userId: string, courseNumber: string) {
         course_number: courseNumber,
         course_title: courseDetails?.course_title || "",
         department: courseNumber.split('-')[0] || null,
+        instructor: instructor || null,
       });
 
     if (tutorCourseError) {

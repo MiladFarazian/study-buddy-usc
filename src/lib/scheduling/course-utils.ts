@@ -10,7 +10,7 @@ export async function fetchCourseDetails(courseId: string) {
   try {
     const { data: courseData } = await supabase
       .from('courses-20251')
-      .select('Course number, Course title')
+      .select('Course number, Course title, Instructor')
       .eq('Course number', courseId)
       .maybeSingle();
       
@@ -18,7 +18,8 @@ export async function fetchCourseDetails(courseId: string) {
       return {
         id: courseId,
         course_number: courseData["Course number"] || courseId,
-        course_title: courseData["Course title"] || ''
+        course_title: courseData["Course title"] || '',
+        instructor: courseData["Instructor"] || null
       };
     }
   } catch (error) {
@@ -29,7 +30,7 @@ export async function fetchCourseDetails(courseId: string) {
   try {
     const { data: courseData } = await supabase
       .from('courses-20252')
-      .select('Course number, Course title')
+      .select('Course number, Course title, Instructor')
       .eq('Course number', courseId)
       .maybeSingle();
       
@@ -37,7 +38,8 @@ export async function fetchCourseDetails(courseId: string) {
       return {
         id: courseId,
         course_number: courseData["Course number"] || courseId,
-        course_title: courseData["Course title"] || ''
+        course_title: courseData["Course title"] || '',
+        instructor: courseData["Instructor"] || null
       };
     }
   } catch (error) {
@@ -48,6 +50,7 @@ export async function fetchCourseDetails(courseId: string) {
   return {
     id: courseId,
     course_number: courseId,
-    course_title: ''
+    course_title: '',
+    instructor: null
   };
 }

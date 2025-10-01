@@ -58,8 +58,8 @@ const CourseCard = ({ course }: CourseCardProps) => {
     
     setIsAdding(true);
     try {
-      // Just pass the course number string, not the entire course object
-      await addCourseToProfile(user.id, course.course_number);
+      // Pass course number and selected instructor
+      await addCourseToProfile(user.id, course.course_number, selectedInstructor || undefined);
       setIsAdded(true);
       toast({
         title: "Course added",

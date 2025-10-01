@@ -5,7 +5,7 @@ import { TutorStudentCourse } from "@/integrations/supabase/types-extension";
 /**
  * Add a course to a tutor's "Courses I Need Help With" list
  */
-export async function addTutorStudentCourse(userId: string, courseNumber: string) {
+export async function addTutorStudentCourse(userId: string, courseNumber: string, instructor?: string) {
   try {
     // First check if this course already exists in the tutor_student_courses table
     const { data: existingCourse, error: checkError } = await supabase
@@ -36,6 +36,7 @@ export async function addTutorStudentCourse(userId: string, courseNumber: string
         course_number: courseNumber,
         course_title: courseDetails?.course_title || "",
         department: courseNumber.split('-')[0] || null,
+        instructor: instructor || null,
       })
       .select()
       .single();
