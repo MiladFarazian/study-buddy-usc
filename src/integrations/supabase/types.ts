@@ -869,6 +869,47 @@ export type Database = {
           },
         ]
       }
+      student_courses: {
+        Row: {
+          course_number: string
+          course_title: string | null
+          created_at: string
+          department: string | null
+          id: string
+          instructor: string | null
+          student_email: string | null
+          student_id: string
+        }
+        Insert: {
+          course_number: string
+          course_title?: string | null
+          created_at?: string
+          department?: string | null
+          id?: string
+          instructor?: string | null
+          student_email?: string | null
+          student_id: string
+        }
+        Update: {
+          course_number?: string
+          course_title?: string | null
+          created_at?: string
+          department?: string | null
+          id?: string
+          instructor?: string | null
+          student_email?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_courses_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_reviews: {
         Row: {
           came_prepared: number | null
@@ -1113,36 +1154,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      tutor_student_courses: {
-        Row: {
-          course_number: string
-          course_title: string | null
-          created_at: string
-          department: string | null
-          id: string
-          instructor: string | null
-          user_id: string
-        }
-        Insert: {
-          course_number: string
-          course_title?: string | null
-          created_at?: string
-          department?: string | null
-          id?: string
-          instructor?: string | null
-          user_id: string
-        }
-        Update: {
-          course_number?: string
-          course_title?: string | null
-          created_at?: string
-          department?: string | null
-          id?: string
-          instructor?: string | null
-          user_id?: string
-        }
-        Relationships: []
       }
       tutor_students: {
         Row: {

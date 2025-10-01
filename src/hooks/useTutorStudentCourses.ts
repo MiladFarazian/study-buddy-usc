@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { TutorStudentCourse } from "@/integrations/supabase/types-extension";
 import { getTutorStudentCourses } from "@/lib/tutor-student-utils";
@@ -6,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export function useTutorStudentCourses() {
   const [courses, setCourses] = useState<TutorStudentCourse[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
