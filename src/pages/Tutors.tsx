@@ -10,6 +10,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { Switch } from "@/components/ui/switch";
 import { getTutorStudentCourses } from "@/lib/tutor-student-utils";
+import { searchTutors, filterTutorsBySubject } from "@/lib/search-utils";
 
 const Tutors = () => {
   const { tutors, loading, studentCourseTutors, loadingStudentTutors } = useTutors();
@@ -58,23 +59,14 @@ const Tutors = () => {
   // Check if there are matching tutors
   const hasMatchingTutors = studentCourseTutors && studentCourseTutors.length > 0;
 
-  const filteredTutors = (showOnlyForMyCourses && hasMatchingTutors ? studentCourseTutors : tutors).filter((tutor) => {
-    const matchesSearch = searchQuery === "" || 
-      tutor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tutor.field.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tutor.subjects.some(subject => 
-        subject.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        subject.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    
-    const matchesSubject = selectedSubject === "all" || 
-      tutor.field.toLowerCase().includes(selectedSubject.toLowerCase()) ||
-      tutor.subjects.some(subject => 
-        subject.code.toLowerCase().includes(selectedSubject.toLowerCase())
-      );
-    
-    return matchesSearch && matchesSubject;
-  });
+  // Apply enhanced search and filtering
+  const baseTutors = showOnlyForMyCourses && hasMatchingTutors ? studentCourseTutors : tutors;
+  
+  // First apply search with intelligent scoring
+  const searchedTutors = searchTutors(baseTutors, searchQuery);
+  
+  // Then apply subject filter
+  const filteredTutors = filterTutorsBySubject(searchedTutors, selectedSubject);
 
   const clearFilters = () => {
     setSearchQuery("");
