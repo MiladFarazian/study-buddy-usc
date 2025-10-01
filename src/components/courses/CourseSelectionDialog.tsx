@@ -92,7 +92,7 @@ export const CourseSelectionDialog = ({
     try {
       if (selection === "tutor") {
         // Add as a course the user can tutor
-        await addCourseToProfile(user.id, courseNumber, selectedInstructor || undefined);
+        await addCourseToProfile(user.id, courseNumber, selectedInstructor || undefined, courseTitle);
         toast({
           title: "Course added as tutor subject",
           description: `${courseNumber} has been added to your courses to tutor${selectedInstructor ? ` with instructor ${selectedInstructor}` : ''}.`,

@@ -6,7 +6,7 @@ import { fetchCourseDetails } from "@/lib/scheduling/course-utils";
 /**
  * Add a course to a user's profile based on their role
  */
-export async function addCourseToProfile(userId: string, courseNumber: string, instructor?: string) {
+export async function addCourseToProfile(userId: string, courseNumber: string, instructor?: string, courseTitle?: string | null, department?: string | null) {
   // First get current profile data
   const { data: profile, error: fetchError } = await supabase
     .from("profiles")
@@ -29,16 +29,35 @@ export async function addCourseToProfile(userId: string, courseNumber: string, i
     updateData.tutor_courses_subjects = updatedSubjects;
 
     // Also add to tutor_courses table
-    const courseDetails = await fetchCourseDetails(courseNumber);
+    // IMPORTANT: do not overwrite with empty strings; prefer passed-in title, then lookup
+    const payload: any = {
+      tutor_id: userId,
+      course_number: courseNumber,
+      department: (department && department.trim()) || courseNumber.split('-')[0] || null,
+      instructor: instructor || null,
+    };
+
+    let titleToSave: string | null = null;
+    if (courseTitle && courseTitle.trim().length > 0) {
+      titleToSave = courseTitle.trim();
+    } else {
+      try {
+        const courseDetails = await fetchCourseDetails(courseNumber);
+        if (courseDetails?.course_title && courseDetails.course_title.trim().length > 0) {
+          titleToSave = courseDetails.course_title.trim();
+        }
+      } catch (e) {
+        console.warn("[addCourseToProfile] fetchCourseDetails failed:", e);
+      }
+    }
+
+    if (titleToSave) {
+      payload.course_title = titleToSave;
+    }
+
     const { error: tutorCourseError } = await supabase
       .from("tutor_courses")
-      .upsert({
-        tutor_id: userId,
-        course_number: courseNumber,
-        course_title: courseDetails?.course_title || "",
-        department: courseNumber.split('-')[0] || null,
-        instructor: instructor || null,
-      });
+      .upsert(payload);
 
     if (tutorCourseError) {
       console.error("Failed to add to tutor_courses:", tutorCourseError);
