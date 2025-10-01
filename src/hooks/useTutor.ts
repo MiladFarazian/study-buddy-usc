@@ -84,10 +84,11 @@ export function useTutor(id: string) {
         console.error("Error fetching tutor courses:", coursesError);
       }
 
-      // Convert to subjects format
+      // Convert to subjects format with instructor information
       const subjects: Subject[] = tutorCourses?.map(course => ({
         code: course.course_number,
-        name: course.course_title || course.course_number
+        name: course.course_title || course.course_number,
+        instructor: course.instructor || undefined
       })) || [];
 
       // If the profile has subjects array but no tutor_courses

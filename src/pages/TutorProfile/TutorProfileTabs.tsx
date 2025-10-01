@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tutor, Review } from "@/types/tutor";
@@ -13,6 +13,9 @@ import { TutorBadges } from "@/components/TutorBadges";
 import { useTutorBadges } from "@/hooks/useTutorBadges";
 import { useAuth } from "@/contexts/AuthContext";
 import { getTutorStudentCourses } from "@/lib/tutor-student-utils";
+import { useTutorMatches } from "@/hooks/useTutorMatches";
+import { getCourseMatchType } from "@/lib/instructor-matching-utils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TutorProfileTabsProps {
   tutor: Tutor;
@@ -30,33 +33,62 @@ export const TutorProfileTabs = ({
   onBookSession
 }: TutorProfileTabsProps) => {
   const { profile, user } = useAuth();
-  const [studentCourses, setStudentCourses] = useState<string[]>([]);
+  const { getMatchForTutor } = useTutorMatches();
+  const [studentCoursesData, setStudentCoursesData] = useState<Array<{ course_number: string; instructor?: string }>>([]);
 
-  // Fetch student courses for highlighting
+  // Fetch student courses with instructor information
   useEffect(() => {
     const fetchStudentCourses = async () => {
-      if (!profile) {
-        setStudentCourses([]);
+      if (!user?.id) {
+        setStudentCoursesData([]);
         return;
       }
       
-      if (profile.student_courses && Array.isArray(profile.student_courses)) {
-        setStudentCourses(profile.student_courses);
-      } else if (profile.role === 'tutor' && user) {
-        try {
-          const tutorStudentCourses = await getTutorStudentCourses(user.id);
-          setStudentCourses(tutorStudentCourses.map((course: any) => course.course_number));
-        } catch (err) {
-          console.error("Error fetching tutor student courses:", err);
-          setStudentCourses([]);
-        }
-      } else {
-        setStudentCourses([]);
+      try {
+        const { data, error } = await supabase
+          .from('student_courses')
+          .select('course_number, instructor')
+          .eq('student_id', user.id);
+        
+        if (error) throw error;
+        setStudentCoursesData(data || []);
+      } catch (err) {
+        console.error("Error fetching student courses:", err);
+        setStudentCoursesData([]);
       }
     };
 
     fetchStudentCourses();
-  }, [profile, user]);
+  }, [user?.id]);
+
+  // Build match map for each course
+  const matchByCourse = useMemo(() => {
+    const map: Record<string, 'exact' | 'course-only' | 'none'> = {};
+    
+    tutor.subjects.forEach(subject => {
+      const matchType = getCourseMatchType(
+        subject.code,
+        studentCoursesData.map(c => ({ 
+          course_number: c.course_number, 
+          course_title: c.course_number, 
+          instructor: c.instructor,
+          department: c.course_number.split('-')[0]
+        })),
+        tutor.subjects.map(s => ({
+          course_number: s.code,
+          course_title: s.name,
+          instructor: s.instructor,
+          department: s.code.split('-')[0]
+        }))
+      );
+      map[subject.code] = matchType;
+    });
+    
+    return map;
+  }, [tutor.subjects, studentCoursesData]);
+
+  // For backward compatibility - highlighted courses list
+  const studentCourses = studentCoursesData.map(c => c.course_number);
 
   return (
     <Tabs defaultValue="about" className="w-full">
@@ -73,7 +105,7 @@ export const TutorProfileTabs = ({
           </TabsContent>
           
           <TabsContent value="subjects" className="mt-0">
-            <TutorSubjectsSection subjects={tutor.subjects} highlightedCourses={studentCourses} />
+            <TutorSubjectsSection subjects={tutor.subjects} matchByCourse={matchByCourse} />
           </TabsContent>
           
           <TabsContent value="availability" className="mt-0">

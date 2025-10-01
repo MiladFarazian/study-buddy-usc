@@ -9,6 +9,9 @@ import StarRating from "./StarRating";
 import { useTutorBadges } from "@/hooks/useTutorBadges";
 import { sortBadgesByRarity } from "@/lib/badgeConfig";
 import { BadgeIcon } from "@/components/ui/BadgeIcon";
+import { MatchBadge } from "@/components/ui/MatchBadge";
+import { useTutorMatches } from "@/hooks/useTutorMatches";
+import { MatchType } from "@/lib/instructor-matching-utils";
 
 interface TutorCardMobileProps {
   tutor: Tutor;
@@ -18,6 +21,15 @@ interface TutorCardMobileProps {
 
 const TutorCardMobile = ({ tutor, getInitials, highlightedCourses = [] }: TutorCardMobileProps) => {
   const { earnedBadges } = useTutorBadges(tutor.id);
+  const { getMatchForTutor } = useTutorMatches();
+  
+  // Determine the best match type for this tutor
+  const matchResult = getMatchForTutor(tutor.id);
+  const bestMatchType: MatchType = matchResult?.exactMatches.length 
+    ? 'exact' 
+    : matchResult?.courseOnlyMatches.length 
+    ? 'course-only' 
+    : 'none';
   
   // Sort subjects to show matching courses first
   const sortedSubjects = [...tutor.subjects].sort((a, b) => {
@@ -41,7 +53,10 @@ const TutorCardMobile = ({ tutor, getInitials, highlightedCourses = [] }: TutorC
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <h3 className="text-base font-bold truncate">{tutor.name}</h3>
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <h3 className="text-base font-bold truncate">{tutor.name}</h3>
+                <MatchBadge matchType={bestMatchType} size="sm" />
+              </div>
               <div className="flex items-center mt-0.5">
                 <GraduationCap className="h-3 w-3 text-gray-500 mr-1 flex-shrink-0" />
                 <p className="text-gray-600 text-xs truncate">{tutor.field}</p>

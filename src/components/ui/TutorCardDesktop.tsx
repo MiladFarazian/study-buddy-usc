@@ -9,6 +9,9 @@ import StarRating from "./StarRating";
 import { useTutorBadges } from "@/hooks/useTutorBadges";
 import { sortBadgesByRarity } from "@/lib/badgeConfig";
 import { BadgeIcon } from "@/components/ui/BadgeIcon";
+import { MatchBadge } from "@/components/ui/MatchBadge";
+import { useTutorMatches } from "@/hooks/useTutorMatches";
+import { MatchType } from "@/lib/instructor-matching-utils";
 
 interface TutorCardDesktopProps {
   tutor: Tutor;
@@ -22,6 +25,15 @@ const TutorCardDesktop = ({
   highlightedCourses = []
 }: TutorCardDesktopProps) => {
   const { earnedBadges } = useTutorBadges(tutor.id);
+  const { getMatchForTutor } = useTutorMatches();
+  
+  // Determine the best match type for this tutor
+  const matchResult = getMatchForTutor(tutor.id);
+  const bestMatchType: MatchType = matchResult?.exactMatches.length 
+    ? 'exact' 
+    : matchResult?.courseOnlyMatches.length 
+    ? 'course-only' 
+    : 'none';
   
   // Sort subjects to show matching courses first
   const sortedSubjects = [...tutor.subjects].sort((a, b) => {
@@ -45,7 +57,10 @@ const TutorCardDesktop = ({
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-              <h3 className="text-lg md:text-xl font-bold text-ellipsis overflow-hidden whitespace-nowrap">{tutor.name}</h3>
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-lg md:text-xl font-bold text-ellipsis overflow-hidden whitespace-nowrap">{tutor.name}</h3>
+                <MatchBadge matchType={bestMatchType} size="sm" />
+              </div>
               <div className="flex items-center mt-1">
                 <GraduationCap className="h-4 w-4 text-gray-500 mr-1 flex-shrink-0" />
                 <p className="text-gray-600 text-sm text-ellipsis overflow-hidden whitespace-nowrap">{tutor.field}</p>

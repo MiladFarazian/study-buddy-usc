@@ -1,20 +1,22 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Subject } from "@/types/tutor";
+import { MatchBadge } from "@/components/ui/MatchBadge";
+import { MatchType } from "@/lib/instructor-matching-utils";
 
 interface TutorSubjectsSectionProps {
   subjects: Subject[];
-  highlightedCourses?: string[];
+  matchByCourse?: Record<string, MatchType>;
 }
 
-export const TutorSubjectsSection = ({ subjects, highlightedCourses = [] }: TutorSubjectsSectionProps) => {
-  // Sort subjects to show matching courses first
+export const TutorSubjectsSection = ({ subjects, matchByCourse = {} }: TutorSubjectsSectionProps) => {
+  // Sort subjects to show exact matches first, then course matches, then the rest
   const sortedSubjects = [...subjects].sort((a, b) => {
-    const aMatches = highlightedCourses.includes(a.code);
-    const bMatches = highlightedCourses.includes(b.code);
-    if (aMatches && !bMatches) return -1;
-    if (!aMatches && bMatches) return 1;
-    return 0;
+    const aMatch = matchByCourse[a.code] || 'none';
+    const bMatch = matchByCourse[b.code] || 'none';
+    
+    const matchOrder = { exact: 0, 'course-only': 1, none: 2 };
+    return matchOrder[aMatch] - matchOrder[bMatch];
   });
 
   return (
@@ -22,20 +24,17 @@ export const TutorSubjectsSection = ({ subjects, highlightedCourses = [] }: Tuto
       <h2 className="text-xl font-semibold mb-4">Subjects</h2>
       <div className="flex flex-wrap gap-2">
         {sortedSubjects.map((subject) => {
-          const isHighlighted = highlightedCourses.includes(subject.code);
+          const matchType = matchByCourse[subject.code] || 'none';
           return (
-            <Badge
-              key={subject.code}
-              variant={isHighlighted ? "default" : "secondary"}
-              className={`${
-                isHighlighted
-                  ? "bg-usc-cardinal text-white hover:bg-usc-cardinal-dark font-semibold"
-                  : ""
-              } text-sm py-1 px-3`}
-            >
-              {subject.code} - {subject.name}
-              {isHighlighted && <span className="ml-1.5">✓</span>}
-            </Badge>
+            <div key={subject.code} className="flex items-center gap-1.5">
+              <Badge
+                variant="secondary"
+                className="text-sm py-1 px-3"
+              >
+                {subject.code} - {subject.name}
+              </Badge>
+              <MatchBadge matchType={matchType} size="sm" />
+            </div>
           );
         })}
       </div>
