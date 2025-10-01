@@ -54,7 +54,7 @@ export const TutorSubjectsSection = ({ subjects, matchByCourse = {} }: TutorSubj
                 <TooltipContent>
                   <p>
                     {isExactMatch 
-                      ? "Matching course and instructor" 
+                      ? "Matching course and Professor" 
                       : isCourseMatch 
                       ? "Matching course" 
                       : subject.name}
