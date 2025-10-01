@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tutor, Review } from "@/types/tutor";
@@ -11,6 +11,8 @@ import { TutorAvailabilitySection } from "@/components/tutor/TutorAvailabilitySe
 import { TutorReviewsSection } from "@/components/tutor/TutorReviewsSection";
 import { TutorBadges } from "@/components/TutorBadges";
 import { useTutorBadges } from "@/hooks/useTutorBadges";
+import { useAuth } from "@/contexts/AuthContext";
+import { getTutorStudentCourses } from "@/lib/tutor-student-utils";
 
 interface TutorProfileTabsProps {
   tutor: Tutor;
@@ -27,6 +29,35 @@ export const TutorProfileTabs = ({
   getInitials,
   onBookSession
 }: TutorProfileTabsProps) => {
+  const { profile, user } = useAuth();
+  const [studentCourses, setStudentCourses] = useState<string[]>([]);
+
+  // Fetch student courses for highlighting
+  useEffect(() => {
+    const fetchStudentCourses = async () => {
+      if (!profile) {
+        setStudentCourses([]);
+        return;
+      }
+      
+      if (profile.student_courses && Array.isArray(profile.student_courses)) {
+        setStudentCourses(profile.student_courses);
+      } else if (profile.role === 'tutor' && user) {
+        try {
+          const tutorStudentCourses = await getTutorStudentCourses(user.id);
+          setStudentCourses(tutorStudentCourses.map((course: any) => course.course_number));
+        } catch (err) {
+          console.error("Error fetching tutor student courses:", err);
+          setStudentCourses([]);
+        }
+      } else {
+        setStudentCourses([]);
+      }
+    };
+
+    fetchStudentCourses();
+  }, [profile, user]);
+
   return (
     <Tabs defaultValue="about" className="w-full">
       <TabsList className="w-full grid grid-cols-3 mb-6">
@@ -42,7 +73,7 @@ export const TutorProfileTabs = ({
           </TabsContent>
           
           <TabsContent value="subjects" className="mt-0">
-            <TutorSubjectsSection subjects={tutor.subjects} />
+            <TutorSubjectsSection subjects={tutor.subjects} highlightedCourses={studentCourses} />
           </TabsContent>
           
           <TabsContent value="availability" className="mt-0">
