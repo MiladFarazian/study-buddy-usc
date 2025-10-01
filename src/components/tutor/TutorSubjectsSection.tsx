@@ -49,7 +49,13 @@ export const TutorSubjectsSection = ({ subjects, matchByCourse = {} }: TutorSubj
             return (
               <Tooltip key={subject.code}>
                 <TooltipTrigger asChild>
-                  {badge}
+                  <span
+                    className="inline-block"
+                    tabIndex={0}
+                    aria-label={`${subject.code} ${isExactMatch ? '(Matching course and Professor)' : isCourseMatch ? '(Matching course)' : ''}`.trim()}
+                  >
+                    {badge}
+                  </span>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>
