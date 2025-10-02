@@ -71,7 +71,7 @@ export function useTutors() {
       setError(null);
       
       try {
-        console.log("Fetching tutors...");
+        // Fetch tutors from the new tutors table with profile data (only approved)
         // Fetch tutors from the new tutors table with profile data (only approved)
         const { data: tutorData, error } = await supabase
           .from('tutors')
@@ -100,13 +100,12 @@ export function useTutors() {
 
         // If no tutors found, just set empty array
         if (!tutorData || tutorData.length === 0) {
-          console.log("No tutors found");
           setTutors([]);
           setLoading(false);
           return;
         }
 
-        console.log("Tutors found:", tutorData.length);
+        
 
         // Process tutors to create tutor objects
         const processedTutors = tutorData.map(tutor => {

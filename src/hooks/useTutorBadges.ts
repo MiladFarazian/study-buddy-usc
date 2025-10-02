@@ -2,6 +2,11 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BADGE_CONFIG } from "@/lib/badgeConfig";
 
+// Simple module-level cache to avoid duplicate fetches in React StrictMode
+const BADGE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const badgeCache = new Map<string, { ts: number; earned: EarnedBadge[]; progress: BadgeProgress | null }>();
+const inFlight = new Map<string, Promise<void>>();
+
 export interface EarnedBadge {
   id: string;
   badge_type: string;
@@ -30,78 +35,99 @@ export function useTutorBadges(tutorId: string) {
       return;
     }
 
-    try {
-      // Fetch earned badges
-      const { data: badgesData, error: badgesError } = await supabase
-        .from('tutor_badges')
-        .select('*')
-        .eq('tutor_id', tutorId)
-        .eq('is_active', true);
+    const now = Date.now();
+    const cached = badgeCache.get(tutorId);
+    if (cached && now - cached.ts < BADGE_CACHE_TTL) {
+      setEarnedBadges(cached.earned);
+      setProgressData(cached.progress);
+      setLoading(false);
+      return;
+    }
 
-      if (badgesError) {
-        console.error("Error fetching badges:", badgesError);
-      } else {
-        setEarnedBadges(badgesData || []);
+    // If a request for this tutor is already in-flight, wait for it
+    const existing = inFlight.get(tutorId);
+    if (existing) {
+      await existing;
+      const updated = badgeCache.get(tutorId);
+      if (updated) {
+        setEarnedBadges(updated.earned);
+        setProgressData(updated.progress);
       }
+      setLoading(false);
+      return;
+    }
 
-      // Fetch progress data
-      const { data: progressDataResult, error: progressError } = await supabase
-        .from('badge_progress')
-        .select('*')
-        .eq('tutor_id', tutorId)
-        .single();
-
-      if (progressError && progressError.code !== 'PGRST116') {
-        console.error("Error fetching progress data:", progressError);
-      } else {
-        setProgressData(progressDataResult);
-      }
-
-      // If no progress data exists, create it with basic session data
-      if (!progressDataResult) {
-        const { data: sessionData } = await supabase
-          .from('sessions')
+    const req = (async () => {
+      try {
+        // Fetch earned badges
+        const { data: badgesData, error: badgesError } = await supabase
+          .from('tutor_badges')
           .select('*')
           .eq('tutor_id', tutorId)
-          .eq('status', 'completed');
+          .eq('is_active', true);
 
-        const { data: reviewData } = await supabase
-          .from('student_reviews')
-          .select('teaching_quality')
-          .eq('tutor_id', tutorId);
-
-        const totalSessions = sessionData?.length || 0;
-        const avgRating = reviewData?.length > 0 
-          ? reviewData.reduce((sum, review) => sum + (review.teaching_quality || 0), 0) / reviewData.length 
-          : 0;
-
-        const calculatedProgress: BadgeProgress = {
-          total_sessions: totalSessions,
-          current_streak_weeks: 0,
-          last_session_date: sessionData?.[0]?.start_time || null,
-          avg_rating: avgRating,
-          total_stress_reduction: 0,
-          avg_response_time_hours: 2.5,
-          student_improvement_score: 0
-        };
-
-        setProgressData(calculatedProgress);
-
-        // Insert the calculated progress into the database
-        if (totalSessions > 0) {
-          await supabase
-            .from('badge_progress')
-            .insert({
-              tutor_id: tutorId,
-              ...calculatedProgress
-            });
+        const earned = badgesData || [];
+        if (badgesError) {
+          console.error("Error fetching badges:", badgesError);
         }
+
+        // Fetch progress data
+        const { data: progressDataResult, error: progressError } = await supabase
+          .from('badge_progress')
+          .select('*')
+          .eq('tutor_id', tutorId)
+          .single();
+
+        let progress: BadgeProgress | null = progressDataResult || null;
+        if (progressError && progressError.code !== 'PGRST116') {
+          console.error("Error fetching progress data:", progressError);
+        }
+
+        // If no progress data exists, perform lightweight local calculation (optional)
+        if (!progress) {
+          const { data: sessionData } = await supabase
+            .from('sessions')
+            .select('id, start_time')
+            .eq('tutor_id', tutorId)
+            .eq('status', 'completed');
+
+          const { data: reviewData } = await supabase
+            .from('student_reviews')
+            .select('teaching_quality')
+            .eq('tutor_id', tutorId);
+
+          const totalSessions = sessionData?.length || 0;
+          const avgRating = reviewData?.length ?
+            reviewData.reduce((sum, r) => sum + (r.teaching_quality || 0), 0) / reviewData.length : 0;
+
+          progress = {
+            total_sessions: totalSessions,
+            current_streak_weeks: 0,
+            last_session_date: sessionData?.[0]?.start_time || null,
+            avg_rating: avgRating,
+            total_stress_reduction: 0,
+            avg_response_time_hours: 2.5,
+            student_improvement_score: 0,
+          };
+
+          if (totalSessions > 0) {
+            await supabase.from('badge_progress').insert({ tutor_id: tutorId, ...progress });
+          }
+        }
+
+        badgeCache.set(tutorId, { ts: Date.now(), earned, progress });
+        setEarnedBadges(earned);
+        setProgressData(progress);
+      } catch (error) {
+        console.error("Error in fetchBadgeData:", error);
+      } finally {
+        setLoading(false);
+        inFlight.delete(tutorId);
       }
-    } catch (error) {
-      console.error("Error in fetchBadgeData:", error);
-    } finally {
-      setLoading(false);
-    }
+    })();
+
+    inFlight.set(tutorId, req);
+    await req;
   }, [tutorId]);
 
   useEffect(() => {
