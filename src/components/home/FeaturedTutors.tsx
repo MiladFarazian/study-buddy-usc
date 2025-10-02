@@ -11,7 +11,7 @@ import { getTutorStudentCourses } from "@/lib/tutor-student-utils";
 
 const FeaturedTutors = () => {
   const tutorsData = useTutors();
-  const { tutors, loading } = tutorsData;
+  const { tutors, loading, matchResults } = tutorsData;
   const isMobile = useIsMobile();
   const { profile, user } = useAuth();
   const [studentCourses, setStudentCourses] = useState<string[]>([]);
@@ -79,14 +79,18 @@ const FeaturedTutors = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 transition-all duration-300">
-            {featuredTutors.map((tutor) => (
-              <div key={tutor.id} className="w-full">
-                <TutorCard 
-                  tutor={tutor}
-                  highlightedCourses={hasStudentCourses ? studentCourses : undefined}
-                />
-              </div>
-            ))}
+            {featuredTutors.map((tutor) => {
+              const matchResult = matchResults?.find(m => m.tutorId === tutor.id);
+              return (
+                <div key={tutor.id} className="w-full">
+                  <TutorCard 
+                    tutor={tutor}
+                    highlightedCourses={hasStudentCourses ? studentCourses : undefined}
+                    matchResult={matchResult}
+                  />
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
