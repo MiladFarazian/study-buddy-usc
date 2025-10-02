@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Course, CourseFilterOptions, TermCourse } from "@/types/CourseTypes";
+import { searchCourses } from "@/lib/search-utils";
 
 export function useCourses(filterOptions: CourseFilterOptions) {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -164,15 +165,9 @@ export function useCourses(filterOptions: CourseFilterOptions) {
   useEffect(() => {
     let result = [...courses];
     
-    // Filter by search query
+    // Filter by search query using advanced search algorithm
     if (filterOptions.search) {
-      const query = filterOptions.search.toLowerCase();
-      result = result.filter(
-        course => 
-          (course.course_number && course.course_number.toLowerCase().includes(query)) ||
-          (course.course_title && course.course_title.toLowerCase().includes(query)) ||
-          (course.instructor && course.instructor.toLowerCase().includes(query))
-      );
+      result = searchCourses(result, filterOptions.search);
     }
     
     // Filter by department
