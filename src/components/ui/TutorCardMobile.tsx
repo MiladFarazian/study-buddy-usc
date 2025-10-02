@@ -9,22 +9,17 @@ import StarRating from "./StarRating";
 import { useTutorBadges } from "@/hooks/useTutorBadges";
 import { sortBadgesByRarity } from "@/lib/badgeConfig";
 import { BadgeIcon } from "@/components/ui/BadgeIcon";
-import { MatchBadge } from "@/components/ui/MatchBadge";
-import { useTutorMatches } from "@/hooks/useTutorMatches";
-import { MatchType } from "@/lib/instructor-matching-utils";
+import { MatchType, MatchResult } from "@/lib/instructor-matching-utils";
 
 interface TutorCardMobileProps {
   tutor: Tutor;
   getInitials: (name: string) => string;
   highlightedCourses?: string[];
+  matchResult?: MatchResult;
 }
 
-const TutorCardMobile = ({ tutor, getInitials, highlightedCourses = [] }: TutorCardMobileProps) => {
+const TutorCardMobile = ({ tutor, getInitials, highlightedCourses = [], matchResult }: TutorCardMobileProps) => {
   const { earnedBadges } = useTutorBadges(tutor.id);
-  const { getMatchForTutor } = useTutorMatches();
-  
-  // Determine the best match type for this tutor
-  const matchResult = getMatchForTutor(tutor.id);
   const bestMatchType: MatchType = matchResult?.exactMatches.length 
     ? 'exact' 
     : matchResult?.courseOnlyMatches.length 
@@ -110,7 +105,6 @@ const TutorCardMobile = ({ tutor, getInitials, highlightedCourses = [] }: TutorC
               <h4 className="font-medium text-xs mb-1">Available for:</h4>
               <div className="flex flex-nowrap overflow-hidden gap-1">
                 {sortedSubjects.slice(0, 2).map((subject) => {
-                  const matchResult = getMatchForTutor(tutor.id);
                   const isExactMatch = matchResult?.exactMatches.some(m => m.course_number === subject.code);
                   const isCourseMatch = matchResult?.courseOnlyMatches.some(m => m.course_number === subject.code);
                   

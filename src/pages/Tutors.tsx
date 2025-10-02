@@ -13,7 +13,7 @@ import { getTutorStudentCourses } from "@/lib/tutor-student-utils";
 import { searchTutors, filterTutorsBySubject } from "@/lib/search-utils";
 
 const Tutors = () => {
-  const { tutors, loading, studentCourseTutors, loadingStudentTutors } = useTutors();
+  const { tutors, loading, studentCourseTutors, loadingStudentTutors, matchResults } = useTutors();
   const [studentCourses, setStudentCourses] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("all");
@@ -234,7 +234,8 @@ const Tutors = () => {
             <div key={tutor.id} className="w-full">
               <TutorCard 
                 tutor={tutor} 
-                highlightedCourses={hasStudentCourses ? studentCourses : undefined} 
+                highlightedCourses={hasStudentCourses ? studentCourses : undefined}
+                matchResult={matchResults.find(m => m.tutorId === tutor.id)}
               />
             </div>
           ))}
