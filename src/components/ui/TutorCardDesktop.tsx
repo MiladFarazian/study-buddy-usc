@@ -35,12 +35,17 @@ const TutorCardDesktop = ({
     ? 'course-only' 
     : 'none';
   
-  // Sort subjects to show matching courses first
+  // Sort subjects: exact matches first, then course-only matches, then others
   const sortedSubjects = [...tutor.subjects].sort((a, b) => {
-    const aMatches = highlightedCourses.includes(a.code);
-    const bMatches = highlightedCourses.includes(b.code);
-    if (aMatches && !bMatches) return -1;
-    if (!aMatches && bMatches) return 1;
+    const aExactMatch = matchResult?.exactMatches.some(m => m.course_number === a.code);
+    const bExactMatch = matchResult?.exactMatches.some(m => m.course_number === b.code);
+    const aCourseMatch = matchResult?.courseOnlyMatches.some(m => m.course_number === a.code);
+    const bCourseMatch = matchResult?.courseOnlyMatches.some(m => m.course_number === b.code);
+    
+    if (aExactMatch && !bExactMatch) return -1;
+    if (!aExactMatch && bExactMatch) return 1;
+    if (aCourseMatch && !bCourseMatch) return -1;
+    if (!aCourseMatch && bCourseMatch) return 1;
     return 0;
   });
   
