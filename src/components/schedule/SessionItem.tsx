@@ -300,7 +300,9 @@ export const SessionItem = ({
                           stripe_connect_id: null,
                           stripe_connect_onboarding_complete: false,
                           subjects: null,
-                          updated_at: new Date().toISOString()
+                          updated_at: new Date().toISOString(),
+                          available_in_person: true,
+                          available_online: true
                         }
                       : {
                           id: session.student_id,
@@ -324,7 +326,9 @@ export const SessionItem = ({
                           stripe_connect_id: null,
                           stripe_connect_onboarding_complete: false,
                           subjects: null,
-                          updated_at: new Date().toISOString()
+                          updated_at: new Date().toISOString(),
+                          available_in_person: true,
+                          available_online: true
                         };
                     console.log('Using student profile for review:', studentProfile);
                     startTutorReview(session, studentProfile);

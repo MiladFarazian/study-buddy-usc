@@ -598,6 +598,8 @@ export type Database = {
       profiles: {
         Row: {
           approved_tutor: boolean | null
+          available_in_person: boolean | null
+          available_online: boolean | null
           avatar_url: string | null
           average_rating: number | null
           bio: string | null
@@ -622,6 +624,8 @@ export type Database = {
         }
         Insert: {
           approved_tutor?: boolean | null
+          available_in_person?: boolean | null
+          available_online?: boolean | null
           avatar_url?: string | null
           average_rating?: number | null
           bio?: string | null
@@ -646,6 +650,8 @@ export type Database = {
         }
         Update: {
           approved_tutor?: boolean | null
+          available_in_person?: boolean | null
+          available_online?: boolean | null
           avatar_url?: string | null
           average_rating?: number | null
           bio?: string | null

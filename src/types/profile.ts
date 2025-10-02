@@ -21,5 +21,7 @@ export interface Profile {
   availability?: any; // Using any for now, but could be more specific
   created_at?: string;
   updated_at?: string;
-  approved_tutor?: boolean; // Added this property to fix TypeScript errors
+  approved_tutor?: boolean;
+  available_in_person?: boolean;
+  available_online?: boolean;
 }
