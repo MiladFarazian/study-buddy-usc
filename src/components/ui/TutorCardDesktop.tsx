@@ -59,7 +59,6 @@ const TutorCardDesktop = ({
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <h3 className="text-lg md:text-xl font-bold text-ellipsis overflow-hidden whitespace-nowrap">{tutor.name}</h3>
-                <MatchBadge matchType={bestMatchType} size="sm" />
               </div>
               <div className="flex items-center mt-1">
                 <GraduationCap className="h-4 w-4 text-gray-500 mr-1 flex-shrink-0" />
@@ -111,19 +110,24 @@ const TutorCardDesktop = ({
               <h4 className="font-medium mb-2 text-sm">Available for:</h4>
               <div className="flex flex-nowrap overflow-hidden gap-2">
                 {sortedSubjects.slice(0, 2).map(subject => {
-                  const isHighlighted = highlightedCourses.includes(subject.code);
+                  const matchResult = getMatchForTutor(tutor.id);
+                  const isExactMatch = matchResult?.exactMatches.some(m => m.course_number === subject.code);
+                  const isCourseMatch = matchResult?.courseOnlyMatches.some(m => m.course_number === subject.code);
+                  
                   return (
                     <Badge 
                       key={subject.code} 
                       variant="outline" 
                       className={`${
-                        isHighlighted 
-                          ? "bg-usc-cardinal text-white border-usc-cardinal font-semibold shadow-sm" 
-                          : "bg-red-50 hover:bg-red-100 text-usc-cardinal border-red-100"
+                        isExactMatch
+                          ? "bg-emerald-600 text-white border-emerald-600 font-semibold hover:bg-emerald-700" 
+                          : isCourseMatch
+                          ? "bg-red-700 text-white border-red-700 font-semibold hover:bg-red-800"
+                          : "bg-yellow-500 text-black border-yellow-500 hover:bg-yellow-600"
                       } text-xs md:text-sm whitespace-nowrap py-0 h-5 md:h-6 flex-shrink-0`}
                     >
                       {subject.code}
-                      {isHighlighted && <span className="ml-1">✓</span>}
+                      {(isExactMatch || isCourseMatch) && <span className="ml-1">✓</span>}
                     </Badge>
                   );
                 })}
