@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Course } from "@/types/CourseTypes";
+import { searchCourses } from "@/lib/search-utils";
 
 export function useCoursesFilter(
   courses: Course[], 
@@ -41,14 +42,9 @@ export function useCoursesFilter(
     
     let result = [...courses];
     
-    // Apply search filter if search query exists
+    // Apply search filter if search query exists using the advanced search algorithm
     if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(course => 
-        (course.course_number && course.course_number.toLowerCase().includes(query)) ||
-        (course.course_title && course.course_title.toLowerCase().includes(query)) ||
-        (course.description && course.description.toLowerCase().includes(query))
-      );
+      result = searchCourses(result, searchQuery);
     }
     
     // Apply department filter if a specific department is selected

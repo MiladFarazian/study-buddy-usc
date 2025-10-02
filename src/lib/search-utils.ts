@@ -1,4 +1,5 @@
 import { Tutor } from "@/types/tutor";
+import { Course } from "@/types/CourseTypes";
 
 /**
  * Normalize text for searching: lowercase, remove special chars, trim
@@ -145,4 +146,110 @@ export const filterTutorsBySubject = (tutors: Tutor[], selectedSubject: string):
     return tutorField.includes(normalizedSubject) ||
       tutorSubjects.some(s => s.code.includes(normalizedSubject) || s.name.includes(normalizedSubject));
   });
+};
+
+/**
+ * Multi-tier search scoring system for courses
+ */
+interface CourseSearchScore {
+  course: Course;
+  score: number;
+}
+
+export const searchCourses = (courses: Course[], searchQuery: string): Course[] => {
+  if (!searchQuery || searchQuery.trim() === "") {
+    return courses;
+  }
+
+  const normalizedQuery = normalizeText(searchQuery);
+  const queryTokens = tokenize(searchQuery);
+  
+  const scoredCourses: CourseSearchScore[] = courses.map(course => {
+    let score = 0;
+    
+    const courseNumber = normalizeText(course.course_number || '');
+    const courseTitle = normalizeText(course.course_title || '');
+    const description = normalizeText(course.description || '');
+    const department = normalizeText(course.department || '');
+    const instructor = normalizeText(course.instructor || '');
+
+    // TIER 1: Exact matches (highest priority) - 1000 points
+    if (courseNumber === normalizedQuery) score += 1000;
+    if (courseTitle === normalizedQuery) score += 1000;
+    if (instructor === normalizedQuery) score += 1000;
+    if (department === normalizedQuery) score += 800;
+
+    // TIER 2: Direct substring matches - 500 points
+    if (courseNumber.includes(normalizedQuery)) score += 500;
+    if (courseTitle.includes(normalizedQuery)) score += 500;
+    if (instructor.includes(normalizedQuery)) score += 500;
+    if (department.includes(normalizedQuery)) score += 400;
+    if (description.includes(normalizedQuery)) score += 300;
+
+    // TIER 3: Tokenized matches (all tokens present in any order) - 300 points per token
+    const numberTokens = tokenize(course.course_number || '');
+    const titleTokens = tokenize(course.course_title || '');
+    const descriptionTokens = tokenize(course.description || '');
+    const departmentTokens = tokenize(course.department || '');
+    const instructorTokens = tokenize(course.instructor || '');
+    
+    for (const queryToken of queryTokens) {
+      // Check course number tokens (highest weight for course codes)
+      if (numberTokens.some(t => t.includes(queryToken) || queryToken.includes(t))) {
+        score += 400;
+      }
+      
+      // Check title tokens
+      if (titleTokens.some(t => t.includes(queryToken) || queryToken.includes(t))) {
+        score += 350;
+      }
+      
+      // Check instructor tokens
+      if (instructorTokens.some(t => t.includes(queryToken) || queryToken.includes(t))) {
+        score += 350;
+      }
+      
+      // Check department tokens
+      if (departmentTokens.some(t => t.includes(queryToken) || queryToken.includes(t))) {
+        score += 300;
+      }
+      
+      // Check description tokens
+      if (descriptionTokens.some(t => t.includes(queryToken) || queryToken.includes(t))) {
+        score += 200;
+      }
+    }
+
+    // TIER 4: Partial matches - 100 points
+    // Handle course codes like "201" matching "CSCI-201"
+    const numberParts = courseNumber.split(/[\s\-]/);
+    const titleParts = courseTitle.split(/[\s\-]/);
+    
+    for (const queryToken of queryTokens) {
+      if (numberParts.some(part => part.includes(queryToken) || queryToken.includes(part))) {
+        score += 100;
+      }
+      if (titleParts.some(part => part.includes(queryToken) || queryToken.includes(part))) {
+        score += 100;
+      }
+    }
+
+    // TIER 5: Bonus for multiple token matches
+    const allTokens = [...numberTokens, ...titleTokens, ...instructorTokens, ...departmentTokens, ...descriptionTokens];
+    const matchedTokenCount = queryTokens.filter(qt => 
+      allTokens.some(t => t.includes(qt) || qt.includes(t))
+    ).length;
+    
+    if (matchedTokenCount === queryTokens.length) {
+      score += 200; // All query tokens matched somewhere
+    }
+
+    return { course, score };
+  });
+
+  // Filter out courses with zero score and sort by score (descending)
+  return scoredCourses
+    .filter(item => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map(item => item.course);
 };
