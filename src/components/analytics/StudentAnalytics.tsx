@@ -39,7 +39,7 @@ const StudentAnalytics = () => {
       </div>
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -80,19 +80,6 @@ const StudentAnalytics = () => {
             <p className="text-xs text-muted-foreground mt-1">Average change</p>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Total Spent
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">${data?.totalSpent.toFixed(2) || '0.00'}</div>
-            <p className="text-xs text-muted-foreground mt-1">All time</p>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Main Content Sections */}
@@ -123,27 +110,66 @@ const StudentAnalytics = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Mental Wellness</CardTitle>
-            <CardDescription>Track your stress and confidence levels</CardDescription>
+            <CardTitle>Stress Reduction Progress</CardTitle>
+            <CardDescription>Your stress levels before and after sessions</CardDescription>
           </CardHeader>
           <CardContent>
             {data?.wellnessData ? (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center p-4 bg-secondary/50 rounded-lg">
-                  <span className="text-sm font-medium">Stress Before</span>
-                  <span className="text-2xl font-bold">{data.wellnessData.stressBefore.toFixed(1)}</span>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart 
+                  data={[
+                    { metric: 'Before Sessions', value: data.wellnessData.stressBefore },
+                    { metric: 'After Sessions', value: data.wellnessData.stressAfter },
+                  ]}
+                  layout="vertical"
+                  margin={{ left: 20 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" domain={[0, 10]} />
+                  <YAxis type="category" dataKey="metric" width={120} />
+                  <Tooltip />
+                  <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 8, 8, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                Complete sessions and reviews to see stress reduction
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Mental Wellness</CardTitle>
+            <CardDescription>Track your confidence and anxiety levels</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {data?.wellnessData ? (
+              <div className="space-y-6 py-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Confidence Improvement</span>
+                    <span className="text-2xl font-bold">{data.wellnessData.confidenceImprovement.toFixed(1)}</span>
+                  </div>
+                  <div className="w-full bg-secondary rounded-full h-3">
+                    <div 
+                      className="bg-primary h-3 rounded-full transition-all" 
+                      style={{ width: `${(data.wellnessData.confidenceImprovement / 10) * 100}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="flex justify-between items-center p-4 bg-secondary/50 rounded-lg">
-                  <span className="text-sm font-medium">Stress After</span>
-                  <span className="text-2xl font-bold">{data.wellnessData.stressAfter.toFixed(1)}</span>
-                </div>
-                <div className="flex justify-between items-center p-4 bg-secondary/50 rounded-lg">
-                  <span className="text-sm font-medium">Confidence Improvement</span>
-                  <span className="text-2xl font-bold">{data.wellnessData.confidenceImprovement.toFixed(1)}</span>
-                </div>
-                <div className="flex justify-between items-center p-4 bg-secondary/50 rounded-lg">
-                  <span className="text-sm font-medium">Anxiety Reduction</span>
-                  <span className="text-2xl font-bold">{data.wellnessData.anxietyReduction.toFixed(1)}</span>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Anxiety Reduction</span>
+                    <span className="text-2xl font-bold">{data.wellnessData.anxietyReduction.toFixed(1)}</span>
+                  </div>
+                  <div className="w-full bg-secondary rounded-full h-3">
+                    <div 
+                      className="bg-primary h-3 rounded-full transition-all" 
+                      style={{ width: `${(data.wellnessData.anxietyReduction / 10) * 100}%` }}
+                    />
+                  </div>
                 </div>
               </div>
             ) : (
