@@ -1,4 +1,3 @@
-
 import { Course } from "@/types/CourseTypes";
 import CourseCard from "./CourseCard";
 import { Button } from "@/components/ui/button";
@@ -7,6 +6,7 @@ import { SearchIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import CourseCardActions from "./CourseCardActions";
 
 interface CourseListProps {
   courses: Course[];
@@ -71,11 +71,14 @@ const CourseList = ({ courses, loading, selectedTerm, courseCount, onImportCours
         <div className="divide-y border rounded-md">
           {courses.map((course) => (
             <div key={course.id} className="p-4 hover:bg-gray-50">
-              <div className="flex flex-col md:flex-row md:items-start justify-between gap-2">
-                <div>
+              <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                <div className="flex-1">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
                     <h3 className="font-medium">{course.course_number}</h3>
                     <span className="text-sm text-muted-foreground">{course.course_title}</span>
+                    <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 w-fit">
+                      {course.department}
+                    </Badge>
                   </div>
                   
                   {course.description && (
@@ -91,10 +94,11 @@ const CourseList = ({ courses, loading, selectedTerm, courseCount, onImportCours
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2 mt-2 md:mt-0">
-                  <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-                    {course.department}
-                  </Badge>
+                <div className="flex flex-col sm:flex-row gap-2 md:min-w-[200px]">
+                  <CourseCardActions 
+                    courseNumber={course.course_number} 
+                    courseTitle={course.course_title}
+                  />
                 </div>
               </div>
             </div>
@@ -111,6 +115,7 @@ const CourseList = ({ courses, loading, selectedTerm, courseCount, onImportCours
                 <TableHead>Course Title</TableHead>
                 <TableHead>Department</TableHead>
                 <TableHead>Instructor</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -120,6 +125,12 @@ const CourseList = ({ courses, loading, selectedTerm, courseCount, onImportCours
                   <TableCell>{course.course_title}</TableCell>
                   <TableCell>{course.department}</TableCell>
                   <TableCell>{course.instructor || "TBD"}</TableCell>
+                  <TableCell className="text-right">
+                    <CourseCardActions 
+                      courseNumber={course.course_number} 
+                      courseTitle={course.course_title}
+                    />
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

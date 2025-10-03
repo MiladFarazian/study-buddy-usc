@@ -35,7 +35,7 @@ const StudentAnalytics = () => {
   return (
     <div className="py-6 max-w-6xl mx-auto">
       <div className="mb-12 text-center">
-        <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+        <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-[hsl(var(--wellness-blue))] to-[hsl(var(--wellness-green))] bg-clip-text text-transparent">
           Your Journey
         </h1>
         <p className="text-muted-foreground text-lg">
@@ -48,12 +48,12 @@ const StudentAnalytics = () => {
         <Card className="border-2 shadow-lg rounded-2xl bg-gradient-to-br from-card to-accent/20">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Heart className="h-5 w-5 text-primary" />
+              <Heart className="h-5 w-5 text-[hsl(var(--wellness-blue))]" />
               Tutoring Sessions
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold text-primary mb-2">{data?.totalSessions || 0}</div>
+            <div className="text-4xl font-bold text-[hsl(var(--wellness-blue))] mb-2">{data?.totalSessions || 0}</div>
             <p className="text-sm text-muted-foreground">Steps in your journey</p>
           </CardContent>
         </Card>
@@ -61,12 +61,12 @@ const StudentAnalytics = () => {
         <Card className="border-2 shadow-lg rounded-2xl bg-gradient-to-br from-card to-accent/20">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-secondary" />
+              <Sparkles className="h-5 w-5 text-[hsl(var(--wellness-green))]" />
               Hours Studied
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold text-secondary mb-2">{data?.hoursStudied || 0}</div>
+            <div className="text-4xl font-bold text-[hsl(var(--wellness-green))] mb-2">{data?.hoursStudied || 0}</div>
             <p className="text-sm text-muted-foreground">Time invested in learning</p>
           </CardContent>
         </Card>
@@ -74,12 +74,12 @@ const StudentAnalytics = () => {
         <Card className="border-2 shadow-lg rounded-2xl bg-gradient-to-br from-card to-accent/20">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
+              <TrendingUp className="h-5 w-5 text-[hsl(var(--wellness-blue))]" />
               Feeling Better
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold text-primary mb-2">
+            <div className="text-4xl font-bold text-[hsl(var(--wellness-blue))] mb-2">
               {data?.stressReduction !== null && data.stressReduction > 0 ? '+' : ''}
               {data?.stressReduction !== null ? `${Math.abs(data.stressReduction).toFixed(1)}` : '-'}
             </div>
@@ -135,9 +135,9 @@ const StudentAnalytics = () => {
                     <Line 
                       type="monotone" 
                       dataKey="stress" 
-                      stroke="hsl(var(--primary))" 
+                      stroke="hsl(var(--wellness-blue))" 
                       strokeWidth={3}
-                      dot={{ fill: 'hsl(var(--primary))', r: 6 }}
+                      dot={{ fill: 'hsl(var(--wellness-blue))', r: 6 }}
                       activeDot={{ r: 8 }}
                     />
                   </LineChart>
@@ -174,7 +174,7 @@ const StudentAnalytics = () => {
               {data.favoriteSubjects.map((subject, index) => (
                 <div key={subject.course} className="flex items-center justify-between p-4 bg-accent/50 rounded-xl">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">
+                    <div className="w-8 h-8 rounded-full bg-[hsl(var(--wellness-blue))]/20 text-[hsl(var(--wellness-blue))] flex items-center justify-center font-bold">
                       {index + 1}
                     </div>
                     <span className="font-medium">{subject.course}</span>
@@ -204,7 +204,7 @@ const StudentAnalytics = () => {
             {data?.wellnessData ? (
               <div className="space-y-6 py-4">
                 <div className="text-center mb-6">
-                  <div className="text-5xl font-bold text-primary mb-2">
+                  <div className="text-5xl font-bold text-[hsl(var(--wellness-blue))] mb-2">
                     {data.wellnessData.confidenceImprovement.toFixed(1)}
                   </div>
                   <p className="text-muted-foreground">
@@ -217,7 +217,7 @@ const StudentAnalytics = () => {
                 </div>
                 <div className="w-full bg-accent rounded-full h-4 overflow-hidden">
                   <div 
-                    className="bg-gradient-to-r from-primary to-secondary h-4 rounded-full transition-all duration-1000 ease-out" 
+                    className="bg-gradient-to-r from-[hsl(var(--wellness-blue))] to-[hsl(var(--wellness-green))] h-4 rounded-full transition-all duration-1000 ease-out" 
                     style={{ width: `${(data.wellnessData.confidenceImprovement / 10) * 100}%` }}
                   />
                 </div>
@@ -239,7 +239,7 @@ const StudentAnalytics = () => {
             {data?.wellnessData ? (
               <div className="space-y-6 py-4">
                 <div className="text-center mb-6">
-                  <div className="text-5xl font-bold text-secondary mb-2">
+                  <div className="text-5xl font-bold text-[hsl(var(--wellness-green))] mb-2">
                     {data.wellnessData.anxietyReduction.toFixed(1)}
                   </div>
                   <p className="text-muted-foreground">
@@ -252,7 +252,7 @@ const StudentAnalytics = () => {
                 </div>
                 <div className="w-full bg-accent rounded-full h-4 overflow-hidden">
                   <div 
-                    className="bg-gradient-to-r from-secondary to-primary h-4 rounded-full transition-all duration-1000 ease-out" 
+                    className="bg-gradient-to-r from-[hsl(var(--wellness-green))] to-[hsl(var(--wellness-blue))] h-4 rounded-full transition-all duration-1000 ease-out" 
                     style={{ width: `${(data.wellnessData.anxietyReduction / 10) * 100}%` }}
                   />
                 </div>
@@ -279,7 +279,7 @@ const StudentAnalytics = () => {
                 <div key={tutor.id} className="flex items-center gap-4 p-4 bg-accent/50 rounded-xl hover:bg-accent transition-colors">
                   <Avatar className="h-12 w-12">
                     <AvatarImage src={tutor.avatar_url || undefined} />
-                    <AvatarFallback className="bg-primary/20 text-primary">{tutor.name.charAt(0)}</AvatarFallback>
+                    <AvatarFallback className="bg-[hsl(var(--wellness-blue))]/20 text-[hsl(var(--wellness-blue))]">{tutor.name.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
                     <p className="font-medium">{tutor.name}</p>
