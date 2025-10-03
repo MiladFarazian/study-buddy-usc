@@ -35,12 +35,13 @@ export const useStudentAnalytics = () => {
       try {
         setLoading(true);
 
-        // Fetch sessions
+        // Fetch sessions (exclude only cancelled sessions)
         const { data: sessions, error: sessionsError } = await supabase
           .from("sessions")
           .select("*")
           .eq("student_id", user.id)
-          .eq("status", "completed");
+          .neq("status", "cancelled")
+          .lt("end_time", new Date().toISOString());
 
         if (sessionsError) throw sessionsError;
 
