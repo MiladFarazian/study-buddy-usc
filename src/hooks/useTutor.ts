@@ -114,7 +114,9 @@ export function useTutor(id: string) {
         subjects: subjects,
         imageUrl: profile.avatar_url || '',
         bio: profile.bio || '',
-        graduationYear: profile.graduation_year || ''
+        graduationYear: profile.graduation_year || '',
+        available_in_person: profile.available_in_person,
+        available_online: profile.available_online
       };
 
       setTutor(tutorData);

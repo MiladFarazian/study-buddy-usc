@@ -135,6 +135,18 @@ const TutorCardMobile = ({ tutor, getInitials, highlightedCourses = [], matchRes
                 )}
               </div>
             </div>
+
+            <div className="text-xs text-muted-foreground">
+              {tutor.available_in_person && tutor.available_online ? (
+                "Available for in-person or online sessions"
+              ) : tutor.available_in_person ? (
+                "Available for in-person sessions"
+              ) : tutor.available_online ? (
+                "Available for online sessions"
+              ) : (
+                "Availability not set"
+              )}
+            </div>
           </div>
           
           <Button 
