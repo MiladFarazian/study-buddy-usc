@@ -72,7 +72,6 @@ export function useTutors() {
       
       try {
         // Fetch tutors from the new tutors table with profile data (only approved)
-        // Fetch tutors from the new tutors table with profile data (only approved)
         const { data: tutorData, error } = await supabase
           .from('tutors')
           .select(`
@@ -84,7 +83,9 @@ export function useTutors() {
               graduation_year,
               avatar_url,
               tutor_courses_subjects,
-              approved_tutor
+              approved_tutor,
+              available_in_person,
+              available_online
             )
           `)
           .eq('profiles.approved_tutor', true)
@@ -135,7 +136,9 @@ export function useTutors() {
             subjects: subjects,
             imageUrl: profile?.avatar_url || '',
             bio: tutor.bio || '',
-            graduationYear: profile?.graduation_year || ''
+            graduationYear: profile?.graduation_year || '',
+            available_in_person: profile?.available_in_person,
+            available_online: profile?.available_online
           };
         });
 
