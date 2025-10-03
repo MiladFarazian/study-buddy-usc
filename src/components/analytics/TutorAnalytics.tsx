@@ -60,17 +60,13 @@ const TutorAnalytics = () => {
         <Card className="border-2 shadow-lg rounded-2xl bg-gradient-to-br from-card to-accent/20">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Heart className="h-5 w-5 text-secondary" />
-              Would Book Again
+              <Users className="h-5 w-5 text-secondary" />
+              Active Students
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold text-secondary">
-              {data?.wouldBookAgain ? `${Math.round(data.wouldBookAgain.percentage)}%` : '-'}
-            </div>
-            <p className="text-sm text-muted-foreground mt-1">
-              {data?.wouldBookAgain ? `${data.wouldBookAgain.count} students` : 'No reviews yet'}
-            </p>
+            <div className="text-4xl font-bold text-secondary">{data?.activeStudents || 0}</div>
+            <p className="text-sm text-muted-foreground mt-1">Students you've helped</p>
           </CardContent>
         </Card>
 
