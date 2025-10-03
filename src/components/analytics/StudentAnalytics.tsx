@@ -43,13 +43,13 @@ const StudentAnalytics = () => {
         </p>
       </div>
 
-      {/* Key Wellness Metrics */}
+      {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
         <Card className="border-2 shadow-lg rounded-2xl bg-gradient-to-br from-card to-accent/20">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Heart className="h-5 w-5 text-primary" />
-              Wellness Sessions
+              Tutoring Sessions
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -62,12 +62,12 @@ const StudentAnalytics = () => {
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-secondary" />
-              Growth Hours
+              Hours Studied
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-4xl font-bold text-secondary mb-2">{data?.hoursStudied || 0}</div>
-            <p className="text-sm text-muted-foreground">Time invested in yourself</p>
+            <p className="text-sm text-muted-foreground">Time invested in learning</p>
           </CardContent>
         </Card>
 
@@ -161,6 +161,37 @@ const StudentAnalytics = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Favorite Subjects */}
+      <Card className="border-2 shadow-lg rounded-2xl mb-12">
+        <CardHeader>
+          <CardTitle className="text-xl">Courses You're Excelling In</CardTitle>
+          <CardDescription>Your most frequently tutored subjects</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {data?.favoriteSubjects && data.favoriteSubjects.length > 0 ? (
+            <div className="space-y-4">
+              {data.favoriteSubjects.map((subject, index) => (
+                <div key={subject.course} className="flex items-center justify-between p-4 bg-accent/50 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">
+                      {index + 1}
+                    </div>
+                    <span className="font-medium">{subject.course}</span>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {subject.count} {subject.count === 1 ? 'session' : 'sessions'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+              Complete sessions to see your top courses
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Mental Wellness Growth */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
