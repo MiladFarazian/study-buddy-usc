@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/select";
 import { Search, Filter } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useState, useEffect } from "react";
 
 interface CourseFiltersProps {
   searchQuery: string;
@@ -26,6 +27,21 @@ const CourseFilters = ({
   onDepartmentChange
 }: CourseFiltersProps) => {
   const isMobile = useIsMobile();
+  const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
+  
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onSearchChange(localSearchQuery);
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [localSearchQuery, onSearchChange]);
+  
+  // Sync with external changes
+  useEffect(() => {
+    setLocalSearchQuery(searchQuery);
+  }, [searchQuery]);
   
   return (
     <div className="space-y-3 md:space-y-4">
@@ -34,8 +50,8 @@ const CourseFilters = ({
         <Input
           type="text"
           placeholder={isMobile ? "Search courses..." : "Search courses by code, name, or description..."}
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
+          value={localSearchQuery}
+          onChange={(e) => setLocalSearchQuery(e.target.value)}
           className="pl-10 w-full"
         />
       </div>

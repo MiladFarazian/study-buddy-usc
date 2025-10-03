@@ -18,7 +18,11 @@ const Courses = () => {
     courses, 
     allCourses, 
     departments, 
-    loading 
+    loading,
+    loadMore,
+    hasMore,
+    isLoadingMore,
+    totalCount
   } = useCourses({
     term: selectedTerm,
     search: searchQuery,
@@ -75,6 +79,10 @@ const Courses = () => {
         loading={loading}
         selectedTerm={selectedTerm}
         courseCount={allCourses.length}
+        loadMore={loadMore}
+        hasMore={hasMore}
+        isLoadingMore={isLoadingMore}
+        totalCount={totalCount}
       />
     </div>
   );

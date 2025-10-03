@@ -8,21 +8,54 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import CourseCardActions from "./CourseCardActions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface CourseListProps {
   courses: Course[];
   loading: boolean;
   selectedTerm: string;
   courseCount: number;
-  onImportCourses?: () => void; // Make this optional
+  onImportCourses?: () => void;
+  loadMore?: () => void;
+  hasMore?: boolean;
+  isLoadingMore?: boolean;
+  totalCount?: number;
 }
 
-const CourseList = ({ courses, loading, selectedTerm, courseCount, onImportCourses }: CourseListProps) => {
+const CourseList = ({ 
+  courses, 
+  loading, 
+  selectedTerm, 
+  courseCount, 
+  onImportCourses,
+  loadMore,
+  hasMore = false,
+  isLoadingMore = false,
+  totalCount = 0
+}: CourseListProps) => {
   const { user } = useAuth();
-  
-  // State for selected instructors (keyed by course ID)
   const [selectedInstructors, setSelectedInstructors] = useState<Record<string, string>>({});
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  
+  // Infinite scroll observer
+  useEffect(() => {
+    if (!loadMore || !hasMore || isLoadingMore) return;
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+    
+    return () => observer.disconnect();
+  }, [loadMore, hasMore, isLoadingMore]);
 
   if (loading) {
     return (
@@ -51,30 +84,43 @@ const CourseList = ({ courses, loading, selectedTerm, courseCount, onImportCours
   }
 
   return (
-    <Tabs defaultValue="grid" className="w-full">
-      <div className="flex justify-between items-center mb-4">
-        <TabsList>
-          <TabsTrigger value="grid">Grid View</TabsTrigger>
-          <TabsTrigger value="list">List View</TabsTrigger>
-          <TabsTrigger value="table">Table View</TabsTrigger>
-        </TabsList>
-        
-        <div className="text-sm text-muted-foreground">
-          {courses.length} {courses.length === 1 ? 'course' : 'courses'} found
+    <div className="w-full">
+      {/* Course count display */}
+      {!loading && courses.length > 0 && (
+        <div className="mb-4 text-sm text-muted-foreground">
+          Showing {courses.length} {totalCount > 0 && `of ${totalCount}`} courses
         </div>
-      </div>
+      )}
       
-      <TabsContent value="grid" className="mt-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses.map((course) => (
-            <CourseCard key={course.id} course={course} />
-          ))}
+      <Tabs defaultValue="grid" className="w-full">
+        <div className="flex justify-between items-center mb-4">
+          <TabsList>
+            <TabsTrigger value="grid">Grid View</TabsTrigger>
+            <TabsTrigger value="list">List View</TabsTrigger>
+            <TabsTrigger value="table">Table View</TabsTrigger>
+          </TabsList>
         </div>
-      </TabsContent>
       
-      <TabsContent value="list" className="mt-4">
-        <div className="divide-y border rounded-md">
-          {courses.map((course) => {
+        <TabsContent value="grid" className="mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {courses.map((course) => (
+              <CourseCard key={course.id} course={course} />
+            ))}
+          </div>
+          
+          {/* Infinite scroll trigger */}
+          {hasMore && (
+            <div ref={loadMoreRef} className="w-full py-8 flex justify-center">
+              {isLoadingMore && (
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              )}
+            </div>
+          )}
+        </TabsContent>
+      
+        <TabsContent value="list" className="mt-4">
+          <div className="divide-y border rounded-md">
+            {courses.map((course) => {
             const instructorString = course.instructor || '';
             const instructors = instructorString.split(',').map(instr => instr.trim()).filter(Boolean);
             const hasMultipleInstructors = instructors.length > 1;
@@ -141,14 +187,23 @@ const CourseList = ({ courses, loading, selectedTerm, courseCount, onImportCours
                   </div>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      </TabsContent>
+              );
+            })}
+          </div>
+          
+          {/* Infinite scroll trigger */}
+          {hasMore && (
+            <div ref={loadMoreRef} className="w-full py-8 flex justify-center">
+              {isLoadingMore && (
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              )}
+            </div>
+          )}
+        </TabsContent>
       
-      <TabsContent value="table" className="mt-4">
-        <div className="border rounded-md overflow-hidden">
-          <Table>
+        <TabsContent value="table" className="mt-4">
+          <div className="border rounded-md overflow-hidden">
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Course Number</TableHead>
@@ -205,11 +260,21 @@ const CourseList = ({ courses, loading, selectedTerm, courseCount, onImportCours
                   </TableRow>
                 );
               })}
-            </TableBody>
-          </Table>
-        </div>
-      </TabsContent>
-    </Tabs>
+              </TableBody>
+            </Table>
+          </div>
+          
+          {/* Infinite scroll trigger */}
+          {hasMore && (
+            <div ref={loadMoreRef} className="w-full py-8 flex justify-center">
+              {isLoadingMore && (
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              )}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 
