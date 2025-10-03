@@ -144,7 +144,15 @@ const TutorCardDesktop = ({
             
             <div className="flex items-center text-xs md:text-sm text-gray-500">
               <Calendar className="h-4 w-4 mr-1 md:mr-2 flex-shrink-0" />
-              <span className="line-clamp-1">Available for in-person or online sessions</span>
+              <span className="line-clamp-1">
+                {tutor.available_in_person && tutor.available_online
+                  ? 'Available for in-person or online sessions'
+                  : tutor.available_in_person
+                  ? 'Available for in-person sessions'
+                  : tutor.available_online
+                  ? 'Available for online sessions'
+                  : 'Availability not set'}
+              </span>
             </div>
           </div>
           

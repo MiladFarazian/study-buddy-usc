@@ -17,6 +17,8 @@ export interface Tutor {
   imageUrl: string;
   bio?: string;
   graduationYear?: string;
+  available_in_person?: boolean;
+  available_online?: boolean;
 }
 
 export interface Review {

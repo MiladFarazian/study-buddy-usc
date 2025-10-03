@@ -13,8 +13,12 @@ interface SessionTypeSelectorProps {
 }
 
 export function SessionTypeSelector({ onBack, onContinue }: SessionTypeSelectorProps) {
-  const { state, setSessionType, setLocation } = useScheduling();
+  const { state, setSessionType, setLocation, tutor } = useScheduling();
   const [locationInput, setLocationInput] = React.useState(state.location || "");
+  
+  // Get tutor's availability preferences (default to true if not set)
+  const availableInPerson = tutor?.available_in_person ?? true;
+  const availableOnline = tutor?.available_online ?? true;
   
   const handleSessionTypeChange = (value: string) => {
     setSessionType(value as SessionType);
@@ -52,16 +56,28 @@ export function SessionTypeSelector({ onBack, onContinue }: SessionTypeSelectorP
         onValueChange={handleSessionTypeChange}
         className="space-y-4"
       >
-        <div className={`border rounded-md p-4 ${state.sessionType === SessionType.IN_PERSON ? "border-usc-cardinal" : ""}`}>
+        <div className={`border rounded-md p-4 ${
+          !availableInPerson ? "opacity-50 cursor-not-allowed bg-muted" : 
+          state.sessionType === SessionType.IN_PERSON ? "border-usc-cardinal" : ""
+        }`}>
           <div className="flex items-start space-x-3">
-            <RadioGroupItem value={SessionType.IN_PERSON} id="in-person" />
+            <RadioGroupItem 
+              value={SessionType.IN_PERSON} 
+              id="in-person" 
+              disabled={!availableInPerson}
+            />
             <div className="grid gap-1.5">
-              <Label htmlFor="in-person" className="font-medium flex items-center">
+              <Label 
+                htmlFor="in-person" 
+                className={`font-medium flex items-center ${!availableInPerson ? "cursor-not-allowed" : ""}`}
+              >
                 <MapPin className="h-4 w-4 mr-2" />
                 Meet In Person
               </Label>
               <p className="text-sm text-muted-foreground">
-                Meet your tutor at an agreed location on campus.
+                {availableInPerson 
+                  ? "Meet your tutor at an agreed location on campus."
+                  : "This tutor is not available for in-person sessions."}
               </p>
               
               {state.sessionType === SessionType.IN_PERSON && (
@@ -82,16 +98,28 @@ export function SessionTypeSelector({ onBack, onContinue }: SessionTypeSelectorP
           </div>
         </div>
         
-        <div className={`border rounded-md p-4 ${state.sessionType === SessionType.VIRTUAL ? "border-usc-cardinal" : ""}`}>
+        <div className={`border rounded-md p-4 ${
+          !availableOnline ? "opacity-50 cursor-not-allowed bg-muted" : 
+          state.sessionType === SessionType.VIRTUAL ? "border-usc-cardinal" : ""
+        }`}>
           <div className="flex items-start space-x-3">
-            <RadioGroupItem value={SessionType.VIRTUAL} id="virtual" />
+            <RadioGroupItem 
+              value={SessionType.VIRTUAL} 
+              id="virtual" 
+              disabled={!availableOnline}
+            />
             <div className="grid gap-1.5">
-              <Label htmlFor="virtual" className="font-medium flex items-center">
+              <Label 
+                htmlFor="virtual" 
+                className={`font-medium flex items-center ${!availableOnline ? "cursor-not-allowed" : ""}`}
+              >
                 <VideoIcon className="h-4 w-4 mr-2" />
                 Meet Online
               </Label>
               <p className="text-sm text-muted-foreground">
-                Connect virtually through Zoom, Google Meet, or other platforms.
+                {availableOnline
+                  ? "Connect virtually through Zoom, Google Meet, or other platforms."
+                  : "This tutor is not available for online sessions."}
               </p>
               
               {state.sessionType === SessionType.VIRTUAL && (
