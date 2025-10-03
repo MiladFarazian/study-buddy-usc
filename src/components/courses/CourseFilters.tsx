@@ -13,7 +13,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 interface CourseFiltersProps {
   searchQuery: string;
   selectedDepartment: string;
-  departments: string[];
+  departments: Array<{ code: string; name: string }>;
   onSearchChange: (query: string) => void;
   onDepartmentChange: (department: string) => void;
 }
@@ -56,7 +56,7 @@ const CourseFilters = ({
           <SelectContent>
             <SelectItem value="all">All Departments</SelectItem>
             {departments.map((dept) => (
-              <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+              <SelectItem key={dept.code} value={dept.code}>{dept.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>

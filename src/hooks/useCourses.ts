@@ -4,10 +4,43 @@ import { supabase } from "@/integrations/supabase/client";
 import { Course, CourseFilterOptions, TermCourse } from "@/types/CourseTypes";
 import { searchCourses } from "@/lib/search-utils";
 
+// Department code to friendly name mapping
+const DEPARTMENT_NAMES: Record<string, string> = {
+  'CSCI': 'Computer Science',
+  'ECON': 'Economics',
+  'FBE': 'Business & Finance',
+  'BUAD': 'Business Administration',
+  'ACCT': 'Accounting',
+  'BAEP': 'Business Entrepreneurship',
+  'AME': 'Mechanical Engineering',
+  'EE': 'Electrical Engineering',
+  'CE': 'Civil Engineering',
+  'GEOL': 'Geology',
+  'CHEM': 'Chemistry',
+  'BISC': 'Biological Sciences',
+  'PHYS': 'Physics',
+  'MATH': 'Mathematics',
+  'WRIT': 'Writing',
+  'ENGL': 'English',
+  'HIST': 'History',
+  'PSYC': 'Psychology',
+  'SOCI': 'Sociology',
+  'ANTH': 'Anthropology',
+  'POIR': 'Political Science',
+  'ACAD': 'Academic',
+  'ACMD': 'Academic Medicine',
+  'ADNT': 'Advanced Dentistry',
+  'ADSC': 'Advanced Science',
+  'AEST': 'Aesthetics',
+  'AHIS': 'Art History',
+  'ALI': 'Applied Linguistics',
+  'AMST': 'American Studies',
+};
+
 export function useCourses(filterOptions: CourseFilterOptions) {
   const [courses, setCourses] = useState<Course[]>([]);
   const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
-  const [departments, setDepartments] = useState<string[]>([]);
+  const [departments, setDepartments] = useState<Array<{ code: string; name: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -152,10 +185,16 @@ export function useCourses(filterOptions: CourseFilterOptions) {
   // Extract unique departments
   useEffect(() => {
     if (courses.length > 0) {
-      const uniqueDepartments = Array.from(
+      const uniqueDeptCodes = Array.from(
         new Set(courses.map(course => course.department))
       ).sort();
-      setDepartments(uniqueDepartments);
+      
+      const deptArray = uniqueDeptCodes.map(code => ({
+        code,
+        name: DEPARTMENT_NAMES[code] || code
+      })).sort((a, b) => a.name.localeCompare(b.name));
+      
+      setDepartments(deptArray);
     } else {
       setDepartments([]);
     }

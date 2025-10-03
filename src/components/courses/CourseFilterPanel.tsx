@@ -9,7 +9,7 @@ interface CourseFilterPanelProps {
   selectedTerm: string;
   searchQuery: string;
   selectedDepartment: string;
-  departments: string[];
+  departments: Array<{ code: string; name: string }>;
   onTermChange: (termCode: string) => void;
   onSearchChange: (query: string) => void;
   onDepartmentChange: (department: string) => void;
