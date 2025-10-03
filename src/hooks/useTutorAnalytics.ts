@@ -5,11 +5,14 @@ import { differenceInHours } from "date-fns";
 
 interface TutorAnalyticsData {
   totalSessions: number;
-  activeStudents: number;
+  wouldBookAgain: {
+    count: number;
+    percentage: number;
+  } | null;
   averageRating: number | null;
   totalEarnings: number;
-  sessionsByMonth: { month: string; sessions: number }[];
-  earningsByMonth: { month: string; earnings: number }[];
+  sessionsByMonth: { month: string; sessions: number; date: Date }[];
+  earningsByMonth: { month: string; earnings: number; date: Date }[];
   impactMetrics: {
     avgStressReduction: number;
     avgConfidenceImprovement: number;
@@ -50,15 +53,24 @@ export const useTutorAnalytics = () => {
 
         // Get unique active students (students with at least one session)
         const uniqueStudents = [...new Set(sessions?.map(s => s.student_id))];
-        const activeStudents = uniqueStudents.length;
 
-        // Fetch student reviews for ratings and impact
+        // Fetch student reviews for ratings, impact, and would_book_again
         const { data: reviews, error: reviewsError } = await supabase
           .from("student_reviews")
-          .select("teaching_quality, stress_before, stress_after, confidence_improvement")
+          .select("teaching_quality, stress_before, stress_after, confidence_improvement, would_book_again, student_id")
           .eq("tutor_id", user.id);
 
         if (reviewsError) throw reviewsError;
+
+        // Calculate would book again metric
+        const reviewsWithBookAgain = reviews?.filter(r => r.would_book_again !== null) || [];
+        const wouldBookAgainCount = reviewsWithBookAgain.filter(r => r.would_book_again === true).length;
+        const wouldBookAgain = reviewsWithBookAgain.length > 0
+          ? {
+              count: wouldBookAgainCount,
+              percentage: (wouldBookAgainCount / reviewsWithBookAgain.length) * 100,
+            }
+          : null;
 
         // Calculate average rating
         const averageRating = reviews && reviews.length > 0
@@ -86,29 +98,43 @@ export const useTutorAnalytics = () => {
         // Calculate total earnings (convert from cents to dollars)
         const totalEarnings = payments?.reduce((sum, p) => sum + (p.amount || 0), 0) / 100 || 0;
 
-        // Group sessions by month
-        const sessionsByMonth = sessions?.reduce((acc: { [key: string]: number }, session) => {
-          const month = new Date(session.start_time).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-          acc[month] = (acc[month] || 0) + 1;
+        // Group sessions by month with proper date sorting
+        const sessionsByMonthMap = sessions?.reduce((acc: { [key: string]: { count: number; date: Date } }, session) => {
+          const date = new Date(session.start_time);
+          const month = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+          if (!acc[month]) {
+            acc[month] = { count: 0, date: new Date(date.getFullYear(), date.getMonth(), 1) };
+          }
+          acc[month].count += 1;
           return acc;
         }, {});
 
-        const sessionsByMonthArray = Object.entries(sessionsByMonth || {}).map(([month, sessions]) => ({
-          month,
-          sessions: sessions as number,
-        }));
+        const sessionsByMonthArray = Object.entries(sessionsByMonthMap || {})
+          .map(([month, data]) => ({
+            month,
+            sessions: data.count,
+            date: data.date,
+          }))
+          .sort((a, b) => a.date.getTime() - b.date.getTime());
 
-        // Group earnings by month
-        const earningsByMonth = payments?.reduce((acc: { [key: string]: number }, payment) => {
-          const month = new Date(payment.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-          acc[month] = (acc[month] || 0) + (payment.amount || 0) / 100;
+        // Group earnings by month with proper date sorting
+        const earningsByMonthMap = payments?.reduce((acc: { [key: string]: { earnings: number; date: Date } }, payment) => {
+          const date = new Date(payment.created_at);
+          const month = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+          if (!acc[month]) {
+            acc[month] = { earnings: 0, date: new Date(date.getFullYear(), date.getMonth(), 1) };
+          }
+          acc[month].earnings += (payment.amount || 0) / 100;
           return acc;
         }, {});
 
-        const earningsByMonthArray = Object.entries(earningsByMonth || {}).map(([month, earnings]) => ({
-          month,
-          earnings: earnings as number,
-        }));
+        const earningsByMonthArray = Object.entries(earningsByMonthMap || {})
+          .map(([month, data]) => ({
+            month,
+            earnings: data.earnings,
+            date: data.date,
+          }))
+          .sort((a, b) => a.date.getTime() - b.date.getTime());
 
         // Group sessions by course
         const courseCount = sessions?.reduce((acc: { [key: string]: number }, session) => {
@@ -142,7 +168,7 @@ export const useTutorAnalytics = () => {
 
         setData({
           totalSessions,
-          activeStudents,
+          wouldBookAgain,
           averageRating,
           totalEarnings,
           sessionsByMonth: sessionsByMonthArray,
