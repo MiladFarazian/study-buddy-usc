@@ -36,7 +36,7 @@ const StudentAnalytics = () => {
     <div className="py-6 max-w-6xl mx-auto">
       <div className="mb-12 text-center">
         <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-          Your Wellness Journey
+          Your Journey
         </h1>
         <p className="text-muted-foreground text-lg">
           Everyone's progress looks different - this is your unique path
