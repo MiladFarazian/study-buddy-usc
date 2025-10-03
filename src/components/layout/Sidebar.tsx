@@ -49,7 +49,7 @@ const Sidebar = () => {
       title: "Tutors",
       icon: Users,
       path: "/tutors",
-      showWhen: true // Always show
+      showWhen: !isTutor // Only show for students
     },
     {
       title: "My Students",
