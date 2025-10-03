@@ -127,24 +127,21 @@ export const searchTutors = (tutors: Tutor[], searchQuery: string): Tutor[] => {
 };
 
 /**
- * Filter tutors by subject
+ * Filter tutors by department code
  */
 export const filterTutorsBySubject = (tutors: Tutor[], selectedSubject: string): Tutor[] => {
   if (selectedSubject === "all") {
     return tutors;
   }
 
-  const normalizedSubject = normalizeText(selectedSubject);
+  // selectedSubject is now a department code like "CSCI" or "FBE"
+  const upperSubject = selectedSubject.toUpperCase();
   
   return tutors.filter(tutor => {
-    const tutorField = normalizeText(tutor.field);
-    const tutorSubjects = tutor.subjects.map(s => ({
-      code: normalizeText(s.code),
-      name: normalizeText(s.name),
-    }));
-
-    return tutorField.includes(normalizedSubject) ||
-      tutorSubjects.some(s => s.code.includes(normalizedSubject) || s.name.includes(normalizedSubject));
+    return tutor.subjects.some(subject => {
+      // Check if the course code starts with the department code
+      return subject.code.toUpperCase().startsWith(upperSubject);
+    });
   });
 };
 

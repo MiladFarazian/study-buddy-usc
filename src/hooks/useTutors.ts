@@ -6,6 +6,31 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getTutorStudentCourses } from "@/lib/tutor-student-utils";
 import { findMatchingTutorsWithInstructor, MatchResult } from "@/lib/instructor-matching-utils";
 
+// Department code to friendly name mapping
+const DEPARTMENT_NAMES: Record<string, string> = {
+  'CSCI': 'Computer Science',
+  'ECON': 'Economics',
+  'FBE': 'Business & Finance',
+  'BUAD': 'Business Administration',
+  'ACCT': 'Accounting',
+  'BAEP': 'Business Entrepreneurship',
+  'AME': 'Mechanical Engineering',
+  'EE': 'Electrical Engineering',
+  'CE': 'Civil Engineering',
+  'GEOL': 'Geology',
+  'CHEM': 'Chemistry',
+  'BISC': 'Biological Sciences',
+  'PHYS': 'Physics',
+  'MATH': 'Mathematics',
+  'WRIT': 'Writing',
+  'ENGL': 'English',
+  'HIST': 'History',
+  'PSYC': 'Psychology',
+  'SOCI': 'Sociology',
+  'ANTH': 'Anthropology',
+  'POIR': 'Political Science',
+};
+
 export function useTutors() {
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -15,6 +40,7 @@ export function useTutors() {
   const [studentCourseTutors, setStudentCourseTutors] = useState<Tutor[]>([]);
   const [loadingStudentTutors, setLoadingStudentTutors] = useState(false);
   const [matchResults, setMatchResults] = useState<MatchResult[]>([]);
+  const [departments, setDepartments] = useState<Array<{ code: string; name: string }>>([]);
 
   // Function to extract course numbers from student profile or tutor's "need help with" courses
   const getStudentCourses = async (): Promise<string[]> => {
@@ -144,6 +170,28 @@ export function useTutors() {
 
         setTutors(processedTutors);
         
+        // Extract unique departments from all tutors
+        const departmentSet = new Set<string>();
+        processedTutors.forEach(tutor => {
+          tutor.subjects.forEach(subject => {
+            // Extract department code (everything before the dash or number)
+            const deptMatch = subject.code.match(/^([A-Z]+)/);
+            if (deptMatch) {
+              departmentSet.add(deptMatch[1]);
+            }
+          });
+        });
+        
+        // Convert to array with friendly names, sorted alphabetically
+        const deptArray = Array.from(departmentSet)
+          .map(code => ({
+            code,
+            name: DEPARTMENT_NAMES[code] || code
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name));
+        
+        setDepartments(deptArray);
+        
         // If profile exists, find matching tutors with instructor-based matching
         if (profile && user?.id) {
           setLoadingStudentTutors(true);
@@ -184,6 +232,7 @@ export function useTutors() {
     error, 
     studentCourseTutors, 
     loadingStudentTutors,
-    matchResults 
+    matchResults,
+    departments 
   };
 }

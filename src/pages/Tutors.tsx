@@ -13,7 +13,7 @@ import { getTutorStudentCourses } from "@/lib/tutor-student-utils";
 import { searchTutors, filterTutorsBySubject } from "@/lib/search-utils";
 
 const Tutors = () => {
-  const { tutors, loading, studentCourseTutors, loadingStudentTutors, matchResults } = useTutors();
+  const { tutors, loading, studentCourseTutors, loadingStudentTutors, matchResults, departments } = useTutors();
   const [studentCourses, setStudentCourses] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("all");
@@ -99,19 +99,16 @@ const Tutors = () => {
         value={selectedSubject} 
         onValueChange={setSelectedSubject}
       >
-        <SelectTrigger>
+        <SelectTrigger className="bg-background">
           <SelectValue placeholder="Subject Area" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="bg-background z-50">
           <SelectItem value="all">All Subjects</SelectItem>
-          <SelectItem value="computer science">Computer Science</SelectItem>
-          <SelectItem value="mathematics">Mathematics</SelectItem>
-          <SelectItem value="physics">Physics</SelectItem>
-          <SelectItem value="chemistry">Chemistry</SelectItem>
-          <SelectItem value="biology">Biology</SelectItem>
-          <SelectItem value="engineering">Engineering</SelectItem>
-          <SelectItem value="economics">Economics</SelectItem>
-          <SelectItem value="business">Business</SelectItem>
+          {departments.map(dept => (
+            <SelectItem key={dept.code} value={dept.code}>
+              {dept.name}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
       
