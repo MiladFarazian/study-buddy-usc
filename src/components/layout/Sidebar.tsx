@@ -8,7 +8,8 @@ import {
   MessageSquare, 
   Settings, 
   Users,
-  Loader2
+  Loader2,
+  HelpCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -92,6 +93,12 @@ const Sidebar = () => {
       icon: Settings,
       path: "/settings",
       showWhen: !!user // Only for authenticated users
+    },
+    {
+      title: "FAQ",
+      icon: HelpCircle,
+      path: "/faq",
+      showWhen: true // Always show
     }
   ];
 

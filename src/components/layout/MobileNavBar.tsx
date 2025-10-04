@@ -9,7 +9,8 @@ import {
   MessageSquare,
   FileText,
   BarChart,
-  Settings
+  Settings,
+  HelpCircle
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -86,6 +87,12 @@ const MobileNavBar = () => {
       icon: Settings,
       path: "/settings",
       showWhen: !!user
+    },
+    {
+      title: "FAQ",
+      icon: HelpCircle,
+      path: "/faq",
+      showWhen: true
     }
   ];
 

@@ -51,6 +51,7 @@ import Analytics from "./pages/Analytics";
 import BadgesDashboard from "./pages/TutorDashboard/BadgesDashboard";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCanceled from "./pages/PaymentCanceled";
+import FAQ from "./pages/FAQ";
 
 const router = createBrowserRouter([
   {
@@ -204,6 +205,10 @@ const router = createBrowserRouter([
       {
         path: "/payment-canceled", 
         element: <PaymentCanceled />
+      },
+      {
+        path: "/faq",
+        element: <FAQ />
       },
       {
         path: "*",
