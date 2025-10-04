@@ -95,7 +95,7 @@ export function useCourses(filterOptions: CourseFilterOptions) {
         if (filterOptions.search) {
           const searchTerm = filterOptions.search.toLowerCase();
           query = query.or(
-            `"Course number".ilike.%${searchTerm}%,"Course title".ilike.%${searchTerm}%,Instructor.ilike.%${searchTerm}%`
+            `"Course number".ilike.*${searchTerm}*,"Course title".ilike.*${searchTerm}*,Instructor.ilike.*${searchTerm}*`
           );
         }
         
@@ -160,7 +160,8 @@ export function useCourses(filterOptions: CourseFilterOptions) {
         const tableName = `courses-${filterOptions.term}`;
         const { data } = await supabase
           .from(tableName as any)
-          .select('"Course number"');
+          .select('"Course number"')
+          .limit(10000);
         
         if (data) {
           const uniqueDeptCodes = Array.from(
