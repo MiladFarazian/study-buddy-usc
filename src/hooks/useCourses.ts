@@ -76,27 +76,26 @@ export function useCourses(filterOptions: CourseFilterOptions) {
       
       try {
         const tableName = `courses-${filterOptions.term}`;
-        const from = currentPage * PAGE_SIZE;
-        const to = from + PAGE_SIZE - 1;
         
-        console.log(`Fetching courses page ${currentPage} (rows ${from} to ${to})`);
+        // When searching, fetch all courses to apply client-side ranking algorithm
+        // Otherwise use pagination
+        const isSearching = filterOptions.search && filterOptions.search.trim() !== '';
         
-        let query = supabase
-          .from(tableName as any)
-          .select('*', { count: 'exact' })
-          .range(from, to);
+        let query = supabase.from(tableName as any).select('*', { count: 'exact' });
         
         // Apply department filter server-side
         if (filterOptions.department && filterOptions.department !== "all") {
           query = query.ilike('"Course number"', `${filterOptions.department}-%`);
         }
         
-        // Apply search filter server-side
-        if (filterOptions.search) {
-          const searchTerm = filterOptions.search.toLowerCase();
-          query = query.or(
-            `"Course number".ilike.*${searchTerm}*,"Course title".ilike.*${searchTerm}*,Instructor.ilike.*${searchTerm}*`
-          );
+        if (isSearching) {
+          // When searching, fetch up to 1000 courses to apply client-side ranking
+          query = query.limit(1000);
+        } else {
+          // Normal pagination
+          const from = currentPage * PAGE_SIZE;
+          const to = from + PAGE_SIZE - 1;
+          query = query.range(from, to);
         }
         
         const { data, error: queryError, count } = await query;
@@ -107,8 +106,6 @@ export function useCourses(filterOptions: CourseFilterOptions) {
         }
         
         if (data) {
-          console.log(`Retrieved ${data.length} courses for page ${currentPage}`);
-          
           // Convert to our standard Course type
           const typedCourses: Course[] = data.map((item: any) => {
             const department = item["Course number"]?.split('-')[0] || 'Unknown';
@@ -127,14 +124,19 @@ export function useCourses(filterOptions: CourseFilterOptions) {
             };
           });
           
-          if (isFirstPage) {
-            setCourses(typedCourses);
+          // Apply client-side search algorithm if searching
+          const finalCourses = isSearching 
+            ? searchCourses(typedCourses, filterOptions.search!)
+            : typedCourses;
+          
+          if (isFirstPage || isSearching) {
+            setCourses(finalCourses);
           } else {
-            setCourses(prev => [...prev, ...typedCourses]);
+            setCourses(prev => [...prev, ...finalCourses]);
           }
           
-          setTotalCount(count || 0);
-          setHasMore(data.length === PAGE_SIZE && (count ? from + data.length < count : true));
+          setTotalCount(isSearching ? finalCourses.length : (count || 0));
+          setHasMore(!isSearching && data.length === PAGE_SIZE && (count ? currentPage * PAGE_SIZE + data.length < count : true));
         }
       } catch (err: any) {
         console.error("Error fetching courses:", err);
