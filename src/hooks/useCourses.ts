@@ -77,32 +77,58 @@ export function useCourses(filterOptions: CourseFilterOptions) {
       try {
         const tableName = `courses-${filterOptions.term}`;
         
-        // When searching, fetch all courses to apply client-side ranking algorithm
+        // When searching, fetch ALL courses (paginated batches) to apply client-side ranking algorithm
         // Otherwise use pagination
         const isSearching = filterOptions.search && filterOptions.search.trim() !== '';
         
-        let query = supabase.from(tableName as any).select('*', { count: 'exact' });
+        let baseQuery = supabase.from(tableName as any).select('*', { count: 'exact' });
         
-        // Apply department filter server-side
+        // Apply department filter server-side (reduces dataset before client ranking)
         if (filterOptions.department && filterOptions.department !== "all") {
-          query = query.ilike('"Course number"', `${filterOptions.department}-%`);
+          baseQuery = baseQuery.ilike('"Course number"', `${filterOptions.department}-%`);
         }
         
+        let data: any[] | null = null;
+        let count: number | null = null;
+
         if (isSearching) {
-          // When searching, fetch up to 1000 courses to apply client-side ranking
-          query = query.limit(1000);
+          // Fetch the entire dataset for the term (and department, if any) in batches
+          const BATCH_SIZE = 1000;
+          let allRows: any[] = [];
+          let from = 0;
+          let to = BATCH_SIZE - 1;
+          let total: number | null = null;
+
+          // First batch to get count
+          let first = await baseQuery.range(from, to);
+          if (first.error) {
+            throw first.error;
+          }
+          allRows = allRows.concat(first.data || []);
+          total = first.count ?? null;
+
+          if (total && allRows.length < total) {
+            // Continue fetching until we've got everything
+            while (allRows.length < total) {
+              from += BATCH_SIZE;
+              to += BATCH_SIZE;
+              const { data: batch, error } = await baseQuery.range(from, to);
+              if (error) throw error;
+              if (!batch || batch.length === 0) break;
+              allRows = allRows.concat(batch);
+            }
+          }
+
+          data = allRows;
+          count = total ?? (allRows ? allRows.length : 0);
         } else {
           // Normal pagination
           const from = currentPage * PAGE_SIZE;
           const to = from + PAGE_SIZE - 1;
-          query = query.range(from, to);
-        }
-        
-        const { data, error: queryError, count } = await query;
-        
-        if (queryError) {
-          console.error("Query error:", queryError);
-          throw queryError;
+          const { data: pageData, error: queryError, count: pageCount } = await baseQuery.range(from, to);
+          if (queryError) throw queryError;
+          data = pageData;
+          count = pageCount ?? null;
         }
         
         if (data) {
