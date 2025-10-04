@@ -186,14 +186,38 @@ export function useCourses(filterOptions: CourseFilterOptions) {
       
       try {
         const tableName = `courses-${filterOptions.term}`;
-        const { data } = await supabase
-          .from(tableName as any)
-          .select('"Course number"')
-          .limit(10000);
         
-        if (data) {
+        // Fetch ALL course numbers in batches to ensure we get all departments
+        const BATCH_SIZE = 1000;
+        let allRows: any[] = [];
+        let from = 0;
+        let to = BATCH_SIZE - 1;
+        
+        let baseQuery = supabase.from(tableName as any).select('"Course number"', { count: 'exact' });
+        
+        // First batch to get count
+        let first = await baseQuery.range(from, to);
+        if (first.error) {
+          throw first.error;
+        }
+        allRows = allRows.concat(first.data || []);
+        const total = first.count ?? null;
+        
+        // Continue fetching until we've got everything
+        if (total && allRows.length < total) {
+          while (allRows.length < total) {
+            from += BATCH_SIZE;
+            to += BATCH_SIZE;
+            const { data: batch, error } = await baseQuery.range(from, to);
+            if (error) throw error;
+            if (!batch || batch.length === 0) break;
+            allRows = allRows.concat(batch);
+          }
+        }
+        
+        if (allRows.length > 0) {
           const uniqueDeptCodes = Array.from(
-            new Set(data.map((item: any) => item["Course number"]?.split('-')[0]).filter(Boolean))
+            new Set(allRows.map((item: any) => item["Course number"]?.split('-')[0]).filter(Boolean))
           ).sort();
           
           const deptArray = uniqueDeptCodes.map(code => ({
