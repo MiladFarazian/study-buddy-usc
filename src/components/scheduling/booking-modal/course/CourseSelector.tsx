@@ -150,20 +150,6 @@ export function CourseSelector({
             }}
           >
             <div className="space-y-3">
-              <div 
-                className={`
-                  flex items-center space-x-2 rounded-lg border p-4 cursor-pointer
-                  ${noSpecificCourse ? "border-usc-cardinal bg-red-50" : ""}
-                `}
-                onClick={handleNoSpecificCourse}
-              >
-                <RadioGroupItem value="no-course" id="no-course" />
-                <Label htmlFor="no-course" className="cursor-pointer flex-1">
-                  <div className="font-medium">General Tutoring Session</div>
-                  <p className="text-sm text-muted-foreground">Not specific to any particular class</p>
-                </Label>
-              </div>
-              
               {sortedCourses && sortedCourses.length > 0 ? (
                 sortedCourses.map((course: Course) => {
                   const matchType = getMatchType(course);
@@ -214,7 +200,23 @@ export function CourseSelector({
                     </div>
                   );
                 })
-              ) : (
+              ) : null}
+              
+              <div 
+                className={`
+                  flex items-center space-x-2 rounded-lg border p-4 cursor-pointer
+                  ${noSpecificCourse ? "border-usc-cardinal bg-red-50" : ""}
+                `}
+                onClick={handleNoSpecificCourse}
+              >
+                <RadioGroupItem value="no-course" id="no-course" />
+                <Label htmlFor="no-course" className="cursor-pointer flex-1">
+                  <div className="font-medium">General Tutoring Session</div>
+                  <p className="text-sm text-muted-foreground">Not specific to any particular class</p>
+                </Label>
+              </div>
+              
+              {(!sortedCourses || sortedCourses.length === 0) && (
                 <div className="text-center py-4 bg-muted/30 rounded-lg">
                   <p className="text-muted-foreground">This tutor hasn't added any courses yet.</p>
                 </div>
