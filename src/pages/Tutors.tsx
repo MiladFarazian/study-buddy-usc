@@ -11,9 +11,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Switch } from "@/components/ui/switch";
 import { getTutorStudentCourses } from "@/lib/tutor-student-utils";
 import { searchTutors, filterTutorsBySubject } from "@/lib/search-utils";
+import { useSearchParams } from "react-router-dom";
 
 const Tutors = () => {
   const { tutors, loading, studentCourseTutors, loadingStudentTutors, matchResults, departments } = useTutors();
+  const [searchParams] = useSearchParams();
   const [studentCourses, setStudentCourses] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("all");
@@ -21,6 +23,14 @@ const Tutors = () => {
   const [showOnlyForMyCourses, setShowOnlyForMyCourses] = useState(false);
   const isMobile = useIsMobile();
   const { profile, user } = useAuth();
+
+  // Pre-fill search query from URL parameter
+  useEffect(() => {
+    const searchParam = searchParams.get('search');
+    if (searchParam) {
+      setSearchQuery(searchParam);
+    }
+  }, [searchParams]);
 
   // Effect to populate student courses
   useEffect(() => {

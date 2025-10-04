@@ -2,11 +2,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Course } from "@/types/CourseTypes";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, CheckCircle } from "lucide-react";
+import { PlusCircle, CheckCircle, Users } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { addCourseToProfile } from "@/lib/course-utils";
+import { Link } from "react-router-dom";
 import {
   Select,
   SelectContent,
@@ -154,28 +155,41 @@ const CourseCard = ({ course }: CourseCardProps) => {
           )}
         </div>
         
-        {user && (
+        <div className="space-y-2 mt-4">
+          {user && (
+            <Button 
+              onClick={handleAddCourse}
+              disabled={isAdding || isAdded}
+              variant={isAdded ? "outline" : "default"}
+              className="w-full"
+            >
+              {isAdding ? (
+                <>Loading...</>
+              ) : isAdded ? (
+                <>
+                  <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
+                  Added to My Courses
+                </>
+              ) : (
+                <>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add to My Courses
+                </>
+              )}
+            </Button>
+          )}
+          
           <Button 
-            onClick={handleAddCourse}
-            disabled={isAdding || isAdded}
-            variant={isAdded ? "outline" : "default"}
-            className="w-full mt-4"
+            asChild
+            variant="outline"
+            className="w-full"
           >
-            {isAdding ? (
-              <>Loading...</>
-            ) : isAdded ? (
-              <>
-                <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
-                Added to My Courses
-              </>
-            ) : (
-              <>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Add to My Courses
-              </>
-            )}
+            <Link to={`/tutors?search=${encodeURIComponent(courseNumber)}`}>
+              <Users className="mr-2 h-4 w-4" />
+              Find Tutors
+            </Link>
           </Button>
-        )}
+        </div>
       </CardContent>
     </Card>
   );
