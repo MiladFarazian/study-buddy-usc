@@ -43,7 +43,7 @@ const FAQ = () => {
         },
         {
           q: "How does course matching work?",
-          a: "When browsing tutors, you'll see a green checkmark for tutors who can teach courses you've added to your profile. If the tutor had the same instructor when they took the course, you'll also see a 'Matching Teacher' badge in green. You can also add courses you're not currently enrolled in if you need help with them."
+          a: "When browsing tutors, you'll see a checkmark for tutors who can teach courses you've added to your profile. If the tutor had the same instructor when they took the course, you'll also see a 'Matching Teacher' badge in green. You can also add courses you're not currently enrolled in if you need help with them."
         },
         {
           q: "What are the payment fees?",
@@ -80,7 +80,7 @@ const FAQ = () => {
         },
         {
           q: "How do I get paid?",
-          a: "Payments are processed through Stripe Connect. You must set up your Stripe Connect account in Settings before you can receive payments. After both you and the student confirm the session occurred, the transfer is initiated. Once the student's payment clears, you'll be paid the next day (typically within 30 days of the session, depending on payment clearing times)."
+          a: "Payments are processed through Stripe Connect. You must set up your Stripe Connect account in Settings before you can receive payments. After both you and the student confirm the session occurred, the transfer is initiated. Once the student's payment clears, you'll be paid the next day."
         },
         {
           q: "When do I receive my payment?",
