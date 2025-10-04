@@ -179,11 +179,11 @@ async function processPayment(supabaseAdmin: any, sessionId: string, paymentData
     status: paymentData.status 
   });
 
-  // Calculate fees: 15% platform fee + Stripe's 2.9% + 30¢
+  // Calculate fees: 1% platform fee + Stripe's 2.9% + 30¢
   // Convert dollars to cents (paymentData.amount is stored in dollars)
   const amountInCents = Math.round(paymentData.amount * 100);
   const stripeFee = Math.round(amountInCents * 0.029 + 30);
-  const platformFee = Math.round(amountInCents * 0.15);
+  const platformFee = Math.round(amountInCents * 0.01);
   const tutorAmount = amountInCents - stripeFee - platformFee;
 
   // Prevent negative transfers - this should never happen with proper fee calculation

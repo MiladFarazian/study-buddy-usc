@@ -199,7 +199,7 @@ export default function TestAutoConfirm() {
           <p>• <strong>Auto-Confirm Function:</strong> Sets both tutor_confirmed and student_confirmed to true</p>
           <p>• <strong>Session Completion:</strong> If both parties are confirmed, marks session as "completed"</p>
           <p>• <strong>Payment Processing:</strong> Creates pending transfer if payment transaction exists</p>
-          <p>• <strong>Fee Calculation:</strong> 15% platform fee + 2.9% + $0.30 Stripe fee</p>
+          <p>• <strong>Fee Calculation:</strong> 1% platform fee + 2.9% + $0.30 Stripe fee</p>
           <p>• <strong>Manual Transfer:</strong> Use the transfer-pending-funds function to actually send money</p>
         </CardContent>
       </Card>
