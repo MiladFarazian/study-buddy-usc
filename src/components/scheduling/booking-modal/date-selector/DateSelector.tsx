@@ -133,7 +133,7 @@ export function DateSelector({
                   isSelected && hasSlots ? "bg-usc-cardinal text-white" : "",
                   !isSelected && hasSlots ? "hover:bg-gray-100" : "",
                   !hasSlots ? "text-gray-300 cursor-not-allowed" : "",
-                  isToday && !isSelected ? "border border-usc-cardinal" : ""
+                  isToday && !isSelected && hasSlots ? "border-2 border-usc-cardinal" : ""
                 )}
                 disabled={!hasSlots}
               >
