@@ -27,7 +27,7 @@ export function useTutorCourses(tutorId: string | undefined) {
         // Get courses the tutor has selected
         const { data: tutorCourses, error: tutorCoursesError } = await supabase
           .from("tutor_courses")
-          .select("course_number, course_title, department")
+          .select("course_number, course_title, department, instructor")
           .eq("tutor_id", tutorId);
 
         if (tutorCoursesError) {
@@ -60,7 +60,7 @@ export function useTutorCourses(tutorId: string | undefined) {
               id: tutorCourse.course_number || crypto.randomUUID(),
               course_number: tutorCourse.course_number || "",
               course_title: tutorCourse.course_title || courseDetails?.course_title || "",
-              instructor: null,
+              instructor: tutorCourse.instructor || null,
               department: tutorCourse.department || tutorCourse.course_number?.split('-')[0] || "",
             };
           })
