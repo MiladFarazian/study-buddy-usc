@@ -12,6 +12,8 @@ import { Switch } from "@/components/ui/switch";
 import { getTutorStudentCourses } from "@/lib/tutor-student-utils";
 import { searchTutors, filterTutorsBySubject } from "@/lib/search-utils";
 import { useSearchParams } from "react-router-dom";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Info } from "lucide-react";
 
 const Tutors = () => {
   const { tutors, loading, studentCourseTutors, loadingStudentTutors, matchResults, departments } = useTutors();
@@ -84,6 +86,15 @@ const Tutors = () => {
     setSearchQuery("");
     setSelectedSubject("all");
   };
+
+  // Check if search query is a course code and if any tutor teaches it exactly
+  const isCourseCodeSearch = /^[A-Z]{3,4}-?\d{3}[A-Z]?$/i.test(searchQuery.replace(/\s/g, ''));
+  const hasExactMatch = isCourseCodeSearch && filteredTutors.some(tutor => 
+    tutor.subjects?.some(subject => 
+      subject.code.toLowerCase().replace(/\s/g, '') === searchQuery.toLowerCase().replace(/\s/g, '')
+    )
+  );
+  const shouldShowNoExactMatchAlert = isCourseCodeSearch && filteredTutors.length > 0 && !hasExactMatch;
 
   const renderFilterSection = () => (
     <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-1 md:grid-cols-3 gap-4 md:gap-6'}`}>
@@ -217,6 +228,16 @@ const Tutors = () => {
           (isTutor ? "Tutors for Your Learning Needs" : "Tutors for Your Courses") 
           : "All Tutors"}
       </h2>
+
+      {/* Alert for no exact course matches */}
+      {shouldShowNoExactMatchAlert && (
+        <Alert variant="warning" className="mb-4">
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            No tutors found for <strong>{searchQuery}</strong>. Showing tutors for related courses instead.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {loading ? (
         <div className="flex justify-center items-center py-8 md:py-12">
