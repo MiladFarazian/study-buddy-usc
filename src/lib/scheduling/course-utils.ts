@@ -13,7 +13,7 @@ export async function fetchCourseDetails(courseId: string) {
     console.log(`[fetchCourseDetails] Checking courses-20251 for ${courseId}`);
     const { data: courseData, error } = await supabase
       .from('courses-20251')
-      .select('Course number, Course title, Instructor')
+      .select('"Course number", "Course title", "Instructor"')
       .eq('Course number', courseId)
       .limit(1)
       .maybeSingle();
@@ -39,7 +39,7 @@ export async function fetchCourseDetails(courseId: string) {
     console.log(`[fetchCourseDetails] Checking courses-20252 for ${courseId}`);
     const { data: courseData, error } = await supabase
       .from('courses-20252')
-      .select('Course number, Course title, Instructor')
+      .select('"Course number", "Course title", "Instructor"')
       .eq('Course number', courseId)
       .limit(1)
       .maybeSingle();
@@ -65,7 +65,7 @@ export async function fetchCourseDetails(courseId: string) {
     console.log(`[fetchCourseDetails] Checking courses-20253 for ${courseId}`);
     const { data: courseData, error } = await supabase
       .from('courses-20253')
-      .select('Course number, Course title, Instructor')
+      .select('"Course number", "Course title", "Instructor"')
       .eq('Course number', courseId)
       .limit(1)
       .maybeSingle();
