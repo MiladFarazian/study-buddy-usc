@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { useTutorCourses } from "@/hooks/useTutorCourses";
 import { Tutor } from "@/types/tutor";
 import { Course } from "@/types/CourseTypes";
-import { Loader2, ArrowLeft, ArrowRight } from "lucide-react";
+import { Loader2, ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useScheduling } from "@/contexts/SchedulingContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { getStudentCoursesWithInstructor, CourseMatch } from "@/lib/instructor-matching-utils";
 
 interface CourseSelectorProps {
   selectedCourseId: string | null;
@@ -32,11 +34,54 @@ export function CourseSelector({
   const [noSpecificCourse, setNoSpecificCourse] = useState<boolean>(selectedCourseId === null);
   const [localSelectedCourseId, setLocalSelectedCourseId] = useState<string | null>(selectedCourseId);
   const { setCourse } = useScheduling();
+  const { user } = useAuth();
+  const [studentCourses, setStudentCourses] = useState<CourseMatch[]>([]);
+  
+  // Fetch student courses for matching
+  useEffect(() => {
+    const fetchStudentCourses = async () => {
+      if (user?.id) {
+        const courses = await getStudentCoursesWithInstructor(user.id);
+        setStudentCourses(courses);
+      }
+    };
+    fetchStudentCourses();
+  }, [user?.id]);
   
   // Use external courses if provided, otherwise use the fetched courses
   const courses = externalCourses || fetchedCourses;
   // Use external loading state if provided, otherwise use the fetch loading state
   const loading = externalLoading !== undefined ? externalLoading : fetchLoading;
+  
+  // Helper function to determine match type for a course
+  const getMatchType = (course: Course): 'exact' | 'student-course' | 'none' => {
+    const studentCourse = studentCourses.find(sc => sc.course_number === course.course_number);
+    if (!studentCourse) return 'none';
+    
+    // Normalize instructor names for comparison
+    const normalizeInstructor = (instructor: string | null | undefined): string => {
+      if (!instructor) return '';
+      return instructor.toLowerCase().trim();
+    };
+    
+    const studentInstructor = normalizeInstructor(studentCourse.instructor);
+    const tutorInstructor = normalizeInstructor(course.instructor);
+    
+    if (studentInstructor && tutorInstructor && studentInstructor === tutorInstructor) {
+      return 'exact';
+    }
+    
+    return 'student-course';
+  };
+  
+  // Sort courses: exact matches first, student courses second, others last
+  const sortedCourses = courses ? [...courses].sort((a, b) => {
+    const matchTypeA = getMatchType(a);
+    const matchTypeB = getMatchType(b);
+    
+    const priority = { 'exact': 0, 'student-course': 1, 'none': 2 };
+    return priority[matchTypeA] - priority[matchTypeB];
+  }) : [];
   
   // Update local state when selectedCourseId prop changes
   useEffect(() => {
@@ -119,25 +164,56 @@ export function CourseSelector({
                 </Label>
               </div>
               
-              {courses && courses.length > 0 ? (
-                courses.map((course: Course) => (
-                  <div 
-                    key={course.course_number}
-                    className={`
-                      flex items-center space-x-2 rounded-lg border p-4 cursor-pointer
-                      ${localSelectedCourseId === course.course_number && !noSpecificCourse ? "border-usc-cardinal bg-red-50" : ""}
-                    `}
-                    onClick={() => handleCourseSelect(course.course_number)}
-                  >
-                    <RadioGroupItem value={course.course_number} id={`course-${course.course_number}`} />
-                    <Label htmlFor={`course-${course.course_number}`} className="cursor-pointer flex-1">
-                      <div className="font-medium">{course.course_number}</div>
-                      {course.course_title && (
-                        <p className="text-sm text-muted-foreground">{course.course_title}</p>
-                      )}
-                    </Label>
-                  </div>
-                ))
+              {sortedCourses && sortedCourses.length > 0 ? (
+                sortedCourses.map((course: Course) => {
+                  const matchType = getMatchType(course);
+                  const isSelected = localSelectedCourseId === course.course_number && !noSpecificCourse;
+                  
+                  // Determine background color based on match type
+                  let bgClass = "";
+                  let borderClass = "border";
+                  let textColorClass = "";
+                  
+                  if (matchType === 'exact') {
+                    bgClass = "bg-emerald-50 dark:bg-emerald-950/30";
+                    borderClass = "border-emerald-500";
+                    textColorClass = "text-emerald-700 dark:text-emerald-400";
+                  } else if (matchType === 'student-course') {
+                    bgClass = "bg-red-50 dark:bg-red-950/30";
+                    borderClass = "border-red-400";
+                    textColorClass = "text-red-700 dark:text-red-400";
+                  } else {
+                    bgClass = "bg-amber-50 dark:bg-amber-950/30";
+                    borderClass = isSelected ? "border-usc-cardinal" : "border";
+                  }
+                  
+                  return (
+                    <div 
+                      key={course.course_number}
+                      className={`
+                        flex items-center space-x-2 rounded-lg p-4 cursor-pointer
+                        ${bgClass} ${isSelected ? "border-usc-cardinal border-2" : borderClass}
+                      `}
+                      onClick={() => handleCourseSelect(course.course_number)}
+                    >
+                      <RadioGroupItem value={course.course_number} id={`course-${course.course_number}`} />
+                      <Label htmlFor={`course-${course.course_number}`} className="cursor-pointer flex-1">
+                        <div className="flex items-center gap-2">
+                          <div className="font-medium">{course.course_number}</div>
+                          {matchType !== 'none' && (
+                            <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${textColorClass}`}>
+                              <Check className="w-3 h-3" />
+                              {matchType === 'exact' ? 'Exact Match' : 'Your Course'}
+                            </div>
+                          )}
+                        </div>
+                        {course.course_title && (
+                          <p className="text-sm text-muted-foreground">{course.course_title}</p>
+                        )}
+                      </Label>
+                    </div>
+                  );
+                })
               ) : (
                 <div className="text-center py-4 bg-muted/30 rounded-lg">
                   <p className="text-muted-foreground">This tutor hasn't added any courses yet.</p>
