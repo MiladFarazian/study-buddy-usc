@@ -40,6 +40,21 @@ const AuthCallback = () => {
           });
         } else if (data?.session) {
           console.log("Successfully authenticated");
+          
+          // Check if user has completed student onboarding
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('student_onboarding_complete')
+            .eq('id', data.session.user.id)
+            .single();
+          
+          // If student onboarding not complete, redirect to onboarding
+          if (profileData && !profileData.student_onboarding_complete) {
+            console.log("Redirecting to student onboarding");
+            navigate('/onboarding/student', { replace: true });
+            return;
+          }
+          
           toast({
             title: "Success",
             description: "You are now signed in",

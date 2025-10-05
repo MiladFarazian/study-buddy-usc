@@ -617,9 +617,11 @@ export type Database = {
           stripe_customer_id: string | null
           student_bio: string | null
           student_courses: string[] | null
+          student_onboarding_complete: boolean | null
           subjects: string[] | null
           tutor_bio: string | null
           tutor_courses_subjects: string[] | null
+          tutor_onboarding_complete: boolean | null
           updated_at: string
         }
         Insert: {
@@ -643,9 +645,11 @@ export type Database = {
           stripe_customer_id?: string | null
           student_bio?: string | null
           student_courses?: string[] | null
+          student_onboarding_complete?: boolean | null
           subjects?: string[] | null
           tutor_bio?: string | null
           tutor_courses_subjects?: string[] | null
+          tutor_onboarding_complete?: boolean | null
           updated_at?: string
         }
         Update: {
@@ -669,9 +673,11 @@ export type Database = {
           stripe_customer_id?: string | null
           student_bio?: string | null
           student_courses?: string[] | null
+          student_onboarding_complete?: boolean | null
           subjects?: string[] | null
           tutor_bio?: string | null
           tutor_courses_subjects?: string[] | null
+          tutor_onboarding_complete?: boolean | null
           updated_at?: string
         }
         Relationships: []

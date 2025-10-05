@@ -24,4 +24,6 @@ export interface Profile {
   approved_tutor?: boolean;
   available_in_person?: boolean;
   available_online?: boolean;
+  student_onboarding_complete?: boolean;
+  tutor_onboarding_complete?: boolean;
 }

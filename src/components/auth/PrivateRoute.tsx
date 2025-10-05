@@ -9,7 +9,7 @@ interface PrivateRouteProps {
 }
 
 const PrivateRoute = ({ children }: PrivateRouteProps) => {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -27,6 +27,11 @@ const PrivateRoute = ({ children }: PrivateRouteProps) => {
     
     // Redirect to login but remember the current location
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Check if student onboarding is complete (skip check for onboarding routes)
+  if (profile && !profile.student_onboarding_complete && location.pathname !== '/onboarding/student') {
+    return <Navigate to="/onboarding/student" replace />;
   }
 
   return <>{children}</>;

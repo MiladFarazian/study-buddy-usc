@@ -60,6 +60,12 @@ export const ProfileSettings = () => {
       const result = await updateProfile({ role: newRole });
       
       if (result.success) {
+        // Check if switching to tutor and onboarding not complete
+        if (newRole === 'tutor' && !profile?.tutor_onboarding_complete) {
+          window.location.href = '/onboarding/tutor';
+          return;
+        }
+        
         toast({
           title: "Profile Updated",
           description: `Successfully switched to ${newRole} profile`,

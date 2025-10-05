@@ -302,7 +302,9 @@ export const SessionItem = ({
                           subjects: null,
                           updated_at: new Date().toISOString(),
                           available_in_person: true,
-                          available_online: true
+                          available_online: true,
+                          student_onboarding_complete: true,
+                          tutor_onboarding_complete: false
                         }
                       : {
                           id: session.student_id,
@@ -328,7 +330,9 @@ export const SessionItem = ({
                           subjects: null,
                           updated_at: new Date().toISOString(),
                           available_in_person: true,
-                          available_online: true
+                          available_online: true,
+                          student_onboarding_complete: true,
+                          tutor_onboarding_complete: false
                         };
                     console.log('Using student profile for review:', studentProfile);
                     startTutorReview(session, studentProfile);

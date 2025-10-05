@@ -52,6 +52,8 @@ import BadgesDashboard from "./pages/TutorDashboard/BadgesDashboard";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCanceled from "./pages/PaymentCanceled";
 import FAQ from "./pages/FAQ";
+import StudentOnboarding from "./pages/onboarding/StudentOnboarding";
+import TutorOnboarding from "./pages/onboarding/TutorOnboarding";
 
 const router = createBrowserRouter([
   {
@@ -209,6 +211,14 @@ const router = createBrowserRouter([
       {
         path: "/faq",
         element: <FAQ />
+      },
+      {
+        path: "/onboarding/student",
+        element: <StudentOnboarding />
+      },
+      {
+        path: "/onboarding/tutor",
+        element: <TutorOnboarding />
       },
       {
         path: "*",
