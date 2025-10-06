@@ -9,7 +9,8 @@ import {
   Settings, 
   Users,
   Loader2,
-  HelpCircle
+  HelpCircle,
+  GraduationCap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,7 +19,7 @@ import { useState, useEffect } from "react";
 
 const Sidebar = () => {
   const location = useLocation();
-  const { isStudent, isTutor, user, loading } = useAuth();
+  const { isStudent, isTutor, user, profile, loading } = useAuth();
   const isMobile = useIsMobile();
   const [isInitializing, setIsInitializing] = useState(true);
   
@@ -99,6 +100,12 @@ const Sidebar = () => {
       icon: HelpCircle,
       path: "/faq",
       showWhen: true // Always show
+    },
+    {
+      title: "Become a Tutor",
+      icon: GraduationCap,
+      path: "/settings?tab=profile&action=become-tutor",
+      showWhen: !!user && !profile?.approved_tutor // Only show for authenticated non-approved tutors
     }
   ];
 

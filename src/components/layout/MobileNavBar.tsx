@@ -28,7 +28,7 @@ import {
 const MobileNavBar = () => {
   const location = useLocation();
   const isMobile = useIsMobile();
-  const { isStudent, isTutor, user } = useAuth();
+  const { isStudent, isTutor, user, profile } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   
   if (!isMobile) return null;
@@ -93,6 +93,12 @@ const MobileNavBar = () => {
       icon: HelpCircle,
       path: "/faq",
       showWhen: true
+    },
+    {
+      title: "Become a Tutor",
+      icon: GraduationCap,
+      path: "/settings?tab=profile&action=become-tutor",
+      showWhen: !!user && !profile?.approved_tutor
     }
   ];
 
