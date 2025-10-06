@@ -3,6 +3,10 @@ import { Resend } from "npm:resend@2.0.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
+// Configurable sender and reply-to via Supabase secrets (with safe fallbacks)
+const FROM_ADDRESS = Deno.env.get("RESEND_FROM") || "USC Study Buddy <notifications@studybuddyusc.com>";
+const REPLY_TO = Deno.env.get("RESEND_REPLY_TO") || undefined;
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -28,14 +32,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     const settingsUrl = `${Deno.env.get("SUPABASE_URL")?.replace('.supabase.co', '.lovable.app') || 'https://studybuddy.lovable.app'}/settings?tab=profile`;
 
-    // Force sender to notifications@studybuddyusc.com for reliability
-    const fromAddress = "StudyBuddy <notifications@studybuddyusc.com>";
-    const replyTo = Deno.env.get("RESEND_REPLY_TO") || "support@studybuddyusc.com";
-    console.log("Email config:", { to: tutorEmail, tutorName, tutorId, fromAddress, replyTo });
+    console.log("Email config:", { to: tutorEmail, tutorName, tutorId, from: FROM_ADDRESS, replyTo: REPLY_TO });
 
     const emailResponse = await resend.emails.send({
-      from: fromAddress,
-      reply_to: replyTo,
+      from: FROM_ADDRESS,
+      reply_to: REPLY_TO,
       to: [tutorEmail],
       subject: "🎉 You've Been Approved as a StudyBuddy Tutor!",
       html: `
