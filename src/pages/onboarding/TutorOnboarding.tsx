@@ -60,41 +60,10 @@ const TutorOnboarding = () => {
           {/* Scrollable document area */}
           <div className="border rounded-lg p-6 max-h-[60vh] overflow-y-auto bg-card">
             <div className="prose prose-sm max-w-none space-y-6">
-              {/* PLACEHOLDER: Add Tutor Agreement */}
-              <section>
-                <h2 className="text-xl font-semibold mb-3">Tutor Agreement</h2>
-                <p className="text-muted-foreground">
-                  {/* TODO: Replace with actual Tutor Agreement content */}
-                  [Tutor Agreement content will be added here]
-                </p>
-              </section>
-
-              {/* PLACEHOLDER: Add Code of Conduct */}
-              <section>
-                <h2 className="text-xl font-semibold mb-3">Code of Conduct</h2>
-                <p className="text-muted-foreground">
-                  {/* TODO: Replace with actual Code of Conduct content */}
-                  [Code of Conduct content will be added here]
-                </p>
-              </section>
-
-              {/* PLACEHOLDER: Add Payment & Policies */}
-              <section>
-                <h2 className="text-xl font-semibold mb-3">Payment & Cancellation Policies</h2>
-                <p className="text-muted-foreground">
-                  {/* TODO: Replace with actual Payment & Policies content */}
-                  [Payment & Cancellation Policies content will be added here]
-                </p>
-              </section>
-
-              {/* PLACEHOLDER: Add Safety Guidelines */}
-              <section>
-                <h2 className="text-xl font-semibold mb-3">Safety Guidelines</h2>
-                <p className="text-muted-foreground">
-                  {/* TODO: Replace with actual Safety Guidelines content */}
-                  [Safety Guidelines content will be added here]
-                </p>
-              </section>
+              {/* Tutor onboarding documents will be added here */}
+              <p className="text-muted-foreground text-center py-8">
+                Tutor onboarding content will be added soon.
+              </p>
             </div>
           </div>
 
