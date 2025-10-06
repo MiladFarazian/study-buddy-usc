@@ -99,3 +99,6 @@ verify_jwt = false
 
 [functions.process-pending-transfers-batch]
 verify_jwt = false
+
+[functions.send-tutor-approval-email]
+verify_jwt = false
