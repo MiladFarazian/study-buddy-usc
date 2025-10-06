@@ -28,9 +28,15 @@ const handler = async (req: Request): Promise<Response> => {
 
     const settingsUrl = `${Deno.env.get("SUPABASE_URL")?.replace('.supabase.co', '.lovable.app') || 'https://studybuddy.lovable.app'}/settings?tab=profile`;
 
+    // Derive sender details and log for diagnostics
+    const fromEnv = Deno.env.get("RESEND_FROM");
+    const fromAddress = `StudyBuddy <${fromEnv && fromEnv.trim() !== "" ? fromEnv : "onboarding@resend.dev"}>`;
+    const replyTo = Deno.env.get("RESEND_REPLY_TO") || undefined;
+    console.log("Email config:", { to: tutorEmail, tutorName, tutorId, fromAddress, replyTo });
+
     const emailResponse = await resend.emails.send({
-      from: `StudyBuddy <${Deno.env.get("RESEND_FROM") || "onboarding@resend.dev"}>`,
-      reply_to: Deno.env.get("RESEND_REPLY_TO"),
+      from: fromAddress,
+      reply_to: replyTo,
       to: [tutorEmail],
       subject: "🎉 You've Been Approved as a StudyBuddy Tutor!",
       html: `
