@@ -2336,13 +2336,1044 @@ const StudentOnboarding = () => {
                 </div>
               </section>
 
-              {/* PLACEHOLDER: Add Community Guidelines */}
+              {/* Acceptable Use Policy */}
               <section>
-                <h2 className="text-xl font-semibold mb-3">Community Guidelines</h2>
-                <p className="text-muted-foreground">
-                  {/* TODO: Replace with actual Community Guidelines content */}
-                  [Community Guidelines content will be added here]
-                </p>
+                <h2 className="text-xl font-semibold mb-3">Acceptable Use Policy</h2>
+                <div className="space-y-6 text-sm">
+                  <div className="space-y-2">
+                    <p className="font-bold text-base">STUDYBUDDY ACCEPTABLE USE POLICY</p>
+                    <p className="text-muted-foreground">
+                      <strong>Last Updated: October 6, 2025</strong><br />
+                      <strong>Effective Date: October 6, 2025</strong>
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="font-bold text-lg mb-3">PURPOSE AND SCOPE</h3>
+                    <p className="text-muted-foreground mb-4">
+                      This Acceptable Use Policy ("AUP") governs the conduct of all StudyBuddy users, including students and tutors. This AUP is incorporated into and is part of the StudyBuddy Terms of Service.
+                    </p>
+                    <p className="text-muted-foreground mb-4">
+                      <strong>By using StudyBuddy, you agree to comply with this AUP.</strong> Violations may result in warnings, account suspension, or permanent termination without refund.
+                    </p>
+                    <p className="font-medium mb-1">This policy applies to:</p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                      <li>All conduct on the StudyBuddy Platform</li>
+                      <li>All conduct during tutoring sessions (both virtual and in-person)</li>
+                      <li>All communications between users</li>
+                      <li>All interactions related to StudyBuddy</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h3 className="font-bold text-lg mb-3">1. ACADEMIC INTEGRITY STANDARDS</h3>
+
+                    <h4 className="font-semibold mb-2">1.1 Purpose of StudyBuddy</h4>
+                    <p className="text-muted-foreground mb-4">
+                      StudyBuddy exists to facilitate <strong>legitimate educational tutoring</strong> that helps students learn, understand course material, and develop their own academic skills and knowledge.
+                    </p>
+                    <p className="text-muted-foreground mb-4">
+                      <strong>StudyBuddy is a learning platform, NOT a homework completion service.</strong>
+                    </p>
+
+                    <h4 className="font-semibold mb-2">1.2 Permitted Tutoring Activities</h4>
+                    <p className="text-muted-foreground mb-2">
+                      The following activities are <strong>ACCEPTABLE and ENCOURAGED:</strong>
+                    </p>
+
+                    <div className="mb-4">
+                      <p className="font-medium mb-1">Explaining and Teaching:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                        <li>Explaining concepts, theories, principles, and formulas</li>
+                        <li>Teaching problem-solving methods and approaches</li>
+                        <li>Breaking down complex topics into understandable parts</li>
+                        <li>Providing analogies and real-world examples</li>
+                        <li>Answering questions about course material</li>
+                        <li>Clarifying lecture content or textbook readings</li>
+                      </ul>
+                    </div>
+
+                    <div className="mb-4">
+                      <p className="font-medium mb-1">Guided Practice:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                        <li>Working through example problems together with active student participation</li>
+                        <li>Teaching the student how to approach similar problems independently</li>
+                        <li>Asking guiding questions that lead the student to discover solutions</li>
+                        <li>Demonstrating problem-solving techniques step-by-step</li>
+                      </ul>
+                    </div>
+
+                    <div className="mb-4">
+                      <p className="font-medium mb-1">Course Material Review:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                        <li>Reviewing course syllabi, lecture notes, and textbook content</li>
+                        <li>Discussing reading assignments and key takeaways</li>
+                        <li>Creating study guides or outlines together</li>
+                        <li>Organizing course material for better understanding</li>
+                      </ul>
+                    </div>
+
+                    <div className="mb-4">
+                      <p className="font-medium mb-1">Skill Development:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                        <li>Teaching research skills and source evaluation</li>
+                        <li>Teaching citation methods and avoiding plagiarism</li>
+                        <li>Developing critical thinking and analytical skills</li>
+                        <li>Improving writing, communication, or presentation skills</li>
+                        <li>Teaching time management and study strategies</li>
+                        <li>Teaching test-taking strategies and exam preparation techniques</li>
+                      </ul>
+                    </div>
+
+                    <div className="mb-4">
+                      <p className="font-medium mb-1">Feedback on Student Work:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                        <li><strong>Identifying errors</strong> in student work without correcting them directly</li>
+                        <li>Asking questions like: "Can you read this paragraph aloud? Do you notice anything that sounds off?"</li>
+                        <li>Providing <strong>feedback and suggestions</strong> rather than direct edits</li>
+                        <li>Helping students develop their own revision strategies</li>
+                        <li>Teaching students how to self-edit and proofread</li>
+                      </ul>
+                    </div>
+
+                    <div className="mb-4">
+                      <p className="font-medium mb-1">Study Materials Creation:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                        <li>Creating practice problems for students to solve independently</li>
+                        <li>Developing study guides or review sheets</li>
+                        <li>Making flashcards or study aids</li>
+                        <li>Suggesting relevant practice resources</li>
+                      </ul>
+                    </div>
+
+                    <div className="mb-4">
+                      <p className="font-medium mb-1">Academic Guidance:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                        <li>Explaining grading rubrics and professor expectations</li>
+                        <li>Discussing how to approach assignments effectively</li>
+                        <li>Providing general advice about course planning or academic success</li>
+                        <li>Explaining university policies or procedures</li>
+                      </ul>
+                    </div>
+
+                    <h4 className="font-semibold mb-2">1.3 Prohibited Academic Dishonesty</h4>
+                    <p className="text-muted-foreground mb-2">
+                      The following activities are <strong>STRICTLY PROHIBITED</strong> and constitute grounds for immediate permanent account termination:
+                    </p>
+
+                    <div className="mb-4">
+                      <p className="font-medium mb-1">Assignment Completion:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                        <li>❌ Completing homework, assignments, or projects on behalf of students</li>
+                        <li>❌ Writing any portion of papers, essays, or reports that students will submit as their own work</li>
+                        <li>❌ Doing math problems, coding assignments, or problem sets for students</li>
+                        <li>❌ Creating presentations, spreadsheets, or other deliverables for students</li>
+                        <li>❌ Translating assignments or papers for students to submit</li>
+                        <li>❌ Editing or rewriting student work to the extent that it becomes the tutor's work</li>
+                      </ul>
+                    </div>
+
+                    <div className="mb-4">
+                      <p className="font-medium mb-1">Testing and Exams:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                        <li>❌ Taking quizzes, tests, midterms, or final exams on behalf of students</li>
+                        <li>❌ Providing answers during tests or exams</li>
+                        <li>❌ Being available during exams to answer questions</li>
+                        <li>❌ Helping students cheat on any form of assessment</li>
+                      </ul>
+                    </div>
+
+                    <div className="mb-4">
+                      <p className="font-medium mb-1">Direct Answer Provision:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                        <li>❌ Providing direct answers to graded assignments without teaching the underlying concepts</li>
+                        <li>❌ Solving problems for students who then copy the solutions</li>
+                        <li>❌ Giving students answers to copy rather than helping them understand how to find answers</li>
+                      </ul>
+                    </div>
+
+                    <div className="mb-4">
+                      <p className="font-medium mb-1">Ghost-Writing and Contract Cheating:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                        <li>❌ Writing papers, essays, lab reports, or other written work for students</li>
+                        <li>❌ Providing "sample essays" that students modify slightly and submit</li>
+                        <li>❌ Any form of contract cheating or academic fraud services</li>
+                        <li>❌ "Editing" that substantially changes or rewrites student work</li>
+                      </ul>
+                    </div>
+
+                    <div className="mb-4">
+                      <p className="font-medium mb-1">Honor Code Violations:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                        <li>❌ Helping students violate USC's or any other institution's academic integrity policies</li>
+                        <li>❌ Assisting with prohibited collaboration on individual assignments</li>
+                        <li>❌ Helping students submit work that is not substantially their own</li>
+                        <li>❌ Facilitating plagiarism in any form</li>
+                      </ul>
+                    </div>
+
+                    <div className="mb-4">
+                      <p className="font-medium mb-1">Test Materials Misuse:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                        <li>❌ Sharing copies of tests, exams, or quiz questions obtained from students</li>
+                        <li>❌ Using or distributing instructor materials without authorization</li>
+                        <li>❌ Helping students access or use unauthorized materials during assessments</li>
+                      </ul>
+                    </div>
+
+                    <h4 className="font-semibold mb-2">1.4 The Critical Distinction: Teaching vs. Doing</h4>
+                    <p className="text-muted-foreground mb-2">
+                      <strong>The fundamental principle:</strong>
+                    </p>
+                    <p className="text-muted-foreground mb-2">
+                      ✅ <strong>ACCEPTABLE:</strong> Teaching students HOW to do something so they can do it themselves
+                    </p>
+                    <p className="text-muted-foreground mb-4">
+                      ❌ <strong>UNACCEPTABLE:</strong> Doing the work FOR students who then submit it as their own
+                    </p>
+
+                    <p className="font-medium mb-2">Examples:</p>
+
+                    <div className="mb-4">
+                      <p className="font-medium mb-1">Scenario: Student asks for help with a math problem</p>
+                      <p className="text-muted-foreground mb-1">✅ Acceptable Approach:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-2">
+                        <li>"Let's work through a similar example together. What's the first step you think we should take?"</li>
+                        <li>"What formula do you think applies here? Why?"</li>
+                        <li>"You got this part right, but there's an error in step 3. Can you see what it might be?"</li>
+                        <li>"Let me show you the method, then you try the next problem independently."</li>
+                      </ul>
+                      <p className="text-muted-foreground mb-1">❌ Unacceptable Approach:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                        <li>Solving the problem completely and giving the student the answer</li>
+                        <li>Writing out the full solution for the student to copy</li>
+                        <li>Doing all the steps while the student passively watches</li>
+                      </ul>
+                    </div>
+
+                    <div className="mb-4">
+                      <p className="font-medium mb-1">Scenario: Student asks for help with an essay</p>
+                      <p className="text-muted-foreground mb-1">✅ Acceptable Approach:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-2">
+                        <li>"Your thesis is unclear. What's the main argument you're trying to make?"</li>
+                        <li>"This paragraph seems off-topic. How does it relate to your thesis?"</li>
+                        <li>"You have a comma splice in the second sentence. Do you know what a comma splice is and how to fix it?"</li>
+                        <li>"Your introduction is strong, but your conclusion doesn't tie back to it. What key points should you include?"</li>
+                      </ul>
+                      <p className="text-muted-foreground mb-1">❌ Unacceptable Approach:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                        <li>Writing or rewriting sentences, paragraphs, or sections</li>
+                        <li>Providing specific wording that the student copies</li>
+                        <li>Restructuring the entire essay</li>
+                        <li>Correcting all grammar and style errors directly</li>
+                      </ul>
+                    </div>
+
+                    <p className="text-muted-foreground mb-2">
+                      <strong>When in doubt, ask yourself:</strong>
+                    </p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-4">
+                      <li>"Will this help the student learn to do this themselves in the future?"</li>
+                      <li>"Am I teaching a skill, or just doing the work?"</li>
+                      <li>"Could the student replicate this process independently after our session?"</li>
+                    </ul>
+                    <p className="text-muted-foreground mb-4">
+                      If the answer is "no" to any of these questions, you're likely crossing the line into academic dishonesty.
+                    </p>
+
+                    <h4 className="font-semibold mb-2">1.5 Subject-Specific Guidelines</h4>
+
+                    <div className="mb-4">
+                      <p className="font-medium mb-1">Writing and Humanities:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                        <li>✅ Teach how to develop a thesis, organize arguments, cite sources</li>
+                        <li>✅ Identify general areas for improvement ("your evidence is weak here")</li>
+                        <li>✅ Teach grammar rules and how to self-edit</li>
+                        <li>❌ Write or rewrite sentences, paragraphs, or larger sections</li>
+                        <li>❌ Provide specific wording that student copies verbatim</li>
+                        <li>❌ Correct every grammar error directly</li>
+                      </ul>
+                    </div>
+
+                    <div className="mb-4">
+                      <p className="font-medium mb-1">Math and Sciences:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                        <li>✅ Explain concepts, formulas, and problem-solving methods</li>
+                        <li>✅ Work through example problems while explaining each step</li>
+                        <li>✅ Let student attempt problems, then review their approach</li>
+                        <li>❌ Solve homework problems completely for student to copy</li>
+                        <li>❌ Do calculations or derivations that student submits as their own</li>
+                        <li>❌ Provide answers without explaining the process</li>
+                      </ul>
+                    </div>
+
+                    <div className="mb-4">
+                      <p className="font-medium mb-1">Programming and Computer Science:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                        <li>✅ Explain algorithms, data structures, and coding concepts</li>
+                        <li>✅ Review student's code and explain errors or inefficiencies</li>
+                        <li>✅ Teach debugging strategies and best practices</li>
+                        <li>❌ Write code that student submits as their own work</li>
+                        <li>❌ Debug student's code by making all the fixes directly</li>
+                        <li>❌ Provide complete code solutions to assignments</li>
+                      </ul>
+                    </div>
+
+                    <div className="mb-4">
+                      <p className="font-medium mb-1">Language Learning:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                        <li>✅ Teach grammar rules, vocabulary, pronunciation</li>
+                        <li>✅ Practice conversation and comprehension together</li>
+                        <li>✅ Explain translation techniques and cultural context</li>
+                        <li>❌ Translate student's papers or assignments</li>
+                        <li>❌ Write essays or compositions in the target language for student</li>
+                        <li>❌ Complete language homework assignments</li>
+                      </ul>
+                    </div>
+
+                    <h4 className="font-semibold mb-2">1.6 Reporting Academic Dishonesty Requests</h4>
+                    <p className="text-muted-foreground mb-2">
+                      <strong>If a student requests academic dishonesty services:</strong>
+                    </p>
+                    <ol className="list-decimal list-inside text-muted-foreground space-y-2 ml-4 mb-4">
+                      <li>
+                        <strong>Politely decline</strong> and explain appropriate boundaries:
+                        <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-6 mt-1">
+                          <li>"I can help you understand this concept, but I can't write the essay for you."</li>
+                          <li>"I'd be happy to teach you how to solve these problems, but I can't just give you the answers."</li>
+                        </ul>
+                      </li>
+                      <li>
+                        <strong>Educate the student</strong> about academic integrity:
+                        <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-6 mt-1">
+                          <li>Explain the difference between tutoring and cheating</li>
+                          <li>Point them to appropriate study resources</li>
+                          <li>Encourage them to speak with their professor if they're struggling</li>
+                        </ul>
+                      </li>
+                      <li>
+                        <strong>Report the incident</strong> to StudyBuddy:
+                        <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-6 mt-1">
+                          <li>Email: help@studybuddyusc.com</li>
+                          <li>Include: Student's name, date/time, description of request</li>
+                          <li>We will investigate and may take action against the student</li>
+                        </ul>
+                      </li>
+                      <li>
+                        <strong>Do not continue working</strong> with students who persist in requesting dishonest services
+                      </li>
+                    </ol>
+
+                    <h4 className="font-semibold mb-2">1.7 University Collaboration</h4>
+                    <p className="text-muted-foreground mb-2">
+                      <strong>If USC or another university reports potential honor code violations:</strong>
+                    </p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-3">
+                      <li>We will investigate the allegation</li>
+                      <li>We may share relevant information with the university if legally permitted</li>
+                      <li>We may cooperate with university investigations</li>
+                      <li>We will notify you before sharing information (unless legally prohibited)</li>
+                    </ul>
+                    <p className="text-muted-foreground">
+                      <strong>Users are responsible for knowing and complying with their institution's academic integrity policies.</strong>
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="font-bold text-lg mb-3">2. PROHIBITED CONDUCT - SAFETY AND RESPECT</h3>
+
+                    <h4 className="font-semibold mb-2">2.1 Harassment and Threats</h4>
+                    <p className="font-medium mb-1">You may NOT:</p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-3">
+                      <li>Harass, threaten, intimidate, or bully any user</li>
+                      <li>Send unwanted or repeated contact after someone asks you to stop</li>
+                      <li>Make threats of violence or harm (physical, emotional, or reputational)</li>
+                      <li>Stalk or engage in predatory behavior</li>
+                      <li>Engage in any form of bullying or coercion</li>
+                      <li>Make someone feel unsafe or uncomfortable through your conduct</li>
+                    </ul>
+                    <p className="text-muted-foreground">
+                      <strong>This includes conduct during sessions, in messages, and in any interaction related to StudyBuddy.</strong>
+                    </p>
+
+                    <h4 className="font-semibold mb-2 mt-4">2.2 Sexual Harassment and Misconduct</h4>
+                    <p className="font-medium mb-1">You may NOT:</p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-3">
+                      <li>Make unwanted sexual advances or requests</li>
+                      <li>Send sexually explicit messages, images, or content</li>
+                      <li>Make sexual comments about someone's appearance or body</li>
+                      <li>Request sexual favors or suggest sexual activity</li>
+                      <li>Create a sexually hostile environment</li>
+                      <li>Engage in any form of sexual harassment as defined by Title IX or applicable law</li>
+                    </ul>
+                    <p className="text-muted-foreground">
+                      <strong>Sexual harassment or assault will result in immediate permanent ban and may be reported to law enforcement.</strong>
+                    </p>
+
+                    <h4 className="font-semibold mb-2 mt-4">2.3 Discrimination and Hate Speech</h4>
+                    <p className="font-medium mb-1">You may NOT:</p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-2">
+                      <li>Discriminate against anyone based on:
+                        <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-6 mt-1">
+                          <li>Race, ethnicity, national origin, or ancestry</li>
+                          <li>Religion or religious beliefs</li>
+                          <li>Gender, gender identity, or gender expression</li>
+                          <li>Sexual orientation</li>
+                          <li>Disability or medical condition</li>
+                          <li>Age</li>
+                          <li>Any other protected characteristic</li>
+                        </ul>
+                      </li>
+                      <li>Use slurs, epithets, or derogatory language targeting protected groups</li>
+                      <li>Promote hate speech or hate groups</li>
+                      <li>Express supremacist, extremist, or discriminatory ideologies</li>
+                      <li>Create a hostile environment based on protected characteristics</li>
+                    </ul>
+
+                    <h4 className="font-semibold mb-2 mt-4">2.4 Privacy Violations</h4>
+                    <p className="font-medium mb-1">You may NOT:</p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-3">
+                      <li>Share other users' personal information without consent (name, phone number, address, email, etc.)</li>
+                      <li>Post private messages or communications publicly</li>
+                      <li>Record tutoring sessions without explicit consent from all parties (California is a two-party consent state)</li>
+                      <li>Take screenshots of private conversations and share them</li>
+                      <li>Dox or publicly expose others' private information</li>
+                      <li>Impersonate or create fake profiles using others' identities</li>
+                    </ul>
+
+                    <h4 className="font-semibold mb-2 mt-4">2.5 Violence and Harmful Content</h4>
+                    <p className="font-medium mb-1">You may NOT:</p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                      <li>Threaten or encourage violence against any person or group</li>
+                      <li>Post content depicting violence, gore, or graphic injury</li>
+                      <li>Encourage self-harm or suicide</li>
+                      <li>Promote dangerous or illegal activities</li>
+                      <li>Share content depicting child exploitation or abuse (we will report to law enforcement)</li>
+                      <li>Glorify or celebrate violence</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h3 className="font-bold text-lg mb-3">3. PROHIBITED CONDUCT - FRAUD AND MISUSE</h3>
+
+                    <h4 className="font-semibold mb-2">3.1 Fraud and Deception</h4>
+                    <p className="font-medium mb-1">You may NOT:</p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-4">
+                      <li>Create fake accounts or profiles</li>
+                      <li>Impersonate others (real people, public figures, or fictional identities)</li>
+                      <li>Lie about your credentials, qualifications, or experience</li>
+                      <li>Provide false information in your profile</li>
+                      <li>Misrepresent your identity or background</li>
+                      <li>Use someone else's photos or biographical information</li>
+                      <li>Engage in identity fraud or identity theft</li>
+                    </ul>
+
+                    <h4 className="font-semibold mb-2">3.2 Payment Fraud</h4>
+                    <p className="font-medium mb-1">You may NOT:</p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-4">
+                      <li>File false or fraudulent disputes or chargebacks</li>
+                      <li>Claim non-delivery of services that were actually provided</li>
+                      <li>Abuse refund policies through false claims</li>
+                      <li>Use stolen or unauthorized payment methods</li>
+                      <li>Attempt to avoid paying for services received</li>
+                      <li>Engage in any form of payment fraud or theft</li>
+                    </ul>
+
+                    <h4 className="font-semibold mb-2">3.3 Platform Manipulation and Abuse</h4>
+                    <p className="font-medium mb-1">You may NOT:</p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-4">
+                      <li>Create multiple accounts to evade bans, restrictions, or suspensions</li>
+                      <li>Manipulate reviews or ratings:
+                        <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-6 mt-1">
+                          <li>Submitting fake reviews</li>
+                          <li>Paying for positive reviews</li>
+                          <li>Threatening negative reviews to extract benefits</li>
+                          <li>Reviewing yourself using alternate accounts</li>
+                          <li>Colluding with others to manipulate ratings</li>
+                        </ul>
+                      </li>
+                      <li>Engage in vote manipulation or review fraud</li>
+                      <li>Artificially inflate your profile statistics or rankings</li>
+                      <li>Attempt to game platform algorithms</li>
+                    </ul>
+
+                    <h4 className="font-semibold mb-2">3.4 Spam and Unsolicited Marketing</h4>
+                    <p className="font-medium mb-1">You may NOT:</p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-4">
+                      <li>Send spam or unsolicited bulk messages</li>
+                      <li>Advertise products, services, or websites unrelated to tutoring</li>
+                      <li>Send messages solely for commercial gain</li>
+                      <li>Recruit users for other platforms or services</li>
+                      <li>Use StudyBuddy primarily as a lead generation tool for external businesses</li>
+                      <li>Send repetitive or automated messages</li>
+                    </ul>
+
+                    <h4 className="font-semibold mb-2">3.5 Circumventing the Platform</h4>
+                    <p className="font-medium mb-1">You may NOT:</p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-3">
+                      <li>Encourage students to pay off-platform to avoid fees (for initial bookings)</li>
+                      <li>Share payment information to bypass StudyBuddy's payment system (for first sessions)</li>
+                      <li>Actively solicit users to leave the Platform</li>
+                      <li>Use StudyBuddy solely to find clients, then move all business off-platform</li>
+                    </ul>
+                    <p className="text-muted-foreground">
+                      <strong>Note:</strong> After establishing a relationship through StudyBuddy, tutors and students may continue working together off-platform if they choose. However, actively circumventing the Platform to avoid fees on initial bookings violates this policy.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="font-bold text-lg mb-3">4. PROHIBITED CONDUCT - TECHNICAL AND SECURITY</h3>
+
+                    <h4 className="font-semibold mb-2">4.1 Hacking and Security Violations</h4>
+                    <p className="font-medium mb-1">You may NOT:</p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-4">
+                      <li>Attempt to hack, compromise, or bypass Platform security measures</li>
+                      <li>Access accounts, data, or systems you're not authorized to access</li>
+                      <li>Attempt to gain unauthorized access to Platform code or databases</li>
+                      <li>Exploit security vulnerabilities for any purpose</li>
+                      <li>Probe, scan, or test Platform security without authorization</li>
+                      <li>Access the Platform through automated means without permission</li>
+                    </ul>
+
+                    <h4 className="font-semibold mb-2">4.2 Data Mining and Scraping</h4>
+                    <p className="font-medium mb-1">You may NOT:</p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-4">
+                      <li>Scrape, extract, or harvest user data from the Platform</li>
+                      <li>Use bots, scrapers, or automated tools to collect information</li>
+                      <li>Copy or download substantial portions of user profiles</li>
+                      <li>Build databases from Platform data</li>
+                      <li>Use scraped data for any purpose including marketing, research, or competing services</li>
+                    </ul>
+
+                    <h4 className="font-semibold mb-2">4.3 Interference and Disruption</h4>
+                    <p className="font-medium mb-1">You may NOT:</p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-4">
+                      <li>Interfere with or disrupt Platform operations</li>
+                      <li>Overload servers through excessive requests or attacks (DDoS)</li>
+                      <li>Distribute malware, viruses, or harmful code</li>
+                      <li>Inject malicious scripts or code</li>
+                      <li>Interfere with other users' access to or use of the Platform</li>
+                      <li>Attempt to damage or impair Platform functionality</li>
+                    </ul>
+
+                    <h4 className="font-semibold mb-2">4.4 Unauthorized Access</h4>
+                    <p className="font-medium mb-1">You may NOT:</p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                      <li>Access another user's account without permission</li>
+                      <li>Share your account credentials with others</li>
+                      <li>Allow others to use your account</li>
+                      <li>Use another person's account</li>
+                      <li>Create accounts using false information or stolen identities</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h3 className="font-bold text-lg mb-3">5. INTELLECTUAL PROPERTY</h3>
+
+                    <h4 className="font-semibold mb-2">5.1 Copyright Infringement</h4>
+                    <p className="font-medium mb-1">You may NOT:</p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-3">
+                      <li>Post copyrighted material without authorization</li>
+                      <li>Share textbooks, course materials, or instructor content without permission</li>
+                      <li>Distribute copyrighted study guides, solutions manuals, or test banks</li>
+                      <li>Violate intellectual property rights of textbook publishers, authors, or instructors</li>
+                      <li>Help students access or use pirated materials</li>
+                    </ul>
+                    <p className="font-medium mb-1">Instructors and publishers own rights to:</p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-3">
+                      <li>Lecture slides and presentations</li>
+                      <li>Course syllabi and assignment descriptions</li>
+                      <li>Test questions and exam materials</li>
+                      <li>Proprietary teaching materials</li>
+                    </ul>
+                    <p className="text-muted-foreground">
+                      <strong>If you believe content on StudyBuddy infringes your copyright</strong>, contact us at help@studybuddyusc.com.
+                    </p>
+
+                    <h4 className="font-semibold mb-2 mt-4">5.2 Plagiarism</h4>
+                    <p className="font-medium mb-1">You may NOT:</p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-4">
+                      <li>Copy text from sources and present it as your own</li>
+                      <li>Use others' work without attribution</li>
+                      <li>Submit AI-generated content as your own work (if prohibited by your course)</li>
+                      <li>Help students plagiarize from any source</li>
+                    </ul>
+
+                    <h4 className="font-semibold mb-2">5.3 Trademark Misuse</h4>
+                    <p className="font-medium mb-1">You may NOT:</p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                      <li>Use StudyBuddy trademarks, logos, or branding without permission</li>
+                      <li>Claim affiliation with StudyBuddy when you're an independent contractor</li>
+                      <li>Misrepresent your relationship with StudyBuddy</li>
+                      <li>Use USC trademarks in ways that imply official affiliation or endorsement</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h3 className="font-bold text-lg mb-3">6. IN-PERSON SESSION CONDUCT</h3>
+
+                    <h4 className="font-semibold mb-2">6.1 Meeting Location Safety</h4>
+                    <p className="text-muted-foreground mb-2">
+                      <strong>For in-person sessions, we strongly recommend:</strong>
+                    </p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-3">
+                      <li>Meeting in public, well-lit spaces (campus libraries, coffee shops, student centers)</li>
+                      <li>Avoiding private residences, especially for initial sessions</li>
+                      <li>Meeting during daytime hours when possible</li>
+                      <li>Choosing locations with other people present</li>
+                    </ul>
+                    <p className="text-muted-foreground">
+                      <strong>These are recommendations, not requirements.</strong> Both parties must agree to meeting locations.
+                    </p>
+
+                    <h4 className="font-semibold mb-2 mt-4">6.2 Professional Boundaries</h4>
+                    <p className="text-muted-foreground mb-2">
+                      <strong>During in-person sessions:</strong>
+                    </p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-4">
+                      <li>Maintain appropriate professional boundaries</li>
+                      <li>Respect personal space and physical boundaries</li>
+                      <li>Avoid physical contact (except necessary for instruction, like pointing at materials)</li>
+                      <li>Keep interactions professional and educational</li>
+                      <li>Do not consume alcohol or drugs during sessions</li>
+                      <li>Do not invite others to sessions without both parties' consent</li>
+                    </ul>
+
+                    <h4 className="font-semibold mb-2">6.3 Recording Consent</h4>
+                    <p className="text-muted-foreground mb-3">
+                      <strong>You may NOT record sessions (audio or video) without explicit consent from all parties.</strong>
+                    </p>
+                    <p className="text-muted-foreground mb-2">
+                      California is a <strong>two-party consent state</strong> (California Penal Code § 632). Recording someone without their consent is:
+                    </p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-3">
+                      <li>Illegal under California law</li>
+                      <li>A violation of this policy</li>
+                      <li>Grounds for immediate account termination</li>
+                      <li>Potentially subject to criminal prosecution</li>
+                    </ul>
+                    <p className="font-medium mb-1">If you wish to record a session:</p>
+                    <ol className="list-decimal list-inside text-muted-foreground space-y-1 ml-4">
+                      <li>Ask for explicit permission before the session starts</li>
+                      <li>Explain how the recording will be used</li>
+                      <li>Get clear verbal or written consent</li>
+                      <li>Both parties must agree</li>
+                      <li>Either party can revoke consent and require recording to stop</li>
+                    </ol>
+                  </div>
+
+                  <div>
+                    <h3 className="font-bold text-lg mb-3">7. REPORTING VIOLATIONS</h3>
+
+                    <h4 className="font-semibold mb-2">7.1 How to Report</h4>
+                    <p className="text-muted-foreground mb-2">
+                      <strong>If you witness or experience conduct that violates this policy:</strong>
+                    </p>
+
+                    <div className="mb-3">
+                      <p className="font-medium mb-1">In-Platform Reporting:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                        <li>Click the "Report" button on user profiles</li>
+                        <li>Click the "Report" button next to individual messages</li>
+                        <li>Provide details about the violation</li>
+                      </ul>
+                    </div>
+
+                    <div className="mb-3">
+                      <p className="font-medium mb-1">Email Reporting:</p>
+                      <ul className="list-none text-muted-foreground space-y-1 ml-4">
+                        <li>Email: help@studybuddyusc.com</li>
+                        <li>Include:
+                          <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-6 mt-1">
+                            <li>Your name and account email</li>
+                            <li>Name of user you're reporting</li>
+                            <li>Date and time of incident</li>
+                            <li>Description of what happened</li>
+                            <li>Screenshots or evidence (if available)</li>
+                            <li>Any other relevant information</li>
+                          </ul>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div className="mb-4">
+                      <p className="font-medium mb-1">Emergency Situations:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                        <li>If you're in immediate danger, call 911 first</li>
+                        <li>Then report to StudyBuddy at help@studybuddyusc.com</li>
+                      </ul>
+                    </div>
+
+                    <h4 className="font-semibold mb-2">7.2 Report Handling</h4>
+                    <p className="text-muted-foreground mb-2">
+                      <strong>When you submit a report:</strong>
+                    </p>
+                    <ol className="list-decimal list-inside text-muted-foreground space-y-1 ml-4 mb-3">
+                      <li><strong>Receipt Acknowledgment:</strong> Within 24 hours</li>
+                      <li><strong>Investigation:</strong> 2-5 business days depending on severity</li>
+                      <li><strong>Decision:</strong> Based on evidence and policy</li>
+                      <li><strong>Notification:</strong> Both parties notified of decision</li>
+                      <li><strong>Appeal:</strong> 7-day window to appeal</li>
+                      <li><strong>Final Resolution:</strong> Appeal reviewed within 3 business days</li>
+                    </ol>
+                    <p className="text-muted-foreground">
+                      <strong>Reports are handled confidentially.</strong> We do not share reporter identity unless required by law.
+                    </p>
+
+                    <h4 className="font-semibold mb-2 mt-4">7.3 Evidence Reviewed</h4>
+                    <p className="font-medium mb-1">We may review:</p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-4">
+                      <li>Platform message history between parties</li>
+                      <li>Account and profile information</li>
+                      <li>Session booking and completion records</li>
+                      <li>Previous conduct history and warnings</li>
+                      <li>Login/activity logs showing Platform use during reported times</li>
+                      <li>Statements from involved parties</li>
+                      <li>Any other relevant information</li>
+                    </ul>
+
+                    <h4 className="font-semibold mb-2">7.4 False Reports</h4>
+                    <p className="text-muted-foreground mb-2">
+                      <strong>Filing false or malicious reports is prohibited.</strong>
+                    </p>
+                    <p className="text-muted-foreground mb-2">
+                      If we determine a report was made in bad faith to:
+                    </p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-3">
+                      <li>Harass or retaliate against someone</li>
+                      <li>Manipulate ratings or reviews</li>
+                      <li>Gain unfair advantage</li>
+                      <li>Abuse the reporting system</li>
+                    </ul>
+                    <p className="text-muted-foreground mb-4">
+                      The person who filed the false report may face consequences including warnings, suspension, or account termination.
+                    </p>
+                    <p className="text-muted-foreground">
+                      <strong>Good faith reports made with genuine concern are never penalized</strong>, even if the investigation does not result in action against the reported party.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="font-bold text-lg mb-3">8. ENFORCEMENT AND PENALTIES</h3>
+
+                    <h4 className="font-semibold mb-2">8.1 Three-Tier Violation System</h4>
+                    <p className="text-muted-foreground mb-4">
+                      <strong>We use a graduated enforcement approach based on violation severity:</strong>
+                    </p>
+
+                    <div className="mb-4">
+                      <p className="font-bold mb-2">LEVEL 1: WARNING (First-time minor violations or borderline cases)</p>
+                      <p className="font-medium mb-1">Actions:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-2">
+                        <li>Educational email explaining the violation</li>
+                        <li>Link to relevant policies</li>
+                        <li>Warning documented in your file</li>
+                        <li>No account restrictions or penalties</li>
+                      </ul>
+                      <p className="font-medium mb-1">Examples:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-2">
+                        <li>Minor misunderstanding of academic integrity boundaries</li>
+                        <li>Unintentional minor policy violation</li>
+                        <li>First-time minor inappropriate language</li>
+                        <li>Small technical policy violations</li>
+                      </ul>
+                      <p className="font-medium mb-1">Next steps:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                        <li>If you comply and don't repeat violation: no further action</li>
+                        <li>If violation repeated: escalate to Level 2</li>
+                      </ul>
+                    </div>
+
+                    <div className="mb-4">
+                      <p className="font-bold mb-2">LEVEL 2: TEMPORARY SUSPENSION (Repeat violations or moderate severity)</p>
+                      <p className="font-medium mb-1">Actions:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-2">
+                        <li>Account suspended for 7-30 days (depending on severity)</li>
+                        <li>Complete Platform access blocked during suspension</li>
+                        <li>Required policy acknowledgment before reinstatement</li>
+                        <li>May require completion of educational module or quiz</li>
+                        <li>Violation remains on permanent record</li>
+                      </ul>
+                      <p className="font-medium mb-1">Examples:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-2">
+                        <li>Repeated Level 1 violations after warning</li>
+                        <li>Moderate harassment or inappropriate conduct</li>
+                        <li>Academic integrity violations that don't rise to "serious" level</li>
+                        <li>Circumventing platform fees</li>
+                        <li>Minor fraud or deception</li>
+                        <li>Spam or excessive commercial messaging</li>
+                      </ul>
+                      <p className="font-medium mb-1">Next steps:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                        <li>After suspension period: must acknowledge policies to regain access</li>
+                        <li>If violation repeated after reinstatement: escalate to Level 3</li>
+                      </ul>
+                    </div>
+
+                    <div className="mb-4">
+                      <p className="font-bold mb-2">LEVEL 3: PERMANENT BAN (Serious violations or third strike)</p>
+                      <p className="font-medium mb-1">Actions:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-2">
+                        <li>Immediate permanent account termination</li>
+                        <li>Complete loss of Platform access</li>
+                        <li>No refunds of any fees, credits, or prepaid amounts</li>
+                        <li>IP address and device fingerprinting to prevent re-registration</li>
+                        <li>May notify USC if student violated USC honor code</li>
+                        <li>May cooperate with law enforcement if illegal activity</li>
+                      </ul>
+                      <p className="font-medium mb-1">Examples - Automatic Permanent Ban:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-2">
+                        <li><strong>Academic dishonesty:</strong> Completing assignments, writing papers, taking tests for students, ghost-writing services</li>
+                        <li><strong>Sexual harassment or assault:</strong> Any unwanted sexual conduct or advances</li>
+                        <li><strong>Threats of violence:</strong> Threatening to harm anyone physically</li>
+                        <li><strong>Child exploitation:</strong> Any content depicting minors in exploitative situations</li>
+                        <li><strong>Hate speech:</strong> Severe discriminatory conduct or promotion of hate groups</li>
+                        <li><strong>Serious fraud:</strong> Stolen payment methods, identity theft, major payment fraud</li>
+                        <li><strong>Third violation</strong> after Level 2 suspensions</li>
+                      </ul>
+                      <p className="font-medium mb-1">Examples - Likely Permanent Ban:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-2">
+                        <li>Severe harassment or stalking</li>
+                        <li>Doxxing or sharing private information maliciously</li>
+                        <li>Recording sessions without consent</li>
+                        <li>Hacking or security violations</li>
+                        <li>Systematic platform manipulation</li>
+                        <li>Operating competing services using StudyBuddy data</li>
+                      </ul>
+                      <p className="font-medium mb-1">No appeals for:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-2">
+                        <li>Academic dishonesty (assignment completion, test-taking, ghost-writing)</li>
+                        <li>Sexual harassment or assault</li>
+                        <li>Threats of violence</li>
+                        <li>Child exploitation</li>
+                      </ul>
+                      <p className="font-medium mb-1">Limited appeals allowed for:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                        <li>Other Level 3 violations (must show clear evidence of error or extenuating circumstances)</li>
+                        <li>Appeals reviewed by different team member than original investigator</li>
+                        <li>Decision final after appeal</li>
+                      </ul>
+                    </div>
+
+                    <h4 className="font-semibold mb-2">8.2 Immediate Suspension Pending Investigation</h4>
+                    <p className="text-muted-foreground mb-4">
+                      For serious allegations, we may <strong>immediately suspend accounts while investigating</strong>, even before final determination.
+                    </p>
+                    <p className="text-muted-foreground">
+                      This protects other users from potential harm while we gather evidence and make decisions.
+                    </p>
+
+                    <h4 className="font-semibold mb-2 mt-4">8.3 Criminal Activity</h4>
+                    <p className="text-muted-foreground mb-2">
+                      <strong>We may report criminal activity to law enforcement</strong>, including but not limited to:
+                    </p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-3">
+                      <li>Threats of violence or harm</li>
+                      <li>Sexual assault or harassment</li>
+                      <li>Child exploitation</li>
+                      <li>Fraud or identity theft</li>
+                      <li>Stalking or harassment</li>
+                      <li>Recording without consent (California Penal Code violation)</li>
+                      <li>Any other illegal conduct</li>
+                    </ul>
+                    <p className="text-muted-foreground">
+                      <strong>We will cooperate with law enforcement investigations</strong> and comply with legal process (subpoenas, court orders, search warrants).
+                    </p>
+
+                    <h4 className="font-semibold mb-2 mt-4">8.4 USC Notification</h4>
+                    <p className="text-muted-foreground mb-2">
+                      <strong>We may notify USC if:</strong>
+                    </p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-3">
+                      <li>A student or tutor has violated USC's academic integrity policy</li>
+                      <li>We have evidence of honor code violations</li>
+                      <li>USC requests information through proper channels</li>
+                      <li>Serious misconduct affects the USC community</li>
+                    </ul>
+                    <p className="text-muted-foreground">
+                      <strong>We will notify you before sharing information with USC</strong> unless:
+                    </p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                      <li>Legally prohibited from doing so</li>
+                      <li>Notifying you would impede an investigation</li>
+                      <li>Emergency situation requires immediate disclosure</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h3 className="font-bold text-lg mb-3">9. APPEALS PROCESS</h3>
+
+                    <h4 className="font-semibold mb-2">9.1 Who Can Appeal</h4>
+                    <p className="text-muted-foreground mb-2">
+                      You may appeal:
+                    </p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-4">
+                      <li>Level 2 suspensions</li>
+                      <li>Level 3 permanent bans (except those specifically excluded in Section 8.1)</li>
+                      <li>Payment dispute decisions</li>
+                    </ul>
+
+                    <h4 className="font-semibold mb-2">9.2 How to Appeal</h4>
+                    <p className="text-muted-foreground mb-2">
+                      <strong>Submit appeal to:</strong> help@studybuddyusc.com<br />
+                      <strong>Subject line:</strong> "Appeal - [Your Name] - [Type of Decision]"
+                    </p>
+                    <p className="font-medium mb-1">Include in your appeal:</p>
+                    <ol className="list-decimal list-inside text-muted-foreground space-y-1 ml-4 mb-4">
+                      <li>Your name and account email</li>
+                      <li>Original decision you're appealing</li>
+                      <li>Detailed explanation of why decision was incorrect</li>
+                      <li>Any new evidence or information not previously considered</li>
+                      <li>Specific outcome you're requesting</li>
+                    </ol>
+
+                    <h4 className="font-semibold mb-2">9.3 Appeal Review Process</h4>
+                    <ol className="list-decimal list-inside text-muted-foreground space-y-1 ml-4 mb-4">
+                      <li><strong>Review:</strong> Different team member than original investigator reviews appeal</li>
+                      <li><strong>Timeline:</strong> Decision within 3-5 business days</li>
+                      <li><strong>Outcome:</strong> Appeal granted (decision reversed), partially granted (reduced penalty), or denied</li>
+                      <li><strong>Notification:</strong> You're notified of final decision via email</li>
+                      <li><strong>Final:</strong> Decision after appeal is <strong>final and binding</strong></li>
+                    </ol>
+
+                    <h4 className="font-semibold mb-2">9.4 Appeals Not Permitted For</h4>
+                    <p className="text-muted-foreground mb-2">
+                      As stated in Section 8.1, the following have <strong>no appeal process:</strong>
+                    </p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-3">
+                      <li>Academic dishonesty (completing assignments, taking tests, ghost-writing)</li>
+                      <li>Sexual harassment or assault</li>
+                      <li>Threats of violence</li>
+                      <li>Child exploitation</li>
+                    </ul>
+                    <p className="text-muted-foreground">
+                      These violations have zero tolerance and decisions are final.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="font-bold text-lg mb-3">10. PLATFORM IMPROVEMENT</h3>
+
+                    <h4 className="font-semibold mb-2">10.1 Using Violation Data</h4>
+                    <p className="text-muted-foreground mb-2">
+                      We use aggregate data from violations to:
+                    </p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-3">
+                      <li>Identify patterns and trends</li>
+                      <li>Improve detection systems</li>
+                      <li>Enhance safety features</li>
+                      <li>Update policies and guidelines</li>
+                      <li>Train Trust & Safety team</li>
+                    </ul>
+                    <p className="text-muted-foreground">
+                      <strong>We never share individual violation details publicly.</strong>
+                    </p>
+
+                    <h4 className="font-semibold mb-2 mt-4">10.2 Automated Detection</h4>
+                    <p className="text-muted-foreground mb-2">
+                      We use automated systems to flag potential violations, including:
+                    </p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-3">
+                      <li>Keyword detection in messages for concerning phrases</li>
+                      <li>Pattern analysis for suspicious behavior</li>
+                      <li>Unusual booking or payment patterns</li>
+                      <li>Account creation anomalies</li>
+                    </ul>
+                    <p className="text-muted-foreground">
+                      <strong>Automated flagging does NOT result in automatic penalties.</strong> Humans review all flagged content before taking action.
+                    </p>
+
+                    <h4 className="font-semibold mb-2 mt-4">10.3 Policy Updates</h4>
+                    <p className="text-muted-foreground mb-2">
+                      We may update this Acceptable Use Policy based on:
+                    </p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-3">
+                      <li>New violation patterns we observe</li>
+                      <li>Feedback from users and universities</li>
+                      <li>Changes in laws or regulations</li>
+                      <li>Industry best practices</li>
+                      <li>Safety concerns</li>
+                    </ul>
+                    <p className="text-muted-foreground">
+                      <strong>Material changes will be communicated</strong> via email at least 30 days before effective date.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="font-bold text-lg mb-3">11. QUESTIONS AND ADDITIONAL INFORMATION</h3>
+
+                    <h4 className="font-semibold mb-2">11.1 Contact Information</h4>
+                    <p className="text-muted-foreground mb-2">
+                      <strong>Safety and Trust Concerns:</strong><br />
+                      Email: help@studybuddyusc.com<br />
+                      Response time: Within 24 hours for safety issues
+                    </p>
+                    <p className="text-muted-foreground mb-4">
+                      <strong>Policy Questions:</strong><br />
+                      Email: help@studybuddyusc.com<br />
+                      Response time: Within 24-48 hours (business days)
+                    </p>
+                    <p className="text-muted-foreground">
+                      <strong>USC Academic Integrity Guidance:</strong><br />
+                      USC Office of Academic Integrity: academicintegrity@usc.edu<br />
+                      https://academicintegrity.usc.edu/
+                    </p>
+
+                    <h4 className="font-semibold mb-2 mt-4">11.2 Resources</h4>
+                    <div className="mb-3">
+                      <p className="font-medium mb-1">Academic Integrity:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                        <li>USC Academic Integrity Policies: https://academicintegrity.usc.edu/</li>
+                        <li>Understanding Academic Integrity: https://academicintegrity.usc.edu/students/</li>
+                        <li>USC Student Conduct Code: https://studentaffairs.usc.edu/student-conduct/</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="font-medium mb-1">Safety Resources:</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
+                        <li>USC Department of Public Safety: (213) 740-4321</li>
+                        <li>USC Relationship and Sexual Violence Prevention Services: (213) 740-9355</li>
+                        <li>National Sexual Assault Hotline: 1-800-656-4673</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-bold text-lg mb-3">ACKNOWLEDGMENT</h3>
+                    <p className="text-muted-foreground mb-2">
+                      <strong>By using StudyBuddy, you acknowledge that:</strong>
+                    </p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-3">
+                      <li>You have read and understood this Acceptable Use Policy</li>
+                      <li>You agree to comply with all provisions of this policy</li>
+                      <li>You understand that violations may result in account suspension or termination</li>
+                      <li>You understand the difference between legitimate tutoring and academic dishonesty</li>
+                      <li>You will maintain professional, respectful, and legal conduct in all interactions</li>
+                    </ul>
+                    <p className="text-muted-foreground mb-2">
+                      <strong>Violations of this policy may also violate:</strong>
+                    </p>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4 mb-3">
+                      <li>USC's academic integrity policies</li>
+                      <li>California state laws</li>
+                      <li>Federal laws</li>
+                      <li>Other applicable regulations</li>
+                    </ul>
+                    <p className="text-muted-foreground">
+                      <strong>You are responsible for understanding and complying with all applicable laws and institutional policies.</strong>
+                    </p>
+                  </div>
+
+                  <div className="border-t pt-6 mt-6">
+                    <p className="text-muted-foreground font-medium mb-4">
+                      <strong>BY USING STUDYBUDDY, YOU AGREE TO ABIDE BY THIS ACCEPTABLE USE POLICY.</strong>
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      <em>Last Updated: October 6, 2025</em><br />
+                      <em>Version 1.0</em>
+                    </p>
+                  </div>
+                </div>
               </section>
             </div>
           </div>
