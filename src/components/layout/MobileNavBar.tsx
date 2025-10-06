@@ -10,7 +10,8 @@ import {
   FileText,
   BarChart,
   Settings,
-  HelpCircle
+  HelpCircle,
+  Sparkles
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -52,6 +53,12 @@ const MobileNavBar = () => {
   };
 
   const allMenuItems = [
+    {
+      title: "Schedule",
+      icon: Calendar,
+      path: "/schedule",
+      showWhen: !!user
+    },
     {
       title: "Messages",
       icon: MessageSquare,
@@ -122,9 +129,9 @@ const MobileNavBar = () => {
       path: "/courses",
     },
     {
-      title: "Schedule",
-      icon: Calendar,
-      path: "/schedule",
+      title: "Tools",
+      icon: Sparkles,
+      path: "/make-school-easy",
     },
   ];
 

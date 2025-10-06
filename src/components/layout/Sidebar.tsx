@@ -10,7 +10,8 @@ import {
   Users,
   Loader2,
   HelpCircle,
-  GraduationCap
+  GraduationCap,
+  Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -99,6 +100,12 @@ const Sidebar = () => {
       title: "FAQ",
       icon: HelpCircle,
       path: "/faq",
+      showWhen: true // Always show
+    },
+    {
+      title: "Make School Easy",
+      icon: Sparkles,
+      path: "/make-school-easy",
       showWhen: true // Always show
     },
     {

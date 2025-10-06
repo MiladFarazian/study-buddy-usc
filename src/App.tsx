@@ -54,6 +54,7 @@ import PaymentCanceled from "./pages/PaymentCanceled";
 import FAQ from "./pages/FAQ";
 import StudentOnboarding from "./pages/onboarding/StudentOnboarding";
 import TutorOnboarding from "./pages/onboarding/TutorOnboarding";
+import MakeSchoolEasy from "./pages/MakeSchoolEasy";
 
 const router = createBrowserRouter([
   {
@@ -211,6 +212,10 @@ const router = createBrowserRouter([
       {
         path: "/faq",
         element: <FAQ />
+      },
+      {
+        path: "/make-school-easy",
+        element: <MakeSchoolEasy />
       },
       {
         path: "/onboarding/student",
