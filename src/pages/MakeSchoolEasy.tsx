@@ -1,6 +1,5 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Sparkles } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const MakeSchoolEasy = () => {
@@ -10,106 +9,83 @@ const MakeSchoolEasy = () => {
     {
       name: "Perplexity Comet",
       url: "https://www.perplexity.ai/comet",
-      description: "AI browser built by Perplexity",
-      features: [
-        "Can summarize your week/month of internet usage",
-        "Easy to use and constantly improving"
-      ],
-      gradient: "from-purple-500 to-pink-500"
+      description: "This is a cool new easy to use AI browser that was built by perplexity.",
+      story: "I use it for some of my work and it really fun to mess around with. It is also quickly getting better and they even offered at one point to buy Chrome from Google haha. It is a cool idea, and I like how it can summarize your week or month of internet use... or not"
     },
     {
       name: "Gamma",
       url: "https://gamma.app/",
-      description: "AI-powered presentation builder",
-      features: [
-        "Creates beautiful slide decks from prompts",
-        "Can edit, shorten, or lengthen presentations easily"
-      ],
-      gradient: "from-blue-500 to-cyan-500"
+      description: "I used this for all of my presentation, it is a total game-changer",
+      story: "You can have AI write out the content of your presentation and then dump it into gamma give it some prompts (like use real photos and not AI) or use these colors. Then you can quickly have it edit shorten or lengthen and then you have a beautiful slide deck. Tell your team that you will build the slide deck, use Gamma and it will be the easiest project ever."
     },
     {
       name: "Claude",
       url: "https://www.anthropic.com/",
-      description: "AI writing and coding assistant",
-      features: [
-        "Can match your writing style from samples",
-        "Helpful for brainstorming and idea development"
-      ],
-      gradient: "from-orange-500 to-red-500"
+      description: "I use it for all my writing and all of coding",
+      story: "You can upload a sample of your previous writing or the A+ example that your teacher gave the class, and it will create a writing in that voice. Pretty incredible. Obviously don't submit this, but it can be very helpful of fleshing out ideas or creating them."
     },
     {
       name: "Grammarly",
       url: "https://www.grammarly.com/",
-      description: "Writing and grammar checker",
-      features: [
-        "Offers sentence length and tone options",
-        "Helps with spelling and professional writing"
-      ],
-      gradient: "from-green-500 to-emerald-500"
+      description: "I use Grammarly for all the writing I do because it lets my quasi dyslexic focus on creating and not spelling.",
+      story: "I also use it for my longer text messages of if I am struggling with a sentence in a paper it will give you longer, shorter, or more professional options."
     }
   ];
 
   return (
-    <div className={`${isMobile ? 'px-4 py-6 pb-24' : 'px-8 py-8'} max-w-7xl mx-auto`}>
-      <div className="text-center mb-8">
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <Sparkles className="h-8 w-8 text-usc-cardinal" />
-          <h1 className="text-4xl font-bold text-usc-cardinal">Make School Easy</h1>
-        </div>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Discover powerful tools to help you succeed in your studies. These AI-powered resources will save you time and improve your work.
+    <div className={`min-h-screen bg-background ${isMobile ? 'pb-24' : ''}`}>
+      {/* Hero Section */}
+      <div className="max-w-3xl mx-auto px-6 py-16 text-center">
+        <h1 className="text-5xl md:text-6xl font-bold mb-6 text-foreground">
+          Make School Easy
+        </h1>
+        <p className="text-xl text-muted-foreground leading-relaxed">
+          Tools I use every day to make studying, writing, and presenting easier.
         </p>
       </div>
 
-      <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'md:grid-cols-2 lg:grid-cols-2'}`}>
+      {/* Tools Sections */}
+      <div className="max-w-3xl mx-auto px-6 space-y-24 pb-24">
         {tools.map((tool, index) => (
-          <Card 
-            key={index}
-            className="overflow-hidden hover:shadow-lg transition-all duration-300 border-2 hover:border-usc-cardinal"
-          >
-            <div className={`h-2 bg-gradient-to-r ${tool.gradient}`} />
-            <CardHeader>
-              <CardTitle className="text-2xl text-usc-cardinal flex items-center justify-between">
+          <article key={index} className="space-y-6">
+            <div className="space-y-4">
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground">
                 {tool.name}
-                <ExternalLink className="h-5 w-5" />
-              </CardTitle>
-              <CardDescription className="text-base font-medium">
+              </h2>
+              <p className="text-xl text-foreground leading-relaxed">
                 {tool.description}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <ul className="space-y-2">
-                {tool.features.map((feature, idx) => (
-                  <li key={idx} className="flex items-start gap-2">
-                    <span className="text-usc-cardinal mt-1">•</span>
-                    <span className="text-sm text-foreground">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-              <Button 
-                asChild 
-                className="w-full bg-usc-cardinal hover:bg-usc-cardinal/90"
+              </p>
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                {tool.story}
+              </p>
+            </div>
+            
+            <Button 
+              asChild 
+              size="lg"
+              className="bg-usc-cardinal hover:bg-usc-cardinal/90 text-white"
+            >
+              <a 
+                href={tool.url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2"
               >
-                <a 
-                  href={tool.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2"
-                >
-                  Try {tool.name}
-                  <ExternalLink className="h-4 w-4" />
-                </a>
-              </Button>
-            </CardContent>
-          </Card>
+                Try {tool.name}
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            </Button>
+          </article>
         ))}
       </div>
 
-      <div className={`mt-12 p-6 bg-muted rounded-lg text-center ${isMobile ? 'mb-4' : ''}`}>
-        <p className="text-sm text-muted-foreground">
-          These are independent tools that we recommend to help enhance your learning experience. 
-          Each tool offers its own unique features to support your academic success.
-        </p>
+      {/* Footer Note */}
+      <div className="max-w-3xl mx-auto px-6 pb-16">
+        <div className="border-t pt-8">
+          <p className="text-sm text-muted-foreground text-center">
+            These are independent tools that we recommend to help enhance your learning experience.
+          </p>
+        </div>
       </div>
     </div>
   );
