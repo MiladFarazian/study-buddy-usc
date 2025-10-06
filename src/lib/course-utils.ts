@@ -10,7 +10,7 @@ export async function addCourseToProfile(userId: string, courseNumber: string, i
   // First get current profile data
   const { data: profile, error: fetchError } = await supabase
     .from("profiles")
-    .select("role, tutor_courses_subjects, student_courses, email")
+    .select("approved_tutor, tutor_courses_subjects, student_courses, email")
     .eq("id", userId)
     .single();
 
@@ -20,7 +20,7 @@ export async function addCourseToProfile(userId: string, courseNumber: string, i
 
   let updateData: any = {};
 
-  if (profile?.role === "tutor") {
+  if (profile?.approved_tutor) {
     // For tutors, add to tutor_courses_subjects array
     const updatedSubjects = [...(profile?.tutor_courses_subjects || [])];
     if (!updatedSubjects.includes(courseNumber)) {
@@ -128,7 +128,7 @@ export async function removeCourseFromProfile(userId: string, courseNumber: stri
   // First get current profile data
   const { data: profile, error: fetchError } = await supabase
     .from("profiles")
-    .select("role, tutor_courses_subjects, student_courses")
+    .select("approved_tutor, tutor_courses_subjects, student_courses")
     .eq("id", userId)
     .single();
 
@@ -138,7 +138,7 @@ export async function removeCourseFromProfile(userId: string, courseNumber: stri
 
   let updateData: any = {};
 
-  if (profile?.role === "tutor") {
+  if (profile?.approved_tutor) {
     // For tutors, remove from tutor_courses_subjects array
     const updatedSubjects = (profile?.tutor_courses_subjects || []).filter(
       (subject) => subject !== courseNumber

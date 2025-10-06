@@ -64,8 +64,9 @@ export function ReviewRequirement() {
     if (session.status !== 'completed') return false;
     
     // 2. User must be the student (tutors handle differently)
-    if (profile?.role === 'student' && session.student_id !== user.id) return false;
-    if (profile?.role === 'tutor' && session.tutor_id !== user.id) return false;
+    const isTutor = profile?.approved_tutor === true;
+    if (!isTutor && session.student_id !== user.id) return false;
+    if (isTutor && session.tutor_id !== user.id) return false;
     
     // 3. Session must be at least 1 hour old (not immediate after completion)
     const sessionEndTime = new Date(session.end_time).getTime();
@@ -74,7 +75,7 @@ export function ReviewRequirement() {
     if (sessionAge < oneHour) return false;
     
     // 4. CHECK IF REVIEW ALREADY EXISTS (critical!)
-    if (profile?.role === 'student') {
+    if (!isTutor) {
       // For students: check if they already reviewed this session
       const { data: existingStudentReview } = await supabase
         .from('student_reviews')
@@ -86,7 +87,7 @@ export function ReviewRequirement() {
       if (existingStudentReview) {
         return false; // Student already reviewed - don't show popup
       }
-    } else if (profile?.role === 'tutor') {
+    } else if (isTutor) {
       // For tutors: check if they already completed their review portion
       const { data: existingTutorReview } = await supabase
         .from('student_reviews')

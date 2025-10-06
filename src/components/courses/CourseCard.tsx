@@ -26,7 +26,7 @@ const CourseCard = ({ course }: CourseCardProps) => {
   const [isAdding, setIsAdding] = useState(false);
   const [isAdded, setIsAdded] = useState(() => {
     if (!profile) return false;
-    if (profile.role === 'tutor') {
+    if (profile.approved_tutor) {
       return profile.tutor_courses_subjects?.includes(course.course_number) || false;
     } else {
       return profile.student_courses?.includes(course.course_number) || false;

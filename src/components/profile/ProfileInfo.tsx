@@ -24,7 +24,7 @@ export const ProfileInfo = ({
       <h2 className="text-xl font-semibold mt-4">
         {firstName && lastName ? `${firstName} ${lastName}` : userEmail}
       </h2>
-      <p className="text-muted-foreground">{userRole || "Student"}</p>
+      <p className="text-muted-foreground">{profile?.approved_tutor ? "Tutor" : "Student"}</p>
       
       <div className="w-full mt-6">
         <div className="p-3 border rounded-md mb-3">
@@ -32,7 +32,7 @@ export const ProfileInfo = ({
           <p className="font-medium">{userEmail}</p>
         </div>
         
-        {userRole === "tutor" && profile && (
+        {profile?.approved_tutor && profile && (
           <>
             <div className="p-3 border rounded-md mb-3">
               <p className="text-sm text-muted-foreground">Rating</p>

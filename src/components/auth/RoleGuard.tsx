@@ -26,13 +26,19 @@ export const RoleGuard = ({
     // Don't redirect if profile is not loaded yet
     if (!profile) return;
 
-    // Only redirect if user has wrong role
-    if (!allowedRoles.includes(profile.role)) {
+    // Check if user meets role requirements
+    const isTutor = profile.approved_tutor === true;
+    const meetsRequirement = allowedRoles.some(role => 
+      role === 'tutor' ? isTutor : !isTutor
+    );
+
+    // Only redirect if user doesn't meet requirements
+    if (!meetsRequirement) {
       if (redirectTo) {
         navigate(redirectTo, { replace: true });
       } else {
-        // Default redirects based on role
-        const defaultRedirect = profile.role === 'tutor' ? '/tutor-dashboard' : '/settings/profile';
+        // Default redirects based on approval status
+        const defaultRedirect = isTutor ? '/tutor-dashboard' : '/settings/profile';
         navigate(defaultRedirect, { replace: true });
       }
     }
@@ -47,7 +53,16 @@ export const RoleGuard = ({
     );
   }
 
-  if (!profile || !allowedRoles.includes(profile.role)) {
+  if (!profile) {
+    return fallbackComponent || null;
+  }
+
+  const isTutor = profile.approved_tutor === true;
+  const meetsRequirement = allowedRoles.some(role => 
+    role === 'tutor' ? isTutor : !isTutor
+  );
+
+  if (!meetsRequirement) {
     return fallbackComponent || null;
   }
 

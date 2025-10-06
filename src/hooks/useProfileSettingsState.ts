@@ -48,7 +48,7 @@ export const useProfileSettingsState = (profile: Profile | null) => {
     student_bio: studentBio,
     tutor_bio: tutorBio,
     hourly_rate: hourlyRate,
-    role: profile?.role || "student" as any,
+    approved_tutor: profile?.approved_tutor || false,
     avatarUrl,
     currentAvatarUrl: profile?.avatar_url || null
   };

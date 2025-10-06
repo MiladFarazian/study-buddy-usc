@@ -44,8 +44,8 @@ export const useAuthRedirect = (redirectPath: string, requireAuth: boolean = fal
     profile, 
     loading, 
     isProfileComplete, 
-    isTutor: profile?.role === 'tutor', 
-    isStudent: profile?.role === 'student', 
+    isTutor: profile?.approved_tutor === true, 
+    isStudent: profile?.approved_tutor !== true, 
     signOut 
   };
 };

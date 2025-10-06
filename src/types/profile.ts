@@ -7,7 +7,6 @@ export interface Profile {
   major?: string | null;
   graduation_year?: string | null;
   avatar_url?: string | null;
-  role?: "student" | "tutor";
   bio?: string | null;
   student_bio?: string | null;
   tutor_bio?: string | null;

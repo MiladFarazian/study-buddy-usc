@@ -26,7 +26,7 @@ const FeaturedTutors = () => {
       
       if (profile.student_courses && Array.isArray(profile.student_courses)) {
         setStudentCourses(profile.student_courses);
-      } else if (profile.role === 'tutor' && user) {
+      } else if (profile.approved_tutor && user) {
         try {
           const tutorStudentCourses = await getTutorStudentCourses(user.id);
           setStudentCourses(tutorStudentCourses.map((course: any) => course.course_number));

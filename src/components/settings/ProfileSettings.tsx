@@ -1,33 +1,42 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 import { ProfileAvatarCard } from "@/components/profile-editor/ProfileAvatarCard";
 import { StudentProfileForm } from "@/components/profile-editor/StudentProfileForm";
 import { TutorProfileForm } from "@/components/profile-editor/TutorProfileForm";
 import { CoursesSettings } from "./CoursesSettings";
 import { useTutorProfile } from "@/hooks/useTutorProfile";
 import { useStudentProfile } from "@/hooks/useStudentProfile";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { GraduationCap, Users, AlertCircle } from "lucide-react";
 
 export const ProfileSettings = () => {
-  const { user, profile, updateProfile } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   // Track current profile view with localStorage persistence
   const [profileView, setProfileView] = useState<'student' | 'tutor'>(() => {
     const saved = localStorage.getItem('profileView');
     if (saved === 'student' || saved === 'tutor') return saved;
-    return profile?.role || 'student';
+    return 'student';
   });
 
-  // Sync with profile.role when it loads (for first-time users)
+  // Set initial view based on approval status
   useEffect(() => {
-    if (profile?.role && !localStorage.getItem('profileView')) {
-      setProfileView(profile.role);
+    if (profile) {
+      const canViewTutor = profile.approved_tutor === true;
+      const currentView = localStorage.getItem('profileView') as 'student' | 'tutor' || 'student';
+      
+      // If viewing tutor but not approved, switch to student
+      if (currentView === 'tutor' && !canViewTutor) {
+        setProfileView('student');
+        localStorage.setItem('profileView', 'student');
+      }
     }
-  }, [profile?.role]);
+  }, [profile?.approved_tutor]);
   
   const tutorProfileHook = useTutorProfile(profile);
   const studentProfileHook = useStudentProfile(profile);
@@ -46,45 +55,29 @@ export const ProfileSettings = () => {
     handleProfileUpdate,
   } = profileView === 'tutor' ? tutorProfileHook : studentProfileHook;
 
-  const handleRoleToggle = async (newRole: 'student' | 'tutor') => {
-    if (!updateProfile) return;
-    
+  const handleRoleToggle = async (newView: 'student' | 'tutor') => {
+    // Check if user can access tutor view
+    if (newView === 'tutor' && !profile?.approved_tutor) {
+      toast({
+        title: "Access Denied",
+        description: "You must be an approved tutor to access tutor settings",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      // Save to localStorage for persistence
-      localStorage.setItem('profileView', newRole);
+      console.log(`Switching to ${newView} view...`);
       
-      // Update profile view immediately for UI responsiveness
-      setProfileView(newRole);
-      
-      // Update role in database
-      const result = await updateProfile({ role: newRole });
-      
-      if (result.success) {
-        // Check if switching to tutor and onboarding not complete
-        if (newRole === 'tutor' && !profile?.tutor_onboarding_complete) {
-          window.location.href = '/onboarding/tutor';
-          return;
-        }
-        
-        toast({
-          title: "Profile Updated",
-          description: `Successfully switched to ${newRole} profile`,
-        });
-      } else {
-        // Revert profile view if update failed
-        setProfileView(profile?.role || 'student');
-        toast({
-          title: "Error",
-          description: "Failed to update profile role",
-          variant: "destructive",
-        });
-      }
+      // Just update localStorage for UI state
+      setProfileView(newView);
+      localStorage.setItem('profileView', newView);
+      console.log(`Successfully switched to ${newView} view`);
     } catch (error) {
-      // Revert profile view if error occurred
-      setProfileView(profile?.role || 'student');
+      console.error('Error switching view:', error);
       toast({
         title: "Error",
-        description: "Failed to update profile role",
+        description: `Failed to switch to ${newView} view`,
         variant: "destructive",
       });
     }
@@ -100,60 +93,36 @@ export const ProfileSettings = () => {
     );
   }
 
-  const isTutor = profileView === 'tutor';
-  const isStudent = profileView === 'student';
-
   return (
     <div className="space-y-6">
-      {/* Profile View Toggle */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-4">
-            Profile View
-            <div className="flex gap-2">
-              <Button
-                variant={isStudent ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleRoleToggle('student')}
-                disabled={loading}
-              >
-                Student
-              </Button>
-              <Button
-                variant={isTutor ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleRoleToggle('tutor')}
-                disabled={loading}
-              >
-                Tutor
-              </Button>
-            </div>
-          </CardTitle>
-          <CardDescription>
-            {isTutor 
-              ? "You have access to tutor features and can manage your tutoring profile." 
-              : "You can browse tutors and book sessions. Want to become a tutor? Apply to get approved first."
-            }
-          </CardDescription>
-        </CardHeader>
-        {!isTutor && !profile.approved_tutor && (
-          <CardContent>
-            <Button asChild variant="outline">
-              <a 
-                href="https://usc.qualtrics.com/jfe/form/SV_7QU9OKorLMDmxNk" 
-                target="_blank" 
-                rel="noopener noreferrer"
-              >
-                Apply to Become a Tutor
-              </a>
-            </Button>
-          </CardContent>
-        )}
-      </Card>
+      <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center space-x-2 border rounded-full p-1">
+          <Button
+            variant={profileView === 'student' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => handleRoleToggle('student')}
+            className="rounded-full"
+          >
+            <GraduationCap className="w-4 h-4 mr-2" />
+            Student
+          </Button>
+          <Button
+            variant={profileView === 'tutor' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => handleRoleToggle('tutor')}
+            className="rounded-full"
+            disabled={!profile?.approved_tutor}
+            title={!profile?.approved_tutor ? 'You must be an approved tutor' : ''}
+          >
+            <Users className="w-4 h-4 mr-2" />
+            Tutor
+          </Button>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
-          {isTutor ? (
+          {profileView === 'tutor' ? (
             <TutorProfileForm
               formData={formData as any}
               handleInputChange={handleInputChange}
@@ -192,6 +161,29 @@ export const ProfileSettings = () => {
           />
         </div>
       </div>
+
+      {!profile?.approved_tutor && profileView === 'student' && (
+        <Card className="mb-6 bg-accent/50">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-4">
+              <AlertCircle className="h-5 w-5 text-primary mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold mb-2">Become a Tutor</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Want to help other students and earn money? Apply to become a tutor on our platform!
+                </p>
+                <Button
+                  onClick={() => navigate('/onboarding/tutor')}
+                  className="w-full sm:w-auto"
+                >
+                  <Users className="w-4 h-4 mr-2" />
+                  Apply to Become a Tutor
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

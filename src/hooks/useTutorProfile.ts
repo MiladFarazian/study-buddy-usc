@@ -61,10 +61,10 @@ export const useTutorProfile = (profile: Profile | null) => {
       }
     };
 
-    if (profile?.role === 'tutor') {
+    if (profile?.approved_tutor) {
       fetchTutorData();
     }
-  }, [user?.id, profile?.role]);
+  }, [user?.id, profile?.approved_tutor]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -83,12 +83,12 @@ export const useTutorProfile = (profile: Profile | null) => {
       {
         ...formData,
         student_bio: profile?.student_bio || "",
-        role: 'tutor'
       },
       avatarFile,
       profile?.avatar_url,
       setLoading,
-      setUploadingAvatar
+      setUploadingAvatar,
+      true // isTutor
     );
 
     if (error) {

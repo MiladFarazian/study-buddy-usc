@@ -46,12 +46,12 @@ export function useTutors() {
   const getStudentCourses = async (): Promise<string[]> => {
     if (!profile) return [];
     
-    if (profile.role === 'student' && profile.student_courses && Array.isArray(profile.student_courses)) {
+    if (!profile.approved_tutor && profile.student_courses && Array.isArray(profile.student_courses)) {
       return profile.student_courses;
     }
     
     // If user is a tutor, fetch courses they need help with
-    if (profile.role === 'tutor' && user) {
+    if (profile.approved_tutor && user) {
       try {
         const tutorStudentCourses = await getTutorStudentCourses(user.id);
         return tutorStudentCourses.map((course: any) => course.course_number);

@@ -76,13 +76,13 @@ export const useAuthState = () => {
     userId: user?.id || 'none',
     profile: !!profile,
     loading,
-    profileRole: profile?.role || 'none'
+    approvedTutor: profile?.approved_tutor || false
   });
 
   if (profile) {
     console.log('👤 Profile loaded:', {
       id: profile.id,
-      role: profile.role,
+      approvedTutor: profile.approved_tutor,
       firstName: profile.first_name,
       lastName: profile.last_name
     });
@@ -90,8 +90,8 @@ export const useAuthState = () => {
 
   // Calculate profile completeness and role flags
   const isProfileComplete = !!profile && !!profile.first_name && !!profile.last_name && !!profile.major && !!profile.graduation_year;
-  const isStudent = profile?.role === 'student';
-  const isTutor = profile?.role === 'tutor';
+  const isTutor = profile?.approved_tutor === true;
+  const isStudent = !isTutor;
 
   return {
     session,

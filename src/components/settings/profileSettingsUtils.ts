@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { uploadAvatar as uploadAvatarUtil } from "@/components/profile/AvatarUtils";
 
 type ProfileUpdateDto = Database['public']['Tables']['profiles']['Update'];
-type UserRole = Database['public']['Enums']['user_role'];
 
 export const uploadAvatar = async (
   user: any,
@@ -35,13 +34,13 @@ export const updateUserProfile = async (
     graduation_year: string;
     student_bio: string;
     tutor_bio: string;
-    role: UserRole;
     hourly_rate: string;
   },
   avatarFile: File | null,
   currentAvatarUrl: string | null,
   setLoading: (value: boolean) => void,
   setUploadingAvatar: (value: boolean) => void,
+  isTutor: boolean = false,
 ) => {
   if (!user) return { error: "User not authenticated" };
 
@@ -72,7 +71,7 @@ export const updateUserProfile = async (
     };
     
     // Always include hourly_rate for tutors, even if it's empty (will be null in DB)
-    if (formData.role === 'tutor') {
+    if (isTutor) {
       console.log("Setting hourly rate in update:", formData.hourly_rate);
       // Only parse if there's a value, otherwise set to null
       const hourlyRateValue = formData.hourly_rate && formData.hourly_rate.trim() !== "" ? 
@@ -97,33 +96,6 @@ export const updateUserProfile = async (
     return { data: { ...profile, ...updateData }, error: null };
   } catch (error: any) {
     console.error("Settings: Unexpected error updating profile", error);
-    return { error: error.message || "An error occurred" };
-  } finally {
-    setLoading(false);
-  }
-};
-
-export const updateUserRole = async (
-  user: any, 
-  role: UserRole,
-  setLoading: (value: boolean) => void
-) => {
-  if (!user) return { error: "User not authenticated" };
-  
-  try {
-    setLoading(true);
-    
-    const updateData: ProfileUpdateDto = { role };
-    
-    const { error } = await supabase
-      .from('profiles')
-      .update(updateData)
-      .eq('id', user.id);
-
-    if (error) return { error: error.message };
-
-    return { data: { role }, error: null };
-  } catch (error: any) {
     return { error: error.message || "An error occurred" };
   } finally {
     setLoading(false);

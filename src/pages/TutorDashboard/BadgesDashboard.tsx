@@ -24,7 +24,7 @@ export default function BadgesDashboard() {
     return <LoadingScreen />;
   }
 
-  if (profile?.role !== 'tutor') {
+  if (profile?.approved_tutor) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card>

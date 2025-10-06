@@ -24,8 +24,8 @@ export function SessionConfirmationCard({ sessionId, onConfirmed }: SessionConfi
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isStudent = profile?.role === 'student';
-  const isTutor = profile?.role === 'tutor';
+  const isTutor = profile?.approved_tutor === true;
+  const isStudent = !isTutor;
   
   // Load session data
   useEffect(() => {

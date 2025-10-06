@@ -27,8 +27,8 @@ export const CoursesSettings = ({ profileView }: CoursesSettingsProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
 
-  // Determine which view to show - use prop if available, otherwise fall back to profile role
-  const currentView = profileView || profile?.role || 'student';
+  // Determine which view to show - use prop if available, otherwise default to student
+  const currentView = profileView || 'student';
   const isStudentView = currentView === 'student';
   const isTutorView = currentView === 'tutor';
 

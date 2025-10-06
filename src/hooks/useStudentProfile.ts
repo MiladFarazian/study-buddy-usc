@@ -59,10 +59,10 @@ export const useStudentProfile = (profile: Profile | null) => {
       }
     };
 
-    if (profile?.role === 'student') {
+    if (!profile?.approved_tutor) {
       fetchStudentData();
     }
-  }, [user?.id, profile?.role]);
+  }, [user?.id, profile?.approved_tutor]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -82,12 +82,12 @@ export const useStudentProfile = (profile: Profile | null) => {
         ...formData,
         tutor_bio: profile?.tutor_bio || "",
         hourly_rate: profile?.hourly_rate?.toString() || "",
-        role: 'student'
       },
       avatarFile,
       profile?.avatar_url,
       setLoading,
-      setUploadingAvatar
+      setUploadingAvatar,
+      false // isStudent, not tutor
     );
 
     if (error) {

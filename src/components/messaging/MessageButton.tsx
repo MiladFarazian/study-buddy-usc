@@ -30,7 +30,7 @@ export default function MessageButton({ recipient, className, variant = "outline
     }
     
     // Handle different recipient types
-    const isTutor = 'role' in recipient ? recipient.role === 'tutor' : true;
+    const isTutor = 'approved_tutor' in recipient ? recipient.approved_tutor === true : true;
     
     navigate(`/messages?user=${recipient.id}&isTutor=${isTutor}`);
   };

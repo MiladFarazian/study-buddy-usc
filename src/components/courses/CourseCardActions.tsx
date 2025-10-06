@@ -64,7 +64,7 @@ export function CourseCardActions({
     }
   };
 
-  const isAdded = profile?.role === 'tutor' 
+  const isAdded = profile?.approved_tutor 
     ? profile.tutor_courses_subjects?.includes(courseNumber)
     : profile.student_courses?.includes(courseNumber);
 
