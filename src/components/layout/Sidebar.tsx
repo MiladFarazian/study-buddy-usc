@@ -104,8 +104,9 @@ const Sidebar = () => {
     {
       title: "Become a Tutor",
       icon: GraduationCap,
-      path: "/settings?tab=profile&action=become-tutor",
-      showWhen: !!user && !profile?.approved_tutor // Only show for authenticated non-approved tutors
+      path: "https://usc.qualtrics.com/jfe/form/SV_7QU9OKorLMDmxNk",
+      showWhen: !!user && !profile?.approved_tutor, // Only show for authenticated non-approved tutors
+      external: true
     }
   ];
 
@@ -130,6 +131,25 @@ const Sidebar = () => {
           filteredItems.map((item) => {
             const isActive = location.pathname === item.path || 
                           (item.path.startsWith('/settings') && location.pathname.startsWith('/settings'));
+            
+            // Handle external links differently
+            if (item.external) {
+              return (
+                <a
+                  key={item.path}
+                  href={item.path}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cn(
+                    "flex items-center gap-3 p-3 rounded-md transition-colors hover:bg-gray-100",
+                    "text-usc-cardinal"
+                  )}
+                >
+                  <item.icon size={20} />
+                  <span>{item.title}</span>
+                </a>
+              );
+            }
             
             return (
               <Link

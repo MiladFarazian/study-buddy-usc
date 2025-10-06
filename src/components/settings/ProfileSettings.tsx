@@ -66,6 +66,12 @@ export const ProfileSettings = () => {
       return;
     }
 
+    // Check if tutor onboarding is complete
+    if (newView === 'tutor' && profile?.approved_tutor && !profile?.tutor_onboarding_complete) {
+      navigate('/onboarding/tutor');
+      return;
+    }
+
     try {
       console.log(`Switching to ${newView} view...`);
       
@@ -95,6 +101,29 @@ export const ProfileSettings = () => {
 
   return (
     <div className="space-y-6">
+      {!profile?.approved_tutor && (
+        <Card className="bg-primary/5 border-primary/20">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-4">
+              <AlertCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <h3 className="font-semibold mb-2">Want to Become a Tutor?</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Apply to join our tutor community and start helping USC students succeed!
+                </p>
+                <Button
+                  onClick={() => window.open('https://usc.qualtrics.com/jfe/form/SV_7QU9OKorLMDmxNk', '_blank')}
+                  className="w-full sm:w-auto"
+                >
+                  <Users className="w-4 h-4 mr-2" />
+                  Apply to Become a Tutor
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex items-center gap-4 mb-6">
         <div className="flex items-center space-x-2 border rounded-full p-1">
           <Button
@@ -162,28 +191,6 @@ export const ProfileSettings = () => {
         </div>
       </div>
 
-      {!profile?.approved_tutor && profileView === 'student' && (
-        <Card className="mb-6 bg-accent/50">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-4">
-              <AlertCircle className="h-5 w-5 text-primary mt-0.5" />
-              <div className="flex-1">
-                <h3 className="font-semibold mb-2">Become a Tutor</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Want to help other students and earn money? Apply to become a tutor on our platform!
-                </p>
-                <Button
-                  onClick={() => navigate('/onboarding/tutor')}
-                  className="w-full sm:w-auto"
-                >
-                  <Users className="w-4 h-4 mr-2" />
-                  Apply to Become a Tutor
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };

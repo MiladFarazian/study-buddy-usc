@@ -97,8 +97,9 @@ const MobileNavBar = () => {
     {
       title: "Become a Tutor",
       icon: GraduationCap,
-      path: "/settings?tab=profile&action=become-tutor",
-      showWhen: !!user && !profile?.approved_tutor
+      path: "https://usc.qualtrics.com/jfe/form/SV_7QU9OKorLMDmxNk",
+      showWhen: !!user && !profile?.approved_tutor,
+      external: true
     }
   ];
 
@@ -176,6 +177,26 @@ const MobileNavBar = () => {
               {filteredMenuItems.map((item) => {
                 const isActive = location.pathname === item.path || 
                               (item.path.startsWith('/settings') && location.pathname.startsWith('/settings'));
+                
+                // Handle external links differently
+                if (item.external) {
+                  return (
+                    <a
+                      key={item.path}
+                      href={item.path}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setIsMenuOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-md transition-colors",
+                        "text-gray-700 hover:bg-gray-50"
+                      )}
+                    >
+                      <item.icon size={20} />
+                      <span>{item.title}</span>
+                    </a>
+                  );
+                }
                 
                 return (
                   <Link
