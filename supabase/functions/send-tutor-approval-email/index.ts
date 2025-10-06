@@ -28,10 +28,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     const settingsUrl = `${Deno.env.get("SUPABASE_URL")?.replace('.supabase.co', '.lovable.app') || 'https://studybuddy.lovable.app'}/settings?tab=profile`;
 
-    // Derive sender details and log for diagnostics
-    const fromEnv = Deno.env.get("RESEND_FROM");
-    const fromAddress = `StudyBuddy <${fromEnv && fromEnv.trim() !== "" ? fromEnv : "onboarding@resend.dev"}>`;
-    const replyTo = Deno.env.get("RESEND_REPLY_TO") || undefined;
+    // Force sender to notifications@studybuddyusc.com for reliability
+    const fromAddress = "StudyBuddy <notifications@studybuddyusc.com>";
+    const replyTo = Deno.env.get("RESEND_REPLY_TO") || "support@studybuddyusc.com";
     console.log("Email config:", { to: tutorEmail, tutorName, tutorId, fromAddress, replyTo });
 
     const emailResponse = await resend.emails.send({
@@ -150,7 +149,7 @@ const handler = async (req: Request): Promise<Response> => {
                 <p>StudyBuddy - Connecting USC Students with Expert Tutors</p>
                 <p style="font-size: 12px; color: #9ca3af;">
                   If you didn't apply to be a tutor, please contact us immediately at 
-                  <a href="mailto:support@studybuddy.com" style="color: #2563eb;">support@studybuddy.com</a>
+                  <a href="mailto:support@studybuddyusc.com" style="color: #2563eb;">support@studybuddyusc.com</a>
                 </p>
               </div>
             </div>
