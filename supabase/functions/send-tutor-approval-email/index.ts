@@ -30,7 +30,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Sending approval email to ${tutorEmail} (${tutorName})`);
 
-    const settingsUrl = `${Deno.env.get("SUPABASE_URL")?.replace('.supabase.co', '.lovable.app') || 'https://studybuddy.lovable.app'}/settings?tab=profile`;
+    const settingsUrl = `https://studybuddyusc.com/settings?tab=profile`;
 
     console.log("Email config:", { to: tutorEmail, tutorName, tutorId, from: FROM_ADDRESS, replyTo: REPLY_TO });
 
@@ -138,7 +138,7 @@ const handler = async (req: Request): Promise<Response> => {
                 </div>
                 
                 <div style="text-align: center;">
-                  <a href="${settingsUrl}" class="cta-button">Set Up Your Tutor Account →</a>
+                  <a href="${settingsUrl}" class="cta-button" style="color: #ffffff !important; text-decoration: none;">Set Up Your Tutor Account →</a>
                 </div>
                 
                 <p>If you have any questions or need help getting started, don't hesitate to reach out to our support team.</p>
