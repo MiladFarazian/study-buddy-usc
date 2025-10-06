@@ -65,7 +65,7 @@ const handler = async (req: Request): Promise<Response> => {
                 margin-bottom: 30px;
               }
               .header h1 {
-                color: #2563eb;
+                color: #990000;
                 font-size: 28px;
                 margin: 0 0 10px 0;
               }
@@ -77,7 +77,7 @@ const handler = async (req: Request): Promise<Response> => {
               }
               .cta-button {
                 display: inline-block;
-                background-color: #2563eb;
+                background-color: #990000;
                 color: #ffffff;
                 text-decoration: none;
                 padding: 14px 32px;
@@ -87,11 +87,11 @@ const handler = async (req: Request): Promise<Response> => {
                 margin: 20px 0;
               }
               .cta-button:hover {
-                background-color: #1d4ed8;
+                background-color: #7a0000;
               }
               .next-steps {
-                background-color: #f3f4f6;
-                border-left: 4px solid #2563eb;
+                background-color: #FFF9E6;
+                border-left: 4px solid #FFCC00;
                 padding: 20px;
                 margin: 20px 0;
                 border-radius: 4px;
@@ -121,7 +121,7 @@ const handler = async (req: Request): Promise<Response> => {
             <div class="container">
               <div class="header">
                 <h1>🎉 Congratulations, ${tutorName}!</h1>
-                <p style="color: #059669; font-size: 18px; font-weight: 600;">You've Been Approved as a StudyBuddy Tutor</p>
+                <p style="color: #990000; font-size: 18px; font-weight: 600;">You've Been Approved as a StudyBuddy Tutor</p>
               </div>
               
               <div class="content">
@@ -150,7 +150,7 @@ const handler = async (req: Request): Promise<Response> => {
                 <p>StudyBuddy - Connecting USC Students with Expert Tutors</p>
                 <p style="font-size: 12px; color: #9ca3af;">
                   If you didn't apply to be a tutor, please contact us immediately at 
-                  <a href="mailto:support@studybuddyusc.com" style="color: #2563eb;">support@studybuddyusc.com</a>
+                  <a href="mailto:support@studybuddyusc.com" style="color: #990000;">support@studybuddyusc.com</a>
                 </p>
               </div>
             </div>
