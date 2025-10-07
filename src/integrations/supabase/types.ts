@@ -691,6 +691,113 @@ export type Database = {
         }
         Relationships: []
       }
+      resource_courses: {
+        Row: {
+          course_number: string
+          course_title: string | null
+          created_at: string
+          id: string
+          resource_id: string
+        }
+        Insert: {
+          course_number: string
+          course_title?: string | null
+          created_at?: string
+          id?: string
+          resource_id: string
+        }
+        Update: {
+          course_number?: string
+          course_title?: string | null
+          created_at?: string
+          id?: string
+          resource_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resource_courses_resource_id_fkey"
+            columns: ["resource_id"]
+            isOneToOne: false
+            referencedRelation: "resources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resources: {
+        Row: {
+          created_at: string
+          description: string | null
+          download_count: number
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id: string
+          rejection_reason: string | null
+          resource_type: Database["public"]["Enums"]["resource_type"]
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["resource_status"]
+          title: string
+          updated_at: string
+          uploaded_at: string
+          uploader_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          download_count?: number
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id?: string
+          rejection_reason?: string | null
+          resource_type: Database["public"]["Enums"]["resource_type"]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["resource_status"]
+          title: string
+          updated_at?: string
+          uploaded_at?: string
+          uploader_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          download_count?: number
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          rejection_reason?: string | null
+          resource_type?: Database["public"]["Enums"]["resource_type"]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["resource_status"]
+          title?: string
+          updated_at?: string
+          uploaded_at?: string
+          uploader_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resources_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resources_uploader_id_fkey"
+            columns: ["uploader_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reviews: {
         Row: {
           comment: string | null
@@ -1376,6 +1483,14 @@ export type Database = {
         | "manual_both"
         | "manual_student"
         | "manual_tutor"
+      resource_status: "pending" | "approved" | "rejected" | "deleted"
+      resource_type:
+        | "notes"
+        | "practice_exam"
+        | "study_guide"
+        | "slides"
+        | "summary"
+        | "other"
       session_status: "scheduled" | "in_progress" | "completed" | "cancelled"
       user_role: "student" | "tutor"
     }
@@ -1524,6 +1639,15 @@ export const Constants = {
         "manual_both",
         "manual_student",
         "manual_tutor",
+      ],
+      resource_status: ["pending", "approved", "rejected", "deleted"],
+      resource_type: [
+        "notes",
+        "practice_exam",
+        "study_guide",
+        "slides",
+        "summary",
+        "other",
       ],
       session_status: ["scheduled", "in_progress", "completed", "cancelled"],
       user_role: ["student", "tutor"],

@@ -102,3 +102,15 @@ verify_jwt = false
 
 [functions.send-tutor-approval-email]
 verify_jwt = false
+
+[functions.upload-resource]
+verify_jwt = true
+
+[functions.admin-review-resource]
+verify_jwt = true
+
+[functions.download-resource]
+verify_jwt = true
+
+[functions.cleanup-old-resources]
+verify_jwt = false
