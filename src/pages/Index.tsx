@@ -1,6 +1,4 @@
 
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import Hero from "@/components/home/Hero";
 import FeatureCards from "@/components/home/FeatureCards";
 import FeaturedTutors from "@/components/home/FeaturedTutors";
@@ -8,7 +6,6 @@ import PopularCourses from "@/components/home/PopularCourses";
 import AuthSection from "@/components/home/AuthSection";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
-import { useAdminAuth } from "@/contexts/AdminAuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BarChart, FileText, Lock } from "lucide-react";
@@ -16,28 +13,8 @@ import TestEmailButton from "@/components/debug/TestEmailButton";
 
 const Index = () => {
   const isMobile = useIsMobile();
-  const navigate = useNavigate();
   const { isTutor, user, profile } = useAuth();
-  const { isAdmin, loading: adminLoading } = useAdminAuth();
   const showDebug = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === 'email';
-  
-  // Redirect admins to admin dashboard
-  useEffect(() => {
-    if (!adminLoading && isAdmin) {
-      navigate('/admin', { replace: true });
-    }
-  }, [isAdmin, adminLoading, navigate]);
-
-  // Show loading while checking admin status
-  if (adminLoading) {
-    return null;
-  }
-
-  // Don't render for admins (they'll be redirected)
-  if (isAdmin) {
-    return null;
-  }
-
   return (
     <div className={`space-y-4 md:space-y-8 ${isMobile ? 'py-4 px-2' : 'py-6'} max-w-full`}>
       <Hero />

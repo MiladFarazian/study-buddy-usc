@@ -1,17 +1,15 @@
 
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
-import { useAdminRedirect } from "@/hooks/useAdminRedirect";
 
 const Settings = () => {
   const { loading, profile, isTutor } = useAuthRedirect('/settings', true);
-  const { loading: adminLoading } = useAdminRedirect();
   const location = useLocation();
   
   // Check for debug mode
   const showDebug = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === 'session';
 
-  if (loading || adminLoading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
