@@ -1,5 +1,6 @@
 
 import { useAuth } from "@/contexts/AuthContext";
+import { ReferralGuard } from "@/components/auth/ReferralGuard";
 import StudentAnalytics from "@/components/analytics/StudentAnalytics";
 import TutorAnalytics from "@/components/analytics/TutorAnalytics";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,19 +22,19 @@ const Analytics = () => {
     );
   }
 
-  if (isTutor) {
-    return <TutorAnalytics />;
-  }
-
-  if (isStudent) {
-    return <StudentAnalytics />;
-  }
-
   return (
-    <div className="py-6">
-      <h1 className="text-3xl font-bold mb-2">Analytics</h1>
-      <p className="text-muted-foreground">Please complete your profile to access analytics.</p>
-    </div>
+    <ReferralGuard minReferrals={1} featureName="Analytics">
+      {isTutor ? (
+        <TutorAnalytics />
+      ) : isStudent ? (
+        <StudentAnalytics />
+      ) : (
+        <div className="py-6">
+          <h1 className="text-3xl font-bold mb-2">Analytics</h1>
+          <p className="text-muted-foreground">Please complete your profile to access analytics.</p>
+        </div>
+      )}
+    </ReferralGuard>
   );
 };
 

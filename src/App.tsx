@@ -36,6 +36,7 @@ import FeaturedTutors from "./pages/FeaturedTutors";
 import Settings from "./pages/Settings";
 import { Navigate } from "react-router-dom";
 import { ProfileSettings } from "./components/settings/ProfileSettings";
+import { ReferralSettings } from "./components/settings/ReferralSettings";
 import { AccountSettings } from "./components/settings/AccountSettings";
 import { NotificationSettings } from "./components/settings/NotificationSettings";
 import { PaymentSettingsTab } from "./components/settings/PaymentSettingsTab";
@@ -149,6 +150,10 @@ const router = createBrowserRouter([
             element: <ProfileSettings />
           },
           {
+            path: "referrals",
+            element: <ReferralSettings />
+          },
+          {
             path: "account", 
             element: <AccountSettings />
           },
@@ -186,9 +191,7 @@ const router = createBrowserRouter([
         path: "/resources",
         element: (
           <PrivateRoute>
-            <ReferralGuard minReferrals={2} featureName="Resources">
-              <Resources />
-            </ReferralGuard>
+            <Resources />
           </PrivateRoute>
         )
       },
@@ -204,9 +207,7 @@ const router = createBrowserRouter([
         path: "/analytics",
         element: (
           <PrivateRoute>
-            <ReferralGuard minReferrals={1} featureName="Analytics">
-              <Analytics />
-            </ReferralGuard>
+            <Analytics />
           </PrivateRoute>
         )
       },

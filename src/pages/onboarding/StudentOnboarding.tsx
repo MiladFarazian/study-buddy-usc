@@ -57,23 +57,9 @@ const StudentOnboarding = () => {
     try {
       const updates: any = { student_onboarding_complete: true };
       
-      // Process referral if valid code entered
+      // Process referral if valid code entered (trigger handles count increment)
       if (referralCode.trim() && referralStatus.type === "valid") {
-        const { data: referrer } = await supabase
-          .from("profiles")
-          .select("id, referral_count")
-          .eq("referral_code", referralCode.toUpperCase())
-          .maybeSingle();
-        
-        if (referrer) {
-          updates.referred_by_code = referralCode.toUpperCase();
-          
-          // Increment referrer's count
-          await supabase
-            .from("profiles")
-            .update({ referral_count: (referrer.referral_count || 0) + 1 })
-            .eq("id", referrer.id);
-        }
+        updates.referred_by_code = referralCode.toUpperCase();
       }
       
       const { error } = await supabase
