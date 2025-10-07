@@ -44,7 +44,7 @@ export const ReferralGuard = ({
               {featureName} Locked
             </CardTitle>
             <CardDescription className="text-base">
-              Refer {minReferrals} {minReferrals === 1 ? 'friend' : 'friends'} to unlock this feature
+              Help {minReferrals} fellow Trojan{minReferrals === 1 ? '' : 's'} join to unlock this feature
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -56,7 +56,7 @@ export const ReferralGuard = ({
                 {referralCount} / {minReferrals}
               </p>
               <p className="text-sm text-muted-foreground">
-                {minReferrals - referralCount} more {minReferrals - referralCount === 1 ? 'referral' : 'referrals'} needed
+                Help {minReferrals - referralCount} more {minReferrals - referralCount === 1 ? 'student' : 'students'} join
               </p>
             </div>
             
@@ -65,11 +65,11 @@ export const ReferralGuard = ({
               <ol className="space-y-2 text-sm text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <span className="font-bold text-foreground">1.</span>
-                  Share your referral code with USC friends
+                  Share Study Buddy with USC friends
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="font-bold text-foreground">2.</span>
-                  They enter it when signing up
+                  They enter your code when signing up
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="font-bold text-foreground">3.</span>
@@ -80,7 +80,7 @@ export const ReferralGuard = ({
             
             <div className="flex gap-3">
               <Button asChild className="flex-1">
-                <Link to="/settings/profile">
+                <Link to="/settings/referrals">
                   <Users className="mr-2 h-4 w-4" />
                   View My Code
                 </Link>

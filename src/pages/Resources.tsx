@@ -87,7 +87,7 @@ const ResourcesPage = () => {
   };
 
   return (
-    <ReferralGuard minReferrals={2} featureName="Resources">
+    <ReferralGuard minReferrals={1} featureName="Resources">
       <div className="container py-6">
         <div className="mb-4">
           <Button variant="outline" asChild size="sm" className="mb-6">
