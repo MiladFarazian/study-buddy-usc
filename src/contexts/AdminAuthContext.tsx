@@ -1,49 +1,85 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AdminAuthContextType {
   isAdmin: boolean;
-  adminLogin: (email: string, password: string) => boolean;
-  adminLogout: () => void;
+  adminLogin: (email: string, password: string) => Promise<boolean>;
+  adminLogout: () => Promise<void>;
   loading: boolean;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType>({
   isAdmin: false,
-  adminLogin: () => false,
-  adminLogout: () => {},
+  adminLogin: async () => false,
+  adminLogout: async () => {},
   loading: false,
 });
-
-const ADMIN_CREDENTIALS = {
-  email: "noah@studybuddyusc.com",
-  password: "StudyBuddy9!"
-};
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Check if admin is already logged in
-    const adminSession = localStorage.getItem('adminSession');
-    if (adminSession === 'true') {
-      setIsAdmin(true);
-    }
-    setLoading(false);
-  }, []);
+  const checkAdminRole = async (userId: string): Promise<boolean> => {
+    const { data, error } = await supabase.rpc('has_role', {
+      _user_id: userId,
+      _role: 'admin'
+    });
 
-  const adminLogin = (email: string, password: string): boolean => {
-    if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
-      setIsAdmin(true);
-      localStorage.setItem('adminSession', 'true');
-      return true;
+    if (error) {
+      console.error('Error checking admin role:', error);
+      return false;
     }
-    return false;
+
+    return data === true;
   };
 
-  const adminLogout = () => {
+  useEffect(() => {
+    const initializeAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        const adminStatus = await checkAdminRole(user.id);
+        setIsAdmin(adminStatus);
+      }
+      
+      setLoading(false);
+    };
+
+    initializeAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        const adminStatus = await checkAdminRole(session.user.id);
+        setIsAdmin(adminStatus);
+      } else {
+        setIsAdmin(false);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const adminLogin = async (email: string, password: string): Promise<boolean> => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error || !data.user) {
+      console.error('Login error:', error);
+      return false;
+    }
+
+    const adminStatus = await checkAdminRole(data.user.id);
+    setIsAdmin(adminStatus);
+    return adminStatus;
+  };
+
+  const adminLogout = async () => {
+    await supabase.auth.signOut();
     setIsAdmin(false);
-    localStorage.removeItem('adminSession');
   };
 
   return (
