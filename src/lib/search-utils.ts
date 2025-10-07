@@ -250,3 +250,128 @@ export const searchCourses = (courses: Course[], searchQuery: string): Course[] 
     .sort((a, b) => b.score - a.score)
     .map(item => item.course);
 };
+
+/**
+ * Multi-tier search scoring system for resources
+ */
+interface Resource {
+  id: string;
+  title: string;
+  description: string | null;
+  resource_type: string;
+  download_count: number;
+  uploaded_at: string;
+  file_name: string;
+  courses?: Array<{
+    course_number: string;
+    course_title: string | null;
+  }>;
+  uploader?: {
+    first_name: string | null;
+    last_name: string | null;
+  };
+}
+
+interface ResourceSearchScore {
+  resource: Resource;
+  score: number;
+}
+
+export const searchResources = (resources: Resource[], searchQuery: string): Resource[] => {
+  if (!searchQuery || searchQuery.trim() === "") {
+    return resources;
+  }
+
+  const normalizedQuery = normalizeText(searchQuery);
+  const queryTokens = tokenize(searchQuery);
+  
+  const scoredResources: ResourceSearchScore[] = resources.map(resource => {
+    let score = 0;
+    
+    const title = normalizeText(resource.title || '');
+    const description = normalizeText(resource.description || '');
+    const resourceType = normalizeText(resource.resource_type || '');
+    const uploaderName = resource.uploader 
+      ? normalizeText(`${resource.uploader.first_name || ''} ${resource.uploader.last_name || ''}`.trim())
+      : '';
+    const courseCodes = resource.courses?.map(c => normalizeText(c.course_number)) || [];
+    const courseTitles = resource.courses?.map(c => normalizeText(c.course_title || '')) || [];
+
+    // TIER 1: Exact matches (highest priority) - 1000 points
+    if (title === normalizedQuery) score += 1000;
+    if (courseCodes.some(code => code === normalizedQuery)) score += 1000;
+
+    // TIER 2: Direct substring matches - 500 points
+    if (title.includes(normalizedQuery)) score += 500;
+    if (description.includes(normalizedQuery)) score += 400;
+    if (courseCodes.some(code => code.includes(normalizedQuery))) score += 500;
+    if (courseTitles.some(title => title.includes(normalizedQuery))) score += 450;
+    if (uploaderName.includes(normalizedQuery)) score += 300;
+    if (resourceType.includes(normalizedQuery)) score += 200;
+
+    // TIER 3: Tokenized matches (all tokens present in any order) - 300 points per token
+    const titleTokens = tokenize(resource.title || '');
+    const descriptionTokens = tokenize(resource.description || '');
+    const courseTokens = [
+      ...courseCodes.flatMap(code => tokenize(code)),
+      ...courseTitles.flatMap(title => tokenize(title))
+    ];
+    const uploaderTokens = uploaderName ? tokenize(uploaderName) : [];
+    
+    for (const queryToken of queryTokens) {
+      // Check title tokens
+      if (titleTokens.some(t => t.includes(queryToken) || queryToken.includes(t))) {
+        score += 400;
+      }
+      
+      // Check course tokens (high weight for course matches)
+      if (courseTokens.some(t => t.includes(queryToken) || queryToken.includes(t))) {
+        score += 450;
+      }
+      
+      // Check description tokens
+      if (descriptionTokens.some(t => t.includes(queryToken) || queryToken.includes(t))) {
+        score += 250;
+      }
+      
+      // Check uploader tokens
+      if (uploaderTokens.some(t => t.includes(queryToken) || queryToken.includes(t))) {
+        score += 200;
+      }
+    }
+
+    // TIER 4: Partial matches - 100 points
+    const titleParts = title.split(/[\s\-]/);
+    for (const queryToken of queryTokens) {
+      if (titleParts.some(part => part.includes(queryToken) || queryToken.includes(part))) {
+        score += 100;
+      }
+      
+      // Handle course code parts
+      for (const courseCode of courseCodes) {
+        const codeParts = courseCode.split(/[\s\-]/);
+        if (codeParts.some(part => part.includes(queryToken) || queryToken.includes(part))) {
+          score += 100;
+        }
+      }
+    }
+
+    // TIER 5: Bonus for multiple token matches
+    const allTokens = [...titleTokens, ...descriptionTokens, ...courseTokens, ...uploaderTokens];
+    const matchedTokenCount = queryTokens.filter(qt => 
+      allTokens.some(t => t.includes(qt) || qt.includes(t))
+    ).length;
+    
+    if (matchedTokenCount === queryTokens.length) {
+      score += 200; // All query tokens matched somewhere
+    }
+
+    return { resource, score };
+  });
+
+  // Filter out resources with zero score and sort by score (descending)
+  return scoredResources
+    .filter(item => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map(item => item.resource);
+};

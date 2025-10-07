@@ -1,7 +1,8 @@
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search } from "lucide-react";
-import { useCourses } from "@/hooks/useCourses";
+import { Search, Loader2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ResourceFiltersProps {
   search: string;
@@ -30,10 +31,98 @@ export function ResourceFilters({
   typeFilter,
   onTypeFilterChange,
 }: ResourceFiltersProps) {
-  const { courses } = useCourses({ term: "20251", search: "", department: "all" });
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const BATCH_SIZE = 50;
 
-  // Get unique departments from courses
-  const departments = Array.from(new Set(courses.map((c) => c.department).filter(Boolean)));
+  // Fetch departments in batches
+  useEffect(() => {
+    fetchInitialDepartments();
+  }, []);
+
+  const fetchInitialDepartments = async () => {
+    setLoading(true);
+    try {
+      const { data: courses, error } = await supabase
+        .from("courses-20251")
+        .select("Course number")
+        .limit(1000); // Get enough to extract departments
+
+      if (error) throw error;
+
+      // Extract unique departments from course numbers
+      const deptSet = new Set<string>();
+      courses?.forEach((course) => {
+        const courseNumber = course["Course number"];
+        if (courseNumber) {
+          // Extract department code (e.g., "CSCI" from "CSCI-201")
+          const match = courseNumber.match(/^([A-Z]+)/);
+          if (match) {
+            deptSet.add(match[1]);
+          }
+        }
+      });
+
+      const sortedDepts = Array.from(deptSet).sort();
+      setDepartments(sortedDepts.slice(0, BATCH_SIZE));
+      setHasMore(sortedDepts.length > BATCH_SIZE);
+    } catch (error) {
+      console.error("Error fetching departments:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadMoreDepartments = async () => {
+    if (loading || !hasMore) return;
+
+    setLoading(true);
+    try {
+      // Fetch more departments (this is a simplified version)
+      // In a real scenario, you'd paginate the course data
+      const { data: courses, error } = await supabase
+        .from("courses-20251")
+        .select("Course number")
+        .range(departments.length * 20, (departments.length + 1) * 20 + 1000);
+
+      if (error) throw error;
+
+      const deptSet = new Set(departments);
+      courses?.forEach((course) => {
+        const courseNumber = course["Course number"];
+        if (courseNumber) {
+          const match = courseNumber.match(/^([A-Z]+)/);
+          if (match) {
+            deptSet.add(match[1]);
+          }
+        }
+      });
+
+      const sortedDepts = Array.from(deptSet).sort();
+      const newDepts = sortedDepts.slice(departments.length, departments.length + BATCH_SIZE);
+      
+      if (newDepts.length === 0) {
+        setHasMore(false);
+      } else {
+        setDepartments([...departments, ...newDepts]);
+      }
+    } catch (error) {
+      console.error("Error loading more departments:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const element = e.currentTarget;
+    const isNearBottom = element.scrollHeight - element.scrollTop <= element.clientHeight + 50;
+    
+    if (isNearBottom && hasMore && !loading) {
+      loadMoreDepartments();
+    }
+  };
 
   return (
     <div className="flex flex-col sm:flex-row gap-4">
@@ -54,12 +143,23 @@ export function ResourceFilters({
           <SelectValue placeholder="All Courses" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">All Courses</SelectItem>
-          {departments.map((dept) => (
-            <SelectItem key={dept} value={dept!}>
-              {dept}
-            </SelectItem>
-          ))}
+          <div 
+            ref={scrollRef}
+            onScroll={handleScroll}
+            className="max-h-[300px] overflow-y-auto"
+          >
+            <SelectItem value="all">All Courses</SelectItem>
+            {departments.map((dept) => (
+              <SelectItem key={dept} value={dept}>
+                {dept}
+              </SelectItem>
+            ))}
+            {loading && (
+              <div className="flex justify-center py-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+              </div>
+            )}
+          </div>
         </SelectContent>
       </Select>
 
