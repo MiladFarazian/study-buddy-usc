@@ -7,16 +7,6 @@ const adminMenuItems = [
     path: "/admin",
     icon: LayoutDashboard,
   },
-  {
-    title: "Courses", 
-    path: "/admin/courses",
-    icon: BookOpen,
-  },
-  {
-    title: "Tutors",
-    path: "/admin/tutors", 
-    icon: Users,
-  },
 ];
 
 export const AdminSidebar = () => {
