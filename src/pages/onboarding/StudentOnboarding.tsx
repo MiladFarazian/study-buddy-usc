@@ -6,31 +6,88 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 const StudentOnboarding = () => {
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [referralCode, setReferralCode] = useState("");
+  const [referralStatus, setReferralStatus] = useState<{
+    type: "idle" | "checking" | "valid" | "invalid";
+    message?: string;
+  }>({ type: "idle" });
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const validateReferralCode = async (code: string) => {
+    if (!code.trim()) {
+      setReferralStatus({ type: "idle" });
+      return;
+    }
+    
+    setReferralStatus({ type: "checking" });
+    
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, first_name")
+      .eq("referral_code", code.toUpperCase())
+      .maybeSingle();
+    
+    if (error || !data) {
+      setReferralStatus({ 
+        type: "invalid", 
+        message: "Invalid referral code" 
+      });
+    } else {
+      setReferralStatus({ 
+        type: "valid", 
+        message: `Code from ${data.first_name}` 
+      });
+    }
+  };
 
   const handleContinue = async () => {
     if (!user) return;
     
     setLoading(true);
     try {
+      const updates: any = { student_onboarding_complete: true };
+      
+      // Process referral if valid code entered
+      if (referralCode.trim() && referralStatus.type === "valid") {
+        const { data: referrer } = await supabase
+          .from("profiles")
+          .select("id, referral_count")
+          .eq("referral_code", referralCode.toUpperCase())
+          .maybeSingle();
+        
+        if (referrer) {
+          updates.referred_by_code = referralCode.toUpperCase();
+          
+          // Increment referrer's count
+          await supabase
+            .from("profiles")
+            .update({ referral_count: (referrer.referral_count || 0) + 1 })
+            .eq("id", referrer.id);
+        }
+      }
+      
       const { error } = await supabase
         .from("profiles")
-        .update({ student_onboarding_complete: true })
+        .update(updates)
         .eq("id", user.id);
 
       if (error) throw error;
 
       toast({
         title: "Welcome to the platform!",
-        description: "You're all set to start booking tutoring sessions.",
+        description: referralCode.trim() 
+          ? "You're all set! Your referrer has been credited." 
+          : "You're all set to start booking tutoring sessions.",
       });
 
       navigate("/");
@@ -3376,6 +3433,46 @@ const StudentOnboarding = () => {
                 </div>
               </section>
             </div>
+          </div>
+
+          {/* Referral Code Section */}
+          <div className="border rounded-lg p-4 bg-muted/50 mb-4">
+            <Label htmlFor="referral-code" className="text-base font-semibold">
+              Referral Code (Optional)
+            </Label>
+            <p className="text-sm text-muted-foreground mb-3">
+              Have a referral code? Enter it to help a fellow Trojan!
+            </p>
+            <div className="flex gap-2">
+              <Input
+                id="referral-code"
+                placeholder="e.g., JOHN42"
+                value={referralCode}
+                onChange={(e) => {
+                  const code = e.target.value.toUpperCase();
+                  setReferralCode(code);
+                  if (code.length >= 6) {
+                    validateReferralCode(code);
+                  } else if (code.length === 0) {
+                    setReferralStatus({ type: "idle" });
+                  }
+                }}
+                maxLength={8}
+                className="uppercase"
+              />
+              {referralStatus.type === "checking" && (
+                <Loader2 className="h-5 w-5 animate-spin flex-shrink-0" />
+              )}
+            </div>
+            {referralStatus.message && (
+              <p className={cn(
+                "text-sm mt-2",
+                referralStatus.type === "valid" && "text-green-600",
+                referralStatus.type === "invalid" && "text-destructive"
+              )}>
+                {referralStatus.message}
+              </p>
+            )}
           </div>
 
           {/* Agreement checkbox */}

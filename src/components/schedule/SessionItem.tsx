@@ -304,7 +304,10 @@ export const SessionItem = ({
                           available_in_person: true,
                           available_online: true,
                           student_onboarding_complete: true,
-                          tutor_onboarding_complete: false
+                          tutor_onboarding_complete: false,
+                          referral_code: null,
+                          referred_by_code: null,
+                          referral_count: 0
                         }
                       : {
                           id: session.student_id,
@@ -332,7 +335,10 @@ export const SessionItem = ({
                           available_in_person: true,
                           available_online: true,
                           student_onboarding_complete: true,
-                          tutor_onboarding_complete: false
+                          tutor_onboarding_complete: false,
+                          referral_code: null,
+                          referred_by_code: null,
+                          referral_count: 0
                         };
                     console.log('Using student profile for review:', studentProfile);
                     startTutorReview(session, studentProfile);

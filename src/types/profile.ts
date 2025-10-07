@@ -25,4 +25,7 @@ export interface Profile {
   available_online?: boolean;
   student_onboarding_complete?: boolean;
   tutor_onboarding_complete?: boolean;
+  referral_code?: string | null;
+  referred_by_code?: string | null;
+  referral_count?: number;
 }

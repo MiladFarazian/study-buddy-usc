@@ -25,6 +25,7 @@ import TutorProfile from "./pages/TutorProfile";
 import TutorProfilePage from "./pages/TutorProfile/TutorProfilePage";
 import NotFound from "./pages/NotFound";
 import PrivateRoute from "./components/auth/PrivateRoute";
+import { ReferralGuard } from "./components/auth/ReferralGuard";
 import { AdminRoute } from "./components/auth/AdminRoute";
 import { AdminLayout } from "./components/layout/AdminLayout";
 import { RoleGuard } from "./components/auth/RoleGuard";
@@ -183,7 +184,13 @@ const router = createBrowserRouter([
       },
       {
         path: "/resources",
-        element: <Resources />
+        element: (
+          <PrivateRoute>
+            <ReferralGuard minReferrals={2} featureName="Resources">
+              <Resources />
+            </ReferralGuard>
+          </PrivateRoute>
+        )
       },
       {
         path: "/students",
@@ -195,7 +202,13 @@ const router = createBrowserRouter([
       },
       {
         path: "/analytics",
-        element: <PrivateRoute><Analytics /></PrivateRoute>
+        element: (
+          <PrivateRoute>
+            <ReferralGuard minReferrals={1} featureName="Analytics">
+              <Analytics />
+            </ReferralGuard>
+          </PrivateRoute>
+        )
       },
       {
         path: "/badges",

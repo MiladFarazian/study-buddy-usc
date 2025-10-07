@@ -76,7 +76,7 @@ const Sidebar = () => {
       title: "Resources",
       icon: FileText,
       path: "/resources",
-      showWhen: !!user // Only for authenticated users
+      showWhen: !!user && (profile?.referral_count || 0) >= 2 // Require 2 referrals
     },
     {
       title: "Badges",
@@ -88,7 +88,7 @@ const Sidebar = () => {
       title: "Analytics",
       icon: BarChart,
       path: "/analytics",
-      showWhen: !!user // Only for authenticated users
+      showWhen: !!user && (profile?.referral_count || 0) >= 1 // Require 1 referral
     },
     {
       title: "Settings",

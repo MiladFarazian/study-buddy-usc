@@ -611,6 +611,9 @@ export type Database = {
           id: string
           last_name: string | null
           major: string | null
+          referral_code: string | null
+          referral_count: number
+          referred_by_code: string | null
           role: Database["public"]["Enums"]["user_role"]
           stripe_connect_id: string | null
           stripe_connect_onboarding_complete: boolean | null
@@ -639,6 +642,9 @@ export type Database = {
           id: string
           last_name?: string | null
           major?: string | null
+          referral_code?: string | null
+          referral_count?: number
+          referred_by_code?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           stripe_connect_id?: string | null
           stripe_connect_onboarding_complete?: boolean | null
@@ -667,6 +673,9 @@ export type Database = {
           id?: string
           last_name?: string | null
           major?: string | null
+          referral_code?: string | null
+          referral_count?: number
+          referred_by_code?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           stripe_connect_id?: string | null
           stripe_connect_onboarding_complete?: boolean | null
@@ -1324,6 +1333,10 @@ export type Database = {
       execute_sql: {
         Args: { sql: string }
         Returns: undefined
+      }
+      generate_referral_code: {
+        Args: { user_first_name: string; user_id: string }
+        Returns: string
       }
       has_role: {
         Args: {
