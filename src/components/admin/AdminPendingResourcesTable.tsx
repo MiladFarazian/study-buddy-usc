@@ -191,7 +191,9 @@ export function AdminPendingResourcesTable() {
     <>
       <div className="space-y-4">
         {resources.map((resource) => {
-          const uploaderName = `${resource.uploader.first_name || ""} ${resource.uploader.last_name || ""}`.trim() || "Anonymous";
+          const uploaderName = resource.uploader 
+            ? `${resource.uploader.first_name || ""} ${resource.uploader.last_name || ""}`.trim() || "Anonymous"
+            : "Anonymous";
           const isProcessing = processing === resource.id;
 
           return (
@@ -226,7 +228,7 @@ export function AdminPendingResourcesTable() {
                         {uploaderName}
                         <br />
                         <span className="text-xs text-muted-foreground">
-                          {resource.uploader.email}
+                          {resource.uploader?.email || "No email"}
                         </span>
                       </p>
                     </div>
