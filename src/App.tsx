@@ -59,6 +59,12 @@ import TutorOnboarding from "./pages/onboarding/TutorOnboarding";
 import MakeSchoolEasy from "./pages/MakeSchoolEasy";
 
 const router = createBrowserRouter([
+  // Admin routes - completely separate from student/tutor
+  {
+    path: "/admin",
+    element: <AdminRoute><AdminLayout><AdminDashboard /></AdminLayout></AdminRoute>
+  },
+  // Student/Tutor routes - main application
   {
     path: "/",
     element: <Layout>
@@ -104,10 +110,6 @@ const router = createBrowserRouter([
       {
         path: "/tutor-dashboard",
         element: <PrivateRoute><RoleGuard allowedRoles={['tutor']}><TutorDashboard /></RoleGuard></PrivateRoute>
-      },
-      {
-        path: "/admin",
-        element: <AdminRoute><AdminLayout><AdminDashboard /></AdminLayout></AdminRoute>
       },
       {
         path: "/courses",
