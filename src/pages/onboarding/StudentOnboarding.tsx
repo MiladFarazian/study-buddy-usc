@@ -70,10 +70,10 @@ const StudentOnboarding = () => {
       if (error) throw error;
 
       toast({
-        title: "Welcome to the platform!",
+        title: "Welcome to Study Buddy!",
         description: referralCode.trim() 
-          ? "You're all set! Your referrer has been credited." 
-          : "You're all set to start booking tutoring sessions.",
+          ? "You're all set! Your friend has been credited for helping you join the community." 
+          : "You're all set to start your tutoring journey.",
       });
 
       navigate("/");
