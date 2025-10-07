@@ -1,5 +1,6 @@
 
 import { ReactNode } from "react";
+import { useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import NavBar from "./NavBar";
 import MobileNavBar from "./MobileNavBar";
@@ -14,6 +15,14 @@ interface LayoutProps {
 const Layout = ({ children }: LayoutProps) => {
   const isMobile = useIsMobile();
   const { loading } = useAuth();
+  const location = useLocation();
+  
+  // Don't render regular layout for admin routes
+  const isAdminRoute = location.pathname.startsWith('/admin');
+  
+  if (isAdminRoute) {
+    return <>{children}</>;
+  }
   
   return (
     <div className="flex flex-col min-h-screen max-w-full">

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMessaging } from "@/hooks/useMessaging";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAdminRedirect } from "@/hooks/useAdminRedirect";
 import ConversationList from "@/components/messaging/ConversationList";
 import ChatInterface from "@/components/messaging/ChatInterface";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -10,12 +11,15 @@ import { cn } from "@/lib/utils";
 
 export default function Messages() {
   const { isStudent, isTutor, user } = useAuth();
+  const { loading: adminLoading } = useAdminRedirect();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const targetUserId = searchParams.get("user");
   const isTargetTutor = searchParams.get("isTutor") === "true";
   const isMobile = useIsMobile();
   const [showChat, setShowChat] = useState(false);
+  
+  if (adminLoading) return null;
   
   const {
     conversations,

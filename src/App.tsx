@@ -12,6 +12,7 @@ import Layout from "./components/layout/Layout";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import DevLogin from "./pages/DevLogin";
+import AdminLogin from "./pages/AdminLogin";
 import Index from "./pages/Index";
 
 import TutorDashboard from "./pages/TutorDashboard";
@@ -76,6 +77,10 @@ const router = createBrowserRouter([
       {
         path: "/register",
         element: <Register />
+      },
+      {
+        path: "/admin-login",
+        element: <AdminLogin />
       },
       {
         path: "/dev-login",
