@@ -1,11 +1,16 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, BookOpen, Users } from "lucide-react";
+import { LayoutDashboard, FileText } from "lucide-react";
 
 const adminMenuItems = [
   {
     title: "Dashboard",
     path: "/admin",
     icon: LayoutDashboard,
+  },
+  {
+    title: "Resources",
+    path: "/resources",
+    icon: FileText,
   },
 ];
 

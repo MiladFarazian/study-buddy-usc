@@ -10,6 +10,7 @@ import { LogOut, RefreshCw } from "lucide-react";
 import { NoShowReportsTable } from "@/components/admin/NoShowReportsTable";
 import { NoShowSummaryStats } from "@/components/admin/NoShowSummaryStats";
 import { ReviewsTable } from "@/components/admin/ReviewsTable";
+import { AdminPendingResourcesTable } from "@/components/admin/AdminPendingResourcesTable";
 import { useNoShowReports } from "@/hooks/useNoShowReports";
 
 const AdminDashboard = () => {
@@ -53,6 +54,7 @@ const AdminDashboard = () => {
         <TabsList>
           <TabsTrigger value="no-show-reports">No-Show Reports</TabsTrigger>
           <TabsTrigger value="student-reviews">Student Reviews</TabsTrigger>
+          <TabsTrigger value="pending-resources">Pending Resources</TabsTrigger>
         </TabsList>
 
         <TabsContent value="no-show-reports">
@@ -112,6 +114,17 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent>
               <ReviewsTable />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="pending-resources">
+          <Card>
+            <CardHeader>
+              <CardTitle>Pending Resources</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <AdminPendingResourcesTable />
             </CardContent>
           </Card>
         </TabsContent>
