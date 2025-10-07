@@ -49,13 +49,11 @@ export function UploadResourceModal({ open, onOpenChange, onSuccess }: UploadRes
   const [courseSearch, setCourseSearch] = useState("");
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
-  const { courses } = useCourses({ term: "20251", search: "", department: "all" });
-
-  const filteredCourses = courses.filter(
-    (course) =>
-      course.course_number.toLowerCase().includes(courseSearch.toLowerCase()) ||
-      course.course_title?.toLowerCase().includes(courseSearch.toLowerCase())
-  );
+  const { courses, loading, hasMore, loadMore } = useCourses({ 
+    term: "20251", 
+    search: courseSearch, 
+    department: "all" 
+  });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -251,8 +249,18 @@ export function UploadResourceModal({ open, onOpenChange, onSuccess }: UploadRes
               onChange={(e) => setCourseSearch(e.target.value)}
               className="mb-2"
             />
-            <div className="border rounded-lg max-h-48 overflow-y-auto">
-              {filteredCourses.map((course) => (
+            <div 
+              className="border rounded-lg max-h-48 overflow-y-auto"
+              onScroll={(e) => {
+                const element = e.currentTarget;
+                if (element.scrollHeight - element.scrollTop <= element.clientHeight + 100) {
+                  if (hasMore && !loading) {
+                    loadMore();
+                  }
+                }
+              }}
+            >
+              {courses.map((course) => (
                 <div
                   key={course.id}
                   className="p-2 hover:bg-muted cursor-pointer flex items-center gap-2"
@@ -269,6 +277,11 @@ export function UploadResourceModal({ open, onOpenChange, onSuccess }: UploadRes
                   </span>
                 </div>
               ))}
+              {loading && (
+                <div className="p-2 text-center text-sm text-muted-foreground">
+                  Loading more courses...
+                </div>
+              )}
             </div>
             {selectedCourses.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-2">
