@@ -17,26 +17,15 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      throw new Error("No authorization header");
-    }
+    const { resourceId, action, rejectionReason, adminUserId } = await req.json();
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    );
+    console.log("Review request from admin:", adminUserId);
 
-    if (authError || !user) {
-      throw new Error("Unauthorized");
-    }
-
-    console.log("Review request from user:", user.id);
-
-    // Check if user is admin
+    // Verify admin role using service role key
     const { data: roleCheck } = await supabase
       .from("user_roles")
       .select("role")
-      .eq("user_id", user.id)
+      .eq("user_id", adminUserId)
       .eq("role", "admin")
       .single();
 
@@ -46,8 +35,6 @@ serve(async (req) => {
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    const { resourceId, action, rejectionReason } = await req.json();
 
     console.log("Reviewing resource:", resourceId, "Action:", action);
 
@@ -125,7 +112,7 @@ serve(async (req) => {
           status: "approved",
           file_path: newFilePath,
           reviewed_at: new Date().toISOString(),
-          reviewed_by: user.id,
+          reviewed_by: adminUserId,
         })
         .eq("id", resourceId);
 
@@ -161,7 +148,7 @@ serve(async (req) => {
           status: "rejected",
           rejection_reason: rejectionReason,
           reviewed_at: new Date().toISOString(),
-          reviewed_by: user.id,
+          reviewed_by: adminUserId,
         })
         .eq("id", resourceId);
 

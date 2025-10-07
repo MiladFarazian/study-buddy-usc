@@ -107,7 +107,7 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.admin-review-resource]
-verify_jwt = true
+verify_jwt = false
 
 [functions.download-resource]
 verify_jwt = true

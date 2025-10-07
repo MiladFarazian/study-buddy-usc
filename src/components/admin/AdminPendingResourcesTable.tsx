@@ -97,7 +97,11 @@ export function AdminPendingResourcesTable() {
     setProcessing(resourceId);
     try {
       const { error } = await supabase.functions.invoke("admin-review-resource", {
-        body: { resourceId, action: "approve" },
+        body: { 
+          resourceId, 
+          action: "approve",
+          adminUserId: "85f4b7ac-1ab0-4062-8db3-d3808ab3112a"
+        },
       });
 
       if (error) throw error;
@@ -130,6 +134,7 @@ export function AdminPendingResourcesTable() {
           resourceId: selectedResource,
           action: "reject",
           rejectionReason,
+          adminUserId: "85f4b7ac-1ab0-4062-8db3-d3808ab3112a"
         },
       });
 
