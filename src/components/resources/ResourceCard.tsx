@@ -110,11 +110,11 @@ export function ResourceCard({ resource }: ResourceCardProps) {
           </div>
 
           {/* Download */}
-          <div className="flex flex-wrap sm:flex-nowrap items-start sm:items-center gap-2 pt-2">
-            <span className="text-sm text-muted-foreground whitespace-nowrap">
+          <div className="flex items-center justify-between gap-2 pt-2">
+            <span className="text-sm text-muted-foreground shrink-0">
               {resource.download_count} download{resource.download_count !== 1 ? "s" : ""}
             </span>
-            <Button onClick={handleDownload} disabled={downloading} size="sm" className="shrink-0 w-full sm:w-auto sm:ml-auto">
+            <Button onClick={handleDownload} disabled={downloading} size="sm" className="shrink-0">
               {downloading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
