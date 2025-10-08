@@ -12,7 +12,7 @@ export type Student = {
   major: string | null;
   graduationYear: string | null;
   avatarUrl: string | null;
-  email?: string;
+  // email removed for privacy - tutors don't need student emails
   sessions?: number;
   joined: string;
 };

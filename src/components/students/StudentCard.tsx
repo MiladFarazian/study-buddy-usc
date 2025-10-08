@@ -3,7 +3,7 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { GraduationCap, Clock, UserMinus, Mail } from "lucide-react";
+import { GraduationCap, Clock, UserMinus } from "lucide-react";
 import MessageButton from "@/components/messaging/MessageButton";
 import { Student } from "@/hooks/useTutorStudents";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -56,14 +56,7 @@ const StudentCard: React.FC<StudentCardProps> = ({ student, onRemove }) => {
           </div>
           
           <div className="flex flex-col gap-2 py-1 md:py-2">
-            {student.email && (
-              <div className="flex items-center">
-                <Mail className="h-4 w-4 text-gray-500 mr-2" />
-                <span className="text-xs md:text-sm text-gray-500">
-                  {student.email}
-                </span>
-              </div>
-            )}
+            {/* Email removed for privacy - tutors can message students through the platform */}
             <div className="flex items-center">
               <GraduationCap className="h-4 w-4 text-gray-500 mr-2" />
               <span className="text-xs md:text-sm text-gray-500">
