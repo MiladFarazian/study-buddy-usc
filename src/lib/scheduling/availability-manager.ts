@@ -66,7 +66,7 @@ export async function updateTutorAvailability(tutorId: string, availability: Wee
         const endHour = parseInt(slot.end.split(':')[0]);
         const endMinute = parseInt(slot.end.split(':')[1]);
         
-        if (startHour < 6 || endHour > 23 || (endHour === 23 && endMinute > 0)) {
+        if (startHour < 6 || endHour > 24 || (endHour === 24 && endMinute > 0)) {
           console.error(`Invalid time slot: ${slot.start}-${slot.end} on ${day}. Hours must be between 6:00 AM and 11:00 PM.`);
           return false;
         }
