@@ -14,7 +14,6 @@ export async function getTutorAvailability(tutorId: string): Promise<WeeklyAvail
       .from('profiles')
       .select('approved_tutor')
       .eq('id', tutorId)
-      .eq('role', 'tutor')
       .single();
 
     if (profileError || !tutorProfile?.approved_tutor) {
