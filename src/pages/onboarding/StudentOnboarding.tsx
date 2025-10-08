@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 
 const StudentOnboarding = () => {
   const [agreed, setAgreed] = useState(false);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [referralCode, setReferralCode] = useState("");
   const [referralStatus, setReferralStatus] = useState<{
@@ -3476,10 +3477,25 @@ const StudentOnboarding = () => {
             </Label>
           </div>
 
+          {/* Age confirmation checkbox */}
+          <div className="flex items-start space-x-3">
+            <Checkbox
+              id="age-confirm"
+              checked={ageConfirmed}
+              onCheckedChange={(checked) => setAgeConfirmed(checked as boolean)}
+            />
+            <Label
+              htmlFor="age-confirm"
+              className="text-sm font-medium leading-relaxed cursor-pointer"
+            >
+              I am 18+ years old
+            </Label>
+          </div>
+
           {/* Continue button */}
           <Button
             onClick={handleContinue}
-            disabled={!agreed || loading}
+            disabled={!agreed || !ageConfirmed || loading}
             className="w-full"
             size="lg"
           >
