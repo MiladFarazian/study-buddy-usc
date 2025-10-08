@@ -64,7 +64,7 @@ const NavBar = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          {user && (
+          {user ? (
             <>
               <Button variant="ghost" size="icon" className="relative" asChild>
                 <Link to="/messages">
@@ -72,10 +72,18 @@ const NavBar = () => {
                 </Link>
               </Button>
               <NotificationsDropdown />
+              {!isMobile && <UserMenu />}
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/login">Sign In</Link>
+              </Button>
+              <Button size="sm" className="bg-usc-cardinal hover:bg-usc-cardinal/90" asChild>
+                <Link to="/register">Sign Up</Link>
+              </Button>
             </>
           )}
-
-          {!isMobile && <UserMenu />}
         </div>
       </div>
     </header>
