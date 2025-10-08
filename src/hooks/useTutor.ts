@@ -69,7 +69,9 @@ export function useTutor(id: string) {
             major,
             graduation_year,
             bio,
-            average_rating
+            average_rating,
+            available_in_person,
+            available_online
           )
         `)
         .eq('profile_id', id)
@@ -129,8 +131,8 @@ export function useTutor(id: string) {
         imageUrl: profile.avatar_url || '',
         bio: profile.bio || '',
         graduationYear: profile.graduation_year || '',
-        available_in_person: true,
-        available_online: true
+        available_in_person: profile.available_in_person ?? true,
+        available_online: profile.available_online ?? true
       };
 
       setTutor(formattedTutor);
