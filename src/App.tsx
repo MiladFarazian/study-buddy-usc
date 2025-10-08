@@ -5,6 +5,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { AdminAuthProvider } from "./contexts/AdminAuthContext";
 import { SessionBookingProvider } from "./contexts/SessionBookingContext";
 import { ReviewProvider } from "./contexts/ReviewContext";
+import { ViewModeProvider } from "./contexts/ViewModeContext";
 import { GlobalReviewModal } from "./components/reviews/GlobalReviewModal";
 import { Toaster } from "./components/ui/toaster";
 import { ReviewRequirement } from "./components/reviews";
@@ -258,14 +259,16 @@ function App() {
     <>
       <AdminAuthProvider>
         <AuthProvider>
-          <ReviewProvider>
-            <SessionBookingProvider>
-              <RouterProvider router={router} />
-              <ReviewRequirement />
-              <GlobalReviewModal />
-              <Toaster />
-            </SessionBookingProvider>
-          </ReviewProvider>
+          <ViewModeProvider>
+            <ReviewProvider>
+              <SessionBookingProvider>
+                <RouterProvider router={router} />
+                <ReviewRequirement />
+                <GlobalReviewModal />
+                <Toaster />
+              </SessionBookingProvider>
+            </ReviewProvider>
+          </ViewModeProvider>
         </AuthProvider>
       </AdminAuthProvider>
     </>
