@@ -55,12 +55,24 @@ export function useTutor(id: string) {
 
     setLoading(true);
     try {
-      // Fetch tutor profile (only approved tutors)
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', id)
-        .eq('role', 'tutor')
+      // Fetch tutor from tutors table (enforces profile_visibility RLS)
+      const { data: tutorData, error } = await supabase
+        .from('tutors')
+        .select(`
+          *,
+          profiles:profile_id (
+            id,
+            first_name,
+            last_name,
+            email,
+            avatar_url,
+            major,
+            graduation_year,
+            bio,
+            average_rating
+          )
+        `)
+        .eq('profile_id', id)
         .eq('approved_tutor', true)
         .single();
 
@@ -68,11 +80,13 @@ export function useTutor(id: string) {
         throw error;
       }
 
-      if (!profile) {
+      if (!tutorData || !tutorData.profiles) {
         setTutor(null);
         setLoading(false);
         return;
       }
+
+      const profile = tutorData.profiles;
 
       // Fetch tutor courses
       const { data: tutorCourses, error: coursesError } = await supabase
@@ -91,10 +105,10 @@ export function useTutor(id: string) {
         instructor: course.instructor || undefined
       })) || [];
 
-      // If the profile has subjects array but no tutor_courses
-      if ((!subjects || subjects.length === 0) && profile.subjects && profile.subjects.length > 0) {
-        // Use subjects from profile
-        profile.subjects.forEach(courseCode => {
+      // If tutorData has subjects array but no tutor_courses
+      if ((!subjects || subjects.length === 0) && tutorData.subjects && tutorData.subjects.length > 0) {
+        // Use subjects from tutorData
+        tutorData.subjects.forEach(courseCode => {
           subjects.push({
             code: courseCode,
             name: courseCode
@@ -102,24 +116,24 @@ export function useTutor(id: string) {
         });
       }
 
-      // Create tutor object with properly formatted hourly rate
-      const tutorData: Tutor = {
+      // Create tutor object with data from both tutors and profiles tables
+      const formattedTutor: Tutor = {
         id: profile.id,
         name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
         firstName: profile.first_name || '',
         lastName: profile.last_name || '',
         field: profile.major || 'USC Student',
         rating: profile.average_rating || 4.5,
-        hourlyRate: profile.hourly_rate || 25,
+        hourlyRate: tutorData.hourly_rate || 25,
         subjects: subjects,
         imageUrl: profile.avatar_url || '',
         bio: profile.bio || '',
         graduationYear: profile.graduation_year || '',
-        available_in_person: profile.available_in_person,
-        available_online: profile.available_online
+        available_in_person: true,
+        available_online: true
       };
 
-      setTutor(tutorData);
+      setTutor(formattedTutor);
       
       // Fetch reviews after setting tutor
       await fetchReviews();
