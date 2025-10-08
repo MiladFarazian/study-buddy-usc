@@ -31,30 +31,49 @@ export function ResourceFilters({
   typeFilter,
   onTypeFilterChange,
 }: ResourceFiltersProps) {
+  const [allDepartments, setAllDepartments] = useState<string[]>([]);
   const [departments, setDepartments] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
+  const [displayCount, setDisplayCount] = useState(50);
   const scrollRef = useRef<HTMLDivElement>(null);
   const BATCH_SIZE = 50;
 
-  // Fetch departments in batches
+  // Fetch all departments once
   useEffect(() => {
-    fetchInitialDepartments();
+    fetchAllDepartments();
   }, []);
 
-  const fetchInitialDepartments = async () => {
+  // Update displayed departments when displayCount changes
+  useEffect(() => {
+    setDepartments(allDepartments.slice(0, displayCount));
+  }, [allDepartments, displayCount]);
+
+  const fetchAllDepartments = async () => {
     setLoading(true);
     try {
-      const { data: courses, error } = await supabase
-        .from("courses-20251")
-        .select("Course number")
-        .limit(1000); // Get enough to extract departments
+      // Fetch all course numbers in batches
+      let allCourses: any[] = [];
+      let from = 0;
+      const batchSize = 1000;
+      
+      while (true) {
+        const { data: courses, error } = await supabase
+          .from("courses-20251")
+          .select('"Course number"')
+          .range(from, from + batchSize - 1);
 
-      if (error) throw error;
+        if (error) throw error;
+        if (!courses || courses.length === 0) break;
+        
+        allCourses = [...allCourses, ...courses];
+        
+        if (courses.length < batchSize) break;
+        from += batchSize;
+      }
 
       // Extract unique departments from course numbers
       const deptSet = new Set<string>();
-      courses?.forEach((course) => {
+      allCourses.forEach((course) => {
         const courseNumber = course["Course number"];
         if (courseNumber) {
           // Extract department code (e.g., "CSCI" from "CSCI-201")
@@ -66,50 +85,10 @@ export function ResourceFilters({
       });
 
       const sortedDepts = Array.from(deptSet).sort();
+      setAllDepartments(sortedDepts);
       setDepartments(sortedDepts.slice(0, BATCH_SIZE));
-      setHasMore(sortedDepts.length > BATCH_SIZE);
     } catch (error) {
       console.error("Error fetching departments:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadMoreDepartments = async () => {
-    if (loading || !hasMore) return;
-
-    setLoading(true);
-    try {
-      // Fetch more departments (this is a simplified version)
-      // In a real scenario, you'd paginate the course data
-      const { data: courses, error } = await supabase
-        .from("courses-20251")
-        .select("Course number")
-        .range(departments.length * 20, (departments.length + 1) * 20 + 1000);
-
-      if (error) throw error;
-
-      const deptSet = new Set(departments);
-      courses?.forEach((course) => {
-        const courseNumber = course["Course number"];
-        if (courseNumber) {
-          const match = courseNumber.match(/^([A-Z]+)/);
-          if (match) {
-            deptSet.add(match[1]);
-          }
-        }
-      });
-
-      const sortedDepts = Array.from(deptSet).sort();
-      const newDepts = sortedDepts.slice(departments.length, departments.length + BATCH_SIZE);
-      
-      if (newDepts.length === 0) {
-        setHasMore(false);
-      } else {
-        setDepartments([...departments, ...newDepts]);
-      }
-    } catch (error) {
-      console.error("Error loading more departments:", error);
     } finally {
       setLoading(false);
     }
@@ -119,8 +98,8 @@ export function ResourceFilters({
     const element = e.currentTarget;
     const isNearBottom = element.scrollHeight - element.scrollTop <= element.clientHeight + 50;
     
-    if (isNearBottom && hasMore && !loading) {
-      loadMoreDepartments();
+    if (isNearBottom && displayCount < allDepartments.length && !loading) {
+      setDisplayCount(prev => Math.min(prev + BATCH_SIZE, allDepartments.length));
     }
   };
 
@@ -154,7 +133,7 @@ export function ResourceFilters({
                 {dept}
               </SelectItem>
             ))}
-            {loading && (
+            {displayCount < allDepartments.length && (
               <div className="flex justify-center py-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
               </div>
