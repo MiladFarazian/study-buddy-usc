@@ -1,6 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { addDays, format, startOfWeek } from 'date-fns';
+import React, { useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { WeeklyAvailability } from "@/lib/scheduling/types";
@@ -25,27 +24,15 @@ export const WeeklyAvailabilityCalendar = ({
   onSave,
   isSaving = false
 }: WeeklyAvailabilityCalendarProps) => {
-  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(
-    startOfWeek(new Date(), { weekStartsOn: 0 })
-  );
-  
-  const weekDays = Array.from({ length: 7 }, (_, i) => {
-    const day = addDays(currentWeekStart, i);
-    return {
-      date: day,
-      name: format(day, 'EEE').toLowerCase(),
-      fullName: format(day, 'EEEE').toLowerCase(),
-      displayDate: format(day, 'MMM d')
-    };
-  });
-
-  const handlePrevWeek = () => {
-    setCurrentWeekStart(addDays(currentWeekStart, -7));
-  };
-
-  const handleNextWeek = () => {
-    setCurrentWeekStart(addDays(currentWeekStart, 7));
-  };
+  const weekDays = [
+    { name: 'sun', fullName: 'sunday', displayName: 'Sunday' },
+    { name: 'mon', fullName: 'monday', displayName: 'Monday' },
+    { name: 'tue', fullName: 'tuesday', displayName: 'Tuesday' },
+    { name: 'wed', fullName: 'wednesday', displayName: 'Wednesday' },
+    { name: 'thu', fullName: 'thursday', displayName: 'Thursday' },
+    { name: 'fri', fullName: 'friday', displayName: 'Friday' },
+    { name: 'sat', fullName: 'saturday', displayName: 'Saturday' }
+  ];
 
   const hours = Array.from({ length: 18 }, (_, i) => i + 6); // 6 AM - 11 PM
   
@@ -72,11 +59,7 @@ export const WeeklyAvailabilityCalendar = ({
   return (
     <Card className="border shadow-sm">
       <CardContent className="p-4">
-        <WeeklyCalendarHeader 
-          currentWeekStart={currentWeekStart}
-          onPrevWeek={handlePrevWeek}
-          onNextWeek={handleNextWeek}
-        />
+        <WeeklyCalendarHeader />
         
         <div className="overflow-x-auto">
           <div className="min-w-[700px]">
