@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { WeeklyAvailability, WeeklyAvailabilityJson } from "./types/availability";
 import { BookingSlot, BookedSession } from "./types/booking";
-import { format, addDays, parse, isWithinInterval, parseISO, addMinutes } from 'date-fns';
+import { format, addDays, parse, isWithinInterval, parseISO, addMinutes, startOfWeek } from 'date-fns';
 import { convertTimeToMinutes, convertMinutesToTime } from "./time-utils";
 
 /**
@@ -109,12 +109,13 @@ export async function updateTutorAvailability(tutorId: string, availability: Wee
 /**
  * Generate available booking slots based on tutor's availability and booked sessions
  */
-export function generateAvailableSlots(
+export async function generateAvailableSlots(
   availability: WeeklyAvailability,
   bookedSessions: BookedSession[],
   startDate: Date,
-  daysToGenerate: number
-): BookingSlot[] {
+  daysToGenerate: number,
+  tutorId?: string
+): Promise<BookingSlot[]> {
   const availableSlots: BookingSlot[] = [];
   const weekDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   const now = new Date();
@@ -159,7 +160,7 @@ export function generateAvailableSlots(
           start: slotStart,
           end: slotEnd,
           available: true,
-          tutorId: ''
+          tutorId: tutorId || ''
         };
         
         // Check if this slot overlaps with any booked session
@@ -180,6 +181,34 @@ export function generateAvailableSlots(
         
         // Add to available slots
         availableSlots.push(slot);
+      }
+    });
+  }
+  
+  // If tutorId is provided, check weekly session limits
+  if (tutorId) {
+    const { isTutorAtWeeklyLimit } = await import('./session-limit-utils');
+    
+    // Group slots by week and check limits
+    const weeksToCheck = new Set<string>();
+    availableSlots.forEach(slot => {
+      const weekKey = startOfWeek(slot.day, { weekStartsOn: 0 }).toISOString();
+      weeksToCheck.add(weekKey);
+    });
+    
+    // Check each week's limit
+    const weekLimitMap = new Map<string, boolean>();
+    for (const weekKey of weeksToCheck) {
+      const weekDate = new Date(weekKey);
+      const atLimit = await isTutorAtWeeklyLimit(tutorId, weekDate);
+      weekLimitMap.set(weekKey, atLimit);
+    }
+    
+    // Mark slots in weeks at limit as unavailable
+    availableSlots.forEach(slot => {
+      const weekKey = startOfWeek(slot.day, { weekStartsOn: 0 }).toISOString();
+      if (weekLimitMap.get(weekKey)) {
+        slot.available = false;
       }
     });
   }

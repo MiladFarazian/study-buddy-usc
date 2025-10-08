@@ -1333,7 +1333,9 @@ export type Database = {
           hourly_rate: number | null
           id: string
           last_name: string | null
+          max_weekly_sessions: number | null
           profile_id: string
+          profile_visibility: string
           stripe_connect_id: string | null
           stripe_connect_onboarding_complete: boolean | null
           subjects: string[] | null
@@ -1349,7 +1351,9 @@ export type Database = {
           hourly_rate?: number | null
           id?: string
           last_name?: string | null
+          max_weekly_sessions?: number | null
           profile_id: string
+          profile_visibility?: string
           stripe_connect_id?: string | null
           stripe_connect_onboarding_complete?: boolean | null
           subjects?: string[] | null
@@ -1365,7 +1369,9 @@ export type Database = {
           hourly_rate?: number | null
           id?: string
           last_name?: string | null
+          max_weekly_sessions?: number | null
           profile_id?: string
+          profile_visibility?: string
           stripe_connect_id?: string | null
           stripe_connect_onboarding_complete?: boolean | null
           subjects?: string[] | null
