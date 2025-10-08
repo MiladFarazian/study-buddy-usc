@@ -25,9 +25,9 @@ export async function getTutorSessionsInWeek(
   const weekStart = getWeekStart(weekStartDate);
   const weekEnd = getWeekEnd(weekStartDate);
 
-  const { data, error } = await supabase
+  const { count, error } = await supabase
     .from("sessions")
-    .select("id", { count: "exact", head: true })
+    .select("*", { count: "exact", head: true })
     .eq("tutor_id", tutorId)
     .gte("start_time", weekStart.toISOString())
     .lte("start_time", weekEnd.toISOString())
@@ -38,7 +38,7 @@ export async function getTutorSessionsInWeek(
     return 0;
   }
 
-  return data?.length || 0;
+  return count || 0;
 }
 
 /**
