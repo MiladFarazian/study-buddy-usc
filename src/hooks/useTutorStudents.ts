@@ -64,11 +64,11 @@ export const useTutorStudents = () => {
           }
         });
         
-        // Step 2: Fetch profiles for all unique student IDs
+        // Step 2: Fetch safe profiles for all unique student IDs (excludes email/PII)
         const studentIds = Array.from(studentMap.keys());
         const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, first_name, last_name, major, graduation_year, avatar_url, email')
+          .from('safe_profiles')
+          .select('id, first_name, last_name, major, graduation_year, avatar_url')
           .in('id', studentIds);
         
         if (profilesError) throw profilesError;
@@ -87,7 +87,7 @@ export const useTutorStudents = () => {
               major: profile.major,
               graduationYear: profile.graduation_year,
               avatarUrl: profile.avatar_url,
-              email: profile.email,
+              // email excluded for privacy - tutors don't need student emails
               joined: studentInfo.firstSession,
               sessions: studentInfo.count,
             };
@@ -124,10 +124,10 @@ export const useTutorStudents = () => {
       
       if (error) throw error;
       
-      // Refresh the student list
+      // Refresh the student list (using safe_profiles to exclude email/PII)
       const { data, error: fetchError } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, major, graduation_year, avatar_url, email, created_at')
+        .from('safe_profiles')
+        .select('id, first_name, last_name, major, graduation_year, avatar_url, created_at')
         .eq('id', studentId)
         .single();
         
@@ -141,7 +141,7 @@ export const useTutorStudents = () => {
         major: data.major,
         graduationYear: data.graduation_year,
         avatarUrl: data.avatar_url,
-        email: data.email,
+        // email excluded for privacy
         joined: new Date().toISOString(),
         sessions: 0,
       };

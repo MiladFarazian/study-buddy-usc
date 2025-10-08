@@ -65,9 +65,10 @@ const MyTutors = () => {
           return;
         }
 
+        // Use safe_profiles to avoid exposing tutor email addresses
         const { data: profiles, error: profilesError } = await supabase
-          .from("profiles")
-          .select("id, first_name, last_name, avatar_url, tutor_bio, average_rating, subjects")
+          .from("safe_profiles")
+          .select("id, first_name, last_name, avatar_url, bio, average_rating")
           .in("id", tutorIds);
 
         if (profilesError) throw profilesError;
@@ -83,9 +84,9 @@ const MyTutors = () => {
               avatar_url: profile.avatar_url,
               session_count: sessionData.count,
               last_session_date: sessionData.lastSession,
-              tutor_bio: profile.tutor_bio,
+              tutor_bio: profile.bio, // Using general bio field from safe_profiles
               average_rating: profile.average_rating,
-              subjects: profile.subjects,
+              subjects: null, // Subjects excluded from safe_profiles for privacy
             };
           }) || [];
 
