@@ -63,6 +63,12 @@ const Sidebar = () => {
       showWhen: isTutorView // Only for tutors
     },
     {
+      title: "My Tutors",
+      icon: GraduationCap,
+      path: "/my-tutors",
+      showWhen: isStudentView // Only show for students
+    },
+    {
       title: "Schedule",
       icon: Calendar,
       path: "/schedule",

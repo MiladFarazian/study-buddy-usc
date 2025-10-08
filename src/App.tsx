@@ -48,6 +48,7 @@ import { TutorStudentCoursesSettings } from "./components/settings/TutorStudentC
 import { AvailabilitySettings } from "./components/scheduling/AvailabilitySettings";
 import Resources from "./pages/Resources";
 import Students from "./pages/Students";
+import MyTutors from "./pages/MyTutors";
 import AuthCallback from "./pages/AuthCallback";
 import BookingCalendly from "./pages/BookingCalendly";
 import Analytics from "./pages/Analytics";
@@ -201,6 +202,10 @@ const router = createBrowserRouter([
       {
         path: "/students",
         element: <PrivateRoute><RoleGuard allowedRoles={['tutor']}><Students /></RoleGuard></PrivateRoute>
+      },
+      {
+        path: "/my-tutors",
+        element: <PrivateRoute><RoleGuard allowedRoles={['student']}><MyTutors /></RoleGuard></PrivateRoute>
       },
       {
         path: "/booking",
