@@ -14,7 +14,7 @@ const MakeSchoolEasy = () => {
     },
     {
       name: "Gamma",
-      url: "https://gamma.app/",
+      url: "https://try.gamma.app/h9ciwnshq47e",
       description: "I used this for all of my presentation, it is a total game-changer",
       story: "You can have AI write out the content of your presentation and then dump it into gamma give it some prompts (like use real photos and not AI) or use these colors. Then you can quickly have it edit shorten or lengthen and then you have a beautiful slide deck. Tell your team that you will build the slide deck, use Gamma and it will be the easiest project ever."
     },
