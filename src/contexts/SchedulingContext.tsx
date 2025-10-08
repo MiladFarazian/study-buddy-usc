@@ -31,7 +31,7 @@ interface SchedulingState {
   studentName: string;
   studentEmail: string;
   selectedCourseId: string | null;
-  sessionType: SessionType;
+  sessionType: SessionType | null;
   location: string | null;
 }
 
@@ -44,7 +44,7 @@ type SchedulingAction =
   | { type: 'SET_NOTES'; payload: string }
   | { type: 'SET_STUDENT_INFO'; payload: { name: string; email: string } }
   | { type: 'SET_COURSE'; payload: string | null }
-  | { type: 'SET_SESSION_TYPE'; payload: SessionType }
+  | { type: 'SET_SESSION_TYPE'; payload: SessionType | null }
   | { type: 'SET_LOCATION'; payload: string | null }
   | { type: 'RESET' };
 
@@ -58,7 +58,7 @@ const initialState: SchedulingState = {
   studentName: '',
   studentEmail: '',
   selectedCourseId: null,
-  sessionType: SessionType.IN_PERSON,
+  sessionType: null,
   location: null,
 };
 
@@ -107,7 +107,7 @@ interface SchedulingContextType {
   continueToNextStep: () => void;
   goToPreviousStep: () => void;
   setCourse: (courseId: string | null) => void;
-  setSessionType: (type: SessionType) => void;
+  setSessionType: (type: SessionType | null) => void;
   setLocation: (location: string | null) => void;
 }
 
@@ -138,7 +138,7 @@ export const SchedulingProvider: React.FC<{ children: ReactNode }> = ({ children
   }, [dispatch]);
 
   // Helper function to set the session type
-  const setSessionType = useCallback((type: SessionType) => {
+  const setSessionType = useCallback((type: SessionType | null) => {
     console.log("[SchedulingContext] Setting session type:", type);
     dispatch({ type: 'SET_SESSION_TYPE', payload: type });
   }, [dispatch]);
@@ -168,7 +168,10 @@ export const SchedulingProvider: React.FC<{ children: ReactNode }> = ({ children
         // Course is optional, so no validation needed
         break;
       case BookingStep.SELECT_SESSION_TYPE:
-        // Session type is required but always has a default value
+        if (!state.sessionType) {
+          toast.error("Please select a session type to continue");
+          return;
+        }
         break;
       case BookingStep.FILL_FORM:
         if (!state.studentName || !state.studentEmail) {
