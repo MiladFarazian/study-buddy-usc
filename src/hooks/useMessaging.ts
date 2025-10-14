@@ -62,9 +62,8 @@ export function useMessaging() {
         profileIds.add(conversation.student_id);
       });
 
-      // Use safe_profiles to exclude Stripe IDs and sensitive data
       const { data: profilesData, error: profilesError } = await supabase
-        .from("safe_profiles")
+        .from("profiles")
         .select("*")
         .in("id", Array.from(profileIds));
 
@@ -299,15 +298,15 @@ export function useMessaging() {
 
     // If conversation exists, fetch the complete profiles and set it as current
     if (existingConversationData) {
-      // Fetch tutor and student profiles using safe_profiles
+      // Fetch tutor and student profiles
       const { data: tutorData } = await supabase
-        .from("safe_profiles")
+        .from("profiles")
         .select("*")
         .eq("id", tutorId)
         .single();
         
       const { data: studentData } = await supabase
-        .from("safe_profiles")
+        .from("profiles")
         .select("*")
         .eq("id", studentId)
         .single();
@@ -345,15 +344,15 @@ export function useMessaging() {
       return { success: false, error: insertError.message };
     }
 
-    // Fetch the tutor and student profiles using safe_profiles
+    // Fetch the tutor and student profiles
     const { data: tutorData } = await supabase
-      .from("safe_profiles")
+      .from("profiles")
       .select("*")
       .eq("id", tutorId)
       .single();
       
     const { data: studentData } = await supabase
-      .from("safe_profiles")
+      .from("profiles")
       .select("*")
       .eq("id", studentId)
       .single();

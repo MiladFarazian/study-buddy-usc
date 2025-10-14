@@ -7,10 +7,10 @@ import { fetchCourseDetails } from "@/lib/scheduling/course-utils";
  * Add a course to a user's profile based on their role
  */
 export async function addCourseToProfile(userId: string, courseNumber: string, instructor?: string, courseTitle?: string | null, department?: string | null) {
-  // First get current profile data - only select needed fields, excluding Stripe IDs
+  // First get current profile data
   const { data: profile, error: fetchError } = await supabase
     .from("profiles")
-    .select("approved_tutor, tutor_courses_subjects, student_courses")
+    .select("approved_tutor, tutor_courses_subjects, student_courses, email")
     .eq("id", userId)
     .single();
 
@@ -72,13 +72,12 @@ export async function addCourseToProfile(userId: string, courseNumber: string, i
     updateData.student_courses = updatedSubjects;
 
     // Also add to student_courses table (same as tutor logic)
-    // Note: student_email intentionally set to null for privacy - student_id is sufficient
     const payload: any = {
       student_id: userId,
       course_number: courseNumber,
       department: (department && department.trim()) || courseNumber.split('-')[0] || null,
       instructor: instructor || null,
-      student_email: null,
+      student_email: profile?.email || null,
     };
 
     let titleToSave: string | null = null;

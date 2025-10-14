@@ -7,13 +7,11 @@ import { useSearchParams } from "react-router-dom";
 import { TutorPaymentView } from "./payment/TutorPaymentView";
 import { StudentPaymentView } from "./payment/StudentPaymentView";
 import { Badge } from "@/components/ui/badge";
-import { useViewMode } from "@/contexts/ViewModeContext";
 // Production mode detection moved to edge functions
 
 export const PaymentSettingsTab = () => {
   const { toast } = useToast();
-  const { user, profile } = useAuth();
-  const { isTutorView } = useViewMode();
+  const { user, profile, isTutor } = useAuth();
   const [searchParams] = useSearchParams();
   const [stripeEnvironment, setStripeEnvironment] = useState<string>('test');
 
@@ -63,7 +61,7 @@ export const PaymentSettingsTab = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isTutorView ? (
+          {isTutor ? (
             <TutorPaymentView user={user} profile={profile} />
           ) : (
             <StudentPaymentView />

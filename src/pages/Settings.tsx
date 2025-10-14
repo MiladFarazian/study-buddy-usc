@@ -1,11 +1,9 @@
 
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
-import { useViewMode } from "@/contexts/ViewModeContext";
 
 const Settings = () => {
-  const { loading, profile } = useAuthRedirect('/settings', true);
-  const { isTutorView } = useViewMode();
+  const { loading, profile, isTutor } = useAuthRedirect('/settings', true);
   const location = useLocation();
   
   // Check for debug mode
@@ -85,7 +83,7 @@ const Settings = () => {
           </NavLink>
 
 
-          {isTutorView && (
+          {isTutor && (
             <NavLink 
               to="/settings/availability" 
               className={({ isActive }) => 
@@ -100,7 +98,7 @@ const Settings = () => {
             </NavLink>
           )}
 
-          {isTutorView && (
+          {isTutor && (
             <NavLink 
               to="/settings/tutor-settings" 
               className={({ isActive }) => 

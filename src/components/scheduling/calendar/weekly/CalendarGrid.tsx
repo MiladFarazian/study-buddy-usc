@@ -4,9 +4,10 @@ import { format } from 'date-fns';
 import { cn } from "@/lib/utils";
 
 interface WeekDay {
+  date: Date;
   name: string;
   fullName: string;
-  displayName: string;
+  displayDate: string;
 }
 
 interface CalendarGridProps {
@@ -37,8 +38,9 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
           Time
         </div>
         {weekDays.map((day, index) => (
-          <div key={index} className="h-16 border-b flex items-center justify-center">
-            <div className="font-medium">{day.displayName}</div>
+          <div key={index} className="h-16 border-b flex flex-col items-center justify-center">
+            <div className="text-sm text-muted-foreground">{day.displayDate}</div>
+            <div className="font-medium capitalize">{day.name}</div>
           </div>
         ))}
       </div>

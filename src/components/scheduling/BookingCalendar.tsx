@@ -72,12 +72,17 @@ export const BookingCalendar = ({ tutor, onSelectSlot }: BookingCalendarProps) =
       const today = new Date();
       const bookedSessions = await getTutorBookedSessions(tutor.id, today, addDays(today, 28));
       
-      const slots = await generateAvailableSlots(availability, bookedSessions, today, 28, tutor.id);
+      const slots = generateAvailableSlots(availability, bookedSessions, today, 28);
       
-      console.log(`Generated ${slots.length} available slots for tutor: ${tutor.id}`);
-      setAvailableSlots(slots);
+      const slotsWithTutor = slots.map(slot => ({
+        ...slot,
+        tutorId: tutor.id
+      }));
       
-      const todaySlots = slots.filter(
+      console.log(`Generated ${slotsWithTutor.length} available slots for tutor: ${tutor.id}`);
+      setAvailableSlots(slotsWithTutor);
+      
+      const todaySlots = slotsWithTutor.filter(
         slot => {
           const slotDay = slot.day instanceof Date ? slot.day : new Date(slot.day);
           return format(slotDay, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');

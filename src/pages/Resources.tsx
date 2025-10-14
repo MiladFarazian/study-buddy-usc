@@ -10,7 +10,6 @@ import { UploadResourceModal } from "@/components/resources/UploadResourceModal"
 import { ResourceCard } from "@/components/resources/ResourceCard";
 import { ResourceFilters } from "@/components/resources/ResourceFilters";
 import { MyUploadsTab } from "@/components/resources/MyUploadsTab";
-import { searchResources } from "@/lib/search-utils";
 
 interface Resource {
   id: string;
@@ -88,11 +87,12 @@ const ResourcesPage = () => {
     }
   };
 
-  // Apply search algorithm first
-  let filteredResources = search ? searchResources(resources, search) : resources;
+  const filteredResources = resources.filter((resource) => {
+    // Search filter
+    if (search && !resource.title.toLowerCase().includes(search.toLowerCase())) {
+      return false;
+    }
 
-  // Then apply other filters
-  filteredResources = filteredResources.filter((resource) => {
     // Type filter
     if (typeFilter !== "all" && resource.resource_type !== typeFilter) {
       return false;

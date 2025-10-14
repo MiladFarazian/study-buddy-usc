@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { WeeklyAvailability, WeeklyAvailabilityJson } from "./types/availability";
 import { BookingSlot, BookedSession } from "./types/booking";
-import { format, addDays, parse, isWithinInterval, parseISO, addMinutes, startOfWeek } from 'date-fns';
+import { format, addDays, parse, isWithinInterval, parseISO, addMinutes } from 'date-fns';
 import { convertTimeToMinutes, convertMinutesToTime } from "./time-utils";
 
 /**
@@ -14,6 +14,7 @@ export async function getTutorAvailability(tutorId: string): Promise<WeeklyAvail
       .from('profiles')
       .select('approved_tutor')
       .eq('id', tutorId)
+      .eq('role', 'tutor')
       .single();
 
     if (profileError || !tutorProfile?.approved_tutor) {
@@ -66,7 +67,7 @@ export async function updateTutorAvailability(tutorId: string, availability: Wee
         const endHour = parseInt(slot.end.split(':')[0]);
         const endMinute = parseInt(slot.end.split(':')[1]);
         
-        if (startHour < 6 || endHour > 24 || (endHour === 24 && endMinute > 0)) {
+        if (startHour < 6 || endHour > 23 || (endHour === 23 && endMinute > 0)) {
           console.error(`Invalid time slot: ${slot.start}-${slot.end} on ${day}. Hours must be between 6:00 AM and 11:00 PM.`);
           return false;
         }
@@ -108,13 +109,12 @@ export async function updateTutorAvailability(tutorId: string, availability: Wee
 /**
  * Generate available booking slots based on tutor's availability and booked sessions
  */
-export async function generateAvailableSlots(
+export function generateAvailableSlots(
   availability: WeeklyAvailability,
   bookedSessions: BookedSession[],
   startDate: Date,
-  daysToGenerate: number,
-  tutorId?: string
-): Promise<BookingSlot[]> {
+  daysToGenerate: number
+): BookingSlot[] {
   const availableSlots: BookingSlot[] = [];
   const weekDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   const now = new Date();
@@ -159,7 +159,7 @@ export async function generateAvailableSlots(
           start: slotStart,
           end: slotEnd,
           available: true,
-          tutorId: tutorId || ''
+          tutorId: ''
         };
         
         // Check if this slot overlaps with any booked session
@@ -180,34 +180,6 @@ export async function generateAvailableSlots(
         
         // Add to available slots
         availableSlots.push(slot);
-      }
-    });
-  }
-  
-  // If tutorId is provided, check weekly session limits
-  if (tutorId) {
-    const { isTutorAtWeeklyLimit } = await import('./session-limit-utils');
-    
-    // Group slots by week and check limits
-    const weeksToCheck = new Set<string>();
-    availableSlots.forEach(slot => {
-      const weekKey = startOfWeek(slot.day, { weekStartsOn: 0 }).toISOString();
-      weeksToCheck.add(weekKey);
-    });
-    
-    // Check each week's limit
-    const weekLimitMap = new Map<string, boolean>();
-    for (const weekKey of weeksToCheck) {
-      const weekDate = new Date(weekKey);
-      const atLimit = await isTutorAtWeeklyLimit(tutorId, weekDate);
-      weekLimitMap.set(weekKey, atLimit);
-    }
-    
-    // Mark slots in weeks at limit as unavailable
-    availableSlots.forEach(slot => {
-      const weekKey = startOfWeek(slot.day, { weekStartsOn: 0 }).toISOString();
-      if (weekLimitMap.get(weekKey)) {
-        slot.available = false;
       }
     });
   }

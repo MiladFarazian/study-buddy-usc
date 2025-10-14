@@ -71,10 +71,16 @@ export const useBookingAvailability = (tutor: Tutor, selectedDate: Date) => {
       const bookedSessions = await getTutorBookedSessions(tutor.id, today, addDays(today, 28));
       
       // Generate available slots
-      const slots = await generateAvailableSlots(availability, bookedSessions, today, 28, tutor.id);
+      const slots = generateAvailableSlots(availability, bookedSessions, today, 28);
       
-      console.log(`Generated ${slots.length} available slots for tutor: ${tutor.id}`);
-      setAvailableSlots(slots);
+      // Add tutor ID to each slot
+      const slotsWithTutor = slots.map(slot => ({
+        ...slot,
+        tutorId: tutor.id
+      }));
+      
+      console.log(`Generated ${slotsWithTutor.length} available slots for tutor: ${tutor.id}`);
+      setAvailableSlots(slotsWithTutor);
       
       // Let the useEffect filter by selectedDate handle setting visibleSlots
       // Don't override with today's slots here

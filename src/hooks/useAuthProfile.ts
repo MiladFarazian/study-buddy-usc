@@ -13,9 +13,8 @@ export const useAuthProfile = (userId: string | undefined) => {
     setLoading(true);
     try {
       console.log("Fetching profile for user ID:", id);
-      // Use safe_profiles to exclude Stripe IDs from client access
       const { data, error } = await supabase
-        .from('safe_profiles')
+        .from('profiles')
         .select('*')
         .eq('id', id)
         .maybeSingle();

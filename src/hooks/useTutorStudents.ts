@@ -12,7 +12,7 @@ export type Student = {
   major: string | null;
   graduationYear: string | null;
   avatarUrl: string | null;
-  // email removed for privacy - tutors don't need student emails
+  email?: string;
   sessions?: number;
   joined: string;
 };
@@ -64,11 +64,11 @@ export const useTutorStudents = () => {
           }
         });
         
-        // Step 2: Fetch safe profiles for all unique student IDs (excludes email/PII)
+        // Step 2: Fetch profiles for all unique student IDs
         const studentIds = Array.from(studentMap.keys());
         const { data: profilesData, error: profilesError } = await supabase
-          .from('safe_profiles')
-          .select('id, first_name, last_name, major, graduation_year, avatar_url')
+          .from('profiles')
+          .select('id, first_name, last_name, major, graduation_year, avatar_url, email')
           .in('id', studentIds);
         
         if (profilesError) throw profilesError;
@@ -87,7 +87,7 @@ export const useTutorStudents = () => {
               major: profile.major,
               graduationYear: profile.graduation_year,
               avatarUrl: profile.avatar_url,
-              // email excluded for privacy - tutors don't need student emails
+              email: profile.email,
               joined: studentInfo.firstSession,
               sessions: studentInfo.count,
             };
@@ -124,10 +124,10 @@ export const useTutorStudents = () => {
       
       if (error) throw error;
       
-      // Refresh the student list (using safe_profiles to exclude email/PII)
+      // Refresh the student list
       const { data, error: fetchError } = await supabase
-        .from('safe_profiles')
-        .select('id, first_name, last_name, major, graduation_year, avatar_url, created_at')
+        .from('profiles')
+        .select('id, first_name, last_name, major, graduation_year, avatar_url, email, created_at')
         .eq('id', studentId)
         .single();
         
@@ -141,7 +141,7 @@ export const useTutorStudents = () => {
         major: data.major,
         graduationYear: data.graduation_year,
         avatarUrl: data.avatar_url,
-        // email excluded for privacy
+        email: data.email,
         joined: new Date().toISOString(),
         sessions: 0,
       };

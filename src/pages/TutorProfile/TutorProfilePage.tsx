@@ -25,9 +25,9 @@ const TutorProfilePage = () => {
   if (!tutor) {
     return (
       <div className="container py-8 flex flex-col items-center justify-center min-h-[60vh]">
-        <h1 className="text-2xl font-bold mb-4">Profile Not Available</h1>
+        <h1 className="text-2xl font-bold mb-4">Tutor Not Found</h1>
         <p className="text-muted-foreground mb-6">
-          This tutor profile is not currently available or doesn't exist.
+          Sorry, we couldn't find the tutor profile you're looking for.
         </p>
         <Button asChild>
           <Link to="/tutors" className="flex items-center">

@@ -60,7 +60,7 @@ const Index = () => {
             </Card>
           )}
           
-          {(profile?.referral_count || 0) < 1 && (
+          {(profile?.referral_count || 0) < 2 && (
             <Card className="relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-teal-50 opacity-50" />
               <CardContent className="relative p-6">
@@ -77,7 +77,7 @@ const Index = () => {
                     </p>
                     <Badge variant="outline" className="gap-1">
                       <Lock className="h-3 w-3" />
-                      Requires 1 referral
+                      Requires 2 referrals
                     </Badge>
                   </div>
                 </div>

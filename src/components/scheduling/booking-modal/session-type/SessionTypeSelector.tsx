@@ -52,7 +52,7 @@ export function SessionTypeSelector({ onBack, onContinue }: SessionTypeSelectorP
       </p>
       
       <RadioGroup 
-        value={state.sessionType || undefined} 
+        value={state.sessionType} 
         onValueChange={handleSessionTypeChange}
         className="space-y-4"
       >

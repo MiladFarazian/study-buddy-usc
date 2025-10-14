@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { useViewMode } from "@/contexts/ViewModeContext";
 import UserMenu from "@/components/auth/UserMenu";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Link } from "react-router-dom";
@@ -12,20 +11,15 @@ import { NotificationsDropdown } from "@/components/notifications/NotificationsD
 
 const NavBar = () => {
   let user = null;
-  let profile = null;
-  let isTutorView = false;
-  let isStudentView = false;
-  
+  let isStudent = false;
+  let isTutor = false;
   try {
     const auth = useAuth();
     user = auth.user;
-    profile = auth.profile;
-    
-    const viewMode = useViewMode();
-    isTutorView = viewMode.isTutorView;
-    isStudentView = viewMode.isStudentView;
+    isStudent = auth.isStudent;
+    isTutor = auth.isTutor;
   } catch (error) {
-    console.error("Auth/ViewMode context not available:", error);
+    console.error("Auth context not available:", error);
   }
 
   const isMobile = useIsMobile();
@@ -54,9 +48,9 @@ const NavBar = () => {
             <span className="font-bold text-xl">
               <span className="text-usc-cardinal">Study</span>
               <span className="text-usc-gold">Buddy</span>
-              {user && profile && (
+              {user && (isStudent || isTutor) && (
                 <span className="text-usc-cardinal ml-2">
-                  {isTutorView ? "Tutor" : "Student"}
+                  {isTutor ? "Tutor" : "Student"}
                 </span>
               )}
             </span>
@@ -64,7 +58,7 @@ const NavBar = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          {user ? (
+          {user && (
             <>
               <Button variant="ghost" size="icon" className="relative" asChild>
                 <Link to="/messages">
@@ -72,18 +66,10 @@ const NavBar = () => {
                 </Link>
               </Button>
               <NotificationsDropdown />
-              {!isMobile && <UserMenu />}
-            </>
-          ) : (
-            <>
-              <Button variant="ghost" size="sm" asChild>
-                <Link to="/login">Sign In</Link>
-              </Button>
-              <Button size="sm" className="bg-usc-cardinal hover:bg-usc-cardinal/90" asChild>
-                <Link to="/register">Sign Up</Link>
-              </Button>
             </>
           )}
+
+          {!isMobile && <UserMenu />}
         </div>
       </div>
     </header>

@@ -126,7 +126,7 @@ export const AvailabilitySettings = () => {
       <CardHeader>
         <CardTitle>Tutor Availability</CardTitle>
         <CardDescription>
-          Set your recurring weekly availability pattern and session type preferences
+          Set your weekly availability and session type preferences
         </CardDescription>
       </CardHeader>
       <CardContent>

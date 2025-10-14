@@ -5,7 +5,6 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { AdminAuthProvider } from "./contexts/AdminAuthContext";
 import { SessionBookingProvider } from "./contexts/SessionBookingContext";
 import { ReviewProvider } from "./contexts/ReviewContext";
-import { ViewModeProvider } from "./contexts/ViewModeContext";
 import { GlobalReviewModal } from "./components/reviews/GlobalReviewModal";
 import { Toaster } from "./components/ui/toaster";
 import { ReviewRequirement } from "./components/reviews";
@@ -48,7 +47,6 @@ import { TutorStudentCoursesSettings } from "./components/settings/TutorStudentC
 import { AvailabilitySettings } from "./components/scheduling/AvailabilitySettings";
 import Resources from "./pages/Resources";
 import Students from "./pages/Students";
-import MyTutors from "./pages/MyTutors";
 import AuthCallback from "./pages/AuthCallback";
 import BookingCalendly from "./pages/BookingCalendly";
 import Analytics from "./pages/Analytics";
@@ -204,10 +202,6 @@ const router = createBrowserRouter([
         element: <PrivateRoute><RoleGuard allowedRoles={['tutor']}><Students /></RoleGuard></PrivateRoute>
       },
       {
-        path: "/my-tutors",
-        element: <PrivateRoute><RoleGuard allowedRoles={['student']}><MyTutors /></RoleGuard></PrivateRoute>
-      },
-      {
         path: "/booking",
         element: <PrivateRoute><BookingCalendly /></PrivateRoute>
       },
@@ -264,16 +258,14 @@ function App() {
     <>
       <AdminAuthProvider>
         <AuthProvider>
-          <ViewModeProvider>
-            <ReviewProvider>
-              <SessionBookingProvider>
-                <RouterProvider router={router} />
-                <ReviewRequirement />
-                <GlobalReviewModal />
-                <Toaster />
-              </SessionBookingProvider>
-            </ReviewProvider>
-          </ViewModeProvider>
+          <ReviewProvider>
+            <SessionBookingProvider>
+              <RouterProvider router={router} />
+              <ReviewRequirement />
+              <GlobalReviewModal />
+              <Toaster />
+            </SessionBookingProvider>
+          </ReviewProvider>
         </AuthProvider>
       </AdminAuthProvider>
     </>

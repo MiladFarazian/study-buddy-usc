@@ -85,9 +85,14 @@ export function NewBookingWizard({ tutor, onClose }: NewBookingWizardProps) {
       const today = new Date();
       const bookedSessions = await getTutorBookedSessions(tutor.id, today, addMinutes(today, 60 * 28));
       
-      const slots = await generateAvailableSlots(availability, bookedSessions, today, 28, tutor.id);
+      const slots = generateAvailableSlots(availability, bookedSessions, today, 28);
       
-      const dates = slots
+      const slotsWithTutor = slots.map(slot => ({
+        ...slot,
+        tutorId: tutor.id
+      }));
+      
+      const dates = slotsWithTutor
         .filter(slot => slot.available)
         .map(slot => {
           return slot.day instanceof Date ? slot.day : new Date(slot.day);
@@ -130,7 +135,7 @@ export function NewBookingWizard({ tutor, onClose }: NewBookingWizardProps) {
       
       const bookedSessions = await getTutorBookedSessions(tutor.id, startOfDay, endOfDay);
       
-      const slots = await generateAvailableSlots(availability, bookedSessions, startOfDay, 1, tutor.id);
+      const slots = generateAvailableSlots(availability, bookedSessions, startOfDay, 1);
       
       const timeSlots: TimeSlot[] = slots
         .filter(slot => slot.available)
