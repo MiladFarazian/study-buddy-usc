@@ -58,6 +58,38 @@ export const useAuthState = () => {
     };
   }, []);
 
+  // Real-time profile updates subscription
+  useEffect(() => {
+    if (!user?.id) return;
+
+    console.log('🔄 Setting up real-time profile subscription for user:', user.id);
+    
+    const channel = supabase
+      .channel('profile-updates')
+      .on(
+        'postgres_changes',
+        { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'profiles', 
+          filter: `id=eq.${user.id}` 
+        },
+        (payload) => {
+          console.log('🔄 Profile updated in real-time:', payload.new);
+          // Re-fetch the profile to get the latest data
+          if (payload.new) {
+            updateProfile(payload.new as Partial<Profile>);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('🔄 Cleaning up profile subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, updateProfile]);
+
   // Simple loading state management - no user means auth is done loading
   useEffect(() => {
     if (!user && !session) {
