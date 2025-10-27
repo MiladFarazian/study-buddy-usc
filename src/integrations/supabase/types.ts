@@ -96,6 +96,13 @@ export type Database = {
             foreignKeyName: "conversations_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
+            referencedRelation: "profiles_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
             referencedRelation: "public_tutor_profiles"
             referencedColumns: ["id"]
           },
@@ -111,6 +118,13 @@ export type Database = {
             columns: ["tutor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
             referencedColumns: ["id"]
           },
           {
@@ -221,6 +235,13 @@ export type Database = {
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
             referencedColumns: ["id"]
           },
           {
@@ -382,6 +403,13 @@ export type Database = {
             foreignKeyName: "payment_transactions_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
+            referencedRelation: "profiles_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_transactions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
             referencedRelation: "public_tutor_profiles"
             referencedColumns: ["id"]
           },
@@ -397,6 +425,13 @@ export type Database = {
             columns: ["tutor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_transactions_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
             referencedColumns: ["id"]
           },
           {
@@ -863,6 +898,13 @@ export type Database = {
             foreignKeyName: "resources_reviewed_by_fkey"
             columns: ["reviewed_by"]
             isOneToOne: false
+            referencedRelation: "profiles_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resources_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
             referencedRelation: "public_tutor_profiles"
             referencedColumns: ["id"]
           },
@@ -878,6 +920,13 @@ export type Database = {
             columns: ["uploader_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resources_uploader_id_fkey"
+            columns: ["uploader_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
             referencedColumns: ["id"]
           },
           {
@@ -936,6 +985,13 @@ export type Database = {
             foreignKeyName: "reviews_reviewer_id_fkey"
             columns: ["reviewer_id"]
             isOneToOne: false
+            referencedRelation: "profiles_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
             referencedRelation: "public_tutor_profiles"
             referencedColumns: ["id"]
           },
@@ -951,6 +1007,13 @@ export type Database = {
             columns: ["tutor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
             referencedColumns: ["id"]
           },
           {
@@ -1111,6 +1174,13 @@ export type Database = {
             foreignKeyName: "sessions_cancelled_by_user_id_fkey"
             columns: ["cancelled_by_user_id"]
             isOneToOne: false
+            referencedRelation: "profiles_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_cancelled_by_user_id_fkey"
+            columns: ["cancelled_by_user_id"]
+            isOneToOne: false
             referencedRelation: "public_tutor_profiles"
             referencedColumns: ["id"]
           },
@@ -1132,6 +1202,13 @@ export type Database = {
             foreignKeyName: "sessions_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
+            referencedRelation: "profiles_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
             referencedRelation: "public_tutor_profiles"
             referencedColumns: ["id"]
           },
@@ -1147,6 +1224,13 @@ export type Database = {
             columns: ["tutor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
             referencedColumns: ["id"]
           },
           {
@@ -1202,6 +1286,13 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_courses_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
             referencedColumns: ["id"]
           },
           {
@@ -1327,6 +1418,13 @@ export type Database = {
             foreignKeyName: "student_reviews_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
+            referencedRelation: "profiles_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_reviews_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
             referencedRelation: "public_tutor_profiles"
             referencedColumns: ["id"]
           },
@@ -1342,6 +1440,13 @@ export type Database = {
             columns: ["tutor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_reviews_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
             referencedColumns: ["id"]
           },
           {
@@ -1394,6 +1499,13 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "students_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles_safe"
             referencedColumns: ["id"]
           },
           {
@@ -1509,6 +1621,13 @@ export type Database = {
             foreignKeyName: "tutor_courses_tutor_id_fkey"
             columns: ["tutor_id"]
             isOneToOne: false
+            referencedRelation: "profiles_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tutor_courses_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
             referencedRelation: "public_tutor_profiles"
             referencedColumns: ["id"]
           },
@@ -1555,6 +1674,13 @@ export type Database = {
             foreignKeyName: "tutor_students_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
+            referencedRelation: "profiles_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tutor_students_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
             referencedRelation: "public_tutor_profiles"
             referencedColumns: ["id"]
           },
@@ -1570,6 +1696,13 @@ export type Database = {
             columns: ["tutor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tutor_students_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
             referencedColumns: ["id"]
           },
           {
@@ -1655,6 +1788,13 @@ export type Database = {
             foreignKeyName: "tutors_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: true
+            referencedRelation: "profiles_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tutors_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
             referencedRelation: "public_tutor_profiles"
             referencedColumns: ["id"]
           },
@@ -1695,6 +1835,102 @@ export type Database = {
           daily_tutor_payouts_dollars: number | null
           date: string | null
           transfer_count: number | null
+        }
+        Relationships: []
+      }
+      profiles_safe: {
+        Row: {
+          approved_tutor: boolean | null
+          available_in_person: boolean | null
+          available_online: boolean | null
+          avatar_url: string | null
+          average_rating: number | null
+          bio: string | null
+          created_at: string | null
+          email: string | null
+          first_name: string | null
+          graduation_year: string | null
+          hourly_rate: number | null
+          id: string | null
+          last_name: string | null
+          major: string | null
+          referral_code: string | null
+          referral_count: number | null
+          referred_by_code: string | null
+          role: Database["public"]["Enums"]["user_role"] | null
+          stripe_connect_id: string | null
+          stripe_connect_onboarding_complete: boolean | null
+          stripe_customer_id: string | null
+          student_bio: string | null
+          student_courses: string[] | null
+          student_onboarding_complete: boolean | null
+          subjects: string[] | null
+          tutor_bio: string | null
+          tutor_courses_subjects: string[] | null
+          tutor_onboarding_complete: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          approved_tutor?: boolean | null
+          available_in_person?: boolean | null
+          available_online?: boolean | null
+          avatar_url?: string | null
+          average_rating?: number | null
+          bio?: string | null
+          created_at?: string | null
+          email?: never
+          first_name?: string | null
+          graduation_year?: string | null
+          hourly_rate?: number | null
+          id?: string | null
+          last_name?: string | null
+          major?: string | null
+          referral_code?: string | null
+          referral_count?: number | null
+          referred_by_code?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          stripe_connect_id?: string | null
+          stripe_connect_onboarding_complete?: boolean | null
+          stripe_customer_id?: string | null
+          student_bio?: string | null
+          student_courses?: string[] | null
+          student_onboarding_complete?: boolean | null
+          subjects?: string[] | null
+          tutor_bio?: string | null
+          tutor_courses_subjects?: string[] | null
+          tutor_onboarding_complete?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          approved_tutor?: boolean | null
+          available_in_person?: boolean | null
+          available_online?: boolean | null
+          avatar_url?: string | null
+          average_rating?: number | null
+          bio?: string | null
+          created_at?: string | null
+          email?: never
+          first_name?: string | null
+          graduation_year?: string | null
+          hourly_rate?: number | null
+          id?: string | null
+          last_name?: string | null
+          major?: string | null
+          referral_code?: string | null
+          referral_count?: number | null
+          referred_by_code?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          stripe_connect_id?: string | null
+          stripe_connect_onboarding_complete?: boolean | null
+          stripe_customer_id?: string | null
+          student_bio?: string | null
+          student_courses?: string[] | null
+          student_onboarding_complete?: boolean | null
+          subjects?: string[] | null
+          tutor_bio?: string | null
+          tutor_courses_subjects?: string[] | null
+          tutor_onboarding_complete?: boolean | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -1858,6 +2094,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin: { Args: never; Returns: boolean }
+      is_owner: { Args: { record_user_id: string }; Returns: boolean }
       list_term_tables: {
         Args: never
         Returns: {
