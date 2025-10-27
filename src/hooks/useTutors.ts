@@ -97,12 +97,12 @@ export function useTutors() {
       setError(null);
       
       try {
-        // Fetch tutors from the new tutors table with profile data (only approved)
+        // Fetch tutors from the new tutors table with public profile data (only approved)
         const { data: tutorData, error } = await supabase
           .from('tutors')
           .select(`
             *,
-            profiles:profile_id!inner (
+            public_tutor_profiles!profile_id (
               first_name,
               last_name,
               major,
@@ -114,7 +114,7 @@ export function useTutors() {
               available_online
             )
           `)
-          .eq('profiles.approved_tutor', true)
+          .eq('approved_tutor', true)
           .order('average_rating', { ascending: false }); // Order by rating so best tutors show first
 
         if (error) {
@@ -136,7 +136,7 @@ export function useTutors() {
 
         // Process tutors to create tutor objects
         const processedTutors = tutorData.map(tutor => {
-          const profile = tutor.profiles;
+          const profile = tutor.public_tutor_profiles;
           
           // Get subjects from tutor_courses_subjects field
           const subjects: Subject[] = profile?.tutor_courses_subjects && Array.isArray(profile.tutor_courses_subjects) && profile.tutor_courses_subjects.length > 0 
