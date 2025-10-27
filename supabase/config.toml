@@ -114,3 +114,6 @@ verify_jwt = true
 
 [functions.cleanup-old-resources]
 verify_jwt = false
+
+[functions.make-me-admin]
+verify_jwt = true
