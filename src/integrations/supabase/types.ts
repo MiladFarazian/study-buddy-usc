@@ -2082,7 +2082,6 @@ export type Database = {
         Args: { column_name: string; table_name: string }
         Returns: boolean
       }
-      execute_sql: { Args: { sql: string }; Returns: undefined }
       generate_referral_code: {
         Args: { user_first_name: string; user_id: string }
         Returns: string

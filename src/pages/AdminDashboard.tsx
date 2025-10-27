@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAdminAuth } from "@/contexts/AdminAuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { LogOut, RefreshCw } from "lucide-react";
 import { NoShowReportsTable } from "@/components/admin/NoShowReportsTable";
@@ -14,7 +14,7 @@ import { AdminPendingResourcesTable } from "@/components/admin/AdminPendingResou
 import { useNoShowReports } from "@/hooks/useNoShowReports";
 
 const AdminDashboard = () => {
-  const { adminLogout } = useAdminAuth();
+  const { signOut } = useAuth();
   const navigate = useNavigate();
   const {
     reports,
@@ -27,8 +27,8 @@ const AdminDashboard = () => {
     refetch
   } = useNoShowReports();
 
-  const handleLogout = () => {
-    adminLogout();
+  const handleLogout = async () => {
+    await signOut();
     navigate('/');
   };
 
