@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { dollarsToCents } from '@/lib/currency-utils';
+import { format } from 'date-fns';
 
 export default function PaymentSuccess() {
   const [searchParams] = useSearchParams();
@@ -99,8 +100,30 @@ export default function PaymentSuccess() {
         setSessionCreated(true);
         toast.success("Session created successfully!");
         
+        // Store session details for confirmation popup
+        const sessionDetails = {
+          tutorName: booking.tutorName || 'Your Tutor',
+          date: booking.startTime,
+          startTime: format(new Date(booking.startTime), 'h:mm a'),
+          endTime: format(new Date(booking.endTime), 'h:mm a'),
+          location: booking.location || 'Location TBD',
+          courseName: booking.courseName,
+          sessionType: booking.sessionType || 'in_person',
+          sessionId: sessionData.id
+        };
+
+        localStorage.setItem('showBookingConfirmation', JSON.stringify(sessionDetails));
+        
         // Clear booking data
         localStorage.removeItem('currentBooking');
+        
+        // Redirect back to the tutor's profile page
+        setTimeout(() => {
+          navigate(`/tutors/${booking.tutorId}`, { 
+            replace: true,
+            state: { showConfirmation: true }
+          });
+        }, 1500);
         
       } catch (error) {
         console.error("❌ PaymentSuccess: Error creating session:", error);

@@ -1,11 +1,13 @@
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import NavBar from "./NavBar";
 import MobileNavBar from "./MobileNavBar";
 import { SessionBookingWrapper } from "./SessionBookingWrapper";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSessionBooking } from "@/contexts/SessionBookingContext";
+import { useLocation } from "react-router-dom";
 
 interface LayoutProps {
   children: ReactNode;
@@ -14,6 +16,27 @@ interface LayoutProps {
 const Layout = ({ children }: LayoutProps) => {
   const isMobile = useIsMobile();
   const { loading } = useAuth();
+  const { showConfirmation } = useSessionBooking();
+  const location = useLocation();
+  
+  // Listen for booking confirmation trigger
+  useEffect(() => {
+    const confirmationData = localStorage.getItem('showBookingConfirmation');
+    
+    if (confirmationData) {
+      try {
+        const details = JSON.parse(confirmationData);
+        
+        // Show the confirmation popup
+        showConfirmation(details);
+        
+        // Clear the flag
+        localStorage.removeItem('showBookingConfirmation');
+      } catch (error) {
+        console.error('Error showing confirmation:', error);
+      }
+    }
+  }, [location, showConfirmation]);
   
   return (
     <div className="flex flex-col min-h-screen max-w-full">

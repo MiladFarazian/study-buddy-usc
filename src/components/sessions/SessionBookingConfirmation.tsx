@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { CheckCircleIcon, CalendarIcon, ClockIcon, MapPinIcon, UserIcon, XIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { downloadICSFile, ICalEventData } from '@/lib/calendar/icsGenerator';
+import { toast } from 'sonner';
 
 interface SessionBookingConfirmationProps {
   isVisible: boolean;
@@ -46,6 +48,21 @@ export function SessionBookingConfirmation({
   const handleClose = () => {
     setIsAnimating(false);
     setTimeout(onClose, 300); // Wait for animation to complete
+  };
+
+  const handleAddToCalendar = () => {
+    const eventData: ICalEventData = {
+      title: `Tutoring Session with ${sessionDetails.tutorName}`,
+      description: sessionDetails.courseName 
+        ? `${sessionDetails.courseName} tutoring session`
+        : 'Tutoring session',
+      location: sessionDetails.location,
+      startDate: new Date(`${sessionDetails.date} ${sessionDetails.startTime}`),
+      endDate: new Date(`${sessionDetails.date} ${sessionDetails.endTime}`)
+    };
+    
+    downloadICSFile(eventData, 'tutoring-session.ics');
+    toast.success('Calendar event downloaded!');
   };
 
   return (
@@ -154,6 +171,13 @@ export function SessionBookingConfirmation({
 
                 {/* Action Buttons */}
                 <div className="flex gap-3 mt-6 pt-4 border-t">
+                  <Button 
+                    onClick={handleAddToCalendar}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    📅 Add to Calendar
+                  </Button>
                   <Button 
                     onClick={handleClose}
                     className="flex-1 bg-green-600 hover:bg-green-700 text-white"

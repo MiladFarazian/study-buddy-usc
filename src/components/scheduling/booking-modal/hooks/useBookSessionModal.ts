@@ -358,8 +358,21 @@ export function useBookSessionModal(
         // Don't fail completely if payment record fails - session is created
       }
 
-      // No longer showing the confirmation popup - just success message
-      // Session details are shown in the confirmation step instead
+      // Show the confirmation popup with all session details
+      showConfirmation({
+        tutorName: tutor.name,
+        tutorImage: tutor.imageUrl,
+        date: booking.startTime,
+        startTime: format(new Date(booking.startTime), 'h:mm a'),
+        endTime: format(new Date(booking.endTime), 'h:mm a'),
+        location: booking.location || 'Location TBD',
+        courseName: state.selectedCourseId || undefined,
+        sessionType: booking.sessionType || 'in_person',
+        zoomJoinUrl: sessionData.zoom_join_url || undefined,
+        zoomMeetingId: sessionData.zoom_meeting_id || undefined,
+        zoomPassword: sessionData.zoom_password || undefined,
+        zoomStartUrl: sessionData.zoom_start_url || undefined
+      });
       
       toast.success("Your session has been booked and payment processed!");
       

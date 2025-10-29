@@ -91,70 +91,46 @@ export function PaymentStep({
         return;
       }
       
-      // Create session booking FIRST (before payment)
-      console.log("🎯 PaymentStep: About to create session booking...");
-      console.log("🎯 User ID:", user.id);
-      console.log("🎯 Tutor ID:", tutor.id);
-      console.log("🎯 Start time:", startDateTime.toISOString());
-      console.log("🎯 End time:", endDateTime.toISOString());
+      // Generate temporary session ID for tracking
+      const tempSessionId = `booking_${Date.now()}_${user.id}`;
       
-      const bookingResult = await createSessionBooking(
-        user.id,
-        tutor.id,
-        null, // courseId
-        startDateTime.toISOString(),
-        endDateTime.toISOString(),
-        null, // location
-        notes || null
-      );
+      // Create payment intent with Stripe
+      const sessionDate = format(startDateTime, 'MMM d, yyyy');
+      const sessionTime = format(startDateTime, 'h:mm a');
+      const description = `Tutoring session with ${tutor.name} on ${sessionDate} at ${sessionTime}`;
       
-      console.log("🎯 Booking result received:", bookingResult);
+      // Store booking data for PaymentSuccess page
+      const bookingData = {
+        tutorId: tutor.id,
+        tutorName: tutor.name,
+        courseId: null,
+        startTime: startDateTime.toISOString(),
+        endTime: endDateTime.toISOString(),
+        location: 'TBD',
+        notes: notes || null,
+        sessionType: 'in_person',
+        totalAmount: totalCost
+      };
+      localStorage.setItem('currentBooking', JSON.stringify(bookingData));
+      console.log("💾 Booking data stored for PaymentSuccess:", bookingData);
       
-      if (bookingResult && bookingResult.id) {
-        console.log("✅ Session created successfully with ID:", bookingResult.id);
-        setSessionId(bookingResult.id);
-        
-        // Create payment intent with Stripe
-        const sessionDate = format(startDateTime, 'MMM d, yyyy');
-        const sessionTime = format(startDateTime, 'h:mm a');
-        const description = `Tutoring session with ${tutor.name} on ${sessionDate} at ${sessionTime}`;
-        
-        // Store booking data for PaymentSuccess page
-        const bookingData = {
+      // Create Payment Link
+      const { data: paymentLink, error: paymentError } = await supabase.functions.invoke('create-payment-link', {
+        body: {
+          sessionId: tempSessionId,
+          amount: totalCost,
           tutorId: tutor.id,
-          courseId: null, // No course selection in PaymentStep
-          startTime: startDateTime.toISOString(),
-          endTime: endDateTime.toISOString(),
-          location: 'TBD', // Default location
-          notes: notes || null,
-          sessionType: 'in_person', // Default session type
-          totalAmount: totalCost
-        };
-        localStorage.setItem('currentBooking', JSON.stringify(bookingData));
-        console.log("💾 Booking data stored for PaymentSuccess:", bookingData);
-        
-        // Create Payment Link instead of payment intent
-        const { data: paymentLink, error: paymentError } = await supabase.functions.invoke('create-payment-link', {
-          body: {
-            sessionId: bookingResult.id,
-            amount: totalCost,
-            tutorId: tutor.id,
-            description
-          }
-        });
-        
-        if (paymentError) throw paymentError;
-        
-        if (paymentLink?.payment_link_url) {
-          // Redirect to Payment Link
-          window.location.href = paymentLink.payment_link_url;
-        } else {
-          throw new Error("Failed to create payment link");
+          description
         }
+      });
+      
+      if (paymentError) throw paymentError;
+      
+      if (paymentLink?.payment_link_url) {
+        // Redirect to Payment Link
+        window.location.href = paymentLink.payment_link_url;
       } else {
-        console.error("❌ CRITICAL: Session booking failed - no ID returned");
-        console.error("❌ Booking result was:", bookingResult);
-        throw new Error("Failed to create session booking - no session ID returned");
+        throw new Error("Failed to create payment link");
       }
     } catch (error) {
       console.error("Error creating session or payment intent:", error);
