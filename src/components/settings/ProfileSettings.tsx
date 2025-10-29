@@ -77,9 +77,17 @@ export const ProfileSettings = () => {
     try {
       console.log(`Switching to ${newView} view...`);
       
-      // Just update localStorage for UI state
+      // Update local state and localStorage
       setProfileView(newView);
       localStorage.setItem('profileView', newView);
+      
+      // Dispatch storage event to notify AuthContext and other components
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'profileView',
+        newValue: newView,
+        oldValue: profileView
+      }));
+      
       console.log(`Successfully switched to ${newView} view`);
     } catch (error) {
       console.error('Error switching view:', error);
