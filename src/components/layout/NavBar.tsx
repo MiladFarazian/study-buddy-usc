@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { useViewMode } from "@/contexts/ViewModeContext";
 import UserMenu from "@/components/auth/UserMenu";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Link } from "react-router-dom";
@@ -11,15 +12,20 @@ import { NotificationsDropdown } from "@/components/notifications/NotificationsD
 
 const NavBar = () => {
   let user = null;
-  let isStudent = false;
-  let isTutor = false;
+  let profile = null;
+  let isTutorView = false;
+  let isStudentView = false;
+  
   try {
     const auth = useAuth();
     user = auth.user;
-    isStudent = auth.isStudent;
-    isTutor = auth.isTutor;
+    profile = auth.profile;
+    
+    const viewMode = useViewMode();
+    isTutorView = viewMode.isTutorView;
+    isStudentView = viewMode.isStudentView;
   } catch (error) {
-    console.error("Auth context not available:", error);
+    console.error("Auth/ViewMode context not available:", error);
   }
 
   const isMobile = useIsMobile();
@@ -48,9 +54,9 @@ const NavBar = () => {
             <span className="font-bold text-xl">
               <span className="text-usc-cardinal">Study</span>
               <span className="text-usc-gold">Buddy</span>
-              {user && (isStudent || isTutor) && (
+              {user && profile && (
                 <span className="text-usc-cardinal ml-2">
-                  {isTutor ? "Tutor" : "Student"}
+                  {isTutorView ? "Tutor" : "Student"}
                 </span>
               )}
             </span>

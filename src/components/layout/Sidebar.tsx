@@ -15,12 +15,14 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useViewMode } from "@/contexts/ViewModeContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState, useEffect } from "react";
 
 const Sidebar = () => {
   const location = useLocation();
-  const { isStudent, isTutor, user, profile, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
+  const { isTutorView, isStudentView } = useViewMode();
   const isMobile = useIsMobile();
   const [isInitializing, setIsInitializing] = useState(true);
   
@@ -52,13 +54,13 @@ const Sidebar = () => {
       title: "Tutors",
       icon: Users,
       path: "/tutors",
-      showWhen: !isTutor // Only show for students
+      showWhen: isStudentView // Only show for students
     },
     {
       title: "My Students",
       icon: Users,
       path: "/students",
-      showWhen: isTutor // Only for tutors
+      showWhen: isTutorView // Only for tutors
     },
     {
       title: "Schedule",
@@ -82,7 +84,7 @@ const Sidebar = () => {
       title: "Badges",
       icon: Users,
       path: "/badges",
-      showWhen: isTutor // Only for tutors
+      showWhen: isTutorView // Only for tutors
     },
     {
       title: "Analytics",

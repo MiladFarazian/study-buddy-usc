@@ -250,3 +250,64 @@ export const searchCourses = (courses: Course[], searchQuery: string): Course[] 
     .sort((a, b) => b.score - a.score)
     .map(item => item.course);
 };
+
+/**
+ * Multi-tier search scoring system for resources
+ */
+interface Resource {
+  id: string;
+  title: string;
+  description: string | null;
+  resource_type: string;
+  download_count: number;
+  uploaded_at: string;
+  file_name: string;
+  courses?: Array<{
+    course_number: string;
+    course_title: string | null;
+  }>;
+  uploader?: {
+    first_name: string | null;
+    last_name: string | null;
+  };
+}
+
+interface ResourceSearchScore {
+  resource: Resource;
+  score: number;
+}
+
+export const searchResources = (resources: Resource[], searchQuery: string): Resource[] => {
+  if (!searchQuery || searchQuery.trim() === "") {
+    return resources;
+  }
+
+  // Transform resources into course-like objects to use the same algorithm
+  const pseudoCourses: Course[] = resources.map(resource => {
+    const courseCodes = resource.courses?.map(c => c.course_number).join(' ') || '';
+    const firstCourse = resource.courses?.[0];
+    const department = firstCourse?.course_number.split('-')[0] || '';
+    const uploaderName = resource.uploader 
+      ? `${resource.uploader.first_name || ''} ${resource.uploader.last_name || ''}`.trim()
+      : '';
+
+    return {
+      course_number: courseCodes,
+      course_title: resource.title,
+      description: resource.description || '',
+      instructor: uploaderName,
+      department: department,
+      // Add a reference to the original resource
+      _resourceId: resource.id,
+    } as Course & { _resourceId: string };
+  });
+
+  // Use the searchCourses algorithm
+  const searchedPseudoCourses = searchCourses(pseudoCourses, searchQuery);
+
+  // Map back to original resources in the order returned by searchCourses
+  const resourceMap = new Map(resources.map(r => [r.id, r]));
+  return searchedPseudoCourses
+    .map(pc => resourceMap.get((pc as any)._resourceId))
+    .filter((r): r is Resource => r !== undefined);
+};

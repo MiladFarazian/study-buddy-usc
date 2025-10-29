@@ -10,15 +10,6 @@ export const useAuthState = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const { profile, updateProfile } = useAuthProfile(user?.id);
-  
-  // Track user's view preference (student mode vs tutor mode)
-  const [viewMode, setViewMode] = useState<'student' | 'tutor'>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('profileView');
-      if (saved === 'student' || saved === 'tutor') return saved;
-    }
-    return 'student';
-  });
 
   useEffect(() => {
     let mounted = true;
@@ -67,38 +58,6 @@ export const useAuthState = () => {
     };
   }, []);
 
-  // Real-time profile updates subscription
-  useEffect(() => {
-    if (!user?.id) return;
-
-    console.log('🔄 Setting up real-time profile subscription for user:', user.id);
-    
-    const channel = supabase
-      .channel('profile-updates')
-      .on(
-        'postgres_changes',
-        { 
-          event: 'UPDATE', 
-          schema: 'public', 
-          table: 'profiles', 
-          filter: `id=eq.${user.id}` 
-        },
-        (payload) => {
-          console.log('🔄 Profile updated in real-time:', payload.new);
-          // Re-fetch the profile to get the latest data
-          if (payload.new) {
-            updateProfile(payload.new as Partial<Profile>);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      console.log('🔄 Cleaning up profile subscription');
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id, updateProfile]);
-
   // Simple loading state management - no user means auth is done loading
   useEffect(() => {
     if (!user && !session) {
@@ -129,47 +88,10 @@ export const useAuthState = () => {
     });
   }
 
-  // Sync viewMode with localStorage and profile approval status
-  useEffect(() => {
-    if (profile) {
-      const canBeTeacher = profile.approved_tutor === true;
-      const saved = localStorage.getItem('profileView') as 'student' | 'tutor' | null;
-      
-      // If user is viewing tutor mode but not approved, force student mode
-      if (saved === 'tutor' && !canBeTeacher) {
-        setViewMode('student');
-        localStorage.setItem('profileView', 'student');
-      } else if (saved && (saved === 'student' || (saved === 'tutor' && canBeTeacher))) {
-        setViewMode(saved);
-      } else if (!saved && canBeTeacher) {
-        // Default to tutor mode if approved and no preference set
-        setViewMode('tutor');
-        localStorage.setItem('profileView', 'tutor');
-      } else {
-        // Default to student mode
-        setViewMode('student');
-        localStorage.setItem('profileView', 'student');
-      }
-    }
-  }, [profile?.approved_tutor]);
-
-  // Listen for localStorage changes (when user toggles in ProfileSettings)
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'profileView' && (e.newValue === 'student' || e.newValue === 'tutor')) {
-        setViewMode(e.newValue);
-      }
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
-
-  // Calculate profile completeness and role flags based on VIEW MODE
+  // Calculate profile completeness and role flags
   const isProfileComplete = !!profile && !!profile.first_name && !!profile.last_name && !!profile.major && !!profile.graduation_year;
-  const canBeTeacher = profile?.approved_tutor === true;
-  const isTutor = canBeTeacher && viewMode === 'tutor';
-  const isStudent = viewMode === 'student';
+  const isTutor = profile?.approved_tutor === true;
+  const isStudent = !isTutor;
 
   return {
     session,
@@ -179,22 +101,6 @@ export const useAuthState = () => {
     isStudent,
     isTutor,
     isProfileComplete,
-    updateProfile,
-    canBeTeacher, // Whether user is approved to be a tutor
-    viewMode, // Current view preference
-    setViewMode: (mode: 'student' | 'tutor') => {
-      if (mode === 'tutor' && !canBeTeacher) {
-        console.warn('Cannot switch to tutor mode: user is not approved');
-        return;
-      }
-      setViewMode(mode);
-      localStorage.setItem('profileView', mode);
-      // Trigger storage event for other tabs/components
-      window.dispatchEvent(new StorageEvent('storage', {
-        key: 'profileView',
-        newValue: mode,
-        oldValue: viewMode
-      }));
-    }
+    updateProfile
   };
 };

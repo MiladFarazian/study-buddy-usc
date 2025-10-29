@@ -16,7 +16,7 @@ export const RoleGuard = ({
   redirectTo,
   fallbackComponent 
 }: RoleGuardProps) => {
-  const { profile, loading, isTutor, isStudent, canBeTeacher } = useAuth();
+  const { profile, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -26,9 +26,10 @@ export const RoleGuard = ({
     // Don't redirect if profile is not loaded yet
     if (!profile) return;
 
-    // Check if user meets role requirements based on current view mode
+    // Check if user meets role requirements
+    const isTutor = profile.approved_tutor === true;
     const meetsRequirement = allowedRoles.some(role => 
-      role === 'tutor' ? isTutor : isStudent
+      role === 'tutor' ? isTutor : !isTutor
     );
 
     // Only redirect if user doesn't meet requirements
@@ -36,12 +37,12 @@ export const RoleGuard = ({
       if (redirectTo) {
         navigate(redirectTo, { replace: true });
       } else {
-        // Default redirects based on view mode
-        const defaultRedirect = canBeTeacher ? '/tutor-dashboard' : '/settings/profile';
+        // Default redirects based on approval status
+        const defaultRedirect = isTutor ? '/tutor-dashboard' : '/settings/profile';
         navigate(defaultRedirect, { replace: true });
       }
     }
-  }, [profile, loading, navigate, allowedRoles, redirectTo, isTutor, isStudent, canBeTeacher]);
+  }, [profile, loading, navigate, allowedRoles, redirectTo]);
 
   if (loading) {
     return (
@@ -56,9 +57,9 @@ export const RoleGuard = ({
     return fallbackComponent || null;
   }
 
-  // Check based on current view mode
+  const isTutor = profile.approved_tutor === true;
   const meetsRequirement = allowedRoles.some(role => 
-    role === 'tutor' ? isTutor : isStudent
+    role === 'tutor' ? isTutor : !isTutor
   );
 
   if (!meetsRequirement) {

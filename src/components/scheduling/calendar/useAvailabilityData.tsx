@@ -50,19 +50,13 @@ export function useAvailabilityData(tutor: Tutor, startDate: Date) {
       const bookedSessions = await getTutorBookedSessions(tutor.id, today, addDays(today, 28));
       
       // Generate available slots
-      const slots = generateAvailableSlots(availability, bookedSessions, today, 28);
+      const slots = await generateAvailableSlots(availability, bookedSessions, today, 28, tutor.id);
       
-      // Add tutor ID to each slot
-      const slotsWithTutor = slots.map(slot => ({
-        ...slot,
-        tutorId: tutor.id
-      }));
+      console.log(`Generated ${slots.length} available slots for tutor: ${tutor.id}`);
+      setAvailableSlots(slots);
+      setHasAvailability(slots.some(slot => slot.available));
       
-      console.log(`Generated ${slotsWithTutor.length} available slots for tutor: ${tutor.id}`);
-      setAvailableSlots(slotsWithTutor);
-      setHasAvailability(slotsWithTutor.some(slot => slot.available));
-      
-      if (!slotsWithTutor.some(slot => slot.available)) {
+      if (!slots.some(slot => slot.available)) {
         setErrorMessage("This tutor is fully booked for the next 28 days.");
       } else {
         setErrorMessage(null);

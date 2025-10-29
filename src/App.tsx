@@ -5,6 +5,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { AdminAuthProvider } from "./contexts/AdminAuthContext";
 import { SessionBookingProvider } from "./contexts/SessionBookingContext";
 import { ReviewProvider } from "./contexts/ReviewContext";
+import { ViewModeProvider } from "./contexts/ViewModeContext";
 import { GlobalReviewModal } from "./components/reviews/GlobalReviewModal";
 import { Toaster } from "./components/ui/toaster";
 import { ReviewRequirement } from "./components/reviews";
@@ -57,7 +58,6 @@ import FAQ from "./pages/FAQ";
 import StudentOnboarding from "./pages/onboarding/StudentOnboarding";
 import TutorOnboarding from "./pages/onboarding/TutorOnboarding";
 import MakeSchoolEasy from "./pages/MakeSchoolEasy";
-import MakeAdmin from "./pages/MakeAdmin";
 
 const router = createBrowserRouter([
   // Admin routes - completely separate from student/tutor
@@ -235,10 +235,6 @@ const router = createBrowserRouter([
         element: <MakeSchoolEasy />
       },
       {
-        path: "/setup-admin",
-        element: <MakeAdmin />
-      },
-      {
         path: "/onboarding/student",
         element: <StudentOnboarding />
       },
@@ -263,14 +259,16 @@ function App() {
     <>
       <AdminAuthProvider>
         <AuthProvider>
-          <ReviewProvider>
-            <SessionBookingProvider>
-              <RouterProvider router={router} />
-              <ReviewRequirement />
-              <GlobalReviewModal />
-              <Toaster />
-            </SessionBookingProvider>
-          </ReviewProvider>
+          <ViewModeProvider>
+            <ReviewProvider>
+              <SessionBookingProvider>
+                <RouterProvider router={router} />
+                <ReviewRequirement />
+                <GlobalReviewModal />
+                <Toaster />
+              </SessionBookingProvider>
+            </ReviewProvider>
+          </ViewModeProvider>
         </AuthProvider>
       </AdminAuthProvider>
     </>

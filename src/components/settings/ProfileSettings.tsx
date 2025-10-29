@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useViewMode } from "@/contexts/ViewModeContext";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { ProfileAvatarCard } from "@/components/profile-editor/ProfileAvatarCard";
@@ -16,29 +17,16 @@ import { cn } from "@/lib/utils";
 
 export const ProfileSettings = () => {
   const { user, profile } = useAuth();
+  const { viewMode, setViewMode, isTutorView } = useViewMode();
   const { toast } = useToast();
   const navigate = useNavigate();
-  
-  // Track current profile view with localStorage persistence
-  const [profileView, setProfileView] = useState<'student' | 'tutor'>(() => {
-    const saved = localStorage.getItem('profileView');
-    if (saved === 'student' || saved === 'tutor') return saved;
-    return 'student';
-  });
 
-  // Set initial view based on approval status
+  // Force student view if not approved tutor
   useEffect(() => {
-    if (profile) {
-      const canViewTutor = profile.approved_tutor === true;
-      const currentView = localStorage.getItem('profileView') as 'student' | 'tutor' || 'student';
-      
-      // If viewing tutor but not approved, switch to student
-      if (currentView === 'tutor' && !canViewTutor) {
-        setProfileView('student');
-        localStorage.setItem('profileView', 'student');
-      }
+    if (isTutorView && !profile?.approved_tutor) {
+      setViewMode('student');
     }
-  }, [profile?.approved_tutor]);
+  }, [profile?.approved_tutor, isTutorView, setViewMode]);
   
   const tutorProfileHook = useTutorProfile(profile);
   const studentProfileHook = useStudentProfile(profile);
@@ -55,7 +43,7 @@ export const ProfileSettings = () => {
     setAvatarFile,
     handleInputChange,
     handleProfileUpdate,
-  } = profileView === 'tutor' ? tutorProfileHook : studentProfileHook;
+  } = isTutorView ? tutorProfileHook : studentProfileHook;
 
   const handleRoleToggle = async (newView: 'student' | 'tutor') => {
     // Check if user can access tutor view
@@ -74,29 +62,7 @@ export const ProfileSettings = () => {
       return;
     }
 
-    try {
-      console.log(`Switching to ${newView} view...`);
-      
-      // Update local state and localStorage
-      setProfileView(newView);
-      localStorage.setItem('profileView', newView);
-      
-      // Dispatch storage event to notify AuthContext and other components
-      window.dispatchEvent(new StorageEvent('storage', {
-        key: 'profileView',
-        newValue: newView,
-        oldValue: profileView
-      }));
-      
-      console.log(`Successfully switched to ${newView} view`);
-    } catch (error) {
-      console.error('Error switching view:', error);
-      toast({
-        title: "Error",
-        description: `Failed to switch to ${newView} view`,
-        variant: "destructive",
-      });
-    }
+    setViewMode(newView);
   };
 
   if (!user || !profile) {
@@ -137,7 +103,7 @@ export const ProfileSettings = () => {
       <div className="flex items-center gap-4 mb-6">
         <div className="flex items-center space-x-2 border rounded-full p-1">
           <Button
-            variant={profileView === 'student' ? 'default' : 'ghost'}
+            variant={viewMode === 'student' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => handleRoleToggle('student')}
             className="rounded-full"
@@ -146,7 +112,7 @@ export const ProfileSettings = () => {
             Student
           </Button>
           <Button
-            variant={profileView === 'tutor' ? 'default' : 'ghost'}
+            variant={viewMode === 'tutor' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => handleRoleToggle('tutor')}
             className="rounded-full"
@@ -161,7 +127,7 @@ export const ProfileSettings = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
-          {profileView === 'tutor' ? (
+          {isTutorView ? (
             <TutorProfileForm
               formData={formData as any}
               handleInputChange={handleInputChange}
@@ -183,7 +149,7 @@ export const ProfileSettings = () => {
           )}
           
           {/* Course Settings Integration */}
-          <CoursesSettings profileView={profileView} />
+          <CoursesSettings profileView={viewMode} />
         </div>
         
         <div className="lg:col-span-1">

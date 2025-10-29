@@ -1,7 +1,8 @@
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search } from "lucide-react";
-import { useCourses } from "@/hooks/useCourses";
+import { Search, Loader2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ResourceFiltersProps {
   search: string;
@@ -30,10 +31,77 @@ export function ResourceFilters({
   typeFilter,
   onTypeFilterChange,
 }: ResourceFiltersProps) {
-  const { courses } = useCourses({ term: "20251", search: "", department: "all" });
+  const [allDepartments, setAllDepartments] = useState<string[]>([]);
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [displayCount, setDisplayCount] = useState(50);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const BATCH_SIZE = 50;
 
-  // Get unique departments from courses
-  const departments = Array.from(new Set(courses.map((c) => c.department).filter(Boolean)));
+  // Fetch all departments once
+  useEffect(() => {
+    fetchAllDepartments();
+  }, []);
+
+  // Update displayed departments when displayCount changes
+  useEffect(() => {
+    setDepartments(allDepartments.slice(0, displayCount));
+  }, [allDepartments, displayCount]);
+
+  const fetchAllDepartments = async () => {
+    setLoading(true);
+    try {
+      // Fetch all course numbers in batches
+      let allCourses: any[] = [];
+      let from = 0;
+      const batchSize = 1000;
+      
+      while (true) {
+        const { data: courses, error } = await supabase
+          .from("courses-20251")
+          .select('"Course number"')
+          .range(from, from + batchSize - 1);
+
+        if (error) throw error;
+        if (!courses || courses.length === 0) break;
+        
+        allCourses = [...allCourses, ...courses];
+        
+        if (courses.length < batchSize) break;
+        from += batchSize;
+      }
+
+      // Extract unique departments from course numbers
+      const deptSet = new Set<string>();
+      allCourses.forEach((course) => {
+        const courseNumber = course["Course number"];
+        if (courseNumber) {
+          // Extract department code (e.g., "CSCI" from "CSCI-201")
+          const match = courseNumber.match(/^([A-Z]+)/);
+          if (match) {
+            deptSet.add(match[1]);
+          }
+        }
+      });
+
+      const sortedDepts = Array.from(deptSet).sort();
+      setAllDepartments(sortedDepts);
+      setDepartments(sortedDepts.slice(0, BATCH_SIZE));
+    } catch (error) {
+      console.error("Error fetching departments:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const element = e.currentTarget;
+    const isNearBottom = element.scrollHeight - element.scrollTop <= element.clientHeight + 50;
+    
+    if (isNearBottom && displayCount < allDepartments.length && !loading) {
+      setDisplayCount(prev => Math.min(prev + BATCH_SIZE, allDepartments.length));
+    }
+  };
 
   return (
     <div className="flex flex-col sm:flex-row gap-4">
@@ -54,12 +122,23 @@ export function ResourceFilters({
           <SelectValue placeholder="All Courses" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">All Courses</SelectItem>
-          {departments.map((dept) => (
-            <SelectItem key={dept} value={dept!}>
-              {dept}
-            </SelectItem>
-          ))}
+          <div 
+            ref={scrollRef}
+            onScroll={handleScroll}
+            className="max-h-[300px] overflow-y-auto"
+          >
+            <SelectItem value="all">All Courses</SelectItem>
+            {departments.map((dept) => (
+              <SelectItem key={dept} value={dept}>
+                {dept}
+              </SelectItem>
+            ))}
+            {displayCount < allDepartments.length && (
+              <div className="flex justify-center py-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+              </div>
+            )}
+          </div>
         </SelectContent>
       </Select>
 

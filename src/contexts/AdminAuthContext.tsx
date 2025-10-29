@@ -1,73 +1,56 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "./AuthContext";
 
 interface AdminAuthContextType {
   isAdmin: boolean;
+  adminLogin: (email: string, password: string) => boolean;
+  adminLogout: () => void;
   loading: boolean;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType>({
   isAdmin: false,
-  loading: true,
+  adminLogin: () => false,
+  adminLogout: () => {},
+  loading: false,
 });
 
-/**
- * Secure Admin Authentication Provider
- * 
- * This provider checks admin status using server-side database queries
- * against the user_roles table. Admin role is verified via RLS policies
- * and the has_role() database function.
- * 
- * SECURITY: Admin status is NEVER stored in localStorage or determined
- * by hardcoded credentials. All checks are server-side.
- */
+const ADMIN_CREDENTIALS = {
+  email: "noah@studybuddyusc.com",
+  password: "StudyBuddy9!"
+};
+
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    const checkAdminStatus = async () => {
-      if (authLoading) {
-        return;
-      }
+    // Check if admin is already logged in
+    const adminSession = localStorage.getItem('adminSession');
+    if (adminSession === 'true') {
+      setIsAdmin(true);
+    }
+    setLoading(false);
+  }, []);
 
-      if (!user) {
-        setIsAdmin(false);
-        setLoading(false);
-        return;
-      }
+  const adminLogin = (email: string, password: string): boolean => {
+    if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
+      setIsAdmin(true);
+      localStorage.setItem('adminSession', 'true');
+      return true;
+    }
+    return false;
+  };
 
-      try {
-        // Server-side admin check via user_roles table
-        const { data, error } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .eq('role', 'admin')
-          .maybeSingle();
-
-        if (error) {
-          console.error('Error checking admin status:', error);
-          setIsAdmin(false);
-        } else {
-          setIsAdmin(!!data);
-        }
-      } catch (error) {
-        console.error('Error checking admin status:', error);
-        setIsAdmin(false);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAdminStatus();
-  }, [user, authLoading]);
+  const adminLogout = () => {
+    setIsAdmin(false);
+    localStorage.removeItem('adminSession');
+  };
 
   return (
     <AdminAuthContext.Provider value={{
       isAdmin,
+      adminLogin,
+      adminLogout,
       loading,
     }}>
       {children}

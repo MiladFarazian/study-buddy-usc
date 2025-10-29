@@ -9,19 +9,7 @@ import { AuthContextType } from "./types/auth-types";
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { 
-    session, 
-    user, 
-    profile, 
-    loading, 
-    isStudent, 
-    isTutor, 
-    isProfileComplete, 
-    updateProfile,
-    canBeTeacher,
-    viewMode,
-    setViewMode
-  } = useAuthState();
+  const { session, user, profile, loading, isStudent, isTutor, isProfileComplete, updateProfile } = useAuthState();
   const { signIn, signOut } = useAuthMethods();
 
   const value: AuthContextType = {
@@ -35,9 +23,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isTutor,
     isProfileComplete,
     updateProfile,
-    canBeTeacher,
-    viewMode,
-    setViewMode,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

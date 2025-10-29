@@ -242,9 +242,8 @@ export function useBookSessionModal(
       // Verify tutor is still approved before creating session
       const { data: tutorCheck, error: tutorError } = await supabase
         .from('profiles')
-        .select('approved_tutor, role')
+        .select('approved_tutor')
         .eq('id', booking.tutorId)
-        .eq('role', 'tutor')
         .single();
 
       if (tutorError || !tutorCheck?.approved_tutor) {
