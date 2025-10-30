@@ -8,7 +8,7 @@ import { TutorPaymentView } from "./payment/TutorPaymentView";
 import { StudentPaymentView } from "./payment/StudentPaymentView";
 import { Badge } from "@/components/ui/badge";
 import { useViewMode } from "@/contexts/ViewModeContext";
-// Production mode detection moved to edge functions
+import { supabase } from "@/integrations/supabase/client";
 
 export const PaymentSettingsTab = () => {
   const { toast } = useToast();
@@ -17,9 +17,24 @@ export const PaymentSettingsTab = () => {
   const [searchParams] = useSearchParams();
   const [stripeEnvironment, setStripeEnvironment] = useState<string>('test');
 
-  // Default to test environment
+  // Fetch Stripe environment from edge function
   useEffect(() => {
-    setStripeEnvironment('test');
+    const fetchStripeEnvironment = async () => {
+      try {
+        const { data } = await supabase.functions.invoke('get-stripe-config');
+        
+        if (data?.environment === 'live') {
+          setStripeEnvironment('production');
+        } else {
+          setStripeEnvironment('test');
+        }
+      } catch (error) {
+        console.error('Failed to fetch Stripe environment:', error);
+        setStripeEnvironment('test');
+      }
+    };
+    
+    fetchStripeEnvironment();
   }, []);
 
   // Check for Stripe redirect success/error

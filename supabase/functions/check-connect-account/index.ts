@@ -351,10 +351,38 @@ serve(async (req) => {
       
       // Sanity check mode vs account livemode
       if (mode === 'test' && acc.livemode) {
-        throw new Error('Misconfig: test mode with a live connect account id');
+        console.log('Mode mismatch: test mode with live account, clearing stored ID');
+        const resetFields: any = { updated_at: new Date().toISOString() };
+        resetFields[connectIdField] = null;
+        resetFields[onboardingCompleteField] = false;
+        await supabaseAdmin.from('profiles').update(resetFields).eq('id', user.id);
+        return new Response(JSON.stringify({ 
+          has_account: false,
+          needs_onboarding: true,
+          payouts_enabled: false,
+          error: 'Account mode mismatch - cleared',
+          environment: mode
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
       }
       if (mode === 'live' && !acc.livemode) {
-        throw new Error('Misconfig: live mode with a test connect account id');
+        console.log('Mode mismatch: live mode with test account, clearing stored ID');
+        const resetFields: any = { updated_at: new Date().toISOString() };
+        resetFields[connectIdField] = null;
+        resetFields[onboardingCompleteField] = false;
+        await supabaseAdmin.from('profiles').update(resetFields).eq('id', user.id);
+        return new Response(JSON.stringify({ 
+          has_account: false,
+          needs_onboarding: true,
+          payouts_enabled: false,
+          error: 'Account mode mismatch - cleared',
+          environment: mode
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
       }
       
       const onboardingComplete = acc.details_submitted && acc.payouts_enabled;

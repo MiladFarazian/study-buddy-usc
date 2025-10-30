@@ -91,6 +91,24 @@ serve(async (req) => {
           console.log('Found existing customer ID in transactions:', existingCustomerId);
         }
       }
+      
+      // Validate customer ID matches current mode before reuse
+      if (existingCustomerId) {
+        try {
+          console.log('Validating existing customer ID:', existingCustomerId);
+          await stripe.customers.retrieve(existingCustomerId);
+          console.log('Customer ID validated successfully');
+        } catch (validateError) {
+          const vErr = validateError as any;
+          console.log('Customer validation failed:', vErr.message);
+          if (vErr.code === 'resource_missing' || vErr.type === 'invalid_request_error') {
+            console.log('Customer does not exist in current mode, will create new customer');
+            existingCustomerId = null;
+          } else {
+            throw validateError;
+          }
+        }
+      }
     }
 
     // Create Stripe Checkout Session

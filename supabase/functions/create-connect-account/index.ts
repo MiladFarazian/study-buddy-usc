@@ -263,14 +263,13 @@ serve(async (req) => {
       email: user.email,
     };
 
-    // Set the OAuth client ID for live mode
+    // Set branding for live mode (only include non-empty values)
     if (mode === 'live') {
       connectAccountParams.settings = {
         branding: {
           primary_color: '#990000', // USC cardinal color
           secondary_color: '#ffcc00', // USC gold color
-          icon: null,
-          logo: null
+          // Omit icon and logo to avoid empty string error
         }
       };
     }
