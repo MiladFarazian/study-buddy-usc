@@ -54,12 +54,25 @@ const retryStripeOperation = async <T>(
   throw new Error(`${operationName} failed after ${maxRetries} attempts`);
 };
 
-// Helper functions for explicit Stripe mode selection
+// Helper functions for explicit Stripe mode selection with defensive defaults
 const getStripeMode = (): 'test' | 'live' => {
-  const mode = (Deno.env.get('STRIPE_MODE') || '').toLowerCase();
+  const rawMode = Deno.env.get('STRIPE_MODE') || '';
+  const mode = rawMode.trim().toLowerCase();
+  
+  console.log('🔍 STRIPE_MODE Detection:', {
+    raw: rawMode,
+    trimmed: mode,
+    length: mode.length,
+    isValid: mode === 'test' || mode === 'live'
+  });
+  
+  // Default to 'live' if invalid - safer for production
   if (mode !== 'test' && mode !== 'live') {
-    throw new Error('STRIPE_MODE must be "test" or "live"');
+    console.warn(`⚠️ STRIPE_MODE invalid: "${mode}", defaulting to "live"`);
+    return 'live';
   }
+  
+  console.log(`✅ STRIPE_MODE validated: ${mode}`);
   return mode as 'test' | 'live';
 };
 
@@ -207,9 +220,10 @@ serve(async (req) => {
   }
 
   try {
-    // Determine environment explicitly
+    // Determine environment explicitly with detailed logging
+    console.log('📊 Raw STRIPE_MODE env var:', Deno.env.get('STRIPE_MODE'));
     const mode = getStripeMode(); // 'test' | 'live'
-    console.log(`Checking Connect account in ${mode} mode`);
+    console.log(`✅ Checking Connect account in ${mode} mode`);
     
     // Get authorization header
     const authHeader = req.headers.get('Authorization');
@@ -346,43 +360,17 @@ serve(async (req) => {
       console.log("Account retrieved successfully:", {
         details_submitted: acc.details_submitted,
         charges_enabled: acc.charges_enabled,
-        payouts_enabled: acc.payouts_enabled
+        payouts_enabled: acc.payouts_enabled,
+        account_livemode: acc.livemode,
+        configured_mode: mode
       });
       
-      // Sanity check mode vs account livemode
+      // Log mode mismatch but don't auto-clear (removed aggressive auto-clear logic)
       if (mode === 'test' && acc.livemode) {
-        console.log('Mode mismatch: test mode with live account, clearing stored ID');
-        const resetFields: any = { updated_at: new Date().toISOString() };
-        resetFields[connectIdField] = null;
-        resetFields[onboardingCompleteField] = false;
-        await supabaseAdmin.from('profiles').update(resetFields).eq('id', user.id);
-        return new Response(JSON.stringify({ 
-          has_account: false,
-          needs_onboarding: true,
-          payouts_enabled: false,
-          error: 'Account mode mismatch - cleared',
-          environment: mode
-        }), {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        console.warn('⚠️ MODE_MISMATCH: Configured for test mode but account is live. Account will remain connected.');
       }
       if (mode === 'live' && !acc.livemode) {
-        console.log('Mode mismatch: live mode with test account, clearing stored ID');
-        const resetFields: any = { updated_at: new Date().toISOString() };
-        resetFields[connectIdField] = null;
-        resetFields[onboardingCompleteField] = false;
-        await supabaseAdmin.from('profiles').update(resetFields).eq('id', user.id);
-        return new Response(JSON.stringify({ 
-          has_account: false,
-          needs_onboarding: true,
-          payouts_enabled: false,
-          error: 'Account mode mismatch - cleared',
-          environment: mode
-        }), {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        console.warn('⚠️ MODE_MISMATCH: Configured for live mode but account is test. Account will remain connected.');
       }
       
       const onboardingComplete = acc.details_submitted && acc.payouts_enabled;
