@@ -67,7 +67,7 @@ const BecomeTutor = () => {
     {
       icon: <DollarSign className="w-5 h-5" />,
       title: "Set Your Own Rate",
-      description: "You decide your hourly rate - keep 100% of it"
+      description: "You decide your hourly rate (small fees apply)"
     },
     {
       icon: <Zap className="w-5 h-5" />,
@@ -135,7 +135,7 @@ const BecomeTutor = () => {
     },
     {
       question: "How much does StudyBuddy take from my earnings?",
-      answer: "Nothing! You receive your full hourly rate. Students pay a small additional fee (1% platform fee + Stripe processing fees) on top of your rate. These fees cover platform costs and payment processing, but never come out of your earnings."
+      answer: "StudyBuddy charges a 1% platform fee plus standard Stripe processing fees (2.9% + $0.30 per transaction). These fees are deducted from the amount students pay. For example, on a $50/hour session, you would receive approximately $47.55 after fees."
     }
   ];
 
@@ -190,8 +190,8 @@ const BecomeTutor = () => {
                     Fee Structure
                   </h3>
                   <ul className="space-y-2 text-muted-foreground">
-                    <li>• <strong>Students pay:</strong> Your hourly rate + 1% platform fee + Stripe processing fees</li>
-                    <li>• <strong>You receive:</strong> Your full hourly rate (fees are added on top, not deducted)</li>
+                    <li>• <strong>Students pay:</strong> Your hourly rate</li>
+                    <li>• <strong>Platform fee:</strong> 1% + Stripe processing fees (deducted from your earnings)</li>
                     <li>• <strong>You control:</strong> Set your own hourly rate</li>
                   </ul>
                 </div>
