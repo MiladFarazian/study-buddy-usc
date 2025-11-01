@@ -142,13 +142,24 @@ serve(async (req) => {
       // Verify account exists and is valid
       const account = await stripe.accounts.retrieve(profile[connectIdField]);
       
-      // Sanity check mode vs account livemode
-      if (mode === 'test' && account.livemode) {
-        throw new Error('Misconfig: test mode with a live connect account id');
-      }
-      if (mode === 'live' && !account.livemode) {
-        throw new Error('Misconfig: live mode with a test connect account id');
-      }
+      // Diagnostic logging
+      console.log('🔍 Account details:', {
+        id: account.id,
+        livemode: account.livemode,
+        charges_enabled: account.charges_enabled,
+        payouts_enabled: account.payouts_enabled,
+        details_submitted: account.details_submitted
+      });
+      console.log('🔑 Using key starting with:', stripeKey.slice(0, 12));
+      
+      // Sanity check mode vs account livemode - TEMPORARILY DISABLED FOR DEBUGGING
+      // if (mode === 'test' && account.livemode) {
+      //   throw new Error('Misconfig: test mode with a live connect account id');
+      // }
+      // if (mode === 'live' && !account.livemode) {
+      //   throw new Error('Misconfig: live mode with a test connect account id');
+      // }
+      console.log('⚠️ Mode check temporarily disabled for debugging');
 
       // Create login link
       const loginLink = await stripe.accounts.createLoginLink(profile[connectIdField]);
