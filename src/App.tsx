@@ -58,6 +58,7 @@ import FAQ from "./pages/FAQ";
 import StudentOnboarding from "./pages/onboarding/StudentOnboarding";
 import TutorOnboarding from "./pages/onboarding/TutorOnboarding";
 import MakeSchoolEasy from "./pages/MakeSchoolEasy";
+import BecomeTutor from "./pages/BecomeTutor";
 
 const router = createBrowserRouter([
   // Admin routes - completely separate from student/tutor
@@ -233,6 +234,10 @@ const router = createBrowserRouter([
       {
         path: "/make-school-easy",
         element: <MakeSchoolEasy />
+      },
+      {
+        path: "/become-a-tutor",
+        element: <BecomeTutor />
       },
       {
         path: "/onboarding/student",
