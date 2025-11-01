@@ -43,7 +43,7 @@ import { NotificationSettings } from "./components/settings/NotificationSettings
 import { PaymentSettingsTab } from "./components/settings/PaymentSettingsTab";
 import { PrivacySettings } from "./components/settings/PrivacySettings";
 import { TutorSettingsTab } from "./components/settings/TutorSettingsTab";
-import { CoursesSettings } from "./components/settings/CoursesSettings";
+import { CoursesSettingsWrapper } from "./components/settings/CoursesSettingsWrapper";
 import { TutorStudentCoursesSettings } from "./components/settings/TutorStudentCoursesSettings";
 import { AvailabilitySettings } from "./components/scheduling/AvailabilitySettings";
 import Resources from "./pages/Resources";
@@ -162,7 +162,7 @@ const router = createBrowserRouter([
           },
           {
             path: "courses",
-            element: <CoursesSettings />
+            element: <CoursesSettingsWrapper />
           },
           {
             path: "student-courses",
