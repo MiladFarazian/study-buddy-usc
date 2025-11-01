@@ -135,7 +135,7 @@ const BecomeTutor = () => {
     },
     {
       question: "How much does StudyBuddy take from my earnings?",
-      answer: "Nothing! You keep 100% of your hourly rate. Students pay a small platform fee (1% + Stripe processing fees), but your earnings are never reduced."
+      answer: "Nothing! You receive your full hourly rate. Students pay a small additional fee (1% platform fee + Stripe processing fees) on top of your rate. These fees cover platform costs and payment processing, but never come out of your earnings."
     }
   ];
 
@@ -190,8 +190,8 @@ const BecomeTutor = () => {
                     Fee Structure
                   </h3>
                   <ul className="space-y-2 text-muted-foreground">
-                    <li>• <strong>You receive:</strong> 100% of your hourly rate</li>
-                    <li>• <strong>Students pay:</strong> Your rate + 1% platform fee + Stripe processing</li>
+                    <li>• <strong>Students pay:</strong> Your hourly rate + 1% platform fee + Stripe processing fees</li>
+                    <li>• <strong>You receive:</strong> Your full hourly rate (fees are added on top, not deducted)</li>
                     <li>• <strong>You control:</strong> Set your own hourly rate</li>
                   </ul>
                 </div>
