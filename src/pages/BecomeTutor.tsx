@@ -71,7 +71,7 @@ const BecomeTutor = () => {
     },
     {
       icon: <Zap className="w-5 h-5" />,
-      title: "Work Remotely",
+      title: "Choose Remote or In-Person",
       description: "Automated Zoom integration for online sessions"
     },
     {
@@ -224,9 +224,6 @@ const BecomeTutor = () => {
                     <CardTitle className="text-lg">{benefit.title}</CardTitle>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <CardDescription>{benefit.description}</CardDescription>
-                </CardContent>
               </Card>
             ))}
           </div>
