@@ -59,7 +59,11 @@ export const TutorProfileForm = ({
               value={formData.last_name} 
               onChange={handleInputChange} 
               placeholder="Your last name" 
+              readOnly
             />
+            <p className="text-sm text-muted-foreground">
+              Your last name cannot be changed
+            </p>
           </div>
         </div>
         
