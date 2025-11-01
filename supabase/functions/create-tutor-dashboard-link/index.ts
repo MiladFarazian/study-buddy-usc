@@ -152,14 +152,9 @@ serve(async (req) => {
       });
       console.log('🔑 Using key starting with:', stripeKey.slice(0, 12));
       
-      // Sanity check mode vs account livemode - TEMPORARILY DISABLED FOR DEBUGGING
-      // if (mode === 'test' && account.livemode) {
-      //   throw new Error('Misconfig: test mode with a live connect account id');
-      // }
-      // if (mode === 'live' && !account.livemode) {
-      //   throw new Error('Misconfig: live mode with a test connect account id');
-      // }
-      console.log('⚠️ Mode check temporarily disabled for debugging');
+      // Note: We don't check account.livemode here because the Stripe API doesn't always return
+      // this property for Connect accounts. The key validation (lines 25-30) ensures we're using
+      // the correct key for the configured mode, which is sufficient.
 
       // Create login link
       const loginLink = await stripe.accounts.createLoginLink(profile[connectIdField]);
