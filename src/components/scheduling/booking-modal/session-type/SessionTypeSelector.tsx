@@ -141,6 +141,7 @@ export function SessionTypeSelector({ onBack, onContinue }: SessionTypeSelectorP
           <Button 
             className="bg-usc-cardinal hover:bg-usc-cardinal-dark text-white"
             onClick={onContinue}
+            disabled={!state.sessionType}
           >
             Continue
           </Button>
