@@ -144,13 +144,10 @@ const BecomeTutor = () => {
       <div className="max-w-6xl mx-auto">
         {/* Hero Section */}
         <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4">
+          <h1 className="text-4xl md:text-6xl font-bold mb-8">
             Become a StudyBuddy Tutor
           </h1>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Share your knowledge, earn money, and help fellow USC students succeed
-          </p>
-          <Button size="lg" onClick={handleCTA} className="text-lg px-8 py-6">
+          <Button size="lg" onClick={handleCTA} className="text-xl px-12 py-8 h-auto">
             {user ? "Apply Now" : "Create Account"}
           </Button>
         </div>
@@ -167,9 +164,6 @@ const BecomeTutor = () => {
                   </div>
                   <CardTitle className="text-lg">{step.title}</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <CardDescription>{step.description}</CardDescription>
-                </CardContent>
               </Card>
             ))}
           </div>
