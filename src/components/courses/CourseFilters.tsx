@@ -66,7 +66,10 @@ const CourseFilters = ({
           value={selectedDepartment}
           onValueChange={onDepartmentChange}
         >
-          <SelectTrigger className={`${isMobile ? 'w-full text-sm h-8' : 'w-full max-w-xs'}`}>
+          <SelectTrigger
+            className={`${isMobile ? 'w-full text-sm h-8' : 'w-full max-w-xs'}`}
+            aria-label="Filter by department"
+          >
             <SelectValue placeholder="Select Department" />
           </SelectTrigger>
           <SelectContent>

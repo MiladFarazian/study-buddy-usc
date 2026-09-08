@@ -1,0 +1,12 @@
+{
+  "imports": {
+    "graphql": "npm:graphql@16.9.0",
+    "dataloader": "npm:dataloader@2.2.3",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.49.1"
+  },
+  "lock": false,
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true
+  }
+}

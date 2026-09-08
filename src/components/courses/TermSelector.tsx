@@ -32,7 +32,7 @@ const TermSelector = ({ selectedTerm, onTermChange }: TermSelectorProps) => {
         onValueChange={onTermChange}
         disabled={loading || terms.length === 0}
       >
-        <SelectTrigger className="w-[220px]">
+        <SelectTrigger className="w-[220px]" aria-label="Academic term">
           <SelectValue placeholder="Select Term" />
         </SelectTrigger>
         <SelectContent>

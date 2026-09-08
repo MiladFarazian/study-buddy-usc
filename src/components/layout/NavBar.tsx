@@ -50,10 +50,14 @@ const NavBar = () => {
     )}>
       <div className="flex h-16 items-center justify-between px-4 md:px-6 lg:px-8">
         <div className="flex items-center">
-          <Link to="/" className="flex items-center space-x-2">
-            <span className="font-bold text-xl">
-              <span className="text-usc-cardinal">Study</span>
-              <span className="text-usc-gold">Buddy</span>
+          <Link
+            to="/"
+            className="flex items-center space-x-2"
+            aria-label="StudyBuddy home"
+          >
+            <span className="font-bold text-xl" aria-hidden="true">
+              <span className="text-usc-cardinal" data-brand-wordmark>Study</span>
+              <span className="text-usc-gold" data-brand-wordmark>Buddy</span>
               {user && profile && (
                 <span className="text-usc-cardinal ml-2">
                   {isTutorView ? "Tutor" : "Student"}
@@ -67,8 +71,10 @@ const NavBar = () => {
           {user && (
             <>
               <Button variant="ghost" size="icon" className="relative" asChild>
-                <Link to="/messages">
-                  <MessageSquare className="h-5 w-5 text-gray-600" />
+                {/* An icon-only control needs a text alternative: without the
+                    label a screen reader announces this as just "link". */}
+                <Link to="/messages" aria-label="Messages">
+                  <MessageSquare className="h-5 w-5 text-gray-600" aria-hidden="true" />
                 </Link>
               </Button>
               <NotificationsDropdown />

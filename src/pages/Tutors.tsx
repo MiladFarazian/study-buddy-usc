@@ -120,7 +120,7 @@ const Tutors = () => {
         value={selectedSubject} 
         onValueChange={setSelectedSubject}
       >
-        <SelectTrigger className="bg-background">
+        <SelectTrigger className="bg-background" aria-label="Filter by subject area">
           <SelectValue placeholder="Subject Area" />
         </SelectTrigger>
         <SelectContent className="bg-background z-50">

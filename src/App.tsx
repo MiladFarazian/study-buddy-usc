@@ -90,6 +90,12 @@ const router = createBrowserRouter([
         element: <DevLogin />
       },
       {
+        // The redirect_uri sent to Google/Supabase. Both spellings are routed
+        // because links to the older /auth-callback path are still in the wild.
+        path: "/auth/callback",
+        element: <AuthCallback />
+      },
+      {
         path: "/auth-callback",
         element: <AuthCallback />
       },

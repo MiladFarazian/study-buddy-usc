@@ -4,7 +4,9 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" href="/favicon.png" type="image/png">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <!-- maximum-scale/user-scalable=no blocked pinch zoom, a WCAG 1.4.4
+         failure that locks out anyone who needs to magnify the page. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="x-dns-prefetch-control" content="on" />
     <link rel="dns-prefetch" href="//fzcyzjruixuriqzryppz.supabase.co" />
     <link rel="preconnect" href="https://fzcyzjruixuriqzryppz.supabase.co" crossorigin />

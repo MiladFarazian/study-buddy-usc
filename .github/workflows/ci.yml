@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A superseded run has nothing useful left to say.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  typecheck:
+    name: Types
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      # The repository carries a backlog of pre-existing lint errors, so a bare
+      # `eslint .` would fail every run and teach everyone to ignore this job.
+      # Instead: fail only on accessibility rules, which are clean today and
+      # must stay that way. Drop the filter once the backlog is paid down.
+      - name: Lint (accessibility rules are blocking)
+        run: |
+          npx eslint . -f json -o eslint-report.json || true
+          node -e "
+            const report = require('./eslint-report.json');
+            const violations = report.flatMap((file) =>
+              file.messages
+                .filter((message) => (message.ruleId ?? '').startsWith('jsx-a11y'))
+                .map((message) => ({
+                  file: file.filePath.replace(process.cwd() + '/', ''),
+                  line: message.line,
+                  rule: message.ruleId,
+                  message: message.message,
+                  severity: message.severity,
+                }))
+            );
+            const errors = violations.filter((v) => v.severity === 2);
+            for (const v of violations) {
+              const level = v.severity === 2 ? 'error' : 'warning';
+              console.log(\`::\${level} file=\${v.file},line=\${v.line}::[\${v.rule}] \${v.message}\`);
+            }
+            console.log(\`\n\${errors.length} blocking accessibility lint error(s), \${violations.length - errors.length} warning(s).\`);
+            process.exit(errors.length > 0 ? 1 : 0);
+          "
+
+  unit:
+    name: Unit and accessibility tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      # Includes the axe-core component scans and the PKCE/SSO suites.
+      - run: npm run test
+
+  gateway:
+    name: GraphQL gateway tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # The gateway is a Deno edge function, so its tests run on Deno — the
+      # same runtime it deploys to.
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: npm run test:gateway
+        shell: bash
+
+  e2e-a11y:
+    name: Browser accessibility scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      # Colour contrast, focus visibility, and 320px reflow need a real browser;
+      # jsdom cannot judge any of them.
+      - name: axe-core scan of public routes
+        run: npm run test:e2e:a11y
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14

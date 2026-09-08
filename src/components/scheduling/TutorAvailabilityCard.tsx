@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { getTutorAvailability, updateTutorAvailability } from "@/lib/scheduling";
-import { WeeklyAvailabilityCalendar } from './calendar';
+import { WeeklyAvailabilityCalendar } from './calendar/index';
 import { WeeklyAvailability } from "@/lib/scheduling/types/availability";
 import { Loader2 } from "lucide-react";
 import { format, addDays } from 'date-fns';

@@ -123,19 +123,24 @@ const Sidebar = () => {
   
   return (
     <div className="sticky top-16 h-[calc(100vh-4rem)] w-64 bg-white text-usc-cardinal border-r border-gray-200 hidden md:block overflow-y-auto">
-      <nav className="p-4 space-y-2">
+      {/* Labelled because the page has more than one nav landmark; without
+          labels a screen reader's landmark list shows several "navigation"
+          entries with no way to tell them apart. */}
+      <nav className="p-4 space-y-2" aria-label="Main">
         {isInitializing ? (
-          <>
+          <div aria-busy="true" aria-live="polite" className="space-y-2">
+            <span className="sr-only">Loading navigation…</span>
             {Array(5).fill(0).map((_, i) => (
               <div 
                 key={i} 
                 className="flex items-center gap-3 p-3 rounded-md animate-pulse"
+                aria-hidden="true"
               >
                 <div className="w-5 h-5 bg-gray-200 rounded" />
                 <div className="h-4 bg-gray-200 rounded w-24" />
               </div>
             ))}
-          </>
+          </div>
         ) : (
           filteredItems.map((item) => {
             const isActive = location.pathname === item.path || 
@@ -154,8 +159,10 @@ const Sidebar = () => {
                     "text-usc-cardinal"
                   )}
                 >
-                  <item.icon size={20} />
+                  <item.icon size={20} aria-hidden="true" />
                   <span>{item.title}</span>
+                  {/* WCAG 3.2.5: warn before a link takes over a new tab. */}
+                  <span className="sr-only">(opens in a new tab)</span>
                 </a>
               );
             }
@@ -164,12 +171,15 @@ const Sidebar = () => {
               <Link
                 key={item.path}
                 to={item.path}
+                // The active item was signalled only by background colour,
+                // which conveys nothing to a screen reader and fails 1.4.1.
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "flex items-center gap-3 p-3 rounded-md transition-colors hover:bg-gray-100",
                   isActive ? "bg-gray-100 text-usc-cardinal font-medium" : "text-usc-cardinal"
                 )}
               >
-                <item.icon size={20} />
+                <item.icon size={20} aria-hidden="true" />
                 <span>{item.title}</span>
               </Link>
             );
