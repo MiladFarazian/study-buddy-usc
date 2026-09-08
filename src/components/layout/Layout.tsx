@@ -8,6 +8,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSessionBooking } from "@/contexts/SessionBookingContext";
 import { useLocation } from "react-router-dom";
+import SkipToContent from "@/components/a11y/SkipToContent";
+import RouteAnnouncer from "@/components/a11y/RouteAnnouncer";
 
 interface LayoutProps {
   children: ReactNode;
@@ -40,10 +42,18 @@ const Layout = ({ children }: LayoutProps) => {
   
   return (
     <div className="flex flex-col min-h-screen max-w-full">
+      <SkipToContent />
+      <RouteAnnouncer />
       <NavBar />
       <div className="flex flex-1 w-full pt-16">
         {!isMobile && <Sidebar />}
-        <main className={`flex-1 ${isMobile ? 'px-3 py-3 pb-20' : 'px-4 md:px-6 lg:px-8 py-6'} overflow-x-hidden`}>
+        <main
+          id="main-content"
+          // tabIndex -1 makes <main> a focus target for the skip link and for
+          // the post-navigation focus move, without adding it to the tab order.
+          tabIndex={-1}
+          className={`flex-1 ${isMobile ? 'px-3 py-3 pb-20' : 'px-4 md:px-6 lg:px-8 py-6'} overflow-x-hidden focus:outline-none`}
+        >
           <div className="max-w-full">
             {children}
           </div>

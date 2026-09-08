@@ -93,8 +93,8 @@ const Login = () => {
       <div className="max-w-md w-full px-4">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">
-            <span className="text-usc-cardinal">Study</span>
-            <span className="text-usc-gold">Buddy</span>
+            <span className="text-usc-cardinal" data-brand-wordmark>Study</span>
+            <span className="text-usc-gold" data-brand-wordmark>Buddy</span>
           </h1>
           <p className="text-gray-600">Your USC tutoring and study partner</p>
         </div>
@@ -199,7 +199,9 @@ const Login = () => {
                 </p>
                 <Button 
                   variant="link" 
-                  className="text-xs text-gray-400 hover:text-gray-600"
+                  // gray-400 on white is 2.54:1. gray-600 is 7.56:1 and still
+                  // reads as a de-emphasised control.
+                  className="text-xs text-gray-600 hover:text-gray-800"
                   onClick={() => setShowAdminLogin(true)}
                 >
                   Admin Login

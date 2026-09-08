@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { WeeklyAvailabilityCalendar } from './calendar';
+import { WeeklyAvailabilityCalendar } from './calendar/index';
 import { AvailabilityCalendar } from './AvailabilityCalendar';
 import { WeeklyAvailability } from '@/lib/scheduling/types';
 import { useToast } from '@/hooks/use-toast';

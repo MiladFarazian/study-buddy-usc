@@ -10,13 +10,15 @@ const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { session, user, profile, loading, isStudent, isTutor, isProfileComplete, updateProfile } = useAuthState();
-  const { signIn, signOut } = useAuthMethods();
+  const { signIn, signInWithSso, detectSsoMethod, signOut } = useAuthMethods();
 
   const value: AuthContextType = {
     session,
     user,
     profile,
     signIn,
+    signInWithSso,
+    detectSsoMethod,
     signOut,
     loading,
     isStudent,

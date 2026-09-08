@@ -158,7 +158,10 @@ const CourseList = ({
                                 }));
                               }}
                             >
-                              <SelectTrigger className="w-[200px] h-6 text-xs px-2 py-0 border bg-white">
+                              <SelectTrigger
+                                className="w-[200px] h-6 text-xs px-2 py-0 border bg-white"
+                                aria-label={`Instructor for ${course.course_number}`}
+                              >
                                 <SelectValue placeholder="Select instructor" />
                               </SelectTrigger>
                               <SelectContent className="bg-white z-50">
@@ -236,7 +239,10 @@ const CourseList = ({
                             }));
                           }}
                         >
-                          <SelectTrigger className="w-[200px] h-8 text-sm px-2 py-1 bg-white">
+                          <SelectTrigger
+                            className="w-[200px] h-8 text-sm px-2 py-1 bg-white"
+                            aria-label={`Instructor for ${course.course_number}`}
+                          >
                             <SelectValue placeholder="Select instructor" />
                           </SelectTrigger>
                           <SelectContent className="bg-white z-50">

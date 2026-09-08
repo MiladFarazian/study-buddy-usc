@@ -113,7 +113,10 @@ const CourseCard = ({ course }: CourseCardProps) => {
                     value={selectedInstructor} 
                     onValueChange={setSelectedInstructor}
                   >
-                    <SelectTrigger className="w-full h-7 text-xs px-2 py-0 border-none bg-gray-50">
+                    <SelectTrigger
+                      className="w-full h-7 text-xs px-2 py-0 border-none bg-gray-50"
+                      aria-label={`Instructor for ${course.course_number}`}
+                    >
                       <SelectValue placeholder="Select instructor" />
                     </SelectTrigger>
                     <SelectContent>

@@ -1,5 +1,31 @@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveSsoMethod, signInWithEmailDomain } from "@/lib/auth/sso";
+
+/**
+ * Where identity providers send the user back to.
+ *
+ * Every entry point must agree on this string: it is sent as `redirect_uri` in
+ * the authorization request, and providers reject a token exchange whose
+ * redirect_uri differs from the one the code was issued for. It must also be
+ * listed in the Supabase dashboard's redirect allowlist.
+ */
+export const AUTH_CALLBACK_PATH = '/auth/callback';
+
+export const authCallbackUrl = () =>
+  `${window.location.origin}${AUTH_CALLBACK_PATH}`;
+
+/** Remembers where to return after login, ignoring the auth pages themselves. */
+const rememberReturnPath = () => {
+  const currentPath = window.location.pathname;
+  const isAuthPage = currentPath === '/login' ||
+    currentPath === AUTH_CALLBACK_PATH ||
+    currentPath === '/auth-callback';
+
+  if (!isAuthPage) {
+    sessionStorage.setItem('redirectAfterAuth', currentPath);
+  }
+};
 
 export const useAuthMethods = () => {
   const { toast } = useToast();
@@ -7,16 +33,10 @@ export const useAuthMethods = () => {
   const signIn = async (provider: 'google') => {
     try {
       console.log("Initiating sign in with provider:", provider);
-      
-      // Store the current path for redirect after login
-      const currentPath = window.location.pathname;
-      if (currentPath !== '/login' && currentPath !== '/auth/callback') {
-        sessionStorage.setItem('redirectAfterAuth', currentPath);
-      }
-      
-      // Use the current origin for the redirect URL
-      const redirectUrl = `${window.location.origin}/auth/callback`;
-      
+
+      rememberReturnPath();
+      const redirectUrl = authCallbackUrl();
+
       console.log(`Authentication initiated with redirect URL: ${redirectUrl}`);
       
       const { error } = await supabase.auth.signInWithOAuth({
@@ -146,6 +166,47 @@ export const useAuthMethods = () => {
     }
   };
 
+  /**
+   * Signs in by email domain: SAML for federated domains, Google otherwise.
+   *
+   * SAML returns a URL for us to navigate to; Google navigates itself. See
+   * src/lib/auth/sso.ts for the home-realm discovery rules.
+   */
+  const signInWithSso = async (email: string) => {
+    try {
+      rememberReturnPath();
+
+      const result = await signInWithEmailDomain(email, authCallbackUrl());
+
+      if (!result.success) {
+        toast({
+          title: "Sign In Failed",
+          description: result.error ?? "Could not start sign-in",
+          variant: "destructive",
+        });
+        return { error: new Error(result.error ?? "Sign-in failed") };
+      }
+
+      // SAML hands back the IdP URL rather than redirecting for us.
+      if (result.url) {
+        window.location.assign(result.url);
+      }
+
+      return { success: true, method: result.method };
+    } catch (error: any) {
+      console.error('SSO sign in error:', error);
+      toast({
+        title: "Sign In Failed",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+      return { error };
+    }
+  };
+
+  /** Which provider an email would use — lets the UI label the button. */
+  const detectSsoMethod = (email: string) => resolveSsoMethod(email).method;
+
   const signOut = async () => {
     try {
       console.log("Signing out user");
@@ -182,5 +243,5 @@ export const useAuthMethods = () => {
     }
   };
 
-  return { signIn, signOut, devSignUp, devSignIn };
+  return { signIn, signInWithSso, detectSsoMethod, signOut, devSignUp, devSignIn };
 };

@@ -20,7 +20,11 @@
     --secondary-foreground: 0 0% 0%;
 
     --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* 44.9% rather than shadcn's default 46.9%: the default measured 4.34:1
+       against the tinted section backgrounds used across the app, just under
+       the 4.5:1 that WCAG 1.4.3 requires for body text. This is the smallest
+       change that clears it (4.66:1 worst case). */
+    --muted-foreground: 215.4 16.3% 44.9%;
 
     --accent: 32 30% 93%;
     --accent-foreground: 222.2 47.4% 11.2%;
