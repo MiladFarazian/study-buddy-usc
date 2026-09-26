@@ -1,69 +1,40 @@
-# Welcome to your Lovable project
+# StudyBuddy
 
-## Project info
+A tutoring marketplace for USC students. Students find tutors by course, book and pay for sessions, and meet over Zoom. Tutors set availability, get paid through Stripe Connect, and build a profile from reviews. Admins moderate the whole thing.
 
-**URL**: https://lovable.dev/projects/2af9de10-0b79-4e1c-95f0-e684ae075927
+Built by a five-person student team; I was CTO and lead engineer.
 
-## How can I edit this code?
+## What is in here
 
-There are several ways of editing your application.
+- **Frontend:** React 18 + TypeScript + Vite, Tailwind, shadcn/ui.
+- **Backend:** Supabase (Postgres, Auth, Storage) with 39 Deno Edge Functions and 86 SQL migrations.
+- **Payments:** Stripe Connect onboarding for tutors, checkout for students, webhook-driven booking state.
+- **Scheduling:** tutor availability, booking, reschedule and cancel flows, Zoom meeting creation per session.
+- **USC integration:** a course importer (`fetch-usc-courses`) so tutors and students match on real course codes.
+- **Roles:** tutor, student, and admin, with reviews, badges, messaging, notifications, and referrals.
 
-**Use Lovable**
+## How it was built, honestly
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/2af9de10-0b79-4e1c-95f0-e684ae075927) and start prompting.
+The first version was a hand-coded NestJS + Prisma + Next.js monorepo. After a month we scrapped it and rebuilt on Supabase using Lovable for the UI scaffolding, then hand-directed the parts that mattered: the data model, payments, scheduling, and the edge functions. That tradeoff bought a student team a working product in a semester. If you ask me about the build process in an interview, that is the answer you will get.
 
-Changes made via Lovable will be committed automatically to this repo.
+## Running it
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+npm install
+# create .env with VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, and the Stripe publishable key
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Edge functions live in `supabase/functions/`, migrations in `supabase/migrations/`.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Platform branch: `feat/gateway-sso-a11y`
 
-**Use GitHub Codespaces**
+A later, hand-directed engineering pass on top of the product, kept on its own branch:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- **GraphQL gateway** (`supabase/functions/graphql/`): one typed graph over Postgres and Stripe Connect with per-request DataLoader batching and depth and complexity limits. A representative nested query went from 121 database round trips to 4, and the query count stays at 4 whether the result has 5 tutors or 60. 22 gateway tests. The gateway forwards the caller's JWT and holds no service-role key, so row-level security still applies.
+- **OAuth 2.0 + PKCE and SAML 2.0 SSO** (`src/lib/auth/`, `supabase/functions/sso-admin/`): moved auth off the implicit flow; 40 tests including the RFC 7636 test vector.
+- **Accessibility:** all 7 public routes went from failing axe-core to passing, checked in Playwright.
 
-## What technologies are used for this project?
+## Status
 
-This project is built with .
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/2af9de10-0b79-4e1c-95f0-e684ae075927) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+Built and functional. Development on this repo wound down in late 2025.
